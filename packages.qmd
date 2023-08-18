@@ -1,0 +1,753 @@
+# Packages {.unnumbered}
+
+```{r}
+#| eval: true 
+#| echo: false 
+#| include: false
+source("_common.R")
+```
+
+```{r}
+#| label: co_box_dev
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "o",
+  header = "Caution!",
+  contents = "This section is currently under development. Thank you for your patience.", 
+  fold = FALSE
+)
+```
+
+This chapter dives into the makings of R packages. I'll cover how R packages differ from R projects and what's required to convert a shiny project into an R package. 
+
+The previous chapter covered a few practices to adopt during shiny development that improves the extensibility of your app to an R package (these are summarized in the callout box below).
+
+```{r}
+#| label: co_shiny_recap
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b",
+  header = "Shiny 'pre-package' practices",
+  contents = "
+  - **Folders**
+  
+      - `www`: can be used to store static resources (images, CSS files, JavaScript)
+  
+      - `R/`: any `.R` files in the `R/` folder will automatically be loaded with your app when it's run. 
+          -  Converting the code in `app.R` into separate functions (i.e., modules and standalone app functions) also allows you to develop and debug the code independently. 
+  
+  - **Files** 
+  
+      - `DESCRIPTION` files store metadata and include fields for application deployment (i.e., `DisplayMode: Showcase`)   
+      - `README.md` files can document application descriptions, purposes, requirements, etc.
+  
+  - **Dependencies**
+  
+      - `renv` can be used to help manage app dependencies. 
+        - Run `renv::status()` & `renv::snapshot()` to record dependencies in the lock file.
+  
+  ", fold = TRUE
+)
+```
+
+For more information on the topics in this chapter, you should read
+[Writing R Extensions](https://cran.r-project.org/doc/manuals/r-release/R-exts.html) (the official documentation for creating R packages) and [R Packages, 2ed](https://r-pkgs.org/).
+
+## [App-packages]{style='font-weight: bold; color: #940000'}: motivation
+
+
+There are multiple reasons for deciding to develop an [app-package]{style='font-weight: bold; color: #940000'}: your app [project]{style="font-weight: bold; color: #137a7f"} might have to be in a package structure due to specific organizational needs or practices around deploying applications; or maybe you've been convinced it's the best practice for improving the shareability/reproducibility of your app [project]{style="font-weight: bold; color: #137a7f"}. 
+
+:::{.column-margin}
+
+I'll be using color to differentiate shiny app [projects]{style="font-weight: bold; color: #137a7f"} from [app-packages]{style="font-weight: bold; color: #940000"}.
+
+:::
+
+Regardless of the reason, you've likely found yourself in one of two circumstances:
+
+1. You want to develop a new shiny app, but want it structured as an [app-package]{style='font-weight: bold; color: #940000'}.  
+
+2. You've already developed a shiny app [project]{style="font-weight: bold; color: #137a7f"}, but now you need to convert it to an [app-package]{style='font-weight: bold; color: #940000'}
+
+This chapter will cover what's required in an [app-package]{style='font-weight: bold; color: #940000;'} so you'll be able to handle both scenarios above.
+
+## What makes an R package?
+
+Below is a folder tree with some of the typical files and folders found in R packages:
+
+```{bash}
+#| eval: false
+#| code-fold: false
+#| echo: true
+<R package>/
+    ├── DESCRIPTION
+    ├── <R package>.Rproj
+    ├── LICENSE 
+    ├── LICENSE.md 
+    ├── NAMESPACE 
+    ├── NEWS.md
+    ├── README.Rmd
+    ├── README.md
+    ├── renv.lock
+    ├── R/
+    ├── man/
+    ├── tests/
+    ├── data/ 
+    ├── data-raw/ 
+    ├── vignettes/ 
+    ├── inst/ 
+    └── renv/
+  
+```
+
+The reason R packages can be easily shared, reused, and reproduced is because they all have a familiar structure, and each folder and file plays an essential role in extending R’s capabilities. 
+
+At first glance, the contents above can seem daunting when compared to the folders and files that currently exist in your app [project]{style='font-weight: bold; color: #137a7f;'} (like `projApp` below): 
+
+```{bash}
+#| eval: false
+#| code-fold: false
+projApp/
+├── DESCRIPTION
+├── R/
+│   ├── mod_scatter_display.R
+│   ├── mod_var_input.R
+│   └── utils.R
+├── README.md
+├── app.R
+├── movies.RData
+├── projApp.Rproj
+├── rsconnect/
+└── www/
+    └── shiny.png
+
+4 directories, 9 files
+```
+
+Fortunately, [app-packages]{style="font-weight: bold; color: #940000"} don't require *all* the files and folders displayed above to gain the functionality and benefits of an R package. 
+
+If you've read [R packages, 2ed](https://r-pkgs.org/) or [Mastering Shiny](https://mastering-shiny.org/index.html), you might recall encountering one (or both) of the following quotes, 
+
+> *'Every package must have a `DESCRIPTION`. In fact, it’s the defining feature of a package (RStudio and `devtools` consider any directory containing `DESCRIPTION` to be a package)'* - [R Packages, 2ed (Chapter 9, `DESCRIPTION`)](https://r-pkgs.org/description.html#the-description-file)
+> 
+> *'all a project needs to be a package is a directory of `R/` files and a `DESCRIPTION` file.'* - [Mastering Shiny (Chapter 20, Packages)](https://mastering-shiny.org/scaling-packaging.html#summary-18)
+
+
+If you've been following along with the code, these quotes should confuse you. The `projApp` shiny [project]{style='font-weight: bold; color: #137a7f;'} has a `DESCRIPTION` file and an `R/` directory, but `projApp` is not a functioning [package]{style='font-weight: bold; color: #940000;'}. 
+
+A functioning [package]{style='font-weight: bold; color: #940000;'} should have (at minimum) the following:
+
+### The Build pane
+
+Functioning R [packages]{style='font-weight: bold; color: #940000;'} have access to the **Build** pane, which allows us to quickly iterate between loading, installing, and testing. But if `projApp.Rproj` is opened, only the following panes are visible in the IDE:
+
+:::: {.column-page-inset-right}
+
+::: {#fig-shiny_app_ide}
+![`projApp` IDE](img/shiny_app_ide.png){#fig-shiny_app_ide height="100%" width="100%" fig-align="center"}
+
+Project IDE panes
+:::
+
+::::
+
+
+### [`devtools`]{style="font-size: 1.05em"} functions
+
+In order to use the options in the **Build** pane, we have to be able to run the `devtools` functions. However, when we install and load `devtools`, then try to load the code in the `R/` folder with `load_all()`, we see the following error:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+install.packages("devtools")
+library(devtools)
+devtools::load_all()
+```
+
+
+
+::: {#fig-load_all_error}
+![Load All Error](img/load_all_error.png){#fig-load_all_error width="100%" fig-align="center"}
+
+`devtools` is looking for the **`Package` field** in the `DESCRIPTION` file
+:::
+
+
+So, in order to be a functioning package, `projApp` must have 1) access to the **Build** pane in the IDE, 2) the ability to run the `devtools` development functions (starting with the function we'll use the most during package development, `load_all()`)
+
+## What *really* makes an R package?
+
+As we've just learned, the presence of the `DESCRIPTION` file and an `R/` folder are not sufficient to turn your app [project]{style='font-weight: bold; color: #137a7f;'} into a [app-package]{style='font-weight: bold; color: #940000;'} (i.e., with a **Build** pane and 'functioning' `devtools` workflow).
+
+For practical purposes, I'll rewrite the minimum requirements for creating a 'functional' R package:
+
+> "*A project needs **a `DESCRIPTION` file with specific fields**, a directory of `R/` files, and **a properly configured `.Rproj` file** to be a package.*" - Me
+
+Let's see how each of these requirements work together to create a [app-package]{style='font-weight: bold; color: #940000;'}.
+
+### [`DESCRIPTION`]{style="font-size: 0.95em"} fields
+
+The [official R documentation](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#The-DESCRIPTION-file) lists the following required fields for the `DESCRIPTION` in R packages:
+
+> *The ‘Package’, ‘Version’, ‘License’, ‘Description’, ‘Title’, ‘Author’, and ‘Maintainer’ fields are mandatory*
+
+Below is an example `DESCRIPTION` file for `projApp` with the mandatory fields:
+
+::: {.column-margin}
+
+![New Git Branch](img/new_branch_ico.png){width='100%'}
+
+The code for this section was pushed to the  [[`04_description`](https://github.com/mjfrigaard/projApp/tree/04_description)] branch of the [[`projApp`](https://github.com/mjfrigaard/projApp)] repo.
+
+:::
+
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+Package: projApp
+Version: 0.0.0.9000
+Type: Package
+Title: movies app
+Description: A movies data shiny application.
+Author: John Smith [aut, cre]
+Maintainer: John Smith <John.Smith@email.io>
+License: GPL-3
+*leave empty final line*
+```
+
+::: {.callout-tip title="`Author` and `Maintainer` fields" collapse='true'}
+
+Note that the `Author` and `Maintainer` fields require additional information beyond first and last name (i.e., `John Smith`). These can be created with the `utils::person()` function:
+
+```{r}
+#| collapse: true
+#| code-fold: true 
+#| code-summary: 'show/hide person() output'
+# Author
+utils::person(
+  given = "John", 
+  family = "Smith", 
+  role = c("aut", "cre"))
+# Maintainer
+utils::person(
+  given = "John", 
+  family = "Smith", 
+  email = "John.Smith@email.io")
+```
+
+:::
+
+After adding the mandatory fields to the `DESCRIPTION` file in `projApp`, `load_all()` runs without the previous error, but the IDE still doesn't display the **Build** pane: 
+
+:::: {.column-page-inset-right}
+
+::: {#fig-shiny_app_ide_desc_load_all}
+![`projApp` IDE](img/shiny_app_ide_desc_load_all.png){#fig-shiny_app_ide_desc_load_all height="100%" width="100%" fig-align="center"}
+
+[Where is the **Build** pane?]{style="font-style: italic; font-weight: bold; font-size: 1.15em; color: #772953;"}
+:::
+
+::::
+
+
+### Project options 
+
+[i.e., the [`.Rproj`]{style="font-size: 1.10em"} file]{style="font-style: italic; font-size: 1.30em"}
+
+`.Rproj` files are plain text files with various settings for the IDE. The reason we were able to run `devtools::load_all()` above without the presence of the **Build** pane is because the IDE displays the **Build** pane after reading the fields in `projApp.Rproj` file.  
+
+The quickest way to access the fields the `.Rproj` file is under **Tools** > **Project options**.
+
+#### Default project options
+
+**Tools** > **Project options** provide access to the project-level options. For example, fields 2 - 4 are available under **General**, fields 5 - 8 affect the **Code** options, and the final two fields deal with **Sweave**. 
+
+::: {#fig-rproj_defaults}
+![`projApp.Rproj` fields](img/rproj_defaults.png){#fig-rproj_defaults width="100%" fig-align="center"}
+
+Field settings from `projApp.Rproj` file
+:::
+
+These are the default settings that were created when we selected the [Shiny App project]{style='font-weight: bold; color: #137a7f;'} from the **New Project Wizard** in the last chapter.
+
+#### Build tools
+
+If you've read the [What makes an RStudio Project? section of R Packages (2 ed)](https://r-pkgs.org/workflow101.html#what-makes-an-rstudio-project), you’ll notice a few differences between each `.Rproj` file (I’ve placed the files side-by-side so you can compare them below):
+
+
+::: {#fig-rproj_compare}
+![`.Rproj` files](img/rproj_compare.png){#fig-rproj_compare  width="100%" fig-align="center"}
+
+Comparison of `projApp.Rproj` file and `.Rproj` file in [R Packages, 2ed](https://r-pkgs.org/workflow101.html#what-makes-an-rstudio-project)
+:::
+
+I've circled the fields in the [R Packages, 2ed](https://r-pkgs.org/workflow101.html#what-makes-an-rstudio-project) `.Rproj` file that illustrate it's configured to work with a [package]{style='font-weight: bold; color: #940000'}. Note that in `projApp`, the **Project build tools** are initially set to (**None**) under **Build Tools**:
+
+::: {#fig-rproj_build_tools}
+![`projApp.Rproj` build tools](img/rproj_build_tools.png){#fig-rproj_build_tools height="100%" width="100%" fig-align="center"}
+
+Build tool settings in `projApp.Rproj` file
+:::
+
+
+This setting should help explain the absence of any package development fields in the `projApp.Rproj` when we compared it to the version in [R Packages, 2ed](https://r-pkgs.org/workflow101.html#what-makes-an-rstudio-project) (i.e., `BuildType`, `PackageUseDevtools`, `PackageInstallArgs`, and `PackageRoxygenize`). 
+
+Changing the **Project build tools** option to **Package** will set the default **Build Tools** options:
+
+::: {#fig-rproj_build_tools_defaults}
+![Default package build tools](img/rproj_build_tools_defaults.png){#fig-rproj_build_tools_defaults height="100%" width="100%" fig-align="center"}
+
+Default build tool settings
+:::
+
+The links between the **Build Tools** options and fields in `projApp.Rproj` are in the figure below:
+
+::: {#fig-rproj_connect_build_tools}
+![`projApp.Rproj` build tool fields](img/rproj_connect_build_tools.png){#fig-rproj_connect_build_tools width="100%" fig-align="center"}
+
+Default build tool settings in `projApp.Rproj` file
+:::
+
+-   `BuildType: Package` tells the IDE `projApp` is a package and triggers the **Build** pane.
+
+-   `PackageUseDevtools: Yes` links the options in the **Build** pane to the [`devtools` package](https://devtools.r-lib.org/).
+
+-   The `PackageInstallArgs` are complicated, but I've included some information about them in the callout block below (and you can read more in the [official R documentation](https://cran.r-project.org/manuals.html))
+
+
+-   The fourth option (`PackageRoxygenize`) is available under **Generate documentation with Roxygen** > **Use roxygen to generate**
+    -   These options affect the documentation in your [app-package]{style='color: #940000;'}. To match the example from [R Packages, 2ed](https://r-pkgs.org/workflow101.html#what-makes-an-rstudio-project) above, make sure **Rd files**, **Collate field**, and **NAMESPACE file** are selected and click **OK**
+
+
+::: {#fig-package_roxygenize}
+![`PackageRoxygenize` in `.Rproj` file](img/package_roxygenize.png){#fig-package_roxygenize width="100%" fig-align="center"}
+
+`roxygen2` build settings
+:::
+
+After clicking **OK**, the IDE will automatically reboot, and the additional fields will be added to the bottom of the `projApp.Rproj`:
+
+::: {.column-margin}
+
+![New Git Branch](img/new_branch_ico.png){width='70%'}
+
+The code for this section was pushed to the  [[`05_rproj`](https://github.com/mjfrigaard/projApp/tree/05_rproj)] branch of the [[`projApp`](https://github.com/mjfrigaard/projApp)] repo.
+
+:::
+
+```{bash}
+#| eval: false
+#| code-fold: false
+Version: 1.0
+
+RestoreWorkspace: Default
+SaveWorkspace: Default
+AlwaysSaveHistory: Default
+
+EnableCodeIndexing: Yes
+UseSpacesForTab: Yes
+NumSpacesForTab: 2
+Encoding: UTF-8
+
+RnwWeave: Sweave
+LaTeX: XeLaTeX
+
+BuildType: Package
+PackageUseDevtools: Yes
+PackageInstallArgs: --no-multiarch --with-keep.source
+PackageRoxygenize: rd,collate,namespace
+
+```
+
+```{r}
+#| label: co_rproj_package_install_args
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g",
+  fold = TRUE,
+  header = "What is `--no-multiarch --with-keep.source`?",
+  contents = "
+  -   `--no-multiarch`: refers to the option for the package installer to only compile the package for the architecture of the current R session. By default, R tries to compile packages for 32-bit and 64-bit architectures if running in a 64-bit R session on Windows. This flag can help avoid problems if a package can only be compiled on one architecture. Read more [here](https://cran.r-project.org/doc/manuals/r-release/R-admin.html#Checking-installed-source-packages).
+  
+  -   `--with-keep.source`: In R, when a function is created, its body can be stored in two ways: 1) as a parsed but unevaluated expression and 2) as a character string containing the function's source code. By default, only the parsed expression is kept. If `–with-keep.source` is specified, R will also keep the original source code as a character string, which can be helpful for debugging and for tools that analyze or modify source code. Read more [here](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Tidying-R-code).
+    "
+)
+```
+
+#### Build pane
+
+When the new session starts, the new project-level options will activate the **Build** pane in the IDE. 
+
+:::: {.column-page-inset-right}
+
+::: {#fig-shiny_app_pkg_ide}
+![Build pane in IDE](img/shiny_app_pkg_ide.png){#fig-shiny_app_pkg_ide height="100%" width="100%" fig-align="center"}
+
+**Build** pane triggered from project-level settings
+:::
+
+::::
+
+When the IDE reboots, I can see the **Build** pane has been added, and I can check the app-package functionality by loading the code with **Build** > **Load All**
+
+::: {#fig-build_pane_tools}
+![Load the code in the `R/` folder](img/build_pane_tools.png){#fig-build_pane_tools width="100%" fig-align="center"}
+
+Identical to running `devtools::load_all()`
+:::
+
+I should see the following in the **Console**:
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+ℹ Loading projApp
+```
+
+There you have it--`projApp` is a functional [app-package]{style='font-weight: bold; color: #940000;'}!
+
+## An app-package
+
+:::: {.column-page-inset-right}
+
+::: {#fig-shiny_app_pkg_ide_desc}
+![Shiny app-package (with `DESCRIPTION` and **Build** pane)](img/shiny_app_pkg_ide_desc.png){#fig-shiny_app_pkg_ide_desc width="100%" fig-align="center"}
+
+Fully functional shiny app-package
+:::
+
+::::
+
+The `DESCRIPTION` file contains the seven mandatory fields (`Package`, `Version`, `License`, `Description`, `Title`, `Author`, and `Maintainer`), which make it possible to run the necessary devtools functions. 
+
+The `.Rproj` file contains the three package configuration fields (`BuildType: Package`, `PackageUseDevtools: Yes`, and `PackageInstallArgs: --no-multiarch --with-keep.source`), which makes the **Build** pane accessible and functional. 
+
+
+## A quicker way: [`create_package()`]{style="font-size: 0.95em"}
+
+The [Posit documentation](https://docs.posit.co/ide/user/ide/guide/pkg-devel/writing-packages.html) lists only two ways to create packages, 
+
+> 1. Call `usethis::create_package()`.
+> 
+> 2. In RStudio, do **File** > **New Project** > **New Directory** > **R Package**. This ultimately calls `usethis::create_package()`, so really there’s just one way.
+> 
+
+While this information isn't incorrect, we did just demonstrate it's possible to create a package without the `usethis::create_package()` function. Still, if you're looking for a way to quickly create or convert your app into an [app-package]{style='font-weight: bold; color: #940000;'}, using `create_package()` is a great option. 
+
+Below are suggestions for using `create_package()` to create and convert [app-packages]{style='font-weight: bold; color: #940000;'}. 
+
+### New app-packages
+
+If you want to create a new shiny [app-package]{style='font-weight: bold; color: #940000;'}, but haven’t written any code, you can create one with the `create_package()` function from the [`usethis` package](https://usethis.r-lib.org/reference/create_package.html).
+
+First install `devtools`:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+install.packages("devtools")
+library(devtools)
+```
+
+`devtools` automatically loads `usethis`
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+Loading required package: usethis
+```
+
+Assuming your current working directory is where you want your new [app-package]{style='font-weight: bold; color: #940000;'}, call `usethis::create_package()` with the `path` argument set to `getwd()`
+
+```{r}
+#| eval: false 
+#| code-fold: false
+usethis::create_package(path = getwd())
+```
+
+This launches a series of actions:
+
+-   First, the active project is set to whatever was given to the `path` argument. 
+
+    ```{verbatim}
+    #| eval: false 
+    #| code-fold: false
+    ✔ Setting active project to 'path/to/newApp'
+    ```
+    
+-   The `R/` folder and `DESCRIPTION/` file are created:
+
+    ```{verbatim}
+    #| eval: false 
+    #| code-fold: false
+    ✔ Creating 'R/'
+    ✔ Writing 'DESCRIPTION'
+    ```
+    
+-   The `NAMESPACE` and `.Rproj` files are created:
+
+    ```{verbatim}
+    #| eval: false 
+    #| code-fold: false
+    ✔ Writing 'NAMESPACE'
+    ✔ Writing 'newApp.Rproj'
+    ```
+    
+-   The `.Rproj` is added to the `.Rbuildignore` file, the `.Rproj.user` folder is added to the `.gitignore` and `.Rbuildignore` files.
+    
+    ```{verbatim}
+    #| eval: false 
+    #| code-fold: false
+    ✔ Adding '^newApp\\.Rproj$' to '.Rbuildignore'
+    ✔ Adding '.Rproj.user' to '.gitignore'
+    ✔ Adding '^\\.Rproj\\.user$' to '.Rbuildignore'
+    ```
+    
+-   A new session is opened from the new `.Rproj` file:
+
+    ```{verbatim}
+    #| eval: false 
+    #| code-fold: false
+    ✔ Opening 'path/to/newApp/' in new RStudio session
+    ```
+
+When the new session opens, `newApp` has the following contents:
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+newApp/
+  ├── .Rbuildignore
+  ├── .Rproj.user/
+  ├── .gitignore
+  ├── DESCRIPTION
+  ├── NAMESPACE
+  ├── R/
+  └── projApp.Rproj
+```
+
+You're now free to develop `newApp`. Store any `.R` files in the `R/` folder, edit the `DESCRIPTION` file with details about the application, and read up on package development in [R Packages](https://r-pkgs.org/).
+
+### Converting existing app
+
+If you already have a shiny app [project]{style='font-weight: bold; color: #137a7f'} that needs to be converted into an [app-package]{style='font-weight: bold; color: #940000'} (like the app files stored in the [`03_projApp` branch](https://github.com/mjfrigaard/projApp/tree/03_projApp)), you can also use `create_package()` in your root folder, but I recommend using the following arguments:
+
+#### [`DESCRIPTION`]{style="font-size: 0.95em"} arguments
+
+-    **`path`**: set this with `getwd()` to avoid warnings about nested projects. 
+
+-   **`fields`**: these arguments are passed to the fields argument of `usethis::use_description()` (we've covered the importance of the `DESCRIPTION` file in the next section). 
+
+-   All fields should be passed in a `list()` as `field = 'value'` pairs. 
+
+    ```{r}
+    #| eval: false 
+    #| code-fold: false
+    usethis::use_description(
+        list(Package = 'projApp',
+             Version = '0.0.0.9000',
+             Title = 'movies app',
+             Description = 'A movie-review shiny application.',
+             "Authors@R" = NULL,
+             Author = utils::person(
+                given = "John", 
+                family = "Smith", 
+                email = "John.Smith@email.io", 
+                role = c("aut", "cre")),
+              Maintainer = utils::person(
+                given = "John", 
+                family = "Smith",
+                email = "John.Smith@email.io"),
+              License = "GPL-3"))
+    ```
+    
+    -   A few of the fields require specially formatted values from (see the `utils::person()` examples below).
+    
+        ```{r}
+        #| eval: true 
+        #| code-fold: false
+        utils::person("John", "Smith", 
+                      email = "John.Smith@email.io", 
+                      role = c("aut", "cre"))
+        ```
+
+-   Two additional arguments from `use_description()` are passed to `create_package()`:
+
+    -   **`check_name`**: verifies your app-package name is valid for CRAN, so we can set this to `FALSE` (unless you're planning on submitting the package to CRAN)
+
+    -   **`roxygen2`**: is set to `TRUE` by default. This adds the necessary `roxygen2` fields which I won't cover here because we'll cover documentation in-depth a future chapter. 
+
+```{r}
+#| label: co_box_create_package_dot
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "o", fold = TRUE,
+  header = "WARNING: Don't use `usethis::create_package('.')`!",
+  contents = "
+
+When converting your existing shiny app [project]{style='font-weight: bold; color: #137a7f'} into am [app-package]{style='font-weight: bold; color: #940000'} with `usethis::create_package()`, don't use `'.'` in the `path` argument:
+  
+`\`\`\r
+usethis::create_package('.')
+`\`\`\
+  
+This will return the following warning about creating nested projects, and ask if you want to create the project anyway:
+  
+`\`\`\bash
+New project 'projApp' is nested inside an existing project './', which is 
+rarely a good idea. If this is unexpected, the here package has a function,
+`here::dr_here()` that reveals why './' is regarded as a project.
+  
+Do you want to create anyway?
+
+1: Yes
+2: No way
+3: Not now
+`\`\`\
+
+
+We can avoid this warning altogether by passing the `getwd()` to the `path` argument, so I recommend cancelling the project creation:
+
+`\`\`\bash
+Selection: 2
+Error: Cancelling project creation.
+`\`\`\
+
+  "
+)
+```
+
+#### IDE arguments 
+
+-   `rstudio`: adds the necessary package development fields in the `.Rproj` file (leave as `TRUE`)
+
+-   `open`: set to `FALSE` (we don't need RStudio to open in a new session) 
+```{r}
+#| eval: false 
+#| code-fold: false
+usethis::create_package(
+  path = getwd(),
+  fields = list(Package = 'projApp',
+         Version = '0.0.0.9000',
+         Title = 'movies app',
+         Description = 'A movie-review shiny application.',
+         "Authors@R" = NULL,
+         Author = utils::person(
+            given = "John", 
+            family = "Smith", 
+            email = "John.Smith@email.io", 
+            role = c("aut", "cre")),
+          Maintainer = utils::person(
+            given = "John", 
+            family = "Smith",
+            email = "John.Smith@email.io"),
+          License = "GPL-3"),
+  roxygen = TRUE,
+  check_name = FALSE, 
+  rstudio = TRUE,
+  open = FALSE)
+```
+
+After running `usethis::create_package()` with the arguments above, the IDE will present us with a few prompts to confirm: 
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+Overwrite pre-existing file 'DESCRIPTION'?
+```
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+Overwrite pre-existing file 'projApp.Rproj'?
+```
+
+The final package structure is below:
+   
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+├── DESCRIPTION
+├── NAMESPACE
+├── R
+│   ├── mod_scatter_display.R
+│   ├── mod_var_input.R
+│   └── utils.R
+├── README.md
+├── app.R
+├── movies.RData
+├── projApp.Rproj
+└── www
+    └── shiny.png
+
+3 directories, 10 files
+```
+
+The `DESCRIPTION` file (shown below) has a few additional fields we didn't include when we converted projApp above (`Encoding`, `Roxygen`, and `RoxygenNote`), but we will cover these in the upcoming chapters. 
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+Package: projApp
+Title: movies app
+Version: 0.0.0.9000
+Author: John Smith <John.Smith@email.io> [aut, cre]
+Maintainer: John Smith <John.Smith@email.io>
+Description: A movie-review shiny application.
+License: GPL-3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
+
+```
+
+::: {.column-margin}
+
+![New Git Branch](img/new_branch_ico.png){width='70%'}
+
+The code for this section was pushed to the  [[`06_create-package`](https://github.com/mjfrigaard/projApp/tree/06_create-package)] branch of the [[`projApp`](https://github.com/mjfrigaard/projApp)] repo.
+
+:::
+
+## Recap
+
+This chapter has covered the importance of the `DESCRIPTION` file in R packages, project and package fields in `.Rproj` files, and the usethis::create_package() function.
+
+```{r}
+#| label: co_box_recap
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b", 
+  fold = FALSE,
+  header = "Recap: Packages!",
+  contents = "
+  
+-   **The `DESCRIPTION` file** ultimately controls whether you have a functional shiny [app-package]{style='font-weight: bold; color: #940000;'} 
+    -   The mandatory fields for an R package are: `Package`, `Version`, `License`, `Description`, `Title`, `Author`, and `Maintainer`
+
+-   `usethis::create_package()` can be used to create a new shiny [app-package]{style='font-weight: bold; color: #940000;'} and to convert an existing shiny [project]{style='font-weight: bold; color: #137a7f;'} into a shiny [app-package]{style='font-weight: bold; color: #940000;'}
+
+-   The IDE reads RStudio [project]{style='font-weight: bold; color: #137a7f;'} (`.Rproj`) files and determines R session settings at the project-level (i.e., working directory, workspace, history, code formatting, etc.)
+
+    -   Package development settings can be accessed via **Project Options** > **Build Tools**
+  
+  "
+)
+```
+
+In the next chapter, I'll cover how you can **Install**, **Document**, **Test**, and **Check** your package with a single click!
+
+
+end `packages.qmd`

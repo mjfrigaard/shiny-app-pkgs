@@ -1,0 +1,544 @@
+# [`devtools`]{style="font-size: 1.05em;"} {.unnumbered}
+
+```{r}
+#| eval: true 
+#| echo: false 
+#| include: false
+source("_common.R")
+```
+
+```{r}
+#| label: co_box_dev
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "o",
+  look = "default",
+  header = "Caution!",
+  contents = "This section is currently being revised. Thank you for your patience.", 
+  fold = FALSE
+)
+```
+
+The previous chapter covered how to create new or convert existing shiny app projects into app-packages with `usethis::create_package()`. We also manually transformed a shiny project into an app-package by adding specific fields to the `DESCRIPTION` file.
+
+Regardless of the method we use to start our app-package, if we want it to be ‘functional’, we need to install the [`devtools` package](https://devtools.r-lib.org/).
+
+```{r}
+#| eval: false 
+#| code-fold: false 
+install.packages("devtools")
+library(devtools)
+```
+
+By ‘functional’, I mean that the app-package manages dependencies and has documentation in addition to storing code and data. 
+
+Let's get started!
+
+## Developing with [`devtools`]{style="font-size: 1.10em"}
+
+> *"One package to rule them all."* - **not** the `devtools` development team
+
+If you're new to package development, it's helpful to have a little background on the `devtools` package: 
+
+In version 2.0, `devtools` went under a [conscious uncoupling](https://www.tidyverse.org/blog/2018/10/devtools-2-0-0/#conscious-uncoupling), which means there was a "division of labor" for its core functionality:
+
+-   The [`usethis`](https://usethis.r-lib.org/) package contains most of the functions for *creating* package folders and files (`.R` files, tests, vignettes, etc.). `usethis` is also automatically loaded when you call `library(devtools)`.
+
+-   Loading and building your app-package is handled by [`pkgload`](https://pkgload.r-lib.org/) and [`pkgbuild`](https://pkgbuild.r-lib.org/)
+
+-   For app-packages destined for CRAN, the `R CMD check` is handled by [`rcmdcheck`](https://rcmdcheck.r-lib.org/) and [`revdepcheck`](https://github.com/r-lib/revdepcheck)
+
+-   Installing packages from non-CRAN repositories (i.e., `install_github()`) is handled by [`remotes`](https://remotes.r-lib.org/)
+
+You don't have to install any of these packages (they are loaded with `devtools`), but this information is important because it affects the dependencies in your app-package: 
+
+> '*Package developers who wish to depend on `devtools` features should also pay attention to which package the functionality is coming from and depend on that rather than `devtools`. In most cases packages should not depend on `devtools` directly.*' - [devtools 2.0.0, tidyverse blog](https://www.tidyverse.org/blog/2018/10/devtools-2-0-0/#conscious-uncoupling)
+
+We will cover this topic more in the dependencies chapter.
+
+```{r}
+#| label: co_box_pkg_dev_workflow
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "o",
+  header = "Important!",
+  contents = "It would be best if you considered this section to be a brief overview and not a replacement for the ['Whole Game' chapter in R packages (2 ed)](https://r-pkgs.org/whole-game.html) (which I highly recommend reading)", 
+  fold = FALSE
+)
+```
+
+## [`projApp`]{style="font-size: 1.10em"}
+
+Let's assume we're continuing with the app project we converted manually in the [`05_rproj` branch](https://github.com/mjfrigaard/projApp/tree/05_rproj)  of `projApp` (the contents are below).
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+projApp/ # 05_rproj branch
+  ├── DESCRIPTION
+  ├── R
+  │   ├── mod_scatter_display.R
+  │   ├── mod_var_input.R
+  │   └── utils.R
+  ├── README.md
+  ├── app.R
+  ├── movies.RData
+  ├── projApp.Rproj
+  └── www
+      └── shiny.png
+
+3 directories, 9 files
+
+```
+
+If you'd like a refresher on the files and folders create in chapters 1 & 2, I've provided a summary of these topics below:
+
+```{r}
+#| label: co_box_desc_recap
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b",
+  fold = TRUE,
+  header = "Chapters 1 & 2 Refresher:",
+  contents = "
+  
+  **DESCRIPTION**:
+  
+  - The `DESCRIPTION` file differentiates shiny **Projects** from shiny **Packages**   
+    - R package `DESCRIPTION` mandatory fields: `Package`, `Version`, `License`, `Description`, `Title`, `Author`, and `Maintainer`. 
+  
+    - `DESCRIPTION` files also include fields that can affect application deployment (i.e., `DisplayMode: Showcase`)
+  
+  **Project files**:
+  
+  -   `.Rproj` files determine project-level settings (i.e., working directory, workspace, history, code formatting, etc.)
+      -   Package-level settings can be accessed via **Project Options** > **Build Tools**  
+  
+  **R/ folder**:
+  
+  -   Converting the application code into functions--modules and a standalone app function--and placing them alongside any `utils.R` or `helper.R` files in an `R/` folder removes the need to call `source()` in `app.R`.
+  
+  **Documentation & dependencies:**:
+  
+  - **Documentation** should include a `README.md` that contains the application's purpose, requirements, etc.
+  - **Dependencies** can be managed `renv` by adding a few functions to your regular development workflow (i.e., `renv::status()` and `renv::snapshot()`)
+  
+  "
+)
+```
+
+## Functions as [habits]{style="font-weight: bold; font-size: 1.0em; color: #772953"}
+
+```{r}
+#| label: co_box_branch_06-devtools
+#| echo: false
+#| results: asis
+#| eval: false
+co_box(
+  color = "r",
+  header = "GitHub [`projApp`]:[`06_devtools`]",
+  contents = "
+The code for this section can be found in the [[`06-devtools`](https://github.com/mjfrigaard/projApp/tree/06-devtools)] branch of the [[`projApp`](https://github.com/mjfrigaard/projApp)] repo.
+  
+The `06-devtools` branch was created from the `05-convert-manual` branch by entering the following commands in the Terminal:
+  
+  `\`\`\bash
+  git checkout -B 06-devtools
+  git push -u origin 06-devtools
+  `\`\`\
+
+  ", 
+  fold = FALSE
+)
+```
+
+The differences between developing an R package and a shiny app can be boiled down to a handful of habits. Each [habit]{style="font-weight: bold; font-size: 1.0em; color: #772953"} comes with a function: 
+
+1. [Load]{style="font-weight: bold; font-size: 1.0em; color: #772953"} all the functions and data with `load_all()`
+
+2. [Document]{style="font-weight: bold; font-size: 1.0em; color: #772953"} the app functions and data with `document()`
+
+3. [Install]{style="font-weight: bold; font-size: 1.0em; color: #772953"} the package with `install()`
+
+In the sections below, I'll cover each function and how it should be used when your shiny app becomes an app-package.
+
+```{r}
+#| label: co_box_keyboard_shortcuts
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g",
+  header = "Keyboard shortcuts",
+  contents = "I strongly recommend using the keyboard shortcuts for each `devtools` function. Shortcuts reduce typing and bundle all those keystrokes into a single action. They also create a kind of 'muscle memory' for performing each step.", 
+  fold = FALSE
+)
+```
+ 
+### Load 
+
+Install `devtools`
+
+```{r}
+#| eval: false 
+#| code-fold: false
+install.packages("devtools")
+library(devtools)
+```
+
+`usethis` is automatically loaded/attached with `devtools`.
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+Loading required package: usethis
+```
+
+[<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd>]{style="font-weight: bold; font-size: 1.25em"}
+
+> '*`load_all()` removes friction from the development workflow and eliminates the temptation to use workarounds that often lead to mistakes around namespace and dependency management*' - [Benefits of `load_all()`, R Packages, 2ed](https://r-pkgs.org/workflow101.html#benefits-of-load_all)
+
+`load_all()` is the most common `devtools` function we'll use during development because we should [load the package when anything changes in the `R/` folder.]{style="font-weight: bold; font-size: 1.10em; color: #772953"} 
+
+```{r}
+#| eval: false 
+#| code-fold: false
+devtools::load_all()
+```
+
+Using `load_all()` is similar to calling `library(projApp)` because it loads the code in `R/` along with any data files. `load_all()` is also designed for iteration (unlike using `source()`), and when it's successful, the output is a single informative message:
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+ℹ Loading projApp
+```
+
+
+### Document 
+
+:::{style="font-weight: bold; font-size: 1.10em"}
+
+:::
+
+The `document()` function from `devtools` serves two purposes: 
+
+1. Writing the package `NAMESPACE` file 
+
+2. Creates the help files in the `man/` folder 
+
+`devtools` is smart enough to recognize the first time `document()` is called, and it prompts me that the `roxygen2` version needs to be set in the `DESCRIPTION` file:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+devtools::document()
+```
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+ℹ Updating projApp documentation
+First time using roxygen2. Upgrading automatically...
+Setting `RoxygenNote` to "7.2.3"
+```
+
+`devtools` relies on `roxygen2` for package documentation, so the `RoxygenNote` field is required in the `DESCRIPTION`. You may have noticed calling `document()` also [calls `load_all()`](https://github.com/r-lib/devtools/blob/2c642ab44f4fb9d4117f0e198dfcf42ad79e432a/R/document.R#L22), which scans the loaded package contents for special documentation syntax before writing the `NAMESPACE` file (we'll cover the `NAMESPACE` in the chapter on Dependencies). 
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+ℹ Loading projApp
+Writing NAMESPACE
+```
+
+If we open the `NAMESPACE` file, we see it's empty (and that we shouldn't edit this file by hand).
+
+::: {#fig-empty_namespace .column}
+![`NAMESPACE`](img/empty_namespace.png){#fig-empty_namespace width='100%' fig-align='center'}
+
+Initial `NAMESPACE` file 
+:::
+
+The last few lines of output warn us to include the `Encoding` field in the `DESCRIPTION`. `devtools` won't automatically add `Encoding` (like it did with `RoxygenNote` above), so we'll need to manually add it to the `DESCRIPTION` file:
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+Warning message:
+roxygen2 requires Encoding: "UTF-8"
+ℹ Current encoding is NA 
+```
+
+**Note**: The `Encoding` value shouldn't include quotes like the warning message above (i.e., `UTF-8`). See the example below:
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+Package: projApp
+Version: 0.0.0.9000
+Type: Package
+Title: movies app
+Description: A movies data shiny application.
+Author: John Smith [aut, cre]
+Maintainer: John Smith <John.Smith@email.io>
+License: GPL-3
+RoxygenNote: 7.2.3
+Encoding: UTF-8
+<empty final line>
+```
+
+
+After adding the required fields to the `DESCRIPTION` file, we'll `document()` the package again using the keyboard shortcut:
+
+:::{style="font-weight: bold; font-size: 1.25em"}
+<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd>
+:::
+
+In the **Build** pane, we see the following:
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+==> devtools::document(roclets = c('rd', 'collate', 'namespace'))
+
+ℹ Updating projApp documentation
+ℹ Loading projApp
+Documentation completed
+```
+
+[Document the package whenever changes are made to any `roxygen2` syntax (or settings).]{style="font-weight: bold; font-size: 1.10em; color: #772953"} 
+
+### Install 
+
+[<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>B</kbd>]{style="font-weight: bold; font-size: 1.25em"}
+
+The final package development habit to adopt is regularly installing the package with  `devtools::install()`. 
+
+```{r}
+#| eval: false 
+#| code-fold: false
+devtools::install()
+```
+
+`install()` will prompt the following output in the **Build** pane: 
+
+```{verbatim}
+#| eval: false 
+==> R CMD INSTALL --preclean --no-multiarch --with-keep.source projApp
+
+* installing to library ‘/path/to/local/install/projApp-090c61fc/R-4.2/x86_64-apple-darwin17.0’
+* installing *source* package ‘projApp’ ...
+** using staged installation
+** R
+** byte-compile and prepare package for lazy loading
+No man pages found in package  ‘projApp’ 
+** help
+*** installing help indices
+** building package indices
+** testing if installed package can be loaded from temporary location
+** testing if installed package can be loaded from final location
+** testing if installed package keeps a record of temporary installation path
+* DONE (projApp)
+```
+
+There are a few connections worth making in this initial `install()` output: 
+
+-   The first line in the output should look familiar--we saw both of these settings in the `projApp.Rproj` file from the previous chapter
+
+    ```{verbatim}
+    #| eval: false 
+    #| code-fold: false
+    PackageInstallArgs: --no-multiarch --with-keep.source
+    ```
+
+-   `No man pages found in package 'projApp'` tells us none of the code in `R/` has adequately been documented (which we'll cover in the `roxygen2` chapter) 
+
+-   `install()` attempts to install the package from the `*source*` files and a 'bundle' or source tarball file (i.e., `.tar.gz`)
+
+-   `help` files are built, along with other documentation (like vignettes)
+
+-   `DONE (projApp)` means `projApp` was successfully installed!
+
+
+[Install a package after the initial setup, after major changes to the code, documentation, or dependencies, and before committing or sharing.]{style='font-weight: bold; font-size: 1.10em; color: #772953'}
+
+```{r}
+#| label: co_box_push_06-devtools
+#| echo: false
+#| results: asis
+#| eval: false
+co_box(
+  color = "r",
+  header = "GitHub [`projApp`]:[`06-devtools`]",
+  contents = "
+  The code for this section was pushed to the  [[`06-devtools`](https://github.com/mjfrigaard/projApp/tree/06-devtools)] branch of the [[`projApp`](https://github.com/mjfrigaard/projApp)] repo.
+  
+  `\`\`\bash
+  git add .
+  git commit -m 'git message'
+  git push 
+  `\`\`\
+  ", 
+  fold = FALSE
+)
+```
+
+::: {.column-margin}
+
+![New Git Branch](img/new_branch_ico.png){width='70%'}
+
+The code for this section was pushed to the  [[`06_devtools`](https://github.com/mjfrigaard/projApp/tree/06_devtools)] branch of the [[`projApp`](https://github.com/mjfrigaard/projApp)] repo.
+
+:::
+
+### Check?
+
+`devtools::check()` performs a series of checks to ensure a package meets the standards set by [CRAN](https://cran.r-project.org/). You can consider `check()` to be a 'quality control' function for things like documentation, `NAMESPACE` dependencies, unnecessary or non-standard folders and files, etc. [R Packages recommends](https://r-pkgs.org/workflow101.html#sec-workflow101-r-cmd-check) using `check()` often, but I agree with the advice in [Mastering Shiny](https://mastering-shiny.org/scaling-packaging.html#r-cmd-check) on using `check()` with app-packages,
+
+> *'I don’t recommend that you [call `devtools::check()`] the first time, the second time, or even the third time you try out the package structure. Instead, I recommend that you get familiar with the basic structure and workflow before you take the next step to make a fully compliant package.'*
+
+However, I've included an example of running `check()` on `projApp` in the callout box below to demonstrate how it works.
+
+::: {.callout-caution collapse='true' appearance="minimal" title="Running `devtools::check()`"}
+
+```{r}
+#| eval: false 
+#| code-fold: false
+devtools::check()
+```
+
+The output from `check()` can be rather lengthy (it's pretty comprehensive!), and it provides feedback on each item in the form of a note (`N`), warning (`W`), or error (`E`).
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+==> devtools::check()
+
+Duration: 15.3s
+
+N  checking top-level files
+   Non-standard files/directories found at top level:
+     ‘app.R’ ‘movies.RData’
+
+W  checking dependencies in R code ...
+   '::' or ':::' imports not declared from:
+     ‘ggplot2’ ‘shiny’ ‘stringr’
+
+N  checking R code for possible problems (3.1s)
+   mod_scatter_display_server : <anonymous>: no visible binding for global
+     variable ‘movies’
+   scatter_plot: no visible binding for global variable ‘.data’
+   Undefined global functions or variables:
+     .data movies
+
+W  checking for missing documentation entries ...
+   Undocumented code objects:
+     ‘mod_scatter_display_server’ ‘mod_scatter_display_ui’
+     ‘mod_var_input_server’ ‘mod_var_input_ui’ ‘scatter_plot’
+   All user-level objects in a package should have documentation entries.
+   See chapter ‘Writing R documentation files’ in the ‘Writing R
+   Extensions’ manual.
+
+0 errors ✔ | 2 warnings ✖ | 2 notes ✖
+```
+
+A summary of each item is below:
+
+-   `checking top-level files`: This note is referring to the two non-standard (i.e, not typically found in an R package) files, `app.R` and `movies.RData`
+
+-   `checking dependencies in R code ..`: This warning tells I need to namespace functions from add-on packages (in this case, `ggplot2`, `shiny`, and `stringr`)
+
+-   `checking R code for possible problems`: The final item is a note referring to the call to load the `movies` data in the scatter plot display module server function (`mod_scatter_display_server`).
+
+-   `checking for missing documentation entries`: This is warning me that the module functions aren't properly documented and refers me to the [official R documentation](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Writing-R-documentation-files).
+
+Each of these items are also printed under the `── R CMD check results` heading: 
+
+```{bash}
+#| eval: false 
+#| code-fold: true 
+#| code-summary: 'show/hide check() results'
+Duration: 15.3s
+
+❯ checking dependencies in R code ... WARNING
+  '::' or ':::' imports not declared from:
+    ‘ggplot2’ ‘shiny’ ‘stringr’
+
+❯ checking for missing documentation entries ... WARNING
+  Undocumented code objects:
+    ‘mod_scatter_display_server’ ‘mod_scatter_display_ui’
+    ‘mod_var_input_server’ ‘mod_var_input_ui’ ‘scatter_plot’
+  All user-level objects in a package should have documentation entries.
+  See chapter ‘Writing R documentation files’ in the ‘Writing R
+  Extensions’ manual.
+
+❯ checking top-level files ... NOTE
+  Non-standard files/directories found at top level:
+    ‘app.R’ ‘movies.RData’
+
+❯ checking R code for possible problems ... NOTE
+  mod_scatter_display_server : <anonymous>: no visible binding for global
+    variable ‘movies’
+  scatter_plot: no visible binding for global variable ‘.data’
+  Undefined global functions or variables:
+    .data movies
+
+0 errors ✔ | 2 warnings ✖ | 2 notes ✖
+```
+
+
+If you're submitting your app-package to CRAN (or want to use `check()` for other reasons), follow the [suggested workflow](https://r-pkgs.org/workflow101.html#check-workflow) for `check()`: 
+
+> *The workflow for checking a package is simple, but tedious:*
+> 
+> 1. *Run `devtools::check()` or press* [<kbd>Shift</kbd> + <kbd>Ctrl/Cmd</kbd> + <kbd>E</kbd>]{style="font-weight: bold; font-style: italic; font-size: 0.75em"}
+> 
+> 2. *Fix the first problem.*
+> 
+> 3. *Repeat until there are no more problems*.' 
+
+I've found a good habit for when to `check()` to be: 
+
+[Check a package after adding a bug fix or feature keeps any notes, warnings, or errors from accumulating.]{style="font-weight: bold; font-size: 1.10em; color: #772953"}
+
+:::
+
+### Recap 
+
+Creating an app-package involves adopting some new `devtools` [habits]{style="font-weight: bold; font-size: 1.0em; color: #772953"}, and the initial contents of `projApp` hopefully helped demonstrate the purpose of each function. 
+
+```{r}
+#| label: co_box_workflow_recap
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b",
+  header = "Recap: Package development habits",
+  contents = "
+After installing and loading `devtools`: 
+  
+  1. [Load the package whenever changes occur in the `R/` folder]{style='font-weight: bold; font-size: 1.0em; color: #772953'}\n 
+      - [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd>]{style='font-weight: bold; font-size: 0.75em'} load all the code in the package\n
+  
+  2. [Document the package whenever changes are made to any `roxygen2` syntax (or settings)]{style='font-weight: bold; font-size: 1.0em; color: #772953'}\n 
+      - [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd>]{style='font-weight: bold; font-size: 0.75em'} record the documentation and dependencies\n
+  
+  3. [Install the package after the initial setup, after major changes to the code, documentation, or dependencies, and before committing or sharing]{style='font-weight: bold; font-size: 1.0em; color: #772953'}\n  
+      - [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>B</kbd>]{style='font-weight: bold; font-size: 0.75em'} confirm the package can be installed\n
+  
+  Habits require repetition to develop, and I hope the workflow above can be applied to your shiny app-packages, provided you're using `devtools` and Posit workbench.
+  
+  ", 
+  fold = FALSE
+)
+```
+
+The next section will cover documenting functions with [`roxygen2`](https://roxygen2.r-lib.org/)

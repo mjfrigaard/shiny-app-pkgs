@@ -1,0 +1,260 @@
+# Tests {.unnumbered}
+
+```{r}
+#| eval: true 
+#| echo: false 
+#| include: false
+source("_common.R")
+```
+
+```{r}
+#| label: co_box_dev
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "y",
+  header = "Caution!",
+  contents = "This section is currently being revised. Thank you for your patience."
+)
+```
+
+Writing tests for your app-package poses some unique challenges. As we covered in the first chapter, `shiny` applications are reactive, so some of the conventional testing techniques and methods for regular R packages don't directly apply. Fortunately, the infrastructure for storing and running tests in your app-package is identical to a standard R package.
+
+
+This chapter will cover three layers of testing (unit testing, integration/module testing, and end-to-end testing), a summary of the recommendations for testing shiny apps, and what you should focus on testing in your shiny app-package.
+
+```{r}
+#| label: co_box_tests
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "o",
+  header = "Disclaimer", fold = FALSE, look = "simple",
+  contents = "
+  
+Unit tests are covered extensively in [R Packages, 2ed](https://r-pkgs.org/testing-basics.html) and the [`testthat` documentation](https://testthat.r-lib.org/index.html), so I won't be repeating that information here. 
+  
+The documentation for `shiny`s [`testServer()`](https://shiny.posit.co/r/articles/improve/server-function-testing/) is somewhat limited, so I'll provide a few tips and tricks I've learned while testing modules. 
+  
+`shinytest2` also has [excellent documentation](https://rstudio.github.io/shinytest2/) (and [videos](https://www.youtube.com/watch?v=Gucwz865aqQ)), and I highly recommend reading throught those resources instead of relying on this chapter.
+  
+  "
+)
+```
+
+First we want to make sure the testing packages are installed.
+
+```{r}
+#| eval: false
+#| code-fold: false
+install.packages(c("testthat", "shinytest2", "covr"))
+library(testthat)
+library(shinytest2)
+library(covr)
+```
+
+(*If you're using `devtools`, you won't have to worry about installing `testthat` and `covr`*)
+
+## Running [`test()`]{style="font-size: 1.05em;"}
+
+```{r}
+#| label: co_box_tests_pkgApp
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "r",
+  fold = FALSE,
+  header = "GitHub [`pkgApp`]:[`06-tests`]",
+  contents = "
+  
+  This shiny app project can be found in the `06-tests` branch of the [`pkgApp`](https://github.com/mjfrigaard/pkgApp/tree/06-tests) repo.
+  
+This branch was created from the `05-inst` branch using:
+  
+  `\`\`\bash
+  git checkout -B 06-tests
+  git push -u origin 06-tests
+  `\`\`\
+  
+  "
+)
+```
+
+The fourth `devtools` [habit]{style="font-weight: bold; font-size: 1.0em; color: #772953"} we want to adopt is regularly writing and running tests. We can test our package using the **Build** pane or the keyboard shortcut:
+
+::: {.column-margin}
+
+[<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>T</kbd>]{style="font-weight: bold; font-style: italic; font-size: 1.20em"}
+
+:::
+
+
+::: {#fig-build_pane_test}
+
+![Test you app-package](img/build_pane_test.png){#fig-build_pane_test width='100%' align='center'}
+
+`devtools::test()` (run all tests in your `tests/` folder)
+:::
+
+When we initally run `devtools::test()` in `pkgApp`, we see the following:
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+==> devtools::test()
+
+ℹ No testing infrastructure found.
+• Setup testing with `usethis::use_testthat()`.
+```
+
+This shouldn't be surprising, because we haven't written any tests for `pkgApp` yet!. The error is informative, though, because it tells us `pkgApp` doesn't have the testing infrastructure set up. In R packages using 
+
+In the next section we'll cover setting up the test suite in your app-package. 
+
+```{r}
+#| label: co_box_monthApp_tests
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g", fold = TRUE,
+  header = "Mastering Shiny `monthApp` tests",
+" 
+If you downloaded, loaded and installed [`monthApp` example from Mastering Shiny](https://github.com/hadley/monthApp), then clicked on **Test** in the **Build** pane, you also saw the following:
+
+![Testing `monthApp` app-package](img/monthApp_test.png){width='100%' fig-align='center'}
+
+"
+  )
+```
+
+
+## Your app-package test suite
+
+If you adopt [test-driven development](https://en.wikipedia.org/wiki/Test-driven_development), you'll develop tests before writing any utility functions, modules, or standalone app function. However, if you're a mere mortal like the rest of us, you'll typically develop your tests and functions in tandem. 
+
+Regardless of the testing strategy, we'll follow the advice in the output above and set up the testing infrastructure with the `testthat` package:
+
+### [`use_testthat()`]{style="font-size: 1.05em;"}
+
+The 'infrastructure' created by running `usethis::use_testthat()` is detailed below: 
+
+```{r}
+#| eval: false
+#| code-fold: false
+usethis::use_testthat()
+```
+
+-   Set active project to current working directory: 
+
+    ```{verbatim}
+    #| eval: false
+    #| code-fold: false
+    ✔ Setting active project to '/Users/mjfrigaard/projects/pkgs/apps/pkgApp'
+    ```
+
+-   In the `DESCRIPTION` file, add the `Suggests` field and include `testthat (>= 3.0.0)` and the testthat edition (`Config/testthat/edition: 3`)
+
+    ```{verbatim}
+    #| eval: false
+    #| code-fold: false
+    ✔ Adding 'testthat' to Suggests field in DESCRIPTION
+    ✔ Adding '3' to Config/testthat/edition
+    ```
+    
+-   A new `tests/` folder is created, with a `testthat/` subfolder:
+
+    ```{verbatim}
+    #| eval: false
+    #| code-fold: false
+    ✔ Creating 'tests/testthat/'
+    ```
+    
+-   The `testthat.R` file is created (sometimes referred to as the test 'runner' because it runs all your tests).
+    
+    ```{verbatim}
+    #| eval: false
+    #| code-fold: false
+    ✔ Writing 'tests/testthat.R'
+    ```
+
+Finally, we're given some advice on the next step for creating our first test: 
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+• Call `use_test()` to initialize a basic test file and open it for editing.
+```
+
+Our new `tests/` folder structure is below: 
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+tests/
+  ├── testthat
+  └── testthat.R
+
+2 directories, 1 file
+```
+
+
+## Unit tests
+
+If I'm writing write a unit test for the `scatter_plot()` function in `R/scatter_plot.R`, I'll create test file with `usethis::use_test("scatter_plot")`.
+
+### New tests with [`use_test()`]{style="font-size: 1.05em;"}
+
+```{r}
+#| eval: false
+#| code-fold: false
+usethis::use_test("scatter_plot")
+```
+
+The IDE will automatically open the new test file: 
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+✔ Writing 'tests/testthat/test-scatter_plot.R'
+• Modify 'tests/testthat/test-scatter_plot.R'
+```
+
+The new file contains boilerplate test below (I've added the `testthat` namespace and arguments): 
+
+```{r}
+#| eval: false
+#| code-fold: false
+testthat::test_that(desc = "multiplication works", code = {
+  testthat::expect_equal(object = 2 * 2, expected = 4)
+})
+```
+
+Each `testthat` test has a test context (supplied to the `desc` argument) followed by the test (created in curly brackets in the `code` argument).
+
+### Expectations
+
+### Snapshots
+
+#### [`vdiffr`]{style="font-size: 1.05em;"}
+
+The [`vdiffr` package ](https://vdiffr.r-lib.org/)
+
+## Module/integration tests
+
+Module tests involve both UI and server functions, I consider these integration tests (i.e., we're testing how a module's functions 'integrate' with each other, or with other modules). 
+
+### [`testServer()`]{style="font-size: 1.05em;"}
+
+### [`testServer(args = list())`]{style="font-size: 1.05em;"}
+
+## End-to-end tests
+
+### [`shinytest2`]{style="font-size: 1.05em;"}
+
+
+
+end `testing.qmd`

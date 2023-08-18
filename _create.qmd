@@ -1,0 +1,714 @@
+# Creating packages {.unnumbered}
+
+```{r}
+#| eval: true 
+#| echo: false 
+#| include: false
+source("_common.R")
+```
+
+["Can the `.Rproj` file convert an R]{style="font-size: 1.15em; font-weight: bold; font-style: italic; color: #696969;"} [project]{style="font-size: 1.15em; font-weight: bold; font-style: italic; color: #137a7f;"} [into an R ]{style="font-size: 1.15em; font-weight: bold; font-style: italic; color: #696969;"} [package]{style="font-size: 1.15em; font-weight: bold; font-style: italic; color: #940000;"}[?"]{style="font-size: 1.15em; font-weight: bold; font-style: italic; color: #696969;"}
+
+The technical answer is no, because the `.Rproj` only activates the **Build** pane in the IDE. The tools in the **Build** pane are directly connected to the [`devtools` package](https://devtools.r-lib.org/) (hence the `PackageUseDevtools: Yes` in the `.Rproj` file).
+
+However, if we install `devtools` and try to load the code in the `R/` folder with **Build** > **Load All** (we'll cover `devtools` more in the next chapter): 
+
+```{r}
+#| eval: false
+#| code-fold: false
+install.packages("devtools")
+library(devtools)
+```
+
+::: {#fig-build_pane_tools}
+![Build pane tools](img/build_pane_tools.png){#fig-build_pane_tools height="100%" width="100%" fig-align="center"}
+
+**Load All** code in `R/` folder
+:::
+
+
+Based on the quotes and error message above, we can be confident the difference between an [R Project]{style='color: #137a7f;'} and [R Package]{style='color: #940000;'} has *something* to do with the `DESCRIPTION` file. As we've seen, changing the **Project build tools** to **Package** will add the package development fields in the `.Rproj` file and trigger the **Build** pane, but this doesn't change anything in the `DESCRIPTION`: 
+
+:::: {.column-page-inset-right}
+
+::: {#fig-shiny_app_ide_desc}
+![`DESCRIPTION`](img/shiny_app_ide_desc.png){#fig-shiny_app_ide_desc width="100%" fig-align="center"}
+
+Unchanged `DESCRIPTION` file after changing `projApp.Rproj`
+:::
+
+::::
+
+The image above demonstrates why setting the **Project build tools** in your **Project Options** is insufficient to convert a [project]{style='color: #137a7f'} into a [package]{style='color: #940000'}. The directory must include a `DESCRIPTION` file containing the mandatory fields listed above to be a functional R package.
+
+
+Read more about `DESCRIPTION` file fields in [R Packages, 2ed](https://r-pkgs.org/description.html#the-description-file)
+
+:::
+
+After copying the contents of the `DESCRIPTION` file above to `projApp`, I still need the IDE to re-read the `.Rproj` file. I can do this by terminating the session (**Session** > **Terminate R...** > **Yes**)
+
+::: {#fig-terminate layout-ncol=2}
+
+![Session > Terminate](img/terminate_session.png){#fig-terminate_session width=50%}
+
+![Click Yes](img/terminate_yes.png){#fig-terminate_yes width=50%}
+
+Terminate your R session
+:::
+
+
+
+
+
+```{r}
+#| label: co_box_push_05-convert-manual
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "r",
+  header = "GitHub [`projApp`]:[`05-convert-manual`]",
+  contents = "
+  The code for this section was pushed to the  [[`05-convert-manual`](https://github.com/mjfrigaard/projApp/tree/05-convert-manual)] branch of the [[`projApp`](https://github.com/mjfrigaard/projApp)] repo.
+  
+  `\`\`\bash
+  git add .
+  git commit -m 'git message'
+  git push 
+  `\`\`\
+  ", 
+  fold = FALSE
+)
+```
+
+#### Remember: [`.Rproj`]{style="font-size: 0.90em"} `!=` [`DESCRIPTION`]{style="font-size: 0.90em"} 
+
+It's important to remember there is no direct connection between the `.Rproj` and `DESCRIPTION` files. 
+
+For example, I could remove the **Package** setting from **Project build tools** in **Project Options** and still run `devtools::load_all()` in `projApp` (without triggering the **Build** pane): 
+
+:::: {.column-page-inset-right}
+
+::: {#fig-shiny_app_pkg_ide_desc_no_build}
+![Shiny app-package (`DESCRIPTION`)](img/shiny_app_pkg_ide_desc_no_build.png){#fig-shiny_app_pkg_ide_desc_no_build width="100%" fig-align="center"}
+
+Shiny app-package (without project build tools)
+:::
+
+::::
+
+This practice isn’t something I’d recommend because the IDE build tools make development so much easier, but it demonstrates the distinction between what the `.Rproj` fields and `DESCRIPTION` fields control.
+
+
+The callout blocks below represent scenarios I've encountered requiring an [app-package]{style="font-weight: bold; color: #940000"}:
+
+```{r}
+#| label: co_shiny_cond_new
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b",
+  header = "**Scenario #1**: Create a new shiny [app-package]{style='font-weight: bold; color: #940000'}",
+  contents = "
+
+*You're in the 'brainstorming' stages of app development, and no code (or very little code) has been written. Maybe you’ve investigated using a framework (like `golem` or `rhino`) but can’t decide if their features will fit your needs.*
+  
+  ", fold = TRUE, look = "minimal"
+)
+```
+
+```{r}
+#| label: co_shiny_cond_working
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b",
+  header = "**Scenario #2**: Convert a working app [project]{style='font-weight: bold; color: #137a7f'} into an [app-package]{style='font-weight: bold; color: #940000'}",
+  contents = "
+  
+*The app is currently deployed and is being accessed by users, but the underlying code lives in the 'root' folder (i.e., an `app.R` or `ui.R` and `server.R`, `global.R`, `helper.R`, and/or other `.R` files, data, static resources, etc.). The application works, but you'd like to convert it to a package structure without breaking it.*
+  
+  ", fold = TRUE, look = "minimal"
+)
+```
+
+```{r}
+#| label: co_shiny_cond_legacy
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b",
+  header = "**Scenario #3**: Convert a legacy app [project]{style='font-weight: bold; color: #137a7f'} into a shiny [app-package]{style='font-weight: bold; color: #940000'}",
+  contents = "
+  
+*The app was written some time ago, used superseded or deprecated functions (i.e., `callModule()`), and needs updating. Updating the apps might include adding data or static resources, writing utility functions and modules, etc. 
+  
+  The critical distinction is that this application is not working and requires updates.*
+  
+  ", fold = TRUE, look = "minimal"
+)
+```
+
+```{r}
+#| label: co_shiny_cond_dev
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b",
+  header = "**Scenario #4**: Convert your 'dev' app [project]{style='color: #137a7f'} into an [app-package]{style='color: #940000'}",
+  contents = "
+  
+*You’re currently developing an app project, and you read somewhere it should be an app-package; however, you can’t find clear instructions on how to accomplish this incrementally.*
+
+*And maybe you’re a minimalist (like me) who likes to have complete control over every aspect of the development process.*
+  ", fold = TRUE, look = "minimal"
+)
+```
+
+
+
+## Convert existing shiny project [`.Rproj`]{style="font-size: 0.95em"}
+
+The shiny app project from the previous chapter is stored in the `03_projApp` branch of the [`projApp`](https://github.com/mjfrigaard/projApp/tree/03_projApp) repo. Feel free to download the code and follow along!
+
+### [`projApp`]{style="font-size: 1.10em"}
+
+The files in `projApp` are below: 
+
+```{bash}
+#| eval: false
+#| code-fold: false
+projApp/
+├── DESCRIPTION
+├── R/
+│   ├── mod_scatter_display.R
+│   ├── mod_var_input.R
+│   └── utils.R
+├── README.md
+├── app.R
+├── movies.RData
+├── projApp.Rproj
+├── rsconnect/
+└── www/
+    └── shiny.png
+
+4 directories, 9 files
+```
+
+-   `app.R` contains the `movies_app()` function, which will run the application.
+
+-   The `R/` folder contains the module function files (`mod_var_input.R` and `mod_scatter_display.R`) and the `scatter_plot()` utility function(in the `utils.R` file).
+
+    -   The contents of the `R/` folder are automatically loaded when the app is run. 
+
+-   `projApp` shiny project also has `DESCRIPTION` and `README.md` files for metadata and documentation.
+
+-   The data for the application (`movies.RData`) is imported with a call to `base::load()`.
+
+-   `projApp.Rproj` is the **Project** file we created in the previous chapter. 
+
+-   `www` holds an image `shiny.png` which is referenced directly in the UI.
+
+-   `rsconnect/` is the folder containing files for deploying the app to [shinyapps.io](https://www.shinyapps.io/). 
+
+View a deployed version [here](https://mjfrigaard.shinyapps.io/movies_app/).
+
+
+
+
+
+```{r}
+#| label: co_box_branch_04-convert-usethis
+#| echo: false
+#| results: asis
+#| eval: false
+co_box(
+  color = "r",
+  header = "GitHub [`projApp`]:[`04-convert-usethis`]",
+  contents = "
+The code for this section can be found in the [[`04-convert-usethis`](https://github.com/mjfrigaard/projApp/tree/04-convert-usethis)] branch of the [[`projApp`](https://github.com/mjfrigaard/projApp)] repo. 
+  
+The `04-convert-usethis` branch was created by entering the following commands in the Terminal (from the `03-projApp` branch):
+  
+`\`\`\bash
+git checkout -B 04-convert-usethis
+git push -u origin 04-convert-usethis
+`\`\`\
+  
+  ", 
+  fold = FALSE
+)
+```
+
+Calling `create_package()` with the arguments covered above in the root directory of your shiny [app project]{style='color: #137a7f'} will trigger a series of messages and prompts.
+
+The first tells us the 'active project' is being set to the folder our app-package is located in:
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+✔ Setting active project to '/Users/mjfrigaard/projects/apps/projApp'
+```
+
+#### Package [`DESCRIPTION`]{style="font-size: 0.95em"}
+
+The second message is a prompt regarding the new `DESCRIPTION` file:
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+✔ Setting active project to '/Users/mjfrigaard/projects/apps/projApp'
+Overwrite pre-existing file 'DESCRIPTION'?
+```
+
+After confirming, the contents of the new `DESCRIPTION` file are printed to the **Console**. The fields below are the ones we passed to `use_description()`: 
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+✔ Writing 'DESCRIPTION'
+Package: projApp
+Title: movies app
+Version: 0.0.0.9000
+Author: John Smith <John.Smith@email.io> [aut, cre]
+Maintainer: John Smith <John.Smith@email.io>
+Description: A movie-review shiny application.
+License: GPL-3
+
+```
+
+The three fields below are the result of the `roxygen2 = TRUE` argument:
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
+```
+
+(`roxygen2` is covered in a later chapter).
+
+#### Package [`NAMESPACE`]{style="font-size: 0.95em"}
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+✔ Writing 'NAMESPACE'
+```
+
+#### Package [`Rproj`]{style="font-size: 0.95em"} file
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+Overwrite pre-existing file 'projApp.Rproj'?
+```
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+✔ Writing 'projApp.Rproj'
+```
+
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+✔ Adding '^projApp\\.Rproj$' to '.Rbuildignore'
+✔ Adding '^\\.Rproj\\.user$' to '.Rbuildignore'
+```
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+✔ Setting active project to '<no active project>'
+```
+
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+Overwrite pre-existing file 'DESCRIPTION'?
+1: No
+2: Not now
+3: I agree
+
+Selection: 3
+✔ Writing 'DESCRIPTION'
+```
+
+The contents of the new `DESCRIPTION` is below:
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+Package: projApp
+Title: movies app
+Version: 0.0.0.9000
+Author: John Smith <John.Smith@email.io> [aut, cre]
+Maintainer: John Smith <John.Smith@email.io>
+Description: A movie-review shiny application.
+License: GPL-3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
+
+```
+
+The new fields are covered in detail below, or you can read about them in the [`DESCRIPTION` chapter of the R Packages, 2ed](https://r-pkgs.org/description.html) 
+
+#### [`NAMESPACE`]{style="font-size: 0.95em"}
+
+A new `NAMESPACE` is created (although it's empty). This 
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+✔ Writing 'NAMESPACE'
+```
+
+This file will help manage the dependencies in our [app-package]{style='font-weight: bold; color: #940000'}.
+
+```{r}
+#| eval: false 
+#| code-fold: false
+# Generated by roxygen2: do not edit by hand
+
+
+```
+
+
+#### [`projApp.Rproj`]{style="font-size: 0.95em"}
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+Overwrite pre-existing file 'projApp.Rproj'?
+
+1: Negative
+2: No way
+3: Yup
+
+Selection: 3
+✔ Writing 'projApp.Rproj'
+```
+
+Below is the current contents in the `projApp.Rproj` file (you can view these by opening `projApp.Rproj` with a text editor).
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+Version: 1.0
+
+RestoreWorkspace: Default
+SaveWorkspace: Default
+AlwaysSaveHistory: Default
+
+EnableCodeIndexing: Yes
+UseSpacesForTab: Yes
+NumSpacesForTab: 2
+Encoding: UTF-8
+
+RnwWeave: Sweave
+LaTeX: XeLaTeX
+```
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+Version: 1.0
+
+RestoreWorkspace: No
+SaveWorkspace: No
+AlwaysSaveHistory: Default
+
+EnableCodeIndexing: Yes
+Encoding: UTF-8
+
+AutoAppendNewline: Yes
+StripTrailingWhitespace: Yes
+LineEndingConversion: Posix
+
+BuildType: Package
+PackageUseDevtools: Yes
+PackageInstallArgs: --no-multiarch --with-keep.source
+PackageRoxygenize: rd,collate,namespace
+```
+
+#### [`.Rbuildignore`]{style="font-size: 0.95em"}
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+✔ Adding '^projApp\\.Rproj$' to '.Rbuildignore'
+✔ Adding '^\\.Rproj\\.user$' to '.Rbuildignore'
+```
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+✔ Setting active project to '<no active project>'
+```
+
+
+
+
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+New project 'projApp' is nested inside an existing project './', which is rarely a good idea.
+If this is unexpected, the here package has a function, `here::dr_here()` that reveals why './' is regarded as a project.
+```
+
+Nesting projects is not a good idea because of the contents of the `.Rpeoj` file. 
+
+If you disregard this warning, the following package development fields are added to the `.Rproj` file: 
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+Version: 1.0
+
+RestoreWorkspace: No
+SaveWorkspace: No
+AlwaysSaveHistory: Default
+
+EnableCodeIndexing: Yes
+UseSpacesForTab: Yes
+NumSpacesForTab: 2
+Encoding: UTF-8
+
+RnwWeave: Sweave
+LaTeX: XeLaTeX
+
+AutoAppendNewline: Yes
+StripTrailingWhitespace: Yes
+LineEndingConversion: Posix
+
+BuildType: Package
+PackageUseDevtools: Yes
+PackageInstallArgs: --no-multiarch --with-keep.source
+PackageRoxygenize: rd,collate,namespace
+```
+
+
+-   The active project is set to the same working directory as `projApp`:
+
+    ```{verbatim}
+    #| eval: false 
+    #| code-fold: false
+    ✔ Setting active project to 'path/to/projApp'
+    ```
+
+-   Instead of automatically writing a `DESCRIPTION` file, we're asked if the contents of the existing file can be overwritten, which is usually a good idea because of the specific fields required in packages (I'll cover the `DESCRIPTION` below).
+
+    ```{verbatim}
+    #| eval: false 
+    #| code-fold: false
+    Overwrite pre-existing file 'DESCRIPTION'?
+      
+    1: Negative
+    2: No
+    3: I agree
+    
+    Selection: 3
+    ```
+
+-   The contents of the `DESCRIPTION` file are displayed in the **Console**:
+
+    ```{verbatim}
+    #| eval: false 
+    #| code-fold: false
+    ✔ Writing 'DESCRIPTION'
+    Package: projApp
+    Title: What the Package Does (One Line, Title Case)
+    Version: 0.0.0.9000
+    Authors@R (parsed):
+        * First Last <first.last@example.com> [aut, cre] (YOUR-ORCID-ID)
+    Description: What the package does (one paragraph).
+    License: `use_mit_license()`, `use_gpl3_license()` or friends to
+        pick a license
+    Encoding: UTF-8
+    Roxygen: list(markdown = TRUE)
+    RoxygenNote: 7.2.3
+    ```
+
+    -   The new `DESCRIPTION` is created with `usethis::use_description()`, and you can manually set each field in [`create_package()`](https://usethis.r-lib.org/reference/create_package.html#arguments).
+
+-   The `NAMESPACE` file is created: 
+
+    ```{verbatim}
+    #| eval: false 
+    #| code-fold: false
+    ✔ Writing 'NAMESPACE'
+    ```
+
+    -   The `NAMESPACE` controls what packages and functions are imported and exported from `projApp` (I'll cover the `NAMESPACE` file more in future sections).
+    
+-   Choose whether or not to overwrite the existing `.Rproj` file (if not, there will be two `.Rproj` files in the same folder).  
+
+    ```{verbatim}
+    #| eval: false 
+    #| code-fold: false
+    Overwrite pre-existing file 'projApp.Rproj'?
+    
+    1: Not now
+    2: I agree
+    3: Nope
+    
+    Selection: 2
+    ```
+      
+-   If yes, the new `projApp.Rproj` is created:
+
+    ```{verbatim}
+    #| eval: false 
+    #| code-fold: false
+    ✔ Writing 'projApp.Rproj'
+    ```
+    
+-   The `projApp.Rproj` is added to the `.Rbuildignore`
+
+    ```{verbatim}
+    #| eval: false 
+    #| code-fold: false
+    ✔ Adding '^projApp\\.Rproj$' to '.Rbuildignore'
+    ```
+
+-   A new session is opened from `Path/to/projApp/projApp.Rproj`
+
+    ```{verbatim}
+    #| eval: false 
+    #| code-fold: false
+    ✔ Opening 'Path/to/projApp/' in new RStudio session
+    ```
+
+When the new session starts, the `projApp` [app-package]{style='color: #940000;'} has the following contents:
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+projApp/
+    ├── DESCRIPTION
+    ├── NAMESPACE
+    ├── R/
+    │   ├── mod_scatter_display.R
+    │   ├── mod_var_input.R
+    │   └── utils.R
+    ├── README.md
+    ├── app.R
+    ├── movies.RData
+    ├── projApp.Rproj
+    ├── rsconnect/
+    └── www/
+        └── shiny.png
+    
+6 directories, 11 files
+```
+
+
+Fortunately, `projApp` already has some 'pre-package practices,' such as:
+
+-   [x] The module `.R` files are stored in the `R/` folder  
+
+-   [x] `README.md` file exists  
+
+-   [x] The dependencies can be managed in `NAMESPACE` and `DESCRIPTION` files
+
+`projApp` still needs the following items addressed to become a fully functional shiny [app-package]{style='color: #940000'}:
+
+-   [ ] Install and load the `devtools` package  
+
+-   [ ] Confirm the code in `projApp` can be loaded (sourced) and documented
+
+-   [ ] Ensure `movies.RData` and `shiny.png` are loaded with the package
+
+Using `create_package()` to convert a shiny app [project]{style='color: #137a7f'} into a shiny [app-package]{style='color: #940000'} isn't seamless, but it gets us ~50% there. We should still consult [R Packages](https://r-pkgs.org/), specifically the chapters on [managing dependencies](https://r-pkgs.org/dependencies-mindset-background.html), [`NAMESPACE` workflow](https://r-pkgs.org/dependencies-in-practice.html#sec-dependencies-NAMESPACE-workflow) and [documenting code](https://r-pkgs.org/man.html).
+
+```{r}
+#| label: co_box_push_04-convert-usethis
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "r",
+  header = "GitHub [`projApp`]:[`04-convert-usethis`]",
+  contents = "
+  The code for this section was pushed to the  [[`04-convert-usethis`](https://github.com/mjfrigaard/projApp/tree/04-convert-usethis)] branch of the [[`projApp`](https://github.com/mjfrigaard/projApp)] repo.
+  
+  `\`\`\bash
+  git add .
+  git commit -m 'git message'
+  git push 
+  `\`\`\
+  ", 
+  fold = FALSE
+)
+```
+
+### Manual conversion 
+
+```{r}
+#| label: co_box_branch_05-convert-manual
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "r",
+  header = "GitHub [`projApp`]:[`05-convert-manual`]",
+  contents = "
+  The code for this section can be found in the [[`05-convert-manual`](https://github.com/mjfrigaard/projApp/tree/05-convert-manual)] branch of the [[`projApp`](https://github.com/mjfrigaard/projApp)] repo.
+  
+The `05-convert-manual` branch was created by entering the following commands in the Terminal (from the `03-projApp` branch):
+  
+  `\`\`\bash
+  # switch back to 03-projApp
+  git checkout 03-projApp
+  # create new branch
+  git checkout -B 05-convert-manual
+  git push -u origin 05-convert-manual
+  `\`\`\
+  ", 
+  fold = FALSE
+)
+```
+
+It’s also possible to manually convert the contents of `projApp` into an [app-package]{style='color: #940000;'}. But to do this, we should cover what happens in the `Rproj` file when a [project]{style='color: #137a7f;'} becomes a package.
+
+When `projApp` was initially created as a new shiny app project with the **New Project Wizard**, the RStudio project file (`projApp.Rproj`) was automatically added to the root directory.
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+projApp/
+    ├── app.R
+    └── projApp.Rproj <- RStudio project file!
+
+1 directory, 2 files
+```
+
+When clicked on, the `Rproj` file will open RStudio and set the current working directory to its location.  
+
+```{r}
+#| label: co_box_rproj
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g",
+  header = "RStudio project files",
+  contents = "
+You can read more about the benefits of using RStudio projects to configuring project-level options [here](https://support.posit.co/hc/en-us/articles/200526207-Using-RStudio-Projects).  
+  ", fold = FALSE
+)
+```
+
+
+-->
