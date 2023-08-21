@@ -20,7 +20,9 @@ co_box(
 )
 ```
 
-This chapter dives into the makings of R packages. We'll start by covering the differences between R projects, R packages, and app-packages. Then we'll dive into what's required to convert a R project into an R package. The last section in this chapter will cover the `usethis::create_package()` function, which can be used to create new shiny app-packages *and* convert existing shiny projects into app-packages.
+This chapter dives into the makings of R packages. We’ll start by covering the differences between R projects, R packages, and app-packages. Then we’ll dive into what’s required to convert an R project into an R package.
+
+The final section of this chapter will cover the `usethis::create_package()` function, which can be used to create new shiny app-packages and convert existing shiny projects into app-packages.
 
 ## Projects, packages, and app-packages
 
@@ -28,15 +30,15 @@ Before we start, we should establish some 'operational definitions' of what I me
 
 :::{.column-margin}
 
-I'll be using color to differentiate shiny app [projects]{style="font-weight: bold; color: #38B44A"}, R [packages]{style='font-weight: bold; color: #E74A2F;'}, and [app-packages]{style="font-weight: bold; color: #007bff"}.
+I'll use color to differentiate shiny app [projects]{style="font-weight: bold; color: #25a18e"}, R [packages]{style='font-weight: bold; color: #720026;'}, and [app]{style="font-weight: bold; color: #007bff"}-[package]{style="font-weight: bold; color: #720026"}.
 
 :::
 
--   [project]{style="font-weight: bold; color: #38B44A"}: I consider a 'project' to be any directory of files requiring R (the binary downloaded from [CRAN](https://cran.r-project.org/), i.e., '*R 4.3.1 "Beagle Scouts" released on ...*') to execute with an RStudio/Posit workbench project file (`.Rproj`).
+-   [Project]{style="font-weight: bold; color: #25a18e"}: I consider a [project]{style="font-weight: bold; color: #25a18e"} to be any directory of files requiring R (the binary downloaded from [CRAN](https://cran.r-project.org/) with a version number and neat names like, '*R 4.3.1 "Beagle Scouts" released on ...*') to execute with an RStudio/Posit workbench project file (`.Rproj`).
 
--   [package]{style='font-weight: bold; color: #E74A2F;'}: I'll be using the term 'package' to describe a directory of functions, documentation, and/or data can be installed and loaded into an R session. A [package]{style='font-weight: bold; color: #E74A2F;'} includes the necessary dependency management (`NAMESPACE`) and metadata files (`DESCRIPTION`) *and* has access to the package development tools in RStudio/Posit Workbench.
+-   [Package]{style='font-weight: bold; color: #720026;'}: I'll be using the term [package]{style='font-weight: bold; color: #720026;'} to describe a directory of functions, documentation, or data that can be installed and loaded into an R session. A [package]{style='font-weight: bold; color: #720026;'} includes the necessary dependency management (`NAMESPACE`) and metadata files (`DESCRIPTION`) *and* has access to the package development tools in RStudio/Posit Workbench.
 
--   [app-package]{style="font-weight: bold; color: #007bff"}: an app-package (which you have probably already guessed) is a [package]{style='font-weight: bold; color: #E74A2F;'} containing a shiny application. [App-packages]{style="font-weight: bold; color: #007bff"} have all of the functionality of a standard R [package]{style='font-weight: bold; color: #E74A2F;'}, but also contain the files and folders required to successfully develop, run, and deploy a shiny application.
+-   [App]{style="font-weight: bold; color: #007bff"}-[package]{style="font-weight: bold; color: #720026"}: an [app]{style="font-weight: bold; color: #007bff"}-[package]{style="font-weight: bold; color: #720026"} (which you have probably already guessed) is a [package]{style='font-weight: bold; color: #720026;'} containing a shiny application. [App]{style="font-weight: bold; color: #007bff"}-[packages]{style="font-weight: bold; color: #720026"} have all of the functionality of a standard R [package]{style='font-weight: bold; color: #720026;'}, but also contain the files and folders required to successfully develop, run, and deploy a shiny [app]{style="font-weight: bold; color: #007bff"}.
 
 ```{r}
 #| label: co_workbench_app_packages
@@ -48,25 +50,25 @@ co_box(
   header = "R Packages & Posit Workbench",
   contents = "
   
-Posit Workbench (formerly RStudio) is a popular integrated development environment (IDE) that streamlines many of the R package development tasks. I've purposely connected Posit Workbench--specifically, the package development tools provided in the **Build** pane and `devtools`--to the definitions above for [package]{style='font-weight: bold; color: #E74A2F;'} and [app-package]{style='font-weight: bold; color: #007bff'} above. 
-  
-However, it's not necessary to use Posit Workbench (or `.Rproj` files) to develop R packages. There are alternative package development tools and processes available outside of Posit Workbench, and many developers use these setups.
-  
-Package development *outside* Posit Workbench would look almost identical to development in the IDE: 
-  
-1. Create the package structure (`R/` for `.R` scripts, `man/` for documentation, `data/` for datasets, etc.)
+Posit Workbench (formerly RStudio) is a popular integrated development environment (IDE) streamlining many R [package]{style='font-weight: bold; color: #720026;'} development tasks. I’ve purposely connected Posit Workbench to the definitions above for [package]{style='font-weight: bold; color: #720026;'} and [app]{style='font-weight: bold; color: #007bff'}-[package]{style='font-weight: bold; color: #720026;'}–specifically, the [package]{style='font-weight: bold; color: #720026;'} development tools provided in the Build pane and devtools.
+
+However, developing R [packages]{style='font-weight: bold; color: #720026;'} in Posit Workbench (or using `.Rproj` files) is not required. There are alternative [package]{style='font-weight: bold; color: #720026;'} development tools and processes outside of Posit Workbench, and many developers employ these setups.
+
+[Package]{style='font-weight: bold; color: #720026;'} development outside Posit Workbench would look almost identical to development in the IDE:
+
+1. Create the [package]{style='font-weight: bold; color: #720026;'} structure (`R/` folder for `.R` scripts, `man/` folder for documentation, `data/` folder for datasets, etc.)
   
 2. Add `DESCRIPTION` and `NAMESPACE` files, etc.
   
-3. Ensure the package can be installed and loaded into an R session.
+3. Ensure the [package]{style='font-weight: bold; color: #720026;'} can be installed and loaded into an R session.
   
-It's also possible to use many of the development workflow functions we'll cover here outside of the IDE (`roxygen2::roxygenize()`, `devtools::check()`, `devtools::install()`, etc.).
+It’s also possible to use many of the development workflow functions we’ll cover here outside of the IDE (`roxygen2::roxygenize()`, `devtools::check()`, `devtools::install()`, etc.).
 
   "
 )
 ```
 
-The previous chapter covered a few practices to adopt during shiny development that improves the extensibility of your app [project]{style="font-weight: bold; color: #38B44A"} to an [app-package]{style="font-weight: bold; color: #007bff"} (these are summarized in the callout box below).
+The previous chapter covered a few practices to adopt during shiny development that improves the extensibility of your app [project]{style="font-weight: bold; color: #25a18e"} to an [app]{style='font-weight: bold; color: #007bff;'}-[package]{style='font-weight: bold; color: #720026;'} (these are summarized in the callout box below).
 
 ```{r}
 #| label: co_shiny_recap
@@ -100,19 +102,19 @@ co_box(
 
 
 
-## [App-packages]{style='font-weight: bold; color: #007bff'}: motivation
+## [App]{style='font-weight: bold; color: #007bff'}-[packages]{style='font-weight: bold; color: #720026'}: Motivation
 
-There are multiple reasons for deciding to develop an [app-package]{style='font-weight: bold; color: #007bff'}: your app [project]{style="font-weight: bold; color: #38B44A"} might have to be in a package structure due to specific organizational needs or practices around deploying applications; or maybe you've been convinced it's the best practice for improving the shareability/reproducibility of your app [project]{style="font-weight: bold; color: #38B44A"}. 
+There are multiple reasons for deciding to develop an [app]{style="font-weight: bold; color: #007bff"}-[package]{style="font-weight: bold; color: #720026"}: your app [project]{style="font-weight: bold; color: #25a18e"} might have to be in a [package]{style='font-weight: bold; color: #720026;'} structure due to specific organizational needs or practices around deploying applications, or maybe you've been convinced it's the best practice for improving the shareability/reproducibility of your app [project]{style="font-weight: bold; color: #25a18e"}. 
 
 Regardless of the reason, you've likely found yourself in one of two circumstances:
 
-1. You want to develop a new shiny app, but want it structured as an [app-package]{style='font-weight: bold; color: #007bff'}.  
+1. You want to develop a new shiny app, but want it structured as an [app]{style="font-weight: bold; color: #007bff"}-[package]{style="font-weight: bold; color: #720026"}.  
 
-2. You've already developed a shiny app [project]{style="font-weight: bold; color: #38B44A"}, but now you need to convert it to an [app-package]{style='font-weight: bold; color: #007bff'}
+2. You've already developed a shiny app [project]{style="font-weight: bold; color: #25a18e"}, but now you need to convert it to an [app]{style="font-weight: bold; color: #007bff"}-[package]{style="font-weight: bold; color: #720026"}.
 
-### R [package]{style='font-weight: bold; color: #E74A2F;'} vs. shiny [project]{style="font-weight: bold; color: #38B44A"}
+### R [package]{style='font-weight: bold; color: #720026;'} vs. shiny [project]{style="font-weight: bold; color: #25a18e"}
 
-Below is a folder tree with some of the typical files and folders found in R [packages]{style='font-weight: bold; color: #E74A2F;'}:
+Below is a folder tree with some of the typical files and folders found in R [packages]{style='font-weight: bold; color: #720026;'}:
 
 ```{bash}
 #| eval: false
@@ -139,9 +141,9 @@ Below is a folder tree with some of the typical files and folders found in R [pa
   
 ```
 
-The reason R [packages]{style='font-weight: bold; color: #E74A2F;'} can be easily shared, reused, and reproduced is because they all have a familiar structure, and each folder and file plays an essential role in extending R’s capabilities. 
+R [packages]{style='font-weight: bold; color: #720026;'} can be easily shared, reused, and reproduced because they all have a familiar structure, and each folder and file plays an essential role in extending R’s capabilities.
 
-At first glance, the contents above can seem daunting when compared to the folders and files that currently exist in your app [project]{style='font-weight: bold; color: #38B44A;'} (like `projApp` below): 
+At first glance, the contents above can seem daunting when compared to the folders and files that currently exist in your app [project]{style='font-weight: bold; color: #25a18e;'} (like `projApp` below): 
 
 ```{bash}
 #| eval: false
@@ -163,11 +165,11 @@ projApp/
 4 directories, 9 files
 ```
 
-Fortunately, [app-packages]{style="font-weight: bold; color: #007bff"} don't require *all* the files and folders displayed above to gain the functionality and benefits of an R [package]{style='font-weight: bold; color: #E74A2F;'}. 
+Fortunately, [app]{style='font-weight: bold; color: #007bff;'}-[packages]{style='font-weight: bold; color: #720026;'} don't require *all* the files and folders displayed above to gain the functionality and benefits of an R [package]{style='font-weight: bold; color: #720026;'}. 
 
-This chapter will cover what's required in all R [packages]{style='font-weight: bold; color: #E74A2F;'}, so you'll be able to handle both creating new [app-packages]{style='font-weight: bold; color: #007bff;'} and converting existing shiny [projects]{style="font-weight: bold; color: #38B44A"} into [app-packages]{style='font-weight: bold; color: #007bff;'}
+This chapter will cover what's required in all R [packages]{style='font-weight: bold; color: #720026;'}, so you can handle both creating new [app]{style='font-weight: bold; color: #007bff;'}-[package]{style='font-weight: bold; color: #720026;'} and converting existing shiny [projects]{style="font-weight: bold; color: #25a18e"} into [app]{style='font-weight: bold; color: #007bff;'}-[package]{style='font-weight: bold; color: #720026;'}.
 
-## What makes an R [package]{style='font-weight: bold; color: #E74A2F;'}?
+## What makes an R [package]{style='font-weight: bold; color: #720026;'}?
 
 If you've read [R packages, 2ed](https://r-pkgs.org/) or [Mastering Shiny](https://mastering-shiny.org/index.html), you might recall encountering one (or both) of the following quotes, 
 
@@ -176,13 +178,13 @@ If you've read [R packages, 2ed](https://r-pkgs.org/) or [Mastering Shiny](https
 > *'all a project needs to be a package is a directory of `R/` files and a `DESCRIPTION` file.'* - [Mastering Shiny (Chapter 20, Packages)](https://mastering-shiny.org/scaling-packaging.html#summary-18)
 
 
-If you've been following along with the code, these quotes should confuse you. The `projApp` shiny [project]{style='font-weight: bold; color: #38B44A;'} has a `DESCRIPTION` file and an `R/` directory, but `projApp` is not a functioning [package]{style='font-weight: bold; color: #E74A2F;'}. 
+If you've been following the code in `projApp`, the quotes above should confuse you. The `projApp` shiny [project]{style='font-weight: bold; color: #25a18e;'} has a `DESCRIPTION` file and an `R/` directory, but `projApp` is not a functioning [package]{style='font-weight: bold; color: #720026;'}. 
 
-As we defined above, a functioning [package]{style='font-weight: bold; color: #E74A2F;'} can be installed and loaded into an R session, *and* has access to the **Build** pane in the IDE.
+As we defined above, a functioning [package]{style='font-weight: bold; color: #720026;'} can be installed and loaded into an R session *and* has access to the **Build** pane in the IDE.
 
 ### [`devtools`]{style="font-size: 1.05em"} functions
 
-`devtools` simulates installing and loading with `load_all()` (we'll cover this function extensively in `devtools` chapter), 
+`devtools` simulates installing and loading with `load_all()` (we'll cover this function extensively in the `devtools` chapter), 
 
 But when we attempt to load the code in the `R/` folder with `load_all()`, we see the following error:
 
@@ -203,7 +205,7 @@ devtools::load_all()
 
 ### The Build pane
 
-When opened, functioning [packages]{style='font-weight: bold; color: #E74A2F;'} have access to the **Build** pane, which allows us to quickly iterate between loading, installing, and testing. But when `projApp` is opened, the **Build** pane is not displayed in the IDE:
+When opened, functioning [packages]{style='font-weight: bold; color: #720026;'} have access to the **Build** pane, which allows us to iterate between loading, installing, and testing quickly. But when `projApp` is opened, the **Build** pane is not displayed in the IDE:
 
 :::: {.column-page-inset-right}
 
@@ -216,21 +218,21 @@ Project IDE panes
 ::::
 
 
-As we've just learned, the presence of the `DESCRIPTION` file and an `R/` folder are not sufficient to turn your app [project]{style='font-weight: bold; color: #38B44A;'} into a [package]{style='font-weight: bold; color: #E74A2F;'} (i.e., or an [app-package]{style='font-weight: bold; color: #007bff'}).
+As we've just learned, the presence of the `DESCRIPTION` file and an `R/` folder are insufficient to turn your app [project]{style='font-weight: bold; color: #25a18e;'} into a [package]{style='font-weight: bold; color: #720026;'} (or an [app]{style="font-weight: bold; color: #007bff"}-[package]{style="font-weight: bold; color: #720026"}).
 
-## What *really* makes an R [package]{style='font-weight: bold; color: #E74A2F;'}?
+## What *really* makes an R [package]{style='font-weight: bold; color: #720026;'}?
 
-For our purposes, I'll rewrite the minimum requirements for creating a 'functional' R package:
+For our purposes, I'll rewrite the minimum requirements for creating a 'functional' R [package]{style='font-weight: bold; color: #720026;'}:
 
-> "*A [project]{style="font-weight: bold; color: #38B44A"} needs **a `DESCRIPTION` file with specific fields**, a directory of `R/` files, and **a properly configured `.Rproj` file** to be a [package]{style='font-weight: bold; color: #E74A2F;'}.*" - Me
+> "*A [project]{style="font-weight: bold; color: #25a18e"} needs **a `DESCRIPTION` file with specific fields**, a directory of `R/` files, and **a properly configured `.Rproj` file** to be a [package]{style='font-weight: bold; color: #720026;'}.*" - Me
 
-Let's see how each of these requirements work together to convert the contents of `projApp` from a [project]{style="font-weight: bold; color: #38B44A"} into a [package]{style='font-weight: bold; color: #E74A2F;'}.
+Let's see how each of these requirements works together to convert the contents of `projApp` from a [project]{style="font-weight: bold; color: #25a18e"} into a [package]{style='font-weight: bold; color: #720026;'}.
 
 ### [`DESCRIPTION`]{style="font-size: 0.95em"} fields
 
-The [official R documentation](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#The-DESCRIPTION-file) lists the following required fields for the `DESCRIPTION` in R [packages]{style='font-weight: bold; color: #E74A2F;'}:
+The [official R documentation](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#The-DESCRIPTION-file) lists the following required fields for the `DESCRIPTION` in R [packages]{style='font-weight: bold; color: #720026;'}:
 
-> *The ‘Package’, ‘Version’, ‘License’, ‘Description’, ‘Title’, ‘Author’, and ‘Maintainer’ fields are mandatory*
+> *The ‘Package’, ‘Version’, ‘License’, ‘Description’, ‘Title’, ‘Author’, and ‘Maintainer’ fields are mandatory.*
 
 Below is an example `DESCRIPTION` file for `projApp` with the mandatory fields:
 
@@ -292,17 +294,17 @@ After adding the mandatory fields to the `DESCRIPTION` file in `projApp`, `load_
 ::::
 
 
-### [Project]{style="font-weight: bold; color: #38B44A"} options 
+### [Project]{style="font-weight: bold; color: #25a18e"} options 
 
 [i.e., the [`.Rproj`]{style="font-size: 1.10em"} file]{style="font-style: italic; font-size: 1.30em"}
 
-`.Rproj` files are plain text files with various settings for the IDE. The reason we were able to run `devtools::load_all()` above without the presence of the **Build** pane is because the IDE displays the **Build** pane after reading the fields in `projApp.Rproj` file.  
+`.Rproj` files are plain text files with various settings for the IDE. We ran `devtools::load_all()` above without the presence of the **Build** pane is because the IDE displays the **Build** pane after reading the fields in the `projApp.Rproj` file.  
 
-The quickest way to access the fields the `.Rproj` file is under **Tools** > **Project options**.
+The quickest way to access the fields in the `.Rproj` file is under **Tools** > **Project options**.
 
-#### Default [project]{style="font-weight: bold; color: #38B44A"} options
+#### Default [project]{style="font-weight: bold; color: #25a18e"} options
 
-**Tools** > **Project options** provide access to the [project]{style="font-weight: bold; color: #38B44A"}-level options. For example, fields 2 - 4 are available under **General**, fields 5 - 8 affect the **Code** options, and the final two fields deal with **Sweave**. 
+**Tools** > **Project options** provide access to the [project]{style="font-weight: bold; color: #25a18e"}-level options. For example, fields 2 - 4 are available under **General**, 5 - 8 affect the **Code** options, and the final two fields deal with **Sweave**. 
 
 ::: {#fig-rproj_defaults}
 ![`projApp.Rproj` fields](img/rproj_defaults.png){#fig-rproj_defaults width="100%" fig-align="center"}
@@ -310,7 +312,7 @@ The quickest way to access the fields the `.Rproj` file is under **Tools** > **P
 Field settings from `projApp.Rproj` file
 :::
 
-These are the default settings that were created when we selected the Shiny App [project]{style='font-weight: bold; color: #38B44A;'} from the **New Project Wizard** in the last chapter.
+These are the default settings created when we selected the Shiny App [project]{style='font-weight: bold; color: #25a18e;'} from the **New Project Wizard** in the last chapter.
 
 #### Build tools
 
@@ -323,7 +325,7 @@ If you've read the [What makes an RStudio Project? section of R Packages (2 ed)]
 Comparison of `projApp.Rproj` file and `.Rproj` file in [R Packages, 2ed](https://r-pkgs.org/workflow101.html#what-makes-an-rstudio-project)
 :::
 
-I've circled the fields in the [R Packages, 2ed](https://r-pkgs.org/workflow101.html#what-makes-an-rstudio-project) `.Rproj` file that illustrate it's configured to work with a [package]{style='font-weight: bold; color: #E74A2F'}. Note that in `projApp`, the **Project build tools** are initially set to (**None**) under **Build Tools**:
+I've circled the fields in the [R Packages, 2ed](https://r-pkgs.org/workflow101.html#what-makes-an-rstudio-project) `.Rproj` file that illustrate it's configured to work with a [package]{style='font-weight: bold; color: #720026'}. Note that in `projApp`, the **Project build tools** are initially set to (**None**) under **Build Tools**:
 
 ::: {#fig-rproj_build_tools}
 ![`projApp.Rproj` build tools](img/rproj_build_tools.png){#fig-rproj_build_tools height="100%" width="100%" fig-align="center"}
@@ -332,7 +334,7 @@ Build tool settings in `projApp.Rproj` file
 :::
 
 
-This setting should help explain the absence of any [package]{style='font-weight: bold; color: #E74A2F;'} development fields in the `projApp.Rproj` when we compared it to the version in [R Packages, 2ed](https://r-pkgs.org/workflow101.html#what-makes-an-rstudio-project) (i.e., `BuildType`, `PackageUseDevtools`, `PackageInstallArgs`, and `PackageRoxygenize`). 
+This setting should help explain the absence of any [package]{style='font-weight: bold; color: #720026;'} development fields in the `projApp.Rproj` when we compared it to the version in [R Packages, 2ed](https://r-pkgs.org/workflow101.html#what-makes-an-rstudio-project) (i.e., `BuildType`, `PackageUseDevtools`, `PackageInstallArgs`, and `PackageRoxygenize`). 
 
 Changing the **Project build tools** option to **Package** will set the default **Build Tools** options:
 
@@ -350,7 +352,7 @@ The links between the **Build Tools** options and fields in `projApp.Rproj` are 
 Default build tool settings in `projApp.Rproj` file
 :::
 
--   `BuildType: Package` tells the IDE `projApp` is a [package]{style='font-weight: bold; color: #E74A2F;'} and triggers the **Build** pane.
+-   `BuildType: Package` tells the IDE `projApp` is a [package]{style='font-weight: bold; color: #720026;'} and triggers the **Build** pane.
 
 -   `PackageUseDevtools: Yes` links the options in the **Build** pane to the [`devtools` package](https://devtools.r-lib.org/).
 
@@ -358,7 +360,7 @@ Default build tool settings in `projApp.Rproj` file
 
 
 -   The fourth option (`PackageRoxygenize`) is available under **Generate documentation with Roxygen** > **Use roxygen to generate**
-    -   These options affect the documentation in your [package]{style='font-weight: bold; color: #E74A2F;'}. To match the example from [R Packages, 2ed](https://r-pkgs.org/workflow101.html#what-makes-an-rstudio-project) above, make sure **Rd files**, **Collate field**, and **NAMESPACE file** are selected and click **OK**
+    -   These options affect the documentation in your [package]{style='font-weight: bold; color: #720026;'}. To match the example from [R Packages, 2ed](https://r-pkgs.org/workflow101.html#what-makes-an-rstudio-project) above, make sure **Rd files**, **Collate field**, and **NAMESPACE file** are selected and click **OK**.
 
 
 ::: {#fig-package_roxygenize}
@@ -420,7 +422,7 @@ co_box(
 
 #### Build pane
 
-When the new session starts, the new [project]{style="font-weight: bold; color: #38B44A"}-level options will activate the **Build** pane in the IDE. 
+When the new session starts, the new [project]{style="font-weight: bold; color: #25a18e"}-level options activate the **Build** pane in the IDE. 
 
 :::: {.column-page-inset-right}
 
@@ -432,7 +434,7 @@ When the new session starts, the new [project]{style="font-weight: bold; color: 
 
 ::::
 
-When the IDE reboots, I can see the **Build** pane has been added, and I can check the [package]{style='font-weight: bold; color: #E74A2F;'} functionality by loading the code with **Build** > **Load All**
+When the IDE reboots, I can see the **Build** pane has been added, and I can check the [package]{style='font-weight: bold; color: #720026;'} functionality by loading the code with **Build** > **Load All**
 
 ::: {#fig-build_pane_tools}
 ![Load the code in the `R/` folder](img/build_pane_tools.png){#fig-build_pane_tools width="100%" fig-align="center"}
@@ -448,9 +450,9 @@ I should see the following in the **Console**:
 ℹ Loading projApp
 ```
 
-There you have it--`projApp` is a functional [package]{style="font-weight: bold; color: #E74A2F"}!
+There you have it--`projApp` is a functional [package]{style="font-weight: bold; color: #720026"}!
 
-## Functional R [packages]{style='font-weight: bold; color: #E74A2F;'}
+## Functional R [packages]{style='font-weight: bold; color: #720026;'}
 
 :::: {.column-page-inset-right}
 
@@ -462,35 +464,37 @@ Fully functional shiny app-package
 
 ::::
 
-A functional R [package]{style='font-weight: bold; color: #E74A2F;'}: 
+A functional R [package]{style='font-weight: bold; color: #720026;'}: 
 
 1.   The `DESCRIPTION` file contains the seven mandatory fields (`Package`, `Version`, `License`, `Description`, `Title`, `Author`, and `Maintainer`), which make it possible to run the necessary `devtools` functions. 
 
 2.   The `.Rproj` file contains the three package configuration fields (`BuildType: Package`, `PackageUseDevtools: Yes`, and `PackageInstallArgs: --no-multiarch --with-keep.source`), which makes the **Build** pane accessible and functional. 
 
-The items above will create a functional R [package]{style='font-weight: bold; color: #E74A2F;'}, but these are only the first steps (we haven't developed anything yet!) on our way to an [app-package]{style='font-weight: bold; color: #007bff'}.
+The items above will create a functional R [package]{style='font-weight: bold; color: #720026;'}, but these are the first steps (we haven't developed anything yet!) on our way to an [app]{style="font-weight: bold; color: #007bff"}-[package]{style="font-weight: bold; color: #720026"}.
 
-Think of the two items above as two-part process: the `DESCRIPTION` fields are required by the [official R documentation](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#The-DESCRIPTION-file) (and hence, `devtools`), and the `.Rproj` fields are required by the IDE trigger the **Build** pane. For more information on the topics in this chapter, you should read
+Think of the two items above as a two-part process: the [official R documentation](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#The-DESCRIPTION-file) requires the `DESCRIPTION` fields (and hence, `devtools`), and the IDE requires `.Rproj` fields to trigger the **Build** pane. 
+
+For more information on the topics in this chapter, you should read
 [Writing R Extensions](https://cran.r-project.org/doc/manuals/r-release/R-exts.html) (the official documentation for creating R packages) and [R Packages, 2ed](https://r-pkgs.org/).
 
 ## Creating packages with [`create_package()`]{style="font-size: 0.95em"}
 
-The [Posit documentation](https://docs.posit.co/ide/user/ide/guide/pkg-devel/writing-packages.html) lists the following ways to create R [packages]{style='font-weight: bold; color: #E74A2F;'}, 
+The [Posit documentation](https://docs.posit.co/ide/user/ide/guide/pkg-devel/writing-packages.html) lists the following ways to create R [packages]{style='font-weight: bold; color: #720026;'}, 
 
 > 1. Call `usethis::create_package()`.
 > 
 > 2. In RStudio, do **File** > **New Project** > **New Directory** > **R Package**. This ultimately calls `usethis::create_package()`, so really there’s just one way.
 > 
 
-While this information isn't incorrect, we did just demonstrate it's possible to create a [package]{style='font-weight: bold; color: #E74A2F;'} without the `usethis::create_package()` function. Still, if you're looking for a way to quickly create or convert your app [project]{style="font-weight: bold; color: #38B44A"} into an [app-package]{style='font-weight: bold; color: #007bff;'}, using `create_package()` is a great option. 
+While this information isn't incorrect, we just demonstrated it's possible to create a [package]{style='font-weight: bold; color: #720026;'} without the `usethis::create_package()` function. Still, if you're looking for a way to quickly create or convert your app [project]{style="font-weight: bold; color: #25a18e"} into an [app-package]{style='font-weight: bold; color: #007bff;'}, using `create_package()` is a great option. 
 
-This function is covered in the ['Fundamental development workflows' chapter of R Packages, 2ed](https://r-pkgs.org/workflow101.html). I've provided some suggestions below for using `create_package()`: 
+This function is covered in the ['Fundamental development workflows' chapter of R Packages, 2ed](https://r-pkgs.org/workflow101.html). I've provided some suggestions below for using `create_package()`.
 
 ### New app-packages
 
 If you want to create a new shiny [app-package]{style='font-weight: bold; color: #007bff;'}, but haven’t written any code, you can create it with the `create_package()` function from the [`usethis` package](https://usethis.r-lib.org/reference/create_package.html).
 
-First install `devtools`:
+First, install `devtools`:
 
 ```{r}
 #| eval: false 
@@ -515,7 +519,7 @@ Assuming your current working directory is where you want your new [app-package]
 usethis::create_package(path = getwd())
 ```
 
-This launches a series of actions:
+This call launches a series of actions:
 
 -   First, the active project is set to whatever was given to the `path` argument. 
 
@@ -576,15 +580,15 @@ newApp/
   └── projApp.Rproj
 ```
 
-You're now free to develop `newApp`. Store and document any `.R` files in the `R/` folder, edit the `DESCRIPTION` file with details about the application, read through  [R Packages](https://r-pkgs.org/) and [Mastering Shiny](https://mastering-shiny.org/), and add the shiny code to complete your [app-package]{style='font-weight: bold; color: #007bff'}
+You're now free to develop `newApp`. Store and document any `.R` files in the `R/` folder, edit the `DESCRIPTION` file with details about the application, read through  [R Packages](https://r-pkgs.org/) and [Mastering Shiny](https://mastering-shiny.org/), and add the shiny code to complete your [app]{style="font-weight: bold; color: #007bff"}-[package]{style="font-weight: bold; color: #720026"}
 
 ### Converting existing app
 
-If you already have a shiny app [project]{style='font-weight: bold; color: #38B44A'} that needs to be converted into an [app-package]{style='font-weight: bold; color: #007bff'} (like the app files stored in the [`03_projApp` branch](https://github.com/mjfrigaard/projApp/tree/03_projApp)), you can also use `create_package(path = getwd())` in your root folder, but I recommend using the following arguments:
+If you already have a shiny app [project]{style='font-weight: bold; color: #25a18e'} that needs to be converted into an [app]{style="font-weight: bold; color: #007bff"}-[package]{style="font-weight: bold; color: #720026"} (like the app files stored in the [`03_projApp` branch](https://github.com/mjfrigaard/projApp/tree/03_projApp)), you can also use `create_package(path = getwd())` in your root folder, but I recommend using the following arguments:
 
 #### [`DESCRIPTION`]{style="font-size: 0.95em"} arguments
 
--   **`fields`**: these are arguments passed to `usethis::use_description()`. If `fields` is empty, a boilerplate `DESCRIPTION` file is created (similar to [this one](https://r-pkgs.org/description.html#the-description-file)). 
+-   **`fields`**: these are arguments passed to `usethis::use_description()`. If the `fields` argument is empty, a boilerplate `DESCRIPTION` file is created (similar to [this one](https://r-pkgs.org/description.html#the-description-file)). 
 
     -   These boilerplate fields in the `DESCRIPTION` work, but I've found some of the fields are unnecessary (i.e., I've never needed `Authors@R:` or `ORCID`) and inevitably require revision, so I'd prefer to handle this during the creation process (and remove the risk of forgetting to change it later).
 
@@ -611,7 +615,7 @@ If you already have a shiny app [project]{style='font-weight: bold; color: #38B4
               License = "GPL-3"))
     ```
     
-    -   A few of the fields require specially formatted values from (see the `utils::person()` examples below).
+    -   A few fields require specially formatted values (see the `utils::person()` examples below).
     
         ```{r}
         #| eval: true 
@@ -623,9 +627,9 @@ If you already have a shiny app [project]{style='font-weight: bold; color: #38B4
 
 -   Two additional arguments from `use_description()` are passed to `create_package()`:
 
-    -   **`check_name`**: verifies your [app-package]{style='font-weight: bold; color: #007bff'} name is valid for CRAN, so we can set this to `FALSE` (unless you're planning on submitting to CRAN)
+    -   **`check_name`**: verifies your [app]{style="font-weight: bold; color: #007bff"}-[package]{style="font-weight: bold; color: #720026"} name is valid for CRAN, so we can set this to `FALSE` (unless you're planning on submitting to CRAN)
 
-    -   **`roxygen2`**: is `TRUE` by default and adds the fields required to use `roxygen2` (which I won't cover here because we'll cover documentation in-depth a future chapter). 
+    -   **`roxygen2`**: is `TRUE` by default and adds the fields required to use `roxygen2` (which I won't cover here because we'll cover documentation in-depth in a future chapter). 
 
 ```{r}
 #| label: co_box_create_package_dot
@@ -637,13 +641,13 @@ co_box(
   header = "WARNING: Don't use `usethis::create_package('.')`!",
   contents = "
 
-When converting your existing shiny app [project]{style='font-weight: bold; color: #38B44A'} into am [app-package]{style='font-weight: bold; color: #007bff'} with `usethis::create_package()`, don't use `'.'` in the `path` argument:
+When converting your existing shiny app [project]{style='font-weight: bold; color: #25a18e'} into am [app]{style='font-weight: bold; color: #007bff'}-[package]{style='font-weight: bold; color: #720026'} with `usethis::create_package()`, don't use `'.'` in the `path` argument:
   
 `\`\`\r
 usethis::create_package('.')
 `\`\`\
   
-This will return the following warning about creating nested [projects]{style='font-weight: bold; color: #38B44A'}, and ask if you want to proceed anyway:
+This will return the following warning about creating nested [projects]{style='font-weight: bold; color: #25a18e'}, and ask if you want to proceed anyway:
   
 `\`\`\bash
 New project 'projApp' is nested inside an existing project
@@ -660,7 +664,7 @@ Do you want to create anyway?
 `\`\`\
 
 
-We can avoid this warning altogether by passing the `getwd()` to the `path` argument, so I recommend cancelling the [project]{style='font-weight: bold; color: #38B44A'} creation:
+We can avoid this warning altogether by passing the `getwd()` to the `path` argument, so I recommend cancelling the [project]{style='font-weight: bold; color: #25a18e'} creation:
 
 `\`\`\bash
 Selection: 2
@@ -717,7 +721,7 @@ Overwrite pre-existing file 'DESCRIPTION'?
 Overwrite pre-existing file 'projApp.Rproj'?
 ```
 
-The [app-package]{style='font-weight: bold; color: #007bff'} structure is below:
+The [app]{style="font-weight: bold; color: #007bff"}-[package]{style="font-weight: bold; color: #720026"} structure is below:
    
 ```{verbatim}
 #| eval: false 
@@ -738,7 +742,7 @@ The [app-package]{style='font-weight: bold; color: #007bff'} structure is below:
 3 directories, 10 files
 ```
 
-The `DESCRIPTION` file (shown below) has a few additional fields (`Encoding`, `Roxygen`, and `RoxygenNote`) we didn't include when we converted `projApp` above, but we will cover these in the upcoming chapters. 
+The `DESCRIPTION` file (shown below) has a few additional fields (`Encoding`, `Roxygen`, and `RoxygenNote`) we didn't include when we converted `projApp` above. We will cover these in the upcoming chapters. 
 
 ```{verbatim}
 #| eval: false 
@@ -766,7 +770,7 @@ The code for this section was pushed to the  [[`06_create-package`](https://gith
 
 ## Recap
 
-This chapter has covered the mandatory fields in the `DESCRIPTION` file and the [package]{style='font-weight: bold; color: #E74A2F;'} configuration fields in `.Rproj`. We also covered creating and converting [projects]{style='font-weight: bold; color: #38B44A'} using the `usethis::create_package()` function.
+This chapter has covered the mandatory fields in the `DESCRIPTION` file and the [package]{style='font-weight: bold; color: #720026;'} configuration fields in `.Rproj`. We also covered creating and converting [projects]{style='font-weight: bold; color: #25a18e'} using the `usethis::create_package()` function.
 
 ```{r}
 #| label: co_box_recap
@@ -779,14 +783,14 @@ co_box(
   header = "Recap: Packages!",
   contents = "
   
--   **The `DESCRIPTION` file** ultimately controls whether you have a functional shiny [package]{style='font-weight: bold; color: #E74A2F;'}
-    -   The mandatory fields are: `Package`, `Version`, `License`, `Description`, `Title`, `Author`, and `Maintainer`
+-   **The `DESCRIPTION` file** ultimately controls whether you have a functional shiny [package]{style='font-weight: bold; color: #720026;'}.
+    -   The mandatory fields are `Package`, `Version`, `License`, `Description`, `Title`, `Author`, and `Maintainer`.
 
--   `usethis::create_package()` can be used to create a new [package]{style='font-weight: bold; color: #E74A2F;'} and to convert an existing shiny [project]{style='font-weight: bold; color: #38B44A;'} into a shiny [app-package]{style='font-weight: bold; color: #007bff'}
+-   `usethis::create_package()` can be used to create a new [package]{style='font-weight: bold; color: #720026;'} and to convert an existing shiny [project]{style='font-weight: bold; color: #25a18e;'} into a shiny [app]{style='font-weight: bold; color: #007bff'}-[package]{style='font-weight: bold; color: #720026'}.
 
--   The IDE reads RStudio (`.Rproj`) files and determines R session settings at the [project]{style='font-weight: bold; color: #38B44A;'}-level (i.e., working directory, workspace, history, code formatting, etc.)
+-   The IDE reads RStudio (`.Rproj`) files and determines R session settings at the [project]{style='font-weight: bold; color: #25a18e;'}-level (i.e., working directory, workspace, history, code formatting, etc.)
 
-    -   [Package]{style='font-weight: bold; color: #E74A2F;'} development settings can be accessed via **Project Options** > **Build Tools**
+    -   [Package]{style='font-weight: bold; color: #720026;'} development settings can be accessed via **Project Options** > **Build Tools**.
   
   "
 )
