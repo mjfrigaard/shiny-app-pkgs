@@ -21,9 +21,63 @@ co_box(
 )
 ```
 
-The previous chapter covered what files are needed to create R packages and app-packages, how to create new or convert existing shiny app projects into app-packages with `usethis::create_package()`. 
+The previous chapter described the contents of R packages, how to create new app-packages, and how to convert an existing shiny app project into an app-package. The key points are summarized below: 
 
-After setting up the `DESCRIPTION` file and configuring the package **Build Tools**, we'll need to test it's ‘functionality’ with the [`devtools` package](https://devtools.r-lib.org/).
+```{r}
+#| label: co_box_pkgs_recap
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b", 
+  fold = FALSE,
+  header = "Summary of Chapter 2: Packages",
+  contents = "
+  
+-   R packages require a **`DESCRIPTION`** file with the following fields:
+    -   `Package`, `Version`, `License`, `Description`, `Title`, `Author`, and `Maintainer`.
+
+-   `usethis::create_package()` will create a new app-packages, and can be used to convert existing shiny app projects into a shiny app-packages.
+
+-   The **Build** pane in the IDE requires the package build fields in the `.Rproj` file
+
+    -   The package development settings can be accessed via **Tools** > **Project Options...** > **Build Tools**.
+  
+  "
+)
+```
+
+If you'd like a refresher on the files and folders created in chapter 1, I've provided a summary of these topics below:
+
+```{r}
+#| label: co_box_desc_recap
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b",
+  fold = TRUE,
+  header = "Chapter 1 Refresher:",
+  contents = "
+  
+**`R/` folder**:
+  
+  -   Converting the application code into functions--modules and a standalone app function--and placing them alongside any `utils.R` or `helper.R` files in an `R/` folder removes the need to call `source()` in `app.R`.
+  
+**`www/` folder**:
+  
+  - Images, CSS, JavaScript, and other static resources can be stored in `www/` and Shiny will serve these files when the application is run.
+  
+**Documentation & dependencies:**:
+  
+  - **Documentation** should include a `README.md` that contains the application's purpose, requirements, etc.
+  - **Dependencies** can be managed `renv` by adding a few functions to your regular development workflow (i.e., `renv::status()` and `renv::snapshot()`)
+  
+  "
+)
+```
+
+After creating a `DESCRIPTION` file with the seven mandatory fields and placing all of the `.R` files in the `R/` directory, we'll need to test it's ‘functionality’ with the [`devtools` package](https://devtools.r-lib.org/) (which we'll install and load below).
 
 ```{r}
 #| eval: false 
@@ -36,13 +90,11 @@ By ‘functionality’, I mean the app-package can call the `devtools` functions
 
 Let's get started!
 
-## Developing with [`devtools`]{style="font-size: 1.10em"}
+## Developing packages with [`devtools`]{style="font-size: 1.10em"}
 
 > *"One package to rule them all."* - **not** the `devtools` development team
 
-If you're new to package development, it's helpful to have a little background on the `devtools` package: 
-
-In version 2.0, `devtools` went under a [conscious uncoupling](https://www.tidyverse.org/blog/2018/10/devtools-2-0-0/#conscious-uncoupling), which means there was a "division of labor" for its core functionality:
+If you're new to package development, it's helpful to have a little background on the `devtools` package. Earlier versions of `devtools` contained most of the functions used for package development. In version 2.0, `devtools` went under a [conscious uncoupling](https://www.tidyverse.org/blog/2018/10/devtools-2-0-0/#conscious-uncoupling), which means there was a "division of labor" for its core functionality:
 
 -   The [`usethis`](https://usethis.r-lib.org/) package contains most of the functions for *creating* package folders and files (`.R` files, tests, vignettes, etc.). `usethis` is also automatically loaded when you call `library(devtools)`.
 
@@ -52,33 +104,20 @@ In version 2.0, `devtools` went under a [conscious uncoupling](https://www.tidyv
 
 -   Installing packages from non-CRAN repositories (i.e., `install_github()`) is handled by [`remotes`](https://remotes.r-lib.org/)
 
-You don't have to install any of these packages (they are loaded with `devtools`), but this information is important because it affects the dependencies in your app-package: 
+You don't have to install all of these packages (they will be loaded with `devtools`), but the information is important because it affects the dependencies in your app-package: 
 
 > '*Package developers who wish to depend on `devtools` features should also pay attention to which package the functionality is coming from and depend on that rather than `devtools`. In most cases packages should not depend on `devtools` directly.*' - [devtools 2.0.0, tidyverse blog](https://www.tidyverse.org/blog/2018/10/devtools-2-0-0/#conscious-uncoupling)
 
 We will cover this topic more in the dependencies chapter.
 
-```{r}
-#| label: co_box_pkg_dev_workflow
-#| echo: false
-#| results: asis
-#| eval: true
-co_box(
-  color = "o",
-  header = "Important!",
-  contents = "It would be best if you considered this section to be a brief overview and not a replacement for the ['Whole Game' chapter in R packages (2 ed)](https://r-pkgs.org/whole-game.html) (which I highly recommend reading)", 
-  fold = FALSE
-)
-```
-
 ## [`projApp`]{style="font-size: 1.10em"}
 
-Let's assume we're continuing with the app project we converted manually in the [`05_rproj` branch](https://github.com/mjfrigaard/projApp/tree/05_rproj)  of `projApp` (the contents are below).
+Let's assume we're continuing with the app project we converted manually in the [`04_description` branch](https://github.com/mjfrigaard/projApp/tree/04_description)  of `projApp` (the files and folders are below).
 
 ```{bash}
 #| eval: false 
 #| code-fold: false
-projApp/ # 05_rproj branch
+projApp/ # 04_description branch
   ├── DESCRIPTION
   ├── R
   │   ├── mod_scatter_display.R
@@ -86,87 +125,99 @@ projApp/ # 05_rproj branch
   │   └── utils.R
   ├── README.md
   ├── app.R
+  ├── man
   ├── movies.RData
   ├── projApp.Rproj
   └── www
       └── shiny.png
 
-3 directories, 9 files
-
+4 directories, 9 files
 ```
 
-If you'd like a refresher on the files and folders create in chapters 1 & 2, I've provided a summary of these topics below:
+### [`DESCRIPTION`]{style="font-size: 1.05em"}
+
+The version of `projApp` in this branch has a `DESCRIPTION` file with the seven mandatory fields:
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+# in Terminal
+$ cat DESCRIPTION 
+Package: projApp
+Version: 0.0.0.9000
+Type: Package
+Title: movies app
+Description: A movies data shiny application.
+Author: John Smith [aut, cre]
+Maintainer: John Smith <John.Smith@email.io>
+License: GPL-3
+```
+
+
+### [`projApp.Rproj`]{style="font-size: 1.05em"}
+
+However, the `.Rproj` file is still configured to work with a shiny project: 
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+# in Terminal
+$ cat projApp.Rproj 
+Version: 1.0
+
+RestoreWorkspace: Default
+SaveWorkspace: Default
+AlwaysSaveHistory: Default
+
+EnableCodeIndexing: Yes
+UseSpacesForTab: Yes
+NumSpacesForTab: 2
+Encoding: UTF-8
+
+RnwWeave: Sweave
+LaTeX: XeLaTeX
+```
+
 
 ```{r}
-#| label: co_box_desc_recap
+#| label: co_box_description_branch
 #| echo: false
 #| results: asis
 #| eval: true
 co_box(
   color = "b",
-  fold = TRUE,
-  header = "Chapters 1 & 2 Refresher:",
-  contents = "
+  header = "Why this branch?", 
+  contents = "We're backing up to the [`04_description` branch](https://github.com/mjfrigaard/projApp/tree/04_description) to show the connection between the `devtools` functions and specific fields in the `DESCRIPTION` file. 
   
-  **DESCRIPTION**:
-  
-  - The `DESCRIPTION` file differentiates shiny **Projects** from shiny **Packages**   
-    - R package `DESCRIPTION` mandatory fields: `Package`, `Version`, `License`, `Description`, `Title`, `Author`, and `Maintainer`. 
-  
-    - `DESCRIPTION` files also include fields that can affect application deployment (i.e., `DisplayMode: Showcase`)
-  
-  **Project files**:
-  
-  -   `.Rproj` files determine project-level settings (i.e., working directory, workspace, history, code formatting, etc.)
-      -   Package-level settings can be accessed via **Project Options** > **Build Tools**  
-  
-  **R/ folder**:
-  
-  -   Converting the application code into functions--modules and a standalone app function--and placing them alongside any `utils.R` or `helper.R` files in an `R/` folder removes the need to call `source()` in `app.R`.
-  
-  **Documentation & dependencies:**:
-  
-  - **Documentation** should include a `README.md` that contains the application's purpose, requirements, etc.
-  - **Dependencies** can be managed `renv` by adding a few functions to your regular development workflow (i.e., `renv::status()` and `renv::snapshot()`)
-  
-  "
+If you're package was created or converted with `usethis::create_package()`, these fields are automatically added without any explanation of their role or purpose.", 
+  fold = FALSE
 )
 ```
 
 ## Package development [habits]{style="font-weight: bold; font-size: 1.0em; color: #772953"}
 
 ```{r}
-#| label: co_box_branch_06-devtools
+#| label: co_box_pkg_dev_workflow
 #| echo: false
 #| results: asis
-#| eval: false
+#| eval: true
 co_box(
-  color = "r",
-  header = "GitHub [`projApp`]:[`06_devtools`]",
-  contents = "
-The code for this section can be found in the [[`06-devtools`](https://github.com/mjfrigaard/projApp/tree/06-devtools)] branch of the [[`projApp`](https://github.com/mjfrigaard/projApp)] repo.
-  
-The `06-devtools` branch was created from the `05-convert-manual` branch by entering the following commands in the Terminal:
-  
-  `\`\`\bash
-  git checkout -B 06-devtools
-  git push -u origin 06-devtools
-  `\`\`\
-
-  ", 
+  color = "r", look = "default",
+  header = "Important!",
+  contents = "This section shouldn't be considered a replacement for the ['Whole Game' chapter in R packages (2 ed)](https://r-pkgs.org/whole-game.html) (which I highly recommend reading)", 
   fold = FALSE
 )
 ```
 
-The differences between developing an R package and a shiny app can be boiled down to a handful of habits. Each [habit]{style="font-weight: bold; font-size: 1.0em; color: #772953"} comes with a function: 
+The differences between developing an R package and a shiny app can be boiled down to a handful of habits. These [habit]{style="font-weight: bold; font-size: 1.0em; color: #772953"} call various `devtools` functions: 
 
-1. [Load]{style="font-weight: bold; font-size: 1.0em; color: #772953"} all the functions and data with `load_all()`
+1. [Load]{style="font-weight: bold; font-size: 1.0em; color: #772953"} all the functions and data in your app-package with `load_all()`
 
-2. [Document]{style="font-weight: bold; font-size: 1.0em; color: #772953"} the app functions and data with `document()`
+2. [Document]{style="font-weight: bold; font-size: 1.0em; color: #772953"} the app-package functions and data with `document()`
 
-3. [Install]{style="font-weight: bold; font-size: 1.0em; color: #772953"} the package with `install()`
+3. [Install]{style="font-weight: bold; font-size: 1.0em; color: #772953"} the app-package with `install()`
 
-In the sections below, I'll cover each function and how it should be used when your shiny app becomes an app-package.
+In the sections below, I'll cover each function and my opinion about how it should be used when your shiny app becomes an app-package.
 
 ```{r}
 #| label: co_box_keyboard_shortcuts
@@ -370,21 +421,23 @@ There are a few connections worth making in this initial `install()` output:
 [Install a package after the initial setup, after major changes to the code, documentation, or dependencies, and before committing or sharing.]{style='font-weight: bold; font-size: 1.10em; color: #772953'}
 
 ```{r}
-#| label: co_box_push_06-devtools
+#| label: co_box_branch_06-devtools
 #| echo: false
 #| results: asis
 #| eval: false
 co_box(
   color = "r",
-  header = "GitHub [`projApp`]:[`06-devtools`]",
+  header = "GitHub [`projApp`]:[`06_devtools`]",
   contents = "
-  The code for this section was pushed to the  [[`06-devtools`](https://github.com/mjfrigaard/projApp/tree/06-devtools)] branch of the [[`projApp`](https://github.com/mjfrigaard/projApp)] repo.
+The code for this section can be found in the [[`06_devtools`](https://github.com/mjfrigaard/projApp/tree/06_devtools)] branch of the [[`projApp`](https://github.com/mjfrigaard/projApp)] repo.
+  
+The `06_devtools` branch was created from the `05-convert-manual` branch by entering the following commands in the Terminal:
   
   `\`\`\bash
-  git add .
-  git commit -m 'git message'
-  git push 
+  git checkout -B 06_devtools
+  git push -u origin 06_devtools
   `\`\`\
+
   ", 
   fold = FALSE
 )
