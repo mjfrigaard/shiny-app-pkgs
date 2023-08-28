@@ -164,7 +164,7 @@ It's also satisfying to see all three functions execute without any errors!
 
 The first step in managing dependencies is identifying which add-on packages `pkgApp` relies on. Our goal is to limit the dependencies to only those critical to the functioning of our app, because each additional dependency is a potential point of failure (should this package become unavailable or significantly change).
 
-I've made this process somewhat easier by explicitly namespacing all of the add-on package functions in `pkgApp` (i.e., with `package::function()`). You'll learn more about explicit namespacing in the following sections. 
+I've made this process somewhat easier by explicitly namespacing all of the add-on package functions in `pkgApp` (i.e., with `pkg::fun()`). You'll learn more about explicit namespacing in the following sections. 
 
 ### Running [`movies_app()`]{style="font-size: 1.10em"}
 
@@ -441,7 +441,7 @@ Error in ggplot(data = mtcars,
   could not find function "ggplot"
 ```
 
-If we want to use functions from the packages `pkgApp` relies on, we need to explicitly namespace these functions from their original package namespaces (i.e., `package::function()`): 
+If we want to use functions from the packages `pkgApp` relies on, we need to explicitly namespace these functions from their original package namespaces (i.e., `pkg::fun()`): 
 
 ::: {layout-ncol=2}
 
@@ -465,7 +465,7 @@ ggplot2::ggplot(data = mtcars,
 co_box(
   color = "g",
   header = "Accessing add-on package functions",
-  contents = "When a user loads `pkgApp` with `library(pkgApp)`, any add-on package functions used in an export is available to users if they use `package::function()` (or if they load the package themselves with `library()`).", 
+  contents = "When a user loads `pkgApp` with `library(pkgApp)`, any add-on package functions used in an export is available to users if they use `pkg::fun()` (or if they load the package themselves with `library()`).", 
   fold = FALSE
 )
 ```
@@ -726,9 +726,9 @@ I've also added [emphasis]{style="color: #E74A2F;"} to the parts I've found are 
 
 There are three ways to import add-on packages and functions into your app-package:
 
-1. Use a 'fully qualified variable reference' (i.e., the `package::function()` syntax) (*we're already using this method with `movies_app()` and `scatter_plot()`*).
+1. Use a 'fully qualified variable reference' (i.e., the `pkg::fun()` syntax) (*we're already using this method with `movies_app()` and `scatter_plot()`*).
 
-2. List the package in the `Import` field of the `DESCRIPTION` file
+2. List the package in the `Imports` field of the `DESCRIPTION` file
 
 3. Include an `@import` or `@importFrom` tag from `roxygen2` (this will add `import()` or `importFrom()` in the `NAMESPACE`) 
 
@@ -739,17 +739,17 @@ Below is a collection of relevant information for each method above you're likel
 
 ::: {.panel-tabset}
 
-### [`package::function()`]{style="font-size: 0.90em;"}
+### [`pkg::fun()`]{style="font-size: 0.90em;"}
 
-The official R documentation refers to the `package::function()` syntax as a 'fully-qualified reference':
+The official R documentation refers to the `pkg::fun()` syntax as a 'fully-qualified reference':
 
 > "*A fully-qualified reference to the function `f` in package `foo` is of the form `foo::f`.*" - [Specifying imports and exports](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Specifying-imports-and-exports)
 
-[R Packages, 2ed](https://r-pkgs.org/) recommends using '`package::function()`' for all calls to add-on package functions:
+[R Packages, 2ed](https://r-pkgs.org/) recommends using '`pkg::fun()`' for all calls to add-on package functions:
 
 > "*Our recommended default is to call external functions using the `package::function()` syntax*" - [R Packages 2ed, In code below `R/`](https://r-pkgs.org/dependencies-in-practice.html#sec-dependencies-in-imports)
 
-Using '`package::function()`' can seem tedious at first, but fortunately we have tools like tab-completion (if you're using the Posit Workbench IDE) and packages like [`sinew`](https://yonicd.github.io/sinew/) (which we'll cover in a later chapter)
+Using '`pkg::fun()`' can seem tedious at first, but fortunately we have tools like tab-completion (if you're using the Posit Workbench IDE) and packages like [`sinew`](https://yonicd.github.io/sinew/) (which we'll cover in a later chapter)
 
 ### [`Imports` (`DESCRIPTION`)]{style="font-size: 0.90em;"}
 
@@ -771,7 +771,7 @@ The official R documentation assumes you'll be editing the `NAMESPACE` manually 
 
 #### [How and where]{style="font-weight: bold;"} in [`pkgApp`]{style="font-size: 1.05em;"}
 
-We're already using `package::function()` in the two exported functions from `pkgApp` (`movies_app()` and `scatter_plot()`), so let's cover when and why to list these packages and functions as imports.
+We're already using `pkg::fun()` in the two exported functions from `pkgApp` (`movies_app()` and `scatter_plot()`), so let's cover when and why to list these packages and functions as imports.
 
 ```{r}
 #| eval: false
@@ -806,23 +806,23 @@ Knowing [when and why]{style="font-weight: bold;"} to use each method above is j
 
 ::: {.panel-tabset}
 
-### [`package::function()`]{style="font-size: 0.90em;"}
+### [`pkg::fun()`]{style="font-size: 0.90em;"}
 
-If we're only using a handful of functions from an add-on package, using the `package::function()` is fine:
+If we're only using a handful of functions from an add-on package, using the `pkg::fun()` is fine:
 
 > "*If a package [only needs a few objects from another package]{style="color: #E74A2F;"} it can use a fully qualified variable reference (`foo::f`) in the code instead of a formal import.*" - [Specifying imports and exports](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Specifying-imports-and-exports)
 
-This is the case in `pkgApp` for the two exported functions (i.e., `ggplot2`, `rlang`), but we should also use the `package::function()` syntax if there is a potential name conflict:
+This is the case in `pkgApp` for the two exported functions (i.e., `ggplot2`, `rlang`), but we should also use the `pkg::fun()` syntax if there is a potential name conflict:
 
 > *Using the `foo::f` form will be necessary when a package needs to use a function of the [same name from more than one namespace.]{style="color: #E74A2F;"}*" - [Specifying imports and exports](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Specifying-imports-and-exports)
 
-[R Packages, 2ed](https://r-pkgs.org/) recommends defaulting to `package::function()` for calls to any add-on packages in the `R/` folder because it makes these calls more explicit:
+[R Packages, 2ed](https://r-pkgs.org/) recommends defaulting to `pkg::fun()` for calls to any add-on packages in the `R/` folder because it makes these calls more explicit:
 
 > "*...the `package::function()` calling style is also our default recommendation for how to use your dependencies in the code below R/, [because it eliminates all ambiguity.]{style="color: #E74A2F;"}*" - [R packages](https://r-pkgs.org/dependencies-mindset-background.html#sec-dependencies-namespace-motivation)
 
 ### [`Imports` (`DESCRIPTION`)]{style="font-size: 0.90em;"}
 
-The official R documentation indicates any add-on package functions using `package::function()` should be listed in the `DESCRIPTION`  (specifically, the `Imports` field).
+The official R documentation indicates any add-on package functions using `pkg::fun()` should be listed in the `DESCRIPTION`  (specifically, the `Imports` field).
 
 > "*The `Imports` field lists packages whose namespaces are imported from (as specified in the `NAMESPACE` file) but which do not need to be attached. [Namespaces accessed by the `::` and `:::` operators must be listed here.]{style="color: #E74A2F;"}*" - [Package Dependencies](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Package-Dependencies)
 
@@ -830,7 +830,7 @@ You might be wondering, "*What if I list a package in `DESCRIPTION`/`Imports` fi
 
 > "*It is common for a package to be listed in `Imports` in `DESCRIPTION`, but not in `NAMESPACE`. The converse is not true. [Every package mentioned in `NAMESPACE` must also be present in the `Imports` or `Depends` fields.]{style="color: #E74A2F;"}*" - [Confusion about Imports](https://r-pkgs.org/dependencies-in-practice.html#confusion-about-imports)
 
-On when to use `Import` vs. `Depends`:
+On when to use `Imports` vs. `Depends`:
 
 > *Unless there is a good reason otherwise, [you should always list packages in `Imports` not `Depends`]{style="color: #E74A2F;"}.*" - [Whether to Import or Depend](https://r-pkgs.org/dependencies-mindset-background.html#sec-dependencies-namespace)
 
@@ -838,13 +838,13 @@ On when to use `Import` vs. `Depends`:
 
 The official R documentation states 'variables exported from other packages' need to be imported: 
 
-> "*Variables exported from [other packages with namespaces need to be imported explicitly using the directives `import` and `importFrom`]{style="color: #E74A2F;"}*" [Specifying imports and exports](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Specifying-imports-and-exports)
+> "*Variables exported from [other packages with namespaces need to be imported explicitly using the directives `Imports` and `importFrom`]{style="color: #E74A2F;"}*" [Specifying imports and exports](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Specifying-imports-and-exports)
 
 But it also recommends using `@importFrom` over `@import` in most cases:
 
-> "*Using `importFrom` selectively rather than `import` is good practice and recommended notably [when importing from packages with more than a dozen exports and especially from those written by others (so what they export can change in future)]{style="color: #E74A2F;"}.*" - [Specifying imports and exports](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Specifying-imports-and-exports). 
+> "*Using `importFrom` selectively rather than `Imports` is good practice and recommended notably [when importing from packages with more than a dozen exports and especially from those written by others (so what they export can change in future)]{style="color: #E74A2F;"}.*" - [Specifying imports and exports](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Specifying-imports-and-exports). 
 
-'Formal imports' are also referred to more efficient than using `package::function()` in the following section (a 'formal import' means the add-on package function uses `import()` or `importFrom()` in the `NAMESPACE`): 
+'Formal imports' are also referred to more efficient than using `pkg::fun()` in the following section (a 'formal import' means the add-on package function uses `import()` or `importFrom()` in the `NAMESPACE`): 
 
 > "*[`foo::f`] is slightly [less efficient than a formal import]{style="color: #E74A2F;"} and also loses the advantage of recording all dependencies in the `NAMESPACE` file"* - [Specifying imports and exports](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Specifying-imports-and-exports). 
 
@@ -869,11 +869,11 @@ If you happen to read the advice from the footnote, you'll also find somewhat co
 
 #### [When and why]{style="font-weight: bold;"} in [`pkgApp`]{style="font-size: 1.05em;"}
 
-I think the best guidance on when and why to use `package::function()`, `@importFrom`, and the `Import` field in the `DESCRIPTION` comes from the `roxygen2` documentation:
+I think the best guidance on when and why to use `pkg::fun()`, `@importFrom`, and the `Imports` field in the `DESCRIPTION` comes from the `roxygen2` documentation:
 
 > *"if you are using just a few functions from another package, we recommending adding the package to the `Imports:` field of the `DESCRIPTION` file and calling the functions explicitly using `::`, e.g., `pkg::fun()`"*
 >
-> *"If the repetition of the package name becomes annoying you can `@importFrom` and drop the [`package::function()`]"* - [Importing functions](https://roxygen2.r-lib.org/articles/namespace.html#functions)
+> *"If the repetition of the package name becomes annoying you can `@importFrom` and drop the [`pkg::fun()`]"* - [Importing functions](https://roxygen2.r-lib.org/articles/namespace.html#functions)
 
 Following this advice and the exceptions to the rule regarding 'heavy use' and 'operators' from add-on packages, we can replace the explicit namespacing from all calls to shiny functions (i.e., `shiny::`) with the `@import` tag in `R/movies_app.R`:
 
@@ -946,33 +946,26 @@ scatter_plot <- function(df, x_var, y_var, col_var, alpha_var, size_var) {
 
 Finally, we need to add each add-on package to the `Imports` field in the `DESCRIPTION` using `usethis::use_package()`:
 
-```{r}
+```{verbatim}
 #| eval: false 
 #| code-fold: false
 usethis::use_package("shiny")
-usethis::use_package("shinythemes")
-usethis::use_package("stringr")
-usethis::use_package("ggplot2")
-usethis::use_package("rlang")
-```
-
-```{bash}
-#| eval: false 
-#| code-fold: true 
-#| code-summary: 'show/hide output from usethis::use_package()'
 ✔ Setting active project to '/Users/mjfrigaard/projects/pkgs/apps/pkgApp'
 ✔ Adding 'shiny' to Imports field in DESCRIPTION
 • Refer to functions with `shiny::fun()`
+usethis::use_package("shinythemes")
 ✔ Adding 'shinythemes' to Imports field in DESCRIPTION
 • Refer to functions with `shinythemes::fun()`
+usethis::use_package("stringr")
 ✔ Adding 'stringr' to Imports field in DESCRIPTION
 • Refer to functions with `stringr::fun()`
+usethis::use_package("ggplot2")
 ✔ Adding 'ggplot2' to Imports field in DESCRIPTION
 • Refer to functions with `ggplot2::fun()`
+usethis::use_package("rlang")
 ✔ Adding 'rlang' to Imports field in DESCRIPTION
 • Refer to functions with `rlang::fun()`
 ```
-
 
 When I load, document, and install `pkgApp`, the changes are made to the `NAMESPACE`:
 
@@ -984,7 +977,7 @@ Below are the updated `NAMESPACE` and `DESCRIPTION` files:
 
 ::: {#fig-03_dependencies_namespace_import_shiny layout-ncol=2}
 
-![Updated `NAMESPACE` with `import` and `importFrom](img/03_dependencies_namespace_import_importFrom.png){#fig-03_dependencies_namespace_import_shiny width='50%' align='center'}
+![Updated `NAMESPACE` with `Imports` and `importFrom](img/03_dependencies_namespace_import_importFrom.png){#fig-03_dependencies_namespace_import_shiny width='50%' align='center'}
 
 ![Updated `DESCRIPTION` with all  `Imports`](img/03_dependencies_description_imports.png){#fig-03_dependencies_namespace_import_shiny width='50%' align='center'}
 
@@ -1006,13 +999,13 @@ In the next section, we're going to cover what happens when these packages and f
 
 ### [What happens?]{style="font-weight: bold; font-size: 1.05em;"}
 
-This section gets a bit technical, but I've done my best to include what I consider to be the necessary distinctions between using explicit namespacing (`package::function()`), `@importFrom`, `@import`, and the `Imports` field in the `DESCRIPTION.`
+This section gets a bit technical, but I've done my best to include what I consider to be the necessary distinctions between using explicit namespacing (`pkg::fun()`), `@importFrom`, `@import`, and the `Imports` field in the `DESCRIPTION.`
 
 :::: {.callout-note collpase="false" icon=false title="What happens to imported add-on package functions?"}
 
 ::: {.panel-tabset}
 
-### [`package::function()`]{style="font-size: 0.90em;"}
+### [`pkg::fun()`]{style="font-size: 0.90em;"}
 
 > "*Evaluating `foo::f` will cause package `foo` to be [loaded, but not attached]{style="color: #E74A2F;"}, if it was not loaded already*" - [Specifying imports and exports](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Specifying-imports-and-exports). 
 
@@ -1096,7 +1089,7 @@ pkgs %in% loadedNamespaces()
 [1] TRUE TRUE TRUE TRUE TRUE
 ```
 
-So we can still access these functions using the `package::function()` syntax: 
+So we can still access these functions using the `pkg::fun()` syntax: 
 
 ::: {layout-ncol=2}
 
@@ -1163,7 +1156,7 @@ co_box(
   
   - **Exports**: Aim for a balance between simplicity and utility when deciding which functions to export ((i.e., what functions should be available to users who install your package). Export objects from using `@export`
   
-  - **`DESCRIPTION` `Imports:`** This field lists the packages your app-package uses. All add-on packages used in the `R/` folder must be listed in the `Imports` field. These functions can be called using the `package::function()` syntax (or with `@importFrom()`). Functions from these packages will be available for your package, but not for the user unless they use the `::` operator or load the package themselves with `library()`.
+  - **`DESCRIPTION` `Imports:`** This field lists the packages your app-package uses. All add-on packages used in the `R/` folder must be listed in the `Imports` field. These functions can be called using the `pkg::fun()` syntax (or with `@importFrom()`). Functions from these packages will be available for your package, but not for the user unless they use the `::` operator or load the package themselves with `library()`.
   
   - **`NAMESPACE` imports**: The `@import`/`@importFrom` tags make the functions from add-on packages available to your package. Favor using `@importFrom` over `@import` for add-on package functions (the only exception being `shiny`, which you'd want to use `@import`).
   
