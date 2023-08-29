@@ -67,3 +67,14 @@ co_box <- function(color, header, contents = "Your text", fold = FALSE, look = "
     stop("Invalid `type`", call. = FALSE)
   )
 }
+
+git_margin_box <- function(fig_pw = '70%', branch = 'main', repo = 'shinyap') {
+  cat(paste0(
+      "\n",
+      "::: {.column-margin}\n\n",
+      "![Git Branch](img/new_branch_ico.png){width='", fig_pw, "'}\n\n",
+      "This section's code is in the [`", repo, "`](https://github.com/mjfrigaard/", repo, ")
+      repo's [`", branch, "`](https://github.com/mjfrigaard/", repo, "/tree/", branch, ") branch \n\n",
+      "::: \n\n"
+    ))
+}
