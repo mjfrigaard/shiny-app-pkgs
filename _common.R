@@ -1,3 +1,7 @@
+
+options(width = 50L,
+  pillar.width = 50L)
+
 co_box <- function(color, header, contents = "Your text", fold = FALSE, look = "default") {
   
   if (look == "simple") {

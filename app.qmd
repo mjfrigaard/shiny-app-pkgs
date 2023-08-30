@@ -173,48 +173,52 @@ Error in movies_app() : could not find function "movies_app"
 
 However, if we run call `shiny::runApp()` in the **Console**, we see the following: 
 
-:::: {.column-page-inset-right layout="[ [1,3] ]"}
+::: {#fig-05_app_roxygen2_runApp_console}
 
-```{r}
-#| eval: false
-#| code-fold: false
-shiny::runApp()
-```
+![Calling `runApp()` in `02_roxygen2`](img/05_app_roxygen2_runApp_console.png){#fig-05_app_roxygen2_runApp_console width=100%}
 
-
-![Calling `runApp()` in `02_roxygen2`](img/05_app_roxygen2_runApp_console.png){#fig-05_runApp width=100%}
-
-::::
+The application is launched (with the `loadSupport()` warning)
+:::
 
 #### Feature or bug?
 
-We're seeing the `loadSupport()` warning because one of the features of `shiny` projects is to `source()` the files in the `R/` folder (which we covered in [Chapter 1](https://mjfrigaard.github.io/shinyap/shiny.html#r)). 
+The example above demonstrates 1) the differences between `shinyApp()` and `runApp()`, and 2) the tensions between the R package structure and the `shiny` framework. 
 
-However, after converting the contents of `pkgApp` into an app-package (like the versions in the `main` and `02_roxygen2` branches), the contents of `R/` are loaded with `devtools::load_all()`. The `app.R` file should account for running apps from an app-package (not a `shiny` project).
+-   The reason we're able to call `runApp()` in the **Console** and launch the application in `movies_app()` is because `runApp()` is designed to work with directories containing shiny apps (not `ui` and `server` arguments).
 
-In the following section, we'll compare `shinyApp()` and `runApp()` to uncover why `shinyApp()` should be used when the app has inline definitions for the `ui` and `server` arguments in a single `.R` script , while `runApp()` is geared towards running directory-based apps. 
+-   We're seeing the `loadSupport()` warning because one of the features of `shiny` projects is to `source()` the files in the `R/` folder (which we covered in [Chapter 1](https://mjfrigaard.github.io/shinyap/shiny.html#r)). However, after converting the contents of `pkgApp` into an app-package (like the versions in the `main` and `02_roxygen2` branches), the contents of `R/` are loaded with `devtools::load_all()`. 
+
+In the following section, we'll compare `shinyApp()` and `runApp()` to determine which one to use in `R/movies_app.R` and the `app.R` file.   
 
 ## [`shinyApp()`]{style="font-size: 1.05em"} vs. [`runApp()`]{style="font-size: 1.05em"}
 
 `shinyApp()` is typically used to create apps within an interactive R session (like the R console or in Posit Workbench). Developers can use `shinyApp()` to quickly spin up simple applications by defining `ui` and `server` arguments (e.g. as `shinyApp(ui, server)`), which is why its included as the boilerplate app with new `shiny` project. 
 
-`runApp()` is designed to run standalone apps located in a separate directory containing `ui.R` and `server.R` (or `app.R`) files. This feature is beneficial for app-packages, because apps can be organized inside a dedicated sub-directory and be launched with `runApp()`.
+```{r}
+#| eval: false 
+#| code-fold: false
+shinyApp(
+  ui = fluidPage(
+    # UI elements
+  ),
+  server = function(input, output) {
+    # Server logic
+  }
+)
+```
+
+
+`runApp()` is designed to run standalone apps located in a separate directory containing `ui.R` and `server.R` (or `app.R`) files. This feature is beneficial for app-packages, because apps can be organized inside a dedicated sub-directory and provided to the `appDir` argument.
+
+```{r}
+#| eval: false 
+#| code-fold: false
+runApp(appDir = "path/to/app/folder")
+```
 
 ## Updated [`movies_app()`]{style="font-size: 1.10em"}
 
 One of the key features of `shinyApp()` is the creation of the `shiny.appobj` (a `shiny` app object):
-
-```{r}
-#| label: git_box_pkgApp_05_run-app
-#| echo: false
-#| results: asis
-#| eval: true
-git_margin_box(
-  contents = "alt",
-  fig_pw = '75%', 
-  branch = "05_run-app", 
-  repo = 'pkgApp')
-```
 
 
 ```{r}
@@ -393,6 +397,19 @@ pkgApp::movies_app(test = FALSE)
 ```
 
 When we send the contents of `app.R` to the **Console**, the control flow safely loads `pkgApp` before running the app:
+
+```{r}
+#| label: git_box_pkgApp_05_run-app
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "standard",
+  fig_pw = '75%', 
+  branch = "05_run-app", 
+  repo = 'pkgApp')
+```
+
 
 :::{#fig-05_app_run_app_dot_r}
 
