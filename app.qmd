@@ -190,19 +190,19 @@ shiny::runApp()
 
 We're seeing the `loadSupport()` warning because one of the features of `shiny` projects is to `source()` the files in the `R/` folder (which we covered in [Chapter 1](https://mjfrigaard.github.io/shinyap/shiny.html#r)). 
 
-However, after converting the contents of `pkgApp` into an app-package (like the one in the `02_roxygen2` branch), the contents of `R/` are loaded with `devtools::load_all()` instead of `source()`. We should make sure the `app.R` accounts for `pkgApp` the app-package (not a `shiny` project).
+However, after converting the contents of `pkgApp` into an app-package (like the versions in the `main` and `02_roxygen2` branches), the contents of `R/` are loaded with `devtools::load_all()`. The `app.R` file should account for running apps from an app-package (not a `shiny` project).
 
-In the following section we'll compare `shinyApp()` and `runApp()` to uncover why `shinyApp()` should be used when the app has inline definitions for the `ui` and `server` arguments in a single `.R` script , while `runApp()` is geared towards running directory-based apps. 
+In the following section, we'll compare `shinyApp()` and `runApp()` to uncover why `shinyApp()` should be used when the app has inline definitions for the `ui` and `server` arguments in a single `.R` script , while `runApp()` is geared towards running directory-based apps. 
 
 ## [`shinyApp()`]{style="font-size: 1.05em"} vs. [`runApp()`]{style="font-size: 1.05em"}
 
-`shinyApp()` is typically used to create apps within an interactive R session (like the R console or in Posit Workbench). When provided a pair of `ui` and `server` definitions (e.g. as `shinyApp(ui, server)`), developers can use `shinyApp()` to quickly spin up simple applications (that's why its included as the boilerplate app with new `shiny` project). 
+`shinyApp()` is typically used to create apps within an interactive R session (like the R console or in Posit Workbench). Developers can use `shinyApp()` to quickly spin up simple applications by defining `ui` and `server` arguments (e.g. as `shinyApp(ui, server)`), which is why its included as the boilerplate app with new `shiny` project. 
 
-`runApp()` is designed to run standalone `shiny` apps that are located in a separate directory containing `ui.R` and `server.R` (or `app.R`) files. In app-packages, apps can be organized inside an `inst/` or `inst/apps/` directory, and we can use `runApp()` to launch it.
+`runApp()` is designed to run standalone apps located in a separate directory containing `ui.R` and `server.R` (or `app.R`) files. This feature is beneficial for app-packages, because apps can be organized inside a dedicated sub-directory and be launched with `runApp()`.
 
-In practice, if you're just testing out a quick idea or demonstrating something in a single script, `shinyApp()` is convenient. For more complex or production-level apps, the directory structure supported by `runApp()` offers more flexibility and organization.
+## Updated [`movies_app()`]{style="font-size: 1.10em"}
 
-## Updated [`app.R`]{style="font-size: 1.10em"}
+One of the key features of `shinyApp()` is the creation of the `shiny.appobj` (a `shiny` app object):
 
 ```{r}
 #| label: git_box_pkgApp_05_run-app
@@ -216,36 +216,65 @@ git_margin_box(
   repo = 'pkgApp')
 ```
 
-#### [`test.mode`]{style="font-size: 1.05em"}
 
 ```{r}
 #| eval: false 
 #| code-fold: false
-#' Movies app standalone function
-#'
-#' Wrapper function for `shiny::shinyApp()`
-#'
-#' @return shiny app
-#' 
-#' 
-#' @seealso [mod_var_input_ui()], [mod_var_input_server()], [mod_scatter_display_ui()], [mod_scatter_display_server()]
-#'
-#' @export
-#' 
-#' @import shiny
-#' 
-movies_app <- function(runApp = TRUE) {
+app <- shiny::shinyApp(
+                ui = movies_ui, 
+                server = movies_server)
+str(app)
+```
+
+If we look at the structure of the returned object from `shinyApp()`, we see the `shiny.appobj` includes the `appDir` (the first argument of `runApp()`).
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+List of 5
+ $ httpHandler     :function (req)  
+ $ serverFuncSource:function ()  
+ $ onStart         : NULL
+ $ options         : list()
+ $ appOptions      :List of 2
+  ..$ appDir       : chr "/path/to/app/project/pkgApp"
+  ..$ bookmarkStore: NULL
+ - attr(*, "class")= chr "shiny.appobj"
+```
+
+We'll rewrite `movies_app()` below using `shiny::runApp()`.
+
+#### [`test.mode`]{style="font-size: 1.05em"}
+
+Another great feature of `runApp()` is the ability to control the application's behavior with `test.mode`:
+
+> '*Should the application be launched in test mode? This is only used for recording or running automated tests. Defaults to the `shiny.testmode` option, or `FALSE` if the option is not set.*'
+
+The `test.mode` argument lets us [export values from our application]((https://shiny.posit.co/r/reference/shiny/1.0.2/exporttestvalues)) when we're running tests (which we'll cover in-depth in the testing chapter). 
+
+We'll make `test` an optional `TRUE`/`FALSE` option in our updated  `movies_app()` function.
+
+```{r}
+#| eval: false 
+#| code-fold: false
+movies_app <- function(test = TRUE) {
   app <- shiny::shinyApp(
                   ui = movies_ui, 
                   server = movies_server)
-   if (runApp)
-      shiny::runApp(app, test.mode = TRUE)
+   if (test)
+      shiny::runApp(appDir = app, test.mode = TRUE)
    else
-      app
+      shiny::runApp(appDir = app, test.mode = FALSE)
 }
 ```
 
-### [`interactive()`]{style="font-size: 1.05em"}
+## Updated [`app.R`]{style="font-size: 1.10em"}
+
+Now that we've updated the `movies_app()` function, we should re-write the contents of `app.R` to account for the app-package structure. 
+
+### [`if (!interactive())`]{style="font-size: 0.95em"}
+
+The first thing we should include is a check to see if there is a "*[human operator to interact with](https://stat.ethz.ch/R-manual/R-devel/library/base/help/interactive.html)*" with `base::interactive()`:
 
 ```{r}
 #| eval: false 
@@ -257,31 +286,69 @@ if (!interactive()) {
 }
 ```
 
-### [`stderr()`]{style="font-size: 1.05em"}
+You have probably seen control flow like this in `shiny` help file examples (like `flowLayout()` below).
+
+:::{#fig-05_app_interactive}
+
+![`if (interactive())` in `flowLayout()` example](img/05_app_interactive.png){#fig-05_app_interactive width=100%}
+
+Running examples interactively let's us see the app demo beneath the code
+:::
+
+
+
+#### [`stderr()`]{style="font-size: 0.85em"}
+
+What if the session isn't interactive (i.e., `!interactive() == TRUE`)? 
+
+In this case, we'll divert all outputs (standard output `stdout()` and standard error (`stderr()`)) to go to the same place (`stderr()`). 
 
 ```{r}
 #| eval: false 
 #| code-fold: false
 if (!interactive()) {
    sink(stderr(), type = "output")
-   tryCatch({
+} else {
+   
+}
+```
+
+
+This is useful in a non-interactive settings if we want to re-direct the error output for the console text-mode connection.
+
+#### [`tryCatch()`]{style="font-size: 0.85em"}
+
+`tryCatch()` is used for 'catching conditions' during the execution of an expression (`expr = `):
+
+```{r}
+#| eval: false 
+#| code-fold: false
+if (!interactive()) {
+   sink(stderr(), type = "output")
+   tryCatch(expr = {
       library(pkgApp)
    }, error = function(e) {
-      
+      pkgload::load_all()
    })
 } else {
    
 }
 ```
 
-### [`pkgload::load_all()`]{style="font-size: 1.05em"}
+In this case, if `library(pkgApp)` throws an error, the function specified after `error =` is executed (i.e., `pkgload::load_all()`).
+
+Written this way, in a non-interactive R session, `app.R` will re-direct the error output and attempt to load and attach `pkgApp`, and if this fails, `app.R` will attempt to load all the files in the `R/` folder. 
+
+### [`pkgload::load_all()`]{style="font-size: 0.95em"}
+
+If the session ***is*** interactive (i.e., `!interactive() == FALSE`), we want `app.R` to load all the code in the `R/` folder with `pkgload::load_all()`.
 
 ```{r}
 #| eval: false 
 #| code-fold: false
 if (!interactive()) {
    sink(stderr(), type = "output")
-   tryCatch({
+   tryCatch(expr = {
       library(pkgApp)
    }, error = function(e) {
       pkgload::load_all()
@@ -291,12 +358,28 @@ if (!interactive()) {
 }
 ```
 
+Recall that `pkgload::load_all()` is function [actually called when we run `devtools::load_all()`](https://www.tidyverse.org/blog/2018/10/devtools-2-0-0/) (or use [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd>]{style="font-weight: bold; font-size: 0.75em"}), and that this is analogous to running `library(pkgApp)`
+
+## Calling [`movies_app()`]{style="font-size: 1.10em"}
+
+After loading, documenting, and installing `pkgApp`, we'll run `movies_app()` in the **Console** to see if we're still getting the `loadSupport()` warning: 
+
+:::{#fig-05_app_movies_app_console}
+
+![Running `movies_app()` in **Console**](img/05_app_movies_app_console.png){#fig-05_app_movies_app_console width=100%}
+
+The `loadSupport()` warning is gone
+:::
+
+
+In `app.R` is a call to `movies_app()` (with `test` set to `FALSE` because we haven't set up our testing suite yet).
+
 ```{r}
 #| eval: false 
 #| code-fold: false
 if (!interactive()) {
    sink(stderr(), type = "output")
-   tryCatch({
+   tryCatch(expr = {
       library(pkgApp)
    }, error = function(e) {
       pkgload::load_all()
@@ -306,32 +389,48 @@ if (!interactive()) {
 }
 
 # movies_app ------------------------------------
-pkgApp::movies_app(runApp = interactive())
+pkgApp::movies_app(test = FALSE)
 ```
 
+When we send the contents of `app.R` to the **Console**, the control flow safely loads `pkgApp` before running the app:
+
+:::{#fig-05_app_run_app_dot_r}
+
+![Sending `app.R` to **Console**](img/05_app_run_app_dot_r.png){#fig-05_app_run_app_dot_r width=100%}
+
+`pkgApp` is loaded before running `movies_app()`
+:::
 
 ## Recap
 
-### [`shinyApp()`]{style="font-size: 1.05em"} 
+This chapter has covered some options for what to include in the `app.R` file of your app-package. The differences between `shinyApp()` and `runApp()` are worth exploring further, especially if you plan on having more than one apps in a package (or multiple versions of the same application in the same app-package).
 
--   `shinyApp()` is useful for quick prototyping or when your app is defined in a single `.R` script.
+```{r}
+#| label: co_box_app_recap
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b",
+  header = "Recap: `shinyApp()` vs. `runApp()`",
+  contents = "
 
--   `shinyApp()` doesn't care about file structure since you are passing `ui` and `server` definitions directly.
+**`shinyApp()`**: 
 
--   Since the app's definition is contained directly within the call to `shinyApp()`, it can be a bit more portable in the sense of sharing a single script. However, this can become unwieldy for larger apps.
+-   `shinyApp()` doesn't care about file structure, so it's useful for quick prototyping or if the app is in a single `.R` script. It's also more portable because you can share your app with a single `.R` script.
 
 -   It's possible to bundle `shinyApp()` in a wrapper function to integrate within an R package (like we've done with `movies_app()`).
 
--    `shinyApp()` can return a Shiny app object, which can be useful if you want to further manipulate or explore the app structure programmatically.
+-    `shinyApp()` can also be used to return a shiny app object, which can be useful if you want to explore the app structure programmatically (i.e., testing).
 
-### [`runApp()`]{style="font-size: 1.05em"} 
+**`runApp()`**
 
--   `runApp()` is intended for running Shiny apps that are contained in a directory structure. If you've organized your app with separate `ui.R` and `server.R` files, or `app.R` in a directory, you would use `runApp()` to launch it
+-   `runApp()` is designed for running apps contained in a directory (i.e., `runApp('path/to/app')`. If the app is in separate `ui.R` and `server.R` files (or a single `app.R` file) `runApp()` will automatically look for these. However, a shiny app object can also be passed to the `appDir` argument to launch your app.
 
--   The primary argument in `runApp()` is a path to the directory containing the Shiny app, e.g., `runApp("path/to/app")`. However, `runApp()` can also be called without any arguments from within a directory that contains a Shiny app.
+-   If you've separated your app into multiple files that includes additional assets like data or a `www/` folder, `runApp()` is a better option.
+  ", 
+  fold = FALSE
+)
+```
 
--    Expects a specific directory structure. If you have separate `ui.R` and `server.R` files, `runApp()` will automatically look for these. If you have a single `app.R` file, it will execute that.
-
--   Designed for apps that have grown beyond a simple script, where separating UI and server logic, and perhaps including additional assets like datasets or `www` content, makes sense.
-
--   Typically does not return a value; its primary purpose is to execute the app.
+In the following chapter, we're going to cover how to ensure `movies.Data` becomes part of the `pkgApp` namespace.
