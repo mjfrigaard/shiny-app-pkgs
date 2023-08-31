@@ -19,7 +19,9 @@ co_box(
 )
 ```
 
-The `inst/` folder plays a special role in R packages, and can be incredibly helpful for app-packages. In the previous chapter we covered including external datasets in the `inst/extdata/` folder and accessing these files with `system.file()`. In this chapter we'll cover how to add external resources (i.e., the files stored in the `www/` folder of your shiny app project) to your shiny app-packages.
+The `inst/` folder plays a special role in R packages, and can be incredibly helpful for app-packages. In the previous chapter we covered including external datasets in the `inst/extdata/` folder, and accessing these files with `system.file()`. 
+
+In this chapter we'll cover how to add external resources (i.e., the files stored in the `www/` folder of your shiny app project) to your shiny app-packages.
 
 
 ```{r}
@@ -28,17 +30,17 @@ The `inst/` folder plays a special role in R packages, and can be incredibly hel
 #| eval: false
 ```
 
-## [`pkgApp`]{style="font-size: 1.05em;"}
+## This is `pkgApp`...
 
 The current structure of `pkgApp` is below:
 
-```{verbatim}
+```{bash}
 #| eval: false 
 #| code-fold: false
 pkgApp/
   ├── DESCRIPTION
   ├── NAMESPACE
-  ├── R/
+  ├── R
   │   ├── data.R
   │   ├── mod_scatter_display.R
   │   ├── mod_var_input.R
@@ -48,12 +50,13 @@ pkgApp/
   │   └── scatter_plot.R
   ├── README.md
   ├── app.R
-  ├── data/
-  │   └── movies.RData
-  ├── inst/
+  ├── data
+  │   ├── movies.RData
+  │   └── movies.rda
+  ├── inst
   │   └── extdata
   │       └── movies.fst
-  ├── man/
+  ├── man
   │   ├── mod_scatter_display_server.Rd
   │   ├── mod_scatter_display_ui.Rd
   │   ├── mod_var_input_server.Rd
@@ -64,31 +67,32 @@ pkgApp/
   │   ├── movies_ui.Rd
   │   └── scatter_plot.Rd
   ├── pkgApp.Rproj
-  └── www/
+  └── www
       └── shiny.png
-
-7 directories, 24 files
+  
+  7 directories, 25 files
 ```
 
 When we run `movies_app()`, we see the following: 
 
 :::: {.column-body-outset-right}
 
-::: {#fig-movies_app_data_no_img}
-![`movies_app()` without logo](img/movies_app_data_no_img.png){#fig-movies_app_data_no_img width='100%' fig-align='center'}
+::: {#fig-08_inst_movies_app_data_no_img}
+![`movies_app()` without logo](img/08_inst_movies_app_data_no_img.png){#fig-08_inst_movies_app_data_no_img width='100%' fig-align='center'}
 
 `www` not accessible in `pkgApp`
 :::
 
 ::::
 
-The `shiny.png` logo in `www/` is not being loaded into the UI when the application is launched. Before we dive into adding the contents of `www/` into our app-package, we'll take a step back and investigate what happens when `pkgApp` is installed.
+The `shiny.png` logo in `www/` is not being loaded into the UI when the application is launched. Before we dive into how to add the contents of `www/` into `pkgApp`, we'll take a step back and investigate what happens when a package is installed.
 
-## What's in the 'installed' package?
+## This is `pkgApp`...**installed**
 
 We've been running `load_all()`, `document()`, and `install()` on `pkgApp`, but we haven't looked at the contents of the installed package. Reviewing the installed package will help us understand what the `system.file()` function is doing, and how we can use the `inst/` folder to include external resources to our app-package.
 
-When we run `devtools::install()`, the output tells us where the package is being installed:  
+When we run `devtools::install()`, the output tells us where the package is being installed:
+
 
 ```{verbatim}
 #| eval: false 
@@ -100,45 +104,45 @@ When we run `devtools::install()`, the output tells us where the package is bein
 
 If we add the `pkgApp/` directory to the end of the path above, we can view the contents of the installed package (I'm using the `tree` command in the Terminal, but the `fs::dir_tree()` function will also print a folder tree):
 
-```{verbatim}
+```{bash}
 #| eval: false 
 #| code-fold: false
 /path/to/install/Library/R/x86_64/4.2/library/pkgApp/
-├── DESCRIPTION
-├── INDEX
-├── Meta/
-│   ├── Rd.rds
-│   ├── data.rds
-│   ├── features.rds
-│   ├── hsearch.rds
-│   ├── links.rds
-│   ├── nsInfo.rds
-│   └── package.rds
-├── NAMESPACE
-├── R/
-│   ├── pkgApp
-│   ├── pkgApp.rdb
-│   └── pkgApp.rdx
-├── data/
-│   ├── Rdata.rdb
-│   ├── Rdata.rds
-│   └── Rdata.rdx
-├── extdata/
-│   └── movies.fst
-├── help/
-│   ├── AnIndex
-│   ├── aliases.rds
-│   ├── paths.rds
-│   ├── pkgApp.rdb
-│   └── pkgApp.rdx
-└── html/
-    ├── 00Index.html
-    └── R.css
+  ├── DESCRIPTION
+  ├── INDEX
+  ├── Meta/
+  │   ├── Rd.rds
+  │   ├── data.rds
+  │   ├── features.rds
+  │   ├── hsearch.rds
+  │   ├── links.rds
+  │   ├── nsInfo.rds
+  │   └── package.rds
+  ├── NAMESPACE
+  ├── R/
+  │   ├── pkgApp
+  │   ├── pkgApp.rdb
+  │   └── pkgApp.rdx
+  ├── data/
+  │   ├── Rdata.rdb
+  │   ├── Rdata.rds
+  │   └── Rdata.rdx
+  ├── extdata/
+  │   └── movies.fst
+  ├── help/
+  │   ├── AnIndex
+  │   ├── aliases.rds
+  │   ├── paths.rds
+  │   ├── pkgApp.rdb
+  │   └── pkgApp.rdx
+  └── html/
+      ├── 00Index.html
+      └── R.css
 
 7 directories, 24 files
 ```
 
-The installed version of `pkgApp` has many of the same files as the 'source' version we've been writing (i.e., the `NAMESPACE` and `DESCRIPTION`). It also might surprise you to see that many of the source package files aren't included in the installed version (`.R`, `.Rd` files. etc.). **The key takeaway here is that the `inst/` subfolders and files are available in the installed version unchanged (with the `inst/` folder omitted.)**. 
+The installed version of `pkgApp` has many of the same files as the 'source' version we've been working on (i.e., the `NAMESPACE` and `DESCRIPTION`). It also might surprise you to see that many of the source package files aren't included in the installed version (`.R`, `.Rd` files. etc.). [The key takeaway here is that the `inst/` subfolders and files are available in the installed version unchanged (with the `inst/` folder omitted.).]{style="color: #DA1212;"}
 
 Hopefully viewing this folder structure helps demystify what happens when a package is installed. Below is the official documentation on what happens to the `inst/` folder (and it's subfolders) when a package is installed:
 
@@ -270,16 +274,16 @@ To include the contents of `www/` in our app-package, we need to use `isnt/` fol
 
 `shiny`'s `addResourcePath()` function will add a "*directory of static resources to Shiny's web server*." In `pkgApp`, want to add the `www` directory that includes the `shiny.png` file (currently in our root (`"."`) folder). 
 
-If we want to continue using the `www/` folder name, we can simply move `www` and it's contents into `inst/`: 
+If we want to continue using the `www/` folder name, we can simply move `www` and it's contents into `inst/`:
 
-```{verbatim}
+```{bash}
 #| eval: false 
 #| code-fold: false
 inst/
-├── extdata
-│   └── movies.fst
-└── www/
-    └── shiny.png
+  ├── extdata/
+  │   └── movies.fst
+  └── www/
+      └── shiny.png
 
 3 directories, 2 files
 ```
@@ -291,25 +295,26 @@ In `R/movies_ui.R` function, we'll include the `addResourcePath()` at the top of
 #| eval: false 
 #| code-fold: false
 movies_ui <- function() {
-  shiny::addResourcePath('www', system.file('www', package = 'pkgApp'))
-  shiny::tagList(
-    shiny::fluidPage(
-      shiny::titlePanel(
-        shiny::div(
-          shiny::img(
+  addResourcePath('www', system.file('www', package = 'pkgApp'))
+  tagList(
+    fluidPage(
+      theme = shinythemes::shinytheme("spacelab"),
+      titlePanel(
+        div(
+          img(
             src = "www/shiny.png",
             height = 60,
             width = 55,
             style = "margin:10px 10px"
             ), 
-         "Movies Reviews"
+         "Movie Reviews"
         )
       ),
-      shiny::sidebarLayout(
-        shiny::sidebarPanel(
+      sidebarLayout(
+        sidebarPanel(
           mod_var_input_ui("vars")
         ),
-        shiny::mainPanel(
+        mainPanel(
           mod_scatter_display_ui("plot")
         )
       )
@@ -332,8 +337,8 @@ movies_app()
 
 :::: {.column-body-outset-right}
 
-::: {#fig-movies_app_img}
-![`movies_app()` with logo](img/movies_app_img.png){#fig-movies_app_img width='100%' fig-align='center'}
+::: {#fig-07_inst_movies_app_img}
+![`movies_app()` with logo](img/07_inst_movies_app_img.png){#fig-07_inst_movies_app_img width='100%' fig-align='center'}
 
 `inst/www` accessible with `addResourcePath()`
 :::
@@ -342,19 +347,17 @@ movies_app()
 
 You can read more about adding external resources in the [documentation for `addResourcePath()`](https://shiny.posit.co/r/reference/shiny/latest/resourcepaths). We'll also cover adding CSS and JavaScript files in later chapters. 
 
-::: {.column-margin}
-
-![New Git Branch](img/new_branch_ico.png){width='70%'}
-
-The code for this section is in the  [[`05_inst`](https://github.com/mjfrigaard/pkgApp/tree/05_inst)] branch of the [[`pkgApp`](https://github.com/mjfrigaard/pkgApp)] repo.
-
-:::
-
 
 ```{r}
-#| label: co_box_push_05_inst
+#| label: git_box_pkgApp_06_data
 #| echo: false
-#| eval: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "standard",
+  fig_pw = '75%', 
+  branch = "07_inst-www", 
+  repo = 'pkgApp')
 ```
 
 ## Recap
