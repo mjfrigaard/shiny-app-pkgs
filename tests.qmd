@@ -20,7 +20,7 @@ co_box(
 )
 ```
 
-Writing tests for your app-package poses some unique challenges. As we covered in the first chapter, shiny applications are reactive, so some of the conventional testing techniques and methods for regular R packages don't directly apply. Fortunately, the infrastructure for storing and running tests in your app-package is identical to a standard R package.
+Writing tests for your app-package poses some unique challenges. Shiny functions are written in the context of it's [reactive model](https://shiny.posit.co/r/articles/build/reactivity-overview/), so some of the conventional testing techniques and methods for regular R packages don't directly apply. Fortunately, the infrastructure for storing and running tests in your app-package is identical to a standard R package.
 
 
 This chapter will cover three layers of testing (unit testing, integration/module testing, and end-to-end testing), a summary of the recommendations for testing shiny apps, and where you should focus your tests.
@@ -191,6 +191,16 @@ tests/
 
 ## Unit tests
 
+<!--
+> Test Core Functions: Use the `testthat` package to write unit tests for all core logic functions. These are the building blocks of your application and should be thoroughly tested.
+
+> Mock Inputs: For functions that rely on external data or user input, use mock data to simulate various scenarios.
+
+> Boundary Conditions: Test edge cases and boundary conditions to ensure stability.
+
+> Test Coverage: Use tools like covr to measure test coverage and aim for a high percentage.
+-->
+
 If I'm writing write a unit test for the `scatter_plot()` function in `R/scatter_plot.R`, I'll create test file with `usethis::use_test("scatter_plot")`.
 
 ### New tests with [`use_test()`]{style="font-size: 1.05em;"}
@@ -246,9 +256,11 @@ expect_equal(
   expected = 4)
 ```
 
-### Comparisons
+#### Comparisons
 
-All tests are comprised in comparisons, and I've found knowing what underlying comparison package is being used saves me from surprising tests results. Most `observed` and `expected` objects are compared with either `waldo` or `diffobj`.
+All tests are comprised of comparisons, and I've found knowing what package is performing the underlying comparison often saves me from surprising tests results. 
+
+`testthat::expect_equal()` compares the `observed` and `expected` objects with the [`waldo` package](https://www.tidyverse.org/blog/2021/08/waldo-0-3-0/), with some help from [`diffobj`](https://github.com/brodieG/diffobj).
 
 ```{r}
 #| eval: true 
@@ -261,49 +273,46 @@ library(diffobj)
 library(tibble)
 ```
 
-If you'd like a preview before writing test, you can pass the `observed` and `expected` objects to `waldo::compare()` to see what the result will be:
+If you'd like a preview before writing test, you can pass the `observed` and `expected` objects to `waldo::compare()` to see what the result will be. 
 
 ```{r}
 #| eval: true 
-#| code-fold: true
-#| code-summary: 'show/hide creating  old_target/new_current'
-z <- month.abb[1:3]
-y <- rnorm(3, 2, 1)
-old_target <- tibble(
+#| include: false
+old <- tibble(
   chr = LETTERS[2:4],
-  num = round(y, 1),
-  fct = factor(z, 
-        levels = z, 
-        labels = month.name[1:3],
+  num = as.double(c(1, 2, 3)),
+  fct = factor(c("low", "med", "high"), 
+        levels = c("low", "med", "high"), 
+        labels = c("L", "M", "H"),
         ordered = TRUE)
 )
-new_current <- tibble(
+new <- data.frame(
   CHR = LETTERS[2:4],
-  num = as.integer(y),
-  fct = factor(z,
-        levels = z,
-        labels = z)
+  num = as.integer(c(1, 2, 3)),
+  fct = factor(c("low", "med", "high"),
+        levels = c("low", "med", "high"),
+        labels = c("low", "med", "high"))
 )
 ```
 
 
-::: {layout-ncol=2}
+For example, suppose we have two objects: `old` and `new`
 
 ```{r}
 #| eval: true 
 #| code-fold: false
 #| collapse: true
-old_target
+str(old)
 ```
 
 ```{r}
 #| eval: true 
 #| code-fold: false
 #| collapse: true
-new_current
+str(new)
 ```
 
-:::
+
 
 ::: {layout="[[30,70]]"}
 
@@ -312,8 +321,8 @@ new_current
 #| code-fold: false
 #| collapse: true
 compare(
-  x = old_target, 
-  y = old_target)
+  x = old, 
+  y = old)
 ```
 
 
@@ -322,14 +331,13 @@ compare(
 #| code-fold: false
 #| collapse: true
 compare(
-  x = old_target, 
-  y = new_current)
+  x = old, 
+  y = new)
 ```
 
 :::
 
-
-If you're using Posit Workbench, the `diffobj` package is better for making comparisons in the IDE. You can look at differences vertically with `diffobj::diffObj()`:
+If you're using Posit Workbench, the [`diffobj` package](https://github.com/brodieG/diffobj) is better for making comparisons in the IDE. You can look at differences vertically with `diffobj::diffObj()`:
 
 ::: {layout="[[30,70]]"}
 
@@ -337,15 +345,15 @@ If you're using Posit Workbench, the `diffobj` package is better for making comp
 #| eval: false 
 #| code-fold: false
 diffObj(
-  old_target, 
-  new_current)
+  old, 
+  new)
 ```
 
 ![Viewer ouput from `diffobj::diffObj()`](img/08_tests_diffobj.png){#fig-08_tests_diffobj width='85%' align='center'}
 
 :::
 
-Or view the differences horizontally with `diffobj::diffStr()`:
+Or you can view the `str()` differences with `diffobj::diffStr()`:
 
 ::: {layout="[[30, 70]]"}
 
@@ -353,22 +361,154 @@ Or view the differences horizontally with `diffobj::diffStr()`:
 #| eval: false 
 #| code-fold: false
 diffStr(
-  old_target, 
-  new_current)
+  old, 
+  new)
 ```
 
 ![Viewer ouput from `diffobj::diffStr()`](img/08_tests_diffstr.png){#fig-08_tests_diffobj width='100%' align='center'}
 :::
 
+Aftering seeing the `old` vs `new` comparisons with `waldo` and `diffobj`, we can see similarities in the results of a `testthat` test: 
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+[ FAIL 1 | WARN 0 | SKIP 0 | PASS 0 ]
+
+── Failure (test-old-vs-new.R:18:3): old vs. new ──────────
+`old` (`actual`) not equal to `new` (`expected`).
+
+`class(actual)`:   "tbl_df" "tbl" "data.frame"
+`class(expected)`:                "data.frame"
+
+`names(actual)`:   "chr" "num" "fct"
+`names(expected)`: "CHR" "num" "fct"
+
+`actual$chr` is a character vector ('B', 'C', 'D')
+`expected$chr` is absent
+
+`class(actual$fct)`:   "ordered" "factor"
+`class(expected$fct)`:           "factor"
+
+`levels(actual$fct)`:   "L"   "M"   "H"   
+`levels(expected$fct)`: "low" "med" "high"
+
+`actual$CHR` is absent
+`expected$CHR` is a character vector ('B', 'C', 'D')
+[ FAIL 1 | WARN 0 | SKIP 0 | PASS 0 ]
+```
+
+
 ### Snapshots
 
-Writing tests for graph outputs can be difficult, because we're evaluating if 
+Writing tests for graph outputs can be difficult, because we're evaluating the output from a custom plotting function like `scatter_plot()`. If we try to compare it against a graph built with analogous `ggplot2` code, we see the following failure: 
+
+```{r}
+#| eval: false 
+#| code-fold: false
+test_that(desc = "scatter_plot() works", code = {
+  
+  expect_equal(object = 
+              ggplot2::ggplot(mtcars, 
+                ggplot2::aes(x = mpg, y = disp)) + 
+                  ggplot2::geom_point(
+                    ggplot2::aes(color = cyl), 
+                                 alpha = 0.5, 
+                                 size = 3), 
+    expected = scatter_plot(mtcars, 
+                    x_var = "mpg", 
+                    y_var = "disp", 
+                    col_var = "cyl", 
+                    alpha_var = 0.5, 
+                    size_var = 3))
+})
+
+```
+
 
 #### [`vdiffr`]{style="font-size: 1.05em;"}
 
-The [`vdiffr` package ](https://vdiffr.r-lib.org/) has it's own expectation, `expect_doppelganger()`
+The [`vdiffr` package ](https://vdiffr.r-lib.org/) has it's own expectation, `expect_doppelganger()`, that has `title` and `fig` arguments:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+test_that(desc = "scatter_plot() works", code = {
+    vdiffr::expect_doppelganger(
+      title = "scatter_plot() graph", 
+      fig = scatter_plot(mtcars, 
+                    x_var = "mpg", 
+                    y_var = "disp", 
+                    col_var = "cyl", 
+                    alpha_var = 0.5, 
+                    size_var = 3))
+})
+```
+
+On the initial run, a snapshot is saved into the `tests/testthat/_snaps/` folder:
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+==> Testing R file using 'testthat'
+
+ℹ Loading pkgApp
+[ FAIL 0 | WARN 1 | SKIP 0 | PASS 1 ]
+
+── Warning (test-scatter_plot.R:2:5): scatter_plot() works ──────
+Adding new file snapshot: 'tests/testthat/_snaps/scatter-plot-graph.svg'
+[ FAIL 0 | WARN 1 | SKIP 0 | PASS 1 ]
+
+Test complete
+```
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+tests/
+├── testthat
+│   ├── _snaps
+│   │   └── scatter_plot
+│   │       └── scatter-plot-graph.svg
+│   └── test-scatter_plot.R
+└── testthat.R
+4 directories, 3 files
+
+```
+
+The `scatter-plot-graph.svg` file becomes our baseline comparison object, when is used in future tests. 
+
+After writing tests, we'll load, document, and build:
+
+[<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd> / <kbd>D</kbd> / <kbd>B</kbd>]{style="font-style: italic; font-weight: bold; font-size: 1.10em"}
+
+Then we test `pkgApp`:
+
+[<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>T</kbd>]{style="font-style: italic; font-weight: bold; font-size: 1.10em"}
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+devtools::test()
+
+ℹ Testing pkgApp
+✔ | F W S  OK | Context
+✔ |         1 | scatter_plot  
+
+══ Results ═══════════════════
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 1 ]
+```
+
 
 ## Module/integration tests
+
+<!--
+> Data Flow: Test how well the different units work together by simulating a complete data flow.
+
+> Database Interactions: If your package interacts with a database, write tests to ensure that read/write operations are working as expected.
+
+> API Calls: If your package makes API calls, use package like httptest to mock API responses and test the integration.
+-->
 
 Module tests involve both UI and server functions, I consider these integration tests (i.e., we're testing how a module's functions 'integrate' with each other, or with other modules). 
 
@@ -378,13 +518,16 @@ Module tests involve both UI and server functions, I consider these integration 
 
 ## System/end-to-end tests
 
+<!--
+> Manual Testing: Initially, you may have to manually interact with the Shiny app to ensure it behaves as expected.
+
+> Automated Browser Testing: Use tools like shinytest to automate browser-based testing for the Shiny application. shinytest captures the state of the application and allows you to compare it to expected states.
+
+> User Scenarios: Script typical user interaction scenarios to ensure that the whole system, including front-end and back-end, work seamlessly.
+-->
+
+
 ### [`shinytest2`]{style="font-size: 1.05em;"}
-
-::: {.column-margin}
-
-![New Git Branch](img/new_branch_ico.png){width='70%'}
-
-The code for this section is in the  [[`06_tests`](https://github.com/mjfrigaard/pkgApp/tree/06_tests)] branch of the [[`pkgApp`](https://github.com/mjfrigaard/pkgApp)] repo.
 
 ## Test coverage 
 
@@ -392,41 +535,18 @@ The code for this section is in the  [[`06_tests`](https://github.com/mjfrigaard
 
 ### [`covrpage`]{style="font-size: 1.05em;"}
 
-:::
+## Continuous Integration (CI)
+
+<!--
+
+> Consider setting up a CI pipeline using services like GitHub Actions, GitLab CI, or Travis CI to automate the running of these tests.
+
+> By implementing these various levels of tests, you can build confidence that your R package and Shiny app are robust, reliable, and ready for deployment.
+
+-->
 
 end `testing.qmd`
 
 <!--
-
 Testing an R package with a Shiny application can be challenging due to the various components and layers of interactivity. Here's a general strategy to approach this:
-
-Unit Tests
-
-Test Core Functions: Use the testthat package to write unit tests for all core logic functions. These are the building blocks of your application and should be thoroughly tested.
-
-Mock Inputs: For functions that rely on external data or user input, use mock data to simulate various scenarios.
-
-Boundary Conditions: Test edge cases and boundary conditions to ensure stability.
-Test Coverage: Use tools like covr to measure test coverage and aim for a high percentage.
-
-Integration Tests
-
-Data Flow: Test how well the different units work together by simulating a complete data flow.
-Database Interactions: If your package interacts with a database, write tests to ensure that read/write operations are working as expected.
-API Calls: If your package makes API calls, use package like httptest to mock API responses and test the integration.
-
-System Tests for Shiny Application
-
-Manual Testing: Initially, you may have to manually interact with the Shiny app to ensure it behaves as expected.
-
-Automated Browser Testing: Use tools like shinytest to automate browser-based testing for the Shiny application. shinytest captures the state of the application and allows you to compare it to expected states.
-
-User Scenarios: Script typical user interaction scenarios to ensure that the whole system, including front-end and back-end, work seamlessly.
-
-Continuous Integration (CI)
-
-Consider setting up a CI pipeline using services like GitHub Actions, GitLab CI, or Travis CI to automate the running of these tests.
-
-By implementing these various levels of tests, you can build confidence that your R package and Shiny app are robust, reliable, and ready for deployment.
-
 -->
