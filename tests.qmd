@@ -5,6 +5,7 @@
 #| echo: false 
 #| include: false
 source("_common.R")
+library(testthat)
 ```
 
 ```{r}
@@ -34,12 +35,13 @@ co_box(
   header = "Testing disclaimer", fold = FALSE, look = "default",
   contents = "
   
-Unit tests are covered extensively in [R Packages, 2ed](https://r-pkgs.org/testing-basics.html) and the [`testthat` documentation](https://testthat.r-lib.org/index.html), so I won't be repeating that information here. 
+I won't be covering *how* to write tests (plenty of these resources exist, and I've listed them below). Instead, I will focus on *what* to test and *why*. I'll also touch on important links between user requirements, functional specifications, and using a traceability matrix to track issues & features.
   
-The documentation for `shiny`s [`testServer()`](https://shiny.posit.co/r/articles/improve/server-function-testing/) is somewhat limited, so I'll provide a few tips and tricks I've learned while testing modules. 
+- Unit tests are covered extensively in [R Packages, 2ed](https://r-pkgs.org/testing-basics.html) and the [`testthat` documentation](https://testthat.r-lib.org/index.html) 
   
-`shinytest2` also has [excellent documentation](https://rstudio.github.io/shinytest2/) (and [videos](https://www.youtube.com/watch?v=Gucwz865aqQ)), and I highly recommend reading throught those resources instead of relying on this chapter.
+- The documentation for `shiny`s [`testServer()`](https://shiny.posit.co/r/articles/improve/server-function-testing/) is somewhat sparse, so I'll provide a few tips and tricks I've learned for testing modules. 
   
+- `shinytest2` has [excellent documentation](https://rstudio.github.io/shinytest2/) (and [videos](https://www.youtube.com/watch?v=Gucwz865aqQ)), and I highly recommend reading throught those resources.
   "
 )
 ```
@@ -57,7 +59,7 @@ library(covr)
 
 (*If you're using `devtools`, you won't have to worry about installing `testthat` and `covr`*)
 
-## Running [`test()`]{style="font-size: 1.05em;"}
+## Running [`test()`]{style="font-size: 1.05em;"}s
 
 ```{r}
 #| label: co_box_tests_pkgApp
@@ -66,7 +68,7 @@ library(covr)
 ```
 
  
-The fourth `devtools` [habit]{style="font-weight: bold; font-size: 1.0em; color: #772953"} to adopt is regularly writing and running tests. If you're using Posit Workbench and have `devtools` installed, you can test our package using the **Build** pane or the keyboard shortcut:
+The fourth `devtools` [habit]{style="font-weight: bold; font-size: 1.0em; color: #772953"} to adopt is regularly writing and running tests. If you're using Posit Workbench and have `devtools` installed, you can test your app-package using the **Build** pane or the keyboard shortcut:
 
 ::: {.column-margin}
 
@@ -75,9 +77,9 @@ The fourth `devtools` [habit]{style="font-weight: bold; font-size: 1.0em; color:
 :::
 
 
-::: {#fig-build_pane_test}
+::: {#fig-08_tests_build_pane_test}
 
-![Test you app-package](img/build_pane_test.png){#fig-build_pane_test width='100%' align='center'}
+![Test you app-package](img/08_tests_build_pane_test.png){#fig-08_tests_build_pane_test width='100%' align='center'}
 
 `devtools::test()` (run all tests in your `tests/` folder)
 :::
@@ -93,7 +95,9 @@ When we initally run `devtools::test()` in `pkgApp`, we see the following:
 • Setup testing with `usethis::use_testthat()`.
 ```
 
-This shouldn't be surprising, because we haven't written any tests for `pkgApp` yet!. The error is informative, though, because it tells us `pkgApp` doesn't have the testing infrastructure set up. In R packages using 
+This shouldn't be surprising--we haven't written any tests for `pkgApp` yet!. 
+
+The error is informative, though, because it tells us `pkgApp` doesn't have the testing infrastructure set up. In packages using `devtools`, the unit testing infrastructure is built with `usethis::use_testthat()`
 
 In the next section we'll cover setting up the test suite in your app-package. 
 
@@ -115,11 +119,11 @@ If you downloaded, loaded and installed [`monthApp` example from Mastering Shiny
 ```
 
 
-## Your app-package test suite
+## The test suite
 
-If you adopt [test-driven development](https://en.wikipedia.org/wiki/Test-driven_development), you'll develop tests before writing any utility functions, modules, or standalone app function. However, if you're a mere mortal like the rest of us, you'll typically develop your tests and functions in tandem. 
+If you adopt [test-driven development](https://en.wikipedia.org/wiki/Test-driven_development), you'll develop tests before writing any utility functions, modules, or your standalone app function. However, if you're a mere mortal like the rest of us, you'll typically develop your tests and functions in tandem. 
 
-Regardless of the testing strategy, we'll follow the advice in the output above and set up the testing infrastructure with the `testthat` package:
+Regardless of the testing strategy, we'll follow the advice in the output above and set up the testing infrastructure with the [`testthat` package](https://testthat.r-lib.org/):
 
 ### [`use_testthat()`]{style="font-size: 1.05em;"}
 
@@ -174,7 +178,7 @@ Finally, we're given some advice on the next step for creating our first test:
 
 Our new `tests/` folder structure is below: 
 
-```{verbatim}
+```{bash}
 #| eval: false
 #| code-fold: false
 tests/
@@ -197,6 +201,8 @@ If I'm writing write a unit test for the `scatter_plot()` function in `R/scatter
 usethis::use_test("scatter_plot")
 ```
 
+#### Test files
+
 The IDE will automatically open the new test file: 
 
 ```{verbatim}
@@ -206,25 +212,161 @@ The IDE will automatically open the new test file:
 • Modify 'tests/testthat/test-scatter_plot.R'
 ```
 
-The new file contains boilerplate test below (I've added the `testthat` namespace and arguments): 
+#### Tests
+
+The new test file contains a boilerplate test (I've included the argument names):
 
 ```{r}
 #| eval: false
 #| code-fold: false
-testthat::test_that(desc = "multiplication works", code = {
-  testthat::expect_equal(object = 2 * 2, expected = 4)
+test_that(desc = "multiplication works", code = {
+  expect_equal(2 * 2, 4)
 })
 ```
 
-Each `testthat` test has a test context (supplied to the `desc` argument) followed by the test (created in curly brackets in the `code` argument).
+Each `testthat` test has a test context (supplied to the `desc` argument) followed by the test `code` (supplied in curly brackets). When a test is run, you'll see feedback on whether it passes or fails:
 
-### Expectations
+```{r}
+#| eval: true
+#| code-fold: false
+test_that(desc = "multiplication works", code = {
+  expect_equal(2 * 2, 4)
+})
+```
+
+#### Expectations
+
+Most expectation have two parts: an `observed` object, and an `expected` object. The `observed` object is an artifact of some code you've written, and it's being compared against a known result (i.e., what is `expected`)
+
+```{r}
+#| eval: true 
+#| code-fold: false
+expect_equal(
+  object = 2 * 2,
+  expected = 4)
+```
+
+### Comparisons
+
+All tests are comprised in comparisons, and I've found knowing what underlying comparison package is being used saves me from surprising tests results. Most `observed` and `expected` objects are compared with either `waldo` or `diffobj`.
+
+```{r}
+#| eval: true 
+#| code-fold: false
+#| collapse: true 
+#| message: false 
+#| warning: false
+library(waldo)
+library(diffobj)
+library(tibble)
+```
+
+If you'd like a preview before writing test, you can pass the `observed` and `expected` objects to `waldo::compare()` to see what the result will be:
+
+```{r}
+#| eval: true 
+#| code-fold: true
+#| code-summary: 'show/hide creating  old_target/new_current'
+z <- month.abb[1:3]
+y <- rnorm(3, 2, 1)
+old_target <- tibble(
+  chr = LETTERS[2:4],
+  num = round(y, 1),
+  fct = factor(z, 
+        levels = z, 
+        labels = month.name[1:3],
+        ordered = TRUE)
+)
+new_current <- tibble(
+  CHR = LETTERS[2:4],
+  num = as.integer(y),
+  fct = factor(z,
+        levels = z,
+        labels = z)
+)
+```
+
+
+::: {layout-ncol=2}
+
+```{r}
+#| eval: true 
+#| code-fold: false
+#| collapse: true
+old_target
+```
+
+```{r}
+#| eval: true 
+#| code-fold: false
+#| collapse: true
+new_current
+```
+
+:::
+
+::: {layout="[[30,70]]"}
+
+```{r}
+#| eval: true 
+#| code-fold: false
+#| collapse: true
+compare(
+  x = old_target, 
+  y = old_target)
+```
+
+
+```{r}
+#| eval: true 
+#| code-fold: false
+#| collapse: true
+compare(
+  x = old_target, 
+  y = new_current)
+```
+
+:::
+
+
+If you're using Posit Workbench, the `diffobj` package is better for making comparisons in the IDE. You can look at differences vertically with `diffobj::diffObj()`:
+
+::: {layout="[[30,70]]"}
+
+```{r}
+#| eval: false 
+#| code-fold: false
+diffObj(
+  old_target, 
+  new_current)
+```
+
+![Viewer ouput from `diffobj::diffObj()`](img/08_tests_diffobj.png){#fig-08_tests_diffobj width='85%' align='center'}
+
+:::
+
+Or view the differences horizontally with `diffobj::diffStr()`:
+
+::: {layout="[[30, 70]]"}
+
+```{r}
+#| eval: false 
+#| code-fold: false
+diffStr(
+  old_target, 
+  new_current)
+```
+
+![Viewer ouput from `diffobj::diffStr()`](img/08_tests_diffstr.png){#fig-08_tests_diffobj width='100%' align='center'}
+:::
 
 ### Snapshots
 
+Writing tests for graph outputs can be difficult, because we're evaluating if 
+
 #### [`vdiffr`]{style="font-size: 1.05em;"}
 
-The [`vdiffr` package ](https://vdiffr.r-lib.org/)
+The [`vdiffr` package ](https://vdiffr.r-lib.org/) has it's own expectation, `expect_doppelganger()`
 
 ## Module/integration tests
 
@@ -232,9 +374,9 @@ Module tests involve both UI and server functions, I consider these integration 
 
 ### [`testServer()`]{style="font-size: 1.05em;"}
 
-### [`testServer(args = list())`]{style="font-size: 1.05em;"}
+### [`args = list()`]{style="font-size: 1.05em;"}
 
-## End-to-end tests
+## System/end-to-end tests
 
 ### [`shinytest2`]{style="font-size: 1.05em;"}
 
@@ -244,6 +386,47 @@ Module tests involve both UI and server functions, I consider these integration 
 
 The code for this section is in the  [[`06_tests`](https://github.com/mjfrigaard/pkgApp/tree/06_tests)] branch of the [[`pkgApp`](https://github.com/mjfrigaard/pkgApp)] repo.
 
+## Test coverage 
+
+### [`covr`]{style="font-size: 1.05em;"}
+
+### [`covrpage`]{style="font-size: 1.05em;"}
+
 :::
 
 end `testing.qmd`
+
+<!--
+
+Testing an R package with a Shiny application can be challenging due to the various components and layers of interactivity. Here's a general strategy to approach this:
+
+Unit Tests
+
+Test Core Functions: Use the testthat package to write unit tests for all core logic functions. These are the building blocks of your application and should be thoroughly tested.
+
+Mock Inputs: For functions that rely on external data or user input, use mock data to simulate various scenarios.
+
+Boundary Conditions: Test edge cases and boundary conditions to ensure stability.
+Test Coverage: Use tools like covr to measure test coverage and aim for a high percentage.
+
+Integration Tests
+
+Data Flow: Test how well the different units work together by simulating a complete data flow.
+Database Interactions: If your package interacts with a database, write tests to ensure that read/write operations are working as expected.
+API Calls: If your package makes API calls, use package like httptest to mock API responses and test the integration.
+
+System Tests for Shiny Application
+
+Manual Testing: Initially, you may have to manually interact with the Shiny app to ensure it behaves as expected.
+
+Automated Browser Testing: Use tools like shinytest to automate browser-based testing for the Shiny application. shinytest captures the state of the application and allows you to compare it to expected states.
+
+User Scenarios: Script typical user interaction scenarios to ensure that the whole system, including front-end and back-end, work seamlessly.
+
+Continuous Integration (CI)
+
+Consider setting up a CI pipeline using services like GitHub Actions, GitLab CI, or Travis CI to automate the running of these tests.
+
+By implementing these various levels of tests, you can build confidence that your R package and Shiny app are robust, reliable, and ready for deployment.
+
+-->

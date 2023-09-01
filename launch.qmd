@@ -1,4 +1,4 @@
-# [`app.R`]{style="font-size: 1.05em;"} {.unnumbered}
+# Launch {.unnumbered}
 
 ```{r}
 #| eval: true 
@@ -247,6 +247,28 @@ List of 5
 
 We'll rewrite `movies_app()` below using `shiny::runApp()`.
 
+#### [`shiny.launch.browser`]{style="font-size: 1.05em"}
+
+We want to have control over where the shiny application will be launched from (i.e., the **Viewer** pane, the IDE **Window**, or an external browser). We can access this with the `shiny.launch.browser` option:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+options(shiny.launch.browser = ...)
+```
+
+The three options above are covered in [here](https://www.garrickadenbuie.com/blog/shiny-tip-option-where-to-run/), and we want to combine them into a `run` argument in `movies_app()`
+
+```{r}
+#| eval: false 
+#| code-fold: false
+  switch(EXPR = run, 
+  	view = options(shiny.launch.browser = .rs.invokeShinyPaneViewer),
+  	browser = options(shiny.launch.browser = .rs.invokeShinyWindowExternal),
+  	win = options(shiny.launch.browser = .rs.invokeShinyWindowViewer)
+  )
+```
+
 #### [`test.mode`]{style="font-size: 1.05em"}
 
 Another great feature of `runApp()` is the ability to control the application's behavior with `test.mode`:
@@ -255,14 +277,20 @@ Another great feature of `runApp()` is the ability to control the application's 
 
 The `test.mode` argument lets us [export values from our application]((https://shiny.posit.co/r/reference/shiny/1.0.2/exporttestvalues)) when we're running tests (which we'll cover in-depth in the testing chapter). 
 
-We'll make `test` an optional `TRUE`/`FALSE` option in our updated  `movies_app()` function.
+We'll make `test` an logical argument (defaulting to `TRUE`) in our updated  `movies_app()` function.
 
 ```{r}
 #| eval: false 
 #| code-fold: false
-movies_app <- function(test = TRUE) {
-  app <- shinyApp(ui = movies_ui, 
+movies_app <- function(test = TRUE, run = "view") {
+  app <- shinyApp(
+                  ui = movies_ui, 
                   server = movies_server)
+  switch(EXPR = run, 
+  	view = options(shiny.launch.browser = .rs.invokeShinyPaneViewer),
+  	browser = options(shiny.launch.browser = .rs.invokeShinyWindowExternal),
+  	win = options(shiny.launch.browser = .rs.invokeShinyWindowViewer)
+  )
    if (test)
       runApp(appDir = app, test.mode = TRUE)
    else
