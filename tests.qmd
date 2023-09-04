@@ -20,7 +20,7 @@ co_box(
 )
 ```
 
-Writing tests for your app-package poses some unique challenges. Shiny functions are written in the context of it's [reactive model](https://shiny.posit.co/r/articles/build/reactivity-overview/), so some conventional testing techniques and methods for regular R packages don’t directly apply. Fortunately, the infrastructure for storing and running tests in your app-package is identical to a standard R package.
+Writing tests for your app-package poses some unique challenges. Shiny functions are written in the context of its [reactive model](https://shiny.posit.co/r/articles/build/reactivity-overview/), so some conventional testing techniques and methods for regular R packages don’t directly apply. Fortunately, the infrastructure for storing and running tests in your app-package is identical to a standard R package.
 
 This chapter will cover three layers of testing (unit testing, integration/module testing, and end-to-end testing), a summary of the recommendations for testing shiny apps, and where you should focus your tests.
 
@@ -94,11 +94,7 @@ When we initally run `devtools::test()` in `pkgApp`, we see the following:
 • Setup testing with `usethis::use_testthat()`.
 ```
 
-This shouldn't be surprising--we haven't written any tests for `pkgApp` yet!. 
-
-The error is informative, though, because it tells us `pkgApp` doesn't have the testing infrastructure set up. In packages using `devtools`, the unit testing infrastructure is built with `usethis::use_testthat()`
-
-In the next section we'll cover setting up the test suite in your app-package. 
+This shouldn't be surprising--we haven't written any tests for `pkgApp` yet!
 
 ```{r}
 #| label: co_box_monthApp_tests
@@ -117,12 +113,15 @@ If you downloaded, loaded and installed [`monthApp` example from Mastering Shiny
   )
 ```
 
+The error is informative because it tells us that `pkgApp` doesn’t have the testing infrastructure set up. In packages using `devtools`, the unit testing infrastructure is built with `usethis::use_testthat()`
 
 ## The test suite
 
-If you adopt [test-driven development](https://en.wikipedia.org/wiki/Test-driven_development), you'll develop tests before writing any utility functions, modules, or your standalone app function. However, if you're a mere mortal like the rest of us, you'll typically develop your tests and functions in tandem. 
+Multiple strategies exist for testing code. For example, if you've adopted test-driven development (TDD)[^test-driven-dev-1], you'll develop tests before writing utility functions, modules, or your standalone app function. However, if you're a mere mortal like the rest of us, you'll typically develop your tests and functions in tandem. 
 
-Regardless of the testing strategy, we'll follow the advice in the output above and set up the testing infrastructure with the [`testthat` package](https://testthat.r-lib.org/):
+[^test-driven-dev-1]: "The tests should be written before the functionality that is to be tested. This has been claimed to have many benefits. It helps ensure that the application is written for testability, as the developers must consider how to test the application from the outset rather than adding it later." - [TDD, Wikipedia](https://en.wikipedia.org/wiki/Test-driven_development) 
+
+Regardless of the testing strategy, we should follow the advice presented to us in the output above and set up the testing infrastructure with the [`testthat` package](https://testthat.r-lib.org/):
 
 ### [`use_testthat()`]{style="font-size: 1.05em;"}
 
@@ -400,32 +399,56 @@ Aftering seeing the `old` vs `new` comparisons with `waldo` and `diffobj`, we ca
 
 ### Snapshots
 
-Writing tests for graph outputs can be difficult, because we're evaluating the output from a custom plotting function like `scatter_plot()`. If we try to compare it against a graph built with analogous `ggplot2` code, we see the following failure: 
+Writing tests for graph outputs can be difficult, because we're evaluating the output from a custom plotting function like `scatter_plot()`. If we try to compare the output from `scatter_plot()` against a graph built with analogous `ggplot2` code, this test will fail: 
 
 ```{r}
 #| eval: false 
 #| code-fold: false
 test_that(desc = "scatter_plot() works", code = {
   
-  expect_equal(object = 
-              ggplot2::ggplot(mtcars, 
-                ggplot2::aes(x = mpg, y = disp)) + 
-                  ggplot2::geom_point(
-                    ggplot2::aes(color = cyl), 
-                                 alpha = 0.5, 
-                                 size = 3), 
-    expected = scatter_plot(mtcars, 
+  ggp_graph <- ggplot2::ggplot(mtcars, 
+              ggplot2::aes(x = mpg, y = disp)) + 
+                ggplot2::geom_point(
+                  ggplot2::aes(color = cyl), 
+                               alpha = 0.5, 
+                               size = 3)
+  app_graph <- scatter_plot(mtcars, 
                     x_var = "mpg", 
                     y_var = "disp", 
                     col_var = "cyl", 
                     alpha_var = 0.5, 
-                    size_var = 3))
+                    size_var = 3)
+  expect_equal(
+    object = ggp_graph, 
+    expected = app_graph)
 })
+```
 
+We can see why with `diffobj::diffObj()`:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+diffobj::diffObj(ggp_graph, app_graph)
 ```
 
 
-#### [`vdiffr`]{style="font-size: 1.05em;"}
+:::: {.column-page-inset-right}
+
+:::{#fig-08_tests_diffobj_scatter_plot}
+
+![`diffobj::diffObj()` on graph outputs](img/08_tests_diffobj_scatter_plot.png){#fig-08_tests_diffobj_scatter_plot width='100%' align='center'}
+
+Graph objects are difficult to use as test objects 
+:::
+
+::::
+
+Another option for testing the `scatter_plot()` function is to use the `expect_snapshot_file()` function.[^expect-snapshot-file-2]
+
+[^expect-snapshot-file-2]: Follow the example from the [`testthat` documentation](https://testthat.r-lib.org/reference/expect_snapshot_file.html#ref-examples)
+
+#### Snapshots with [`vdiffr`]{style="font-size: 1.05em;"}
 
 The [`vdiffr` package ](https://vdiffr.r-lib.org/) has it's own expectation, `expect_doppelganger()`, that has `title` and `fig` arguments:
 
@@ -451,14 +474,16 @@ On the initial run, a snapshot is saved into the `tests/testthat/_snaps/` folder
 #| code-fold: false
 ==> Testing R file using 'testthat'
 
-ℹ Loading pkgApp
-[ FAIL 0 | WARN 1 | SKIP 0 | PASS 1 ]
-
-── Warning (test-scatter_plot.R:2:5): scatter_plot() works ──────
+ℹ Testing pkgApp
+✔ | F W S  OK | Context
+✔ |   1     1 | scatter_plot                                                                                            
+───────────────────────────────────────────────────────────────────────────────
+Warning (test-scatter_plot.R:2:5): scatter_plot() works
 Adding new file snapshot: 'tests/testthat/_snaps/scatter-plot-graph.svg'
-[ FAIL 0 | WARN 1 | SKIP 0 | PASS 1 ]
+───────────────────────────────────────────────────────────────────────────────
 
-Test complete
+══ Results ════════════════════════════════════════════════════════════════════
+[ FAIL 0 | WARN 1 | SKIP 0 | PASS 1 ]
 ```
 
 ```{bash}
@@ -499,7 +524,9 @@ devtools::test()
 ```
 
 
-## Module/integration tests
+## Module tests
+
+Testing modules can be accomplished with `shiny`s `testServer()` function. Modules have both UI and server functions, so these could be considered 'integration' or 'interaction' tests (i.e., we're testing how a module's functions 'interact' with values, or communicate with other modules). 
 
 <!--
 > Data Flow: Test how well the different units work together by simulating a complete data flow.
@@ -509,11 +536,19 @@ devtools::test()
 > API Calls: If your package makes API calls, use package like httptest to mock API responses and test the integration.
 -->
 
-Module tests involve both UI and server functions, I consider these integration tests (i.e., we're testing how a module's functions 'integrate' with each other, or with other modules). 
+
 
 ### [`testServer()`]{style="font-size: 1.05em;"}
 
+
+
 ### [`args = list()`]{style="font-size: 1.05em;"}
+
+#### Behavior-driven development (BDD)
+
+> "*[BDD] encourages teams to use conversation and concrete examples to formalize a shared understanding of how the application should behave.*" - [BDD, Wikipedia](https://en.wikipedia.org/wiki/Behavior-driven_development#:~:text)
+
+The `testthat::describe()` function follows a BDD format: 
 
 ## System/end-to-end tests
 
