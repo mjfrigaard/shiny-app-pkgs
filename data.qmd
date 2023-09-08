@@ -28,6 +28,18 @@ There are three folders used to store data in R packages: `data/`, `data-raw/`, 
 
 ## The [`data/`]{style="font-size: 1.05em"} folder
 
+```{r}
+#| label: git_box_pkgApp_06_data
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "standard",
+  fig_pw = '75%', 
+  branch = "06_data", 
+  repo = 'pkgApp')
+```
+
 You can read more about the data folder in the ['Data in packages' section of Writing R Extenstions](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Data-in-packages) and the ['Data' chapter of R Packages, 2ed](https://r-pkgs.org/data.html).
 
 The primary location for app-package data is the `data/` folder. Data objects in the `data/` folder are available in the package namespace when it's installed and loaded, and can be accessed with the `package::data` syntax. See the example below:
@@ -367,37 +379,37 @@ After documenting the movies data in `data.R`, we'll remove the call to `load()`
 mod_scatter_display_server <- function(id, var_inputs) {
   shiny::moduleServer(id, function(input, output, session) {
 
-    inputs <- shiny::reactive({
-      plot_title <- tools::toTitleCase(var_inputs$plot_title())
+  inputs <- reactive({
+    plot_title <- tools::toTitleCase(var_inputs()$plot_title)
       list(
-        x = var_inputs$x(),
-        y = var_inputs$y(),
-        z = var_inputs$z(),
-        alpha = var_inputs$alpha(),
-        size = var_inputs$size(),
+        x = var_inputs()$x,
+        y = var_inputs()$y,
+        z = var_inputs()$z,
+        alpha = var_inputs()$alpha,
+        size = var_inputs()$size,
         plot_title = plot_title
       )
-    })
-    output$scatterplot <- shiny::renderPlot({
-      plot <- scatter_plot(
-        # data -----------------------------------------------------
-        df = movies,
-        x_var = inputs()$x,
-        y_var = inputs()$y,
-        col_var = inputs()$z,
-        alpha_var = inputs()$alpha,
-        size_var = inputs()$size
-      )
-      plot +
-        ggplot2::labs(
-          title = inputs()$plot_title,
-          x = stringr::str_replace_all(tools::toTitleCase(inputs()$x), "_", " "),
-          y = stringr::str_replace_all(tools::toTitleCase(inputs()$y), "_", " ")
-        ) +
-        ggplot2::theme_minimal() +
-        ggplot2::theme(legend.position = "bottom")
-    })
   })
+  output$scatterplot <- renderPlot({
+    plot <- scatter_plot(
+      # data -------------------------
+      df = movies,
+      x_var = inputs()$x,
+      y_var = inputs()$y,
+      col_var = inputs()$z,
+      alpha_var = inputs()$alpha,
+      size_var = inputs()$size
+    )
+    plot +
+      ggplot2::labs(
+        title = inputs()$plot_title,
+        x = stringr::str_replace_all(tools::toTitleCase(inputs()$x), "_", " "),
+        y = stringr::str_replace_all(tools::toTitleCase(inputs()$y), "_", " ")
+      ) +
+      ggplot2::theme_minimal() +
+      ggplot2::theme(legend.position = "bottom")
+  })
+})
 }
 ```
 
@@ -630,18 +642,6 @@ tibble::as_tibble(
 ```
 
 We'll cover `inst/` and `system.file()` in more detail in the next chapter.
-
-```{r}
-#| label: git_box_pkgApp_06_data
-#| echo: false
-#| results: asis
-#| eval: true
-git_margin_box(
-  contents = "standard",
-  fig_pw = '75%', 
-  branch = "06_data", 
-  repo = 'pkgApp')
-```
 
 ## Recap
 
