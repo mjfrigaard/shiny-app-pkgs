@@ -20,7 +20,7 @@ co_box(
 )
 ```
 
-This chapter briefly reviews programming with Shiny's reactive model and how it differs from regular R programming. Then, I'll cover a few app development best practices *outside* of an R package structure.
+This chapter briefly reviews programming with Shiny's reactive model and how it differs from regular R programming. Then, I'll cover a few shiny app features *outside* of the R package structure.
 
 ```{r}
 #| label: co_box_tldr
@@ -69,7 +69,7 @@ A **basic Shiny project** has two files:
 )
 ```
 
-Properly storing/using utility functions, data, documentation, metadata files, and converting your application code into functions will set you up for success as you transition to storing your app in an R package. 
+Let's get started!
 
 
 ```{r}
@@ -162,6 +162,8 @@ The boilerplate 'Old Faith Geyser Data' app is a perfect example of what Shiny c
 
 ## Movie review data app 
 
+Most shiny applications move beyond a single `app.R` file. Knowing how to store any utility functions, data, documentation, and metadata will set you up for success as you transition to storing your app in an R package.
+
 ```{r}
 #| label: git_box_projApp_02_movies-app
 #| echo: false
@@ -173,15 +175,15 @@ git_margin_box(
   repo = 'projApp')
 ```
 
-We will replace the application in the `app.R` with the application from the [Building Web Applications with Shiny](https://rstudio-education.github.io/shiny-course/) course. I’ve chosen to use this app for the following reasons:
+I'm going to work through an example of some intermediate/advanced shiny app features using the application from the [Building Web Applications with Shiny](https://rstudio-education.github.io/shiny-course/) course.  This app is a great use case for the following reasons:
 
-1.  **Multiple input types** are collected in the UI 
+1.  It has **multiple input types** that are collected in the UI 
 
-2. The graph output can be created using a **utility function** 
+2. The graph output can be converted to a **utility function** 
 
 3. The app loads an **external data** file when it's launched
 
-These elements allow us to explore the features of the Shiny app framework.
+4. The code is accessible (and comes from a trusted source) 
 
 ### App
 
@@ -365,8 +367,7 @@ To run the `movies` app, we need to load the data and source the `utils.R` file 
 
 ::: {.callout-note title="`app.R` header" collapse='false' icon='false'}
 
-The header below is placed in the top of the `app.R` file
-
+I've placed the header below in the top of the `app.R` file:
 
 ```{r}
 #| eval: false 
@@ -422,8 +423,6 @@ git_margin_box(
   repo = 'projApp')
 ```
 
-Following the conventional folder structure will also help set you up for success when/if you decide to convert it into an app-package.
-
 ### [`R/`]{style='font-size: 1.05em;'}
 
 If your shiny app relies on utility or helper functions (outside the `app.R` file), you can place this code in an `R/` folder. Any `.R` files in the `R/` folder will be automatically sourced when the application is run.
@@ -443,6 +442,8 @@ projApp/
 ```
 
 :::
+
+The function that makes this process (i.e., sourcing any `.R` files in an `R/` folder) possible is [`loadSupport()`](https://shiny.posit.co/r/reference/shiny/1.5.0/loadsupport). We'll return to this function in a later chapter, because the `R/` folder has a similar behavior (but different function) in R packages.
 
 ### [`www/`]{style='font-size: 1.05em;'}
 
@@ -465,6 +466,10 @@ projApp/
 In the section below, we'll reference `shiny.png` directly in the UI.
 
 :::
+
+The 
+
+Following the conventional folder structure will also help set you up for success when/if you decide to convert it into an app-package.
 
 
 ## Project files
@@ -618,7 +623,7 @@ mod_var_input_ui <- function(id) {
 
 `mod_var_input_server()` returns these values in a reactive list with `shiny::reactive()`:
 
-::: {.callout-note title="`mod_var_input_server()`" collapse='false' icon='false'}
+::: {.callout-note title="`mod_var_input_server()`" collapse='true' icon='false'}
 
 
 Code placed in  `R/mod_var_input.R`
@@ -683,7 +688,7 @@ The code to render the `output$scatterplot` is contained in the nested call to `
 
 After loading the `movies` data, assembling the returned values from  `mod_var_input_server()`, and creating the `input()` reactive, the `scatter_plot()` utility function creates the `plot` object and adds the `plot_title()`:
 
-::: {.callout-note title="`mod_scatter_display_server()`" collapse='false' icon='false'}
+::: {.callout-note title="`mod_scatter_display_server()`" collapse='true' icon='false'}
 
 Code placed in `R/mod_scatter_display.R`
 
@@ -844,9 +849,73 @@ projApp/ # 03_projApp branch
 ```
 
 
-## Project dependencies
+## Additional features
 
-### [`renv`]{style='font-size: 1.05em;'}
+Below are two additional 'optional' features that *can* be included with your shiny application (I consider these 'optional' because they're use depends on the specific needs and environment for each application).
+
+### Global variables/functions with [`global.R`]{style='font-size: 1.05em;'}
+
+Placing a `global.R` file in your root folder (or in the `R/` directory) causes this file to be sourced only once when the Shiny app launches, rather than each time a new user connects to the app. `global.R` is commonly used for initializing variables, loading libraries, loading large data sets and/or performing initial calculations.
+
+::: {.callout-note title="Using `global.R`" collapse='false' icon='false'}
+
+I *could* place the header from `app.R` in `global.R` to ensure these packages are loaded before the application launches:
+
+```{r}
+#| eval: false 
+#| code-fold: show
+#| code-summary: 'show/hide contents of R/global.R'
+# packages ------------------------------------
+library(shiny)
+library(shinythemes)
+library(stringr)
+library(ggplot2)
+library(rlang)
+```
+
+`global.R` can be placed in the `R/` folder 
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+R/
+├── global.R
+├── mod_scatter_display.R
+├── mod_var_input.R
+└── utils.R
+
+1 directory, 4 files
+```
+
+Or in the project root folder
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+├── DESCRIPTION
+├── R
+│   ├── mod_scatter_display.R
+│   ├── mod_var_input.R
+│   └── utils.R
+├── README.md
+├── app.R
+├── global.R
+├── man
+├── movies.RData
+├── projApp.Rproj
+└── www
+    └── shiny.png
+
+4 directories, 10 files
+```
+
+In both locations, it will be sourced before launching the application.
+
+:::
+
+`global.R` can be used to maintain efficiency and consistency across application sessions.
+
+### Project dependencies with [`renv`]{style='font-size: 1.05em;'}
 
 If you use [`renv`](https://rstudio.github.io/renv/articles/renv.html), keep track of your dependencies by regularly running `renv::status()` and `renv::snapshot()`.
 
