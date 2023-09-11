@@ -251,9 +251,21 @@ To include the contents of `www/` in our app-package, we need to use `isnt/` fol
 
 ## [`addResourcePath()`]{style="font-size: 1.05em;"}
 
+```{r}
+#| label: git_box_pkgApp_07_inst-www
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "standard",
+  fig_pw = '75%', 
+  branch = "07_inst-www", 
+  repo = 'pkgApp')
+```
+
 `shiny`'s `addResourcePath()` function will add a "*directory of static resources to Shiny's web server*." In `pkgApp`, want to add the `www` directory that includes the `shiny.png` file (currently in our root (`"."`) folder). 
 
-If we want to continue using the `www/` folder name, we can simply move `www` and it's contents into `inst/`:
+If we want to continue keeping external resources in the `www/` folder, we can move `www/` and it's contents into `inst/`:
 
 ```{bash}
 #| eval: false 
@@ -269,6 +281,7 @@ inst/
 
 
 In `R/movies_ui.R` function, we'll include the `addResourcePath()` at the top of the `tagList()` and reference the image in `img()` using only the subfolder in the path:
+
 
 ```{r}
 #| eval: false 
@@ -326,18 +339,171 @@ movies_app()
 
 You can read more about adding external resources in the [documentation for `addResourcePath()`](https://shiny.posit.co/r/reference/shiny/latest/resourcepaths). We'll also cover adding CSS and JavaScript files in later chapters. 
 
+### Other uses for [`inst/`]{style="font-size: 1.05em;"} 
+
+The `inst/` folder can also be used to store files we're using in alternate versions of our application. For example, if I wanted to test a differenet layout using the [`bslib` package](https://rstudio.github.io/bslib/index.html), I could include a `bslib` argument in the `movies_ui()` function and include the alternate image file (in `inst/www/bootstrap.png`):
 
 ```{r}
-#| label: git_box_pkgApp_07_inst-www
+#| label: git_box_pkgApp_07_bslib-dev
 #| echo: false
 #| results: asis
 #| eval: true
 git_margin_box(
-  contents = "standard",
-  fig_pw = '75%', 
-  branch = "07_inst-www", 
+  contents = "alt",
+  fig_pw = '60%', 
+  branch = "07_bslib-dev", 
   repo = 'pkgApp')
 ```
+
+```{r}
+#| eval: false 
+#| code-fold: show 
+#| code-summary: 'show/hide movies_ui()'
+movies_ui <- function(bslib = FALSE) {
+  addResourcePath("www", system.file("www", package = "pkgApp"))
+  if (isFALSE(bslib)) {
+    tagList(
+      # omitted fluidPage() layout...
+    )
+  } else {
+    tagList(
+      bslib::page_fillable(
+        title = "Movie Reviews (bslib)",
+        theme = bslib::bs_theme(
+          bg = "#101010",
+          fg = "#F6F5F5",
+          primary = "#EE6F57",
+          secondary = "#32E0C4",
+          success = "#FF4B5C",
+          base_font = sass::font_google("Ubuntu"),
+          heading_font = sass::font_google("Ubuntu")
+        ),
+        bslib::layout_sidebar(
+          sidebar = bslib::sidebar(
+            mod_var_input_ui("vars")
+          ),
+          bslib::card(
+            full_screen = TRUE,
+            shiny::div(
+              shiny::img(
+                src = "www/bootstrap.png",
+                height = 40,
+                width = 50,
+                style = "margin:10px 10px"
+              )
+            ),
+            mod_scatter_display_ui("plot")
+          )
+        )
+      )
+    )
+  }
+}
+```
+
+As you can see, this alternate version of `movies_app()` uses the same modules and utility functions as the previous versions, but it will display a different UI layout if `bslib = TRUE`:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+pkgApp::movies_app(test = FALSE, bslib = TRUE)
+```
+
+:::: {.column-body-outset-right}
+
+::: {#fig-07_inst_bslib_app}
+![`movies_app()` with logo](img/07_inst_bslib_app.png){#fig-07_inst_bslib_app width='100%' fig-align='center'}
+
+`inst/www/bootstrap.png` image from `movies_ui()`
+:::
+
+::::
+
+
+#### [`ggplot2movies`]{style="font-size: 1.05em;"} app
+
+It's not uncommon to be working on multiple 'development' versions of an application in the same app-package. In situations like this, it's possible to store entire applications in the `inst/` folder and launch them with `runApp()`.
+
+For example, assume we're experimenting with an application that uses a 'tidy' version of the [`ggplot2movies::movies` data](https://cran.r-project.org/web/packages/ggplot2movies/index.html), which we've create with in the [`data-raw/ggp2movies.R`](https://github.com/mjfrigaard/pkgApp/blob/07_dev-ggp2movies/data-raw/ggp2movies.R) file. 
+
+We can create a home for this development version in `inst/dev/`, then place the application code in an [`app.R` file](https://github.com/mjfrigaard/pkgApp/blob/07_dev-ggp2movies/inst/dev/app.R). We'll also include the alternate image (`bootstrap.png`) and data file (created with `data-raw/ggp2movies.R`):
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+inst/dev
+  ├── app.R
+  ├── bootstrap.png
+  └── ggp2movies.fst
+
+1 directory, 3 files
+```
+
+```{r}
+#| label: git_box_07_dev-ggp2movies
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "alt",
+  fig_pw = '60%', 
+  branch = "07_dev-ggp2movies", 
+  repo = 'pkgApp')
+```
+
+To run this development version of `movies_app()`, I'll create `R/dev_movies_app.R`: 
+
+```{r}
+#| eval: false 
+#| code-fold: false
+#' Development `ggplot2movies` app standalone function
+#'
+#' Wrapper function for `runApp()`
+#' 
+#' @param test logical, run in `test.mode`?
+#' @param run where to launch app: 
+#'  * `view` = launch in viewer  
+#'  * `browse` = launch in external browser  
+#'  * `win` = launch in window
+#' 
+#' @return shiny app
+#' 
+#' @seealso [mod_var_input_ui()], [mod_var_input_server()], [mod_scatter_display_ui()], [mod_scatter_display_server()]
+#' 
+#'
+#' @export
+#' 
+dev_movies_app <- function(test = TRUE, run = "win") {
+  switch(EXPR = run,
+    view = options(shiny.launch.browser = .rs.invokeShinyPaneViewer),
+    browser = options(shiny.launch.browser = .rs.invokeShinyWindowExternal),
+    win = options(shiny.launch.browser = .rs.invokeShinyWindowViewer)
+  )
+  if (test) {
+    runApp(appDir = system.file("dev", package = "pkgApp"), 
+           test.mode = TRUE)
+  } else {
+    runApp(appDir = system.file("dev", package = "pkgApp"), 
+           test.mode = FALSE)
+  }
+}
+```
+
+`dev_movies_app()` looks a lot like `movies_app()`, but the `appDir` argument is the location of the development application, which we provide with `system.file()`.
+
+[<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd> / <kbd>D</kbd> / <kbd>B</kbd>]{style="font-style: italic; font-weight: bold; font-size: 1.10em"}
+
+After loading, documenting, and installing `pkgApp`, we can run the development version using `dev_movies_app()`: 
+
+:::: {.column-body-outset-right}
+
+::: {#fig-07_inst_ggp2movies_app}
+![`dev_movies_app()`](img/07_inst_ggp2movies_app.png){#fig-07_inst_ggp2movies_app width='100%' fig-align='center'}
+
+`inst/dev/` app with `dev_movies_ui()`
+:::
+
+::::
 
 ## Recap
 
@@ -352,7 +518,7 @@ co_box(
   contents = "
 - `inst/`: the `inst/` folder is installed with your app-package and will be accessible to users, so it's a great location for files you want to contained in your app, but don't fit into the standard R package structure.
   
-- `system.file()`: constructs a path to files or folders within **installed packages**. The `system.file()` function is especially useful when working with external datasets (i.e., `inst/extdata/`) or other external resources included with your app-package (i.e., `inst/www/`).
+- `system.file()`: constructs a path to files or folders within **installed packages** and is especially useful when working with external datasets (i.e., `inst/extdata/`) or other external resources included with your app-package (i.e., `inst/www/`).
   
 - `www`: used for external static resources in shiny apps. shiny will automatically serve files under the `www/` directory, but in app-packages we need to explicitly set this location with `shiny::addResourcePath()`
   
