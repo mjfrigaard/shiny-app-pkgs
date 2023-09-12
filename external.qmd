@@ -30,7 +30,7 @@ In this chapter we'll cover how to add external resources (i.e., the files store
 #| eval: false
 ```
 
-## This is `pkgApp`...
+## This is your app-package
 
 The current files and folders of `pkgApp` are displayed below:
 
@@ -66,7 +66,7 @@ If we're using the Posit Workbench IDE, the **Files** pane is how we  typically 
 
 The `shiny.png` logo in `www/` is not being loaded into the UI when the application is launched. Before we dive into how to add the contents of `www/` into `pkgApp`, we'll take a step back and investigate what happens when a package is installed.
 
-## This is `pkgApp`...**installed**
+## This is your app-package ... *installed*
 
 We've been running `load_all()`, `document()`, and `install()` on `pkgApp`, but we haven't looked at the contents of the installed package. Reviewing the installed package will help us understand what the `system.file()` function is doing, and how we can use the `inst/` folder to include external resources to our app-package.
 
@@ -121,7 +121,13 @@ If we add the `pkgApp/` directory to the end of the path above, we can view the 
 7 directories, 24 files
 ```
 
-The installed version of `pkgApp` has many of the same files as the 'source' version we've been working on (i.e., the `NAMESPACE` and `DESCRIPTION`). It also might surprise you to see that many of the source package files aren't included in the installed version (`.R`, `.Rd` files. etc.). [The key takeaway here is that the `inst/` subfolders and files are available in the installed version unchanged (with the `inst/` folder omitted.).]{style="color: #DA1212;"}
+The installed version of `pkgApp` has many of the same files as the 'source' version we've been working on (i.e., the `NAMESPACE` and `DESCRIPTION`). It also might surprise you to see that many of the source package files aren't included in the installed version (`.R`, `.Rd` files. etc.). 
+
+:::{.column-margin}
+
+[The key takeaway here is that the `inst/` subfolders and files are available *unchanged* in the installed version (with the `inst/` folder omitted.).]{style="font-size: 1.05em; color: #DA1212;"}
+
+:::
 
 Hopefully viewing this folder structure helps demystify what happens when a package is installed. Below is the official documentation on what happens to the `inst/` folder (and it's subfolders) when a package is installed:
 
@@ -134,7 +140,7 @@ Hopefully viewing this folder structure helps demystify what happens when a pack
 #| eval: true
 co_box(
   color = "g", fold = TRUE,
-  header = "Other installed package structures",
+  header = "Uses of `inst/` in other packages",
 "
 You can explore the structure of other installed packages to see how they work 'under the hood' to gain insight into how they use the `inst/` folder. 
   
@@ -163,7 +169,7 @@ You can explore the structure of other installed packages to see how they work '
     1 directory, 15 files
     \`\`\`
   
-- These files are used in `readr::readr_example()` (in [`R/example.R`](https://github.com/tidyverse/readr/blob/5ac729aa9a70fef297a634d2332ff8ff1af874fb/R/example.R)): 
+- These files are used in [`readr::readr_example()`](https://github.com/tidyverse/readr/blob/5ac729aa9a70fef297a634d2332ff8ff1af874fb/R/example.R)): 
   
     \`\`\`r
     #' Get path to readr example
@@ -189,7 +195,7 @@ You can explore the structure of other installed packages to see how they work '
 ")
 ```
 
-### How [`system.file()`]{style="font-size: 1.05em;"} works
+### Using [`system.file()`]{style="font-size: 0.95em;"}
 
 `system.file()` gives us access to the package files *on installation* (i.e., the files we see at the path above). In the previous chapter, we used `system.file()` to access the `movies.fst` file in `inst/extdata/`: 
 
@@ -249,7 +255,7 @@ $ rt_url           <chr> "//www.rottentomatoes.com/m/filly_brown…
 
 To include the contents of `www/` in our app-package, we need to use `isnt/` folder, `system.file()`, and the `shiny::addResourcePath()` function. 
 
-## [`addResourcePath()`]{style="font-size: 1.05em;"}
+## [`addResourcePath()`]{style="font-size: 0.95em;"}
 
 ```{r}
 #| label: git_box_pkgApp_07_inst-www
@@ -339,9 +345,9 @@ movies_app()
 
 You can read more about adding external resources in the [documentation for `addResourcePath()`](https://shiny.posit.co/r/reference/shiny/latest/resourcepaths). We'll also cover adding CSS and JavaScript files in later chapters. 
 
-### Other uses for [`inst/`]{style="font-size: 1.05em;"} 
+## Other uses for [`inst/`]{style="font-size: 1.05em;"} 
 
-The `inst/` folder can also be used to store files we're using in alternate versions of our application. For example, if I wanted to test a differenet layout using the [`bslib` package](https://rstudio.github.io/bslib/index.html), I could include a `bslib` argument in the `movies_ui()` function and include the alternate image file (in `inst/www/bootstrap.png`):
+The `inst/` folder can also be used to store files we're using in alternate versions of our application. This can include alternate images, CSS styling, JS scripts, data files, or even entirely different apps!
 
 ```{r}
 #| label: git_box_pkgApp_07_bslib-dev
@@ -354,6 +360,11 @@ git_margin_box(
   branch = "07_bslib-dev", 
   repo = 'pkgApp')
 ```
+
+
+#### Alternate external files
+
+For example, if I wanted to test a different layout using the [`bslib` package](https://rstudio.github.io/bslib/index.html), I could include a `bslib` argument in the `movies_ui()` function and include the alternate image file (in `inst/www/bootstrap.png`):
 
 ```{r}
 #| eval: false 
@@ -419,25 +430,29 @@ pkgApp::movies_app(test = FALSE, bslib = TRUE)
 
 ::::
 
-
-#### [`ggplot2movies`]{style="font-size: 1.05em;"} app
-
 It's not uncommon to be working on multiple 'development' versions of an application in the same app-package. In situations like this, it's possible to store entire applications in the `inst/` folder and launch them with `runApp()`.
+
+### Development versions
 
 For example, assume we're experimenting with an application that uses a 'tidy' version of the [`ggplot2movies::movies` data](https://cran.r-project.org/web/packages/ggplot2movies/index.html), which we've create with in the [`data-raw/ggp2movies.R`](https://github.com/mjfrigaard/pkgApp/blob/07_dev-ggp2movies/data-raw/ggp2movies.R) file. 
 
-We can create a home for this development version in `inst/dev/`, then place the application code in an [`app.R` file](https://github.com/mjfrigaard/pkgApp/blob/07_dev-ggp2movies/inst/dev/app.R). We'll also include the alternate image (`bootstrap.png`) and data file (created with `data-raw/ggp2movies.R`):
+We can create a home for this development version in `inst/dev/`:
 
 ```{bash}
 #| eval: false 
 #| code-fold: false
-inst/dev
+inst/dev/
   ├── app.R
-  ├── bootstrap.png
-  └── ggp2movies.fst
+  ├── ggp2movies.fst
+  └── imdb.png
 
 1 directory, 3 files
 ```
+
+In `inst/dev/`, we can place the application's code in an [`app.R` file](https://github.com/mjfrigaard/pkgApp/blob/07_dev-ggp2movies/inst/dev/app.R) with development modules (to load and display the `ggplot2movies` data), and a development standalone app function. We'll also include the alternate image (`bootstrap.png`) and data file (created with `data-raw/ggp2movies.R`):
+
+However, I can include a call to `library(pkgApp)` at the top of `app.R` if I want to use anything I've already developed in the `R/` folder.
+
 
 ```{r}
 #| label: git_box_07_dev-ggp2movies
@@ -451,7 +466,7 @@ git_margin_box(
   repo = 'pkgApp')
 ```
 
-To run this development version of `movies_app()`, I'll create `R/dev_movies_app.R`: 
+To run this development version of `movies_app()`, I'll create `R/ggplot2movies_app.R`: 
 
 ```{r}
 #| eval: false 
@@ -473,7 +488,7 @@ To run this development version of `movies_app()`, I'll create `R/dev_movies_app
 #'
 #' @export
 #' 
-dev_movies_app <- function(test = TRUE, run = "win") {
+ggplot2movies_app <- function(test = TRUE, run = "win") {
   switch(EXPR = run,
     view = options(shiny.launch.browser = .rs.invokeShinyPaneViewer),
     browser = options(shiny.launch.browser = .rs.invokeShinyWindowExternal),
@@ -489,21 +504,23 @@ dev_movies_app <- function(test = TRUE, run = "win") {
 }
 ```
 
-`dev_movies_app()` looks a lot like `movies_app()`, but the `appDir` argument is the location of the development application, which we provide with `system.file()`.
+`ggplot2movies_app()` looks a lot like `movies_app()`, but the `appDir` argument is the location of the development application, which we provide with `system.file()`.
 
 [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd> / <kbd>D</kbd> / <kbd>B</kbd>]{style="font-style: italic; font-weight: bold; font-size: 1.10em"}
 
-After loading, documenting, and installing `pkgApp`, we can run the development version using `dev_movies_app()`: 
+After loading, documenting, and installing `pkgApp`, we can run the development version using `ggplot2movies_app()`: 
 
 :::: {.column-body-outset-right}
 
 ::: {#fig-07_inst_ggp2movies_app}
-![`dev_movies_app()`](img/07_inst_ggp2movies_app.png){#fig-07_inst_ggp2movies_app width='100%' fig-align='center'}
+![`ggplot2movies_app()`](img/07_inst_ggp2movies_app.png){#fig-07_inst_ggp2movies_app width='100%' fig-align='center'}
 
 `inst/dev/` app with `dev_movies_ui()`
 :::
 
 ::::
+
+You may have noticed that I've used a different color and theme for the two development examples above. I've found this can be a quick and easy way to differentiate 'development' and 'production' versions of an application. 
 
 ## Recap
 

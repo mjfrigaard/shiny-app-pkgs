@@ -196,7 +196,7 @@ If I'm writing write a unit test for the `scatter_plot()` function in `R/scatter
 usethis::use_test("scatter_plot")
 ```
 
-#### Test files
+#### Unit test files
 
 The IDE will automatically open the new test file: 
 
@@ -223,7 +223,8 @@ Each `testthat` test has a test context (supplied to the `desc` argument) follow
 
 ```{r}
 #| eval: true
-#| code-fold: false
+#| code-fold: false 
+#| collapse: true
 test_that(desc = "multiplication works", code = {
   expect_equal(2 * 2, 4)
 })
@@ -388,6 +389,117 @@ After seeing the `old` vs `new` comparisons with `waldo` and `diffobj`, you shou
 ```
 
 
+### Test supporting files
+
+It's often useful to include helper functions or data to use for testing. Test data can be helpful for experimenting with various graph outputs and application performance. 
+
+#### Test data 
+
+Test data are  can be stored in `tests/testthat/fixtures/`. 
+
+```{r}
+#| eval: false 
+#| code-fold: true 
+#| code-summary: 'show/hide make-ggp2-movies.R'
+## code to prepare `ggp2movies` dataset goes here
+# pkgs <- c('ggplot2movies', 'tidyr', 'dplyr', 'stringr', 'purrr')
+# install.packages(pkgs, quiet = TRUE)
+
+# load packages --------------------
+library(tidyr)
+library(dplyr)
+library(stringr)
+library(purrr)
+
+ggp2movies <- ggplot2movies::movies |>
+  dplyr::mutate(id = 1:n()) |>
+  tidyr::pivot_longer(
+    cols = Action:Short,
+    names_to = "Genre",
+    values_to = "GenreMember"
+  ) |>
+  dplyr::group_by(
+    dplyr::across(-c(Genre, GenreMember))) |>
+  tidyr::nest() |>
+  dplyr::mutate(
+    Genres = purrr::map(data, ~ if (all(.x$GenreMember == 0)) {
+      character(0)
+    } else {
+      .x$Genre[.x$GenreMember == 1]
+    })
+  ) |>
+  dplyr::ungroup() |>
+  dplyr::select(title, Genres, length, year, 
+                budget, rating, votes, mpaa) |>
+  dplyr:::mutate(
+    genres = purrr::map_chr(
+      .x = Genres,
+      .f = stringr::str_c, collapse = ", "
+    )
+  ) |>
+  dplyr::select(title, genres, length, year, 
+                budget, avg_rating = rating, 
+                votes, mpaa) |>
+  dplyr::mutate(
+    mpaa = dplyr::na_if(x = mpaa, y = ""),
+    mpaa = factor(mpaa,
+      levels = c("G", "PG", "PG-13", "R", "NC-17"),
+      labels = c("G", "PG", "PG-13", "R", "NC-17")
+    ),
+    genres = dplyr::na_if(x = genres, ""),
+    genres = factor(genres)
+  ) |> 
+  tidyr::drop_na()
+# save to tests/testthat/fixtures/
+saveRDS(object = ggp2movies, file = "tests/testthat/fixtures/ggp2_movies.rds")
+```
+
+
+#### Test helpers 
+
+Test helpers are typically functions that make testing a little easier. I've included an example function includes messages for testing, `test_cmt()`.
+
+
+```{r}
+#| code-fold: false 
+# test comment helper
+test_cmt <- function(start = NULL, end = NULL, msg) {
+  if (is.null(start) & is.null(end)) {
+    cat("\n", glue::glue("[{Sys.time()}| {msg}]"), "\n")
+  } else if (!is.null(start) & is.null(end)) {
+    cat("\n", glue::glue("[ START | {Sys.time()} | {start} = {msg}]"), "\n")
+  } else if (is.null(start) & !is.null(end)) {
+    cat("\n", glue::glue("[ END   | {Sys.time()} | {end} = {msg}]"), "\n")
+  } else {
+    cat("\n", glue::glue("[ START | {Sys.time()} | {start} = {msg}]"), "\n")
+    cat("\n", glue::glue("[ END   | {Sys.time()} | {end} = {msg}]"), "\n")
+  }
+}
+```
+
+```{r}
+#| collapse: true
+#| code-fold: false
+test_cmt(start = "mod_fun()", msg = "messge")
+# test contents
+test_cmt(end = "mod_fun()", msg = "messge")
+```
+
+Functions like these can be stored in `tests/testthat/helper.R`:
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+tests/
+  └── testthat/
+      ├── fixtures/
+      │   ├── make-ggp2-movies.R
+      │   └── ggp2_movies.rds
+      ├── helper.R
+      └── ... all test files...
+```
+
+
 ### Snapshots
 
 Writing tests for graph outputs can be difficult, because we're evaluating the output from a custom plotting function like `scatter_plot()`. If we try to compare the output from `scatter_plot()` against a graph built with analogous `ggplot2` code, this test will fail: 
@@ -398,17 +510,19 @@ Writing tests for graph outputs can be difficult, because we're evaluating the o
 test_that(desc = "scatter_plot() works", code = {
   
   ggp_graph <- ggplot2::ggplot(mtcars, 
-              ggplot2::aes(x = mpg, y = disp)) + 
+                ggplot2::aes(x = mpg, y = disp)) + 
                 ggplot2::geom_point(
                   ggplot2::aes(color = cyl), 
                                alpha = 0.5, 
                                size = 3)
+  
   app_graph <- scatter_plot(mtcars, 
                     x_var = "mpg", 
                     y_var = "disp", 
                     col_var = "cyl", 
                     alpha_var = 0.5, 
                     size_var = 3)
+  
   expect_equal(
     object = ggp_graph, 
     expected = app_graph)
@@ -447,14 +561,24 @@ The [`vdiffr` package ](https://vdiffr.r-lib.org/) has it's own expectation, `ex
 #| eval: false 
 #| code-fold: false
 test_that(desc = "scatter_plot() works", code = {
+  
+  test_cmt(start =  "scatter_plot()", 
+           msg = "ggplot2movies::movies snapshot")
+  
+  ggp2_movies <- readRDS(test_path("fixtures", "ggp2_movies.rds"))
+  
     vdiffr::expect_doppelganger(
       title = "scatter_plot() graph", 
-      fig = scatter_plot(mtcars, 
-                    x_var = "mpg", 
-                    y_var = "disp", 
-                    col_var = "cyl", 
-                    alpha_var = 0.5, 
-                    size_var = 3))
+      fig = scatter_plot(ggp2_movies, 
+                    x_var = "avg_rating", 
+                    y_var = "length", 
+                    col_var = "mpaa", 
+                    alpha_var = 0.4, 
+                    size_var = 2.5))
+    
+    test_cmt(end =  "scatter_plot()", 
+             msg = "ggplot2movies::movies snapshot")
+    
 })
 ```
 
@@ -465,29 +589,30 @@ On the initial run, a snapshot is saved into the `tests/testthat/_snaps/` folder
 #| code-fold: false
 ==> Testing R file using 'testthat'
 
-ℹ Testing pkgApp
-✔ | F W S  OK | Context
-✔ |   1     1 | scatter_plot                                                                                            
-───────────────────────────────────────────────────────────────────────────────
-Warning (test-scatter_plot.R:2:5): scatter_plot() works
-Adding new file snapshot: 'tests/testthat/_snaps/scatter-plot-graph.svg'
-───────────────────────────────────────────────────────────────────────────────
-
-══ Results ════════════════════════════════════════════════════════════════════
+ℹ Loading pkgApp
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]
+ [ START | 2023-09-11 13:55:49 | scatter_plot() = ggplot2movies::movies snapshot] 
 [ FAIL 0 | WARN 1 | SKIP 0 | PASS 1 ]
+ [ END   | 2023-09-11 13:55:50 | scatter_plot() = ggplot2movies::movies snapshot] 
+
+
+── Warning (test-scatter_plot.R:4:5): scatter_plot() works ─────────────────────
+Adding new file snapshot: 'tests/testthat/_snaps/scatter-plot-graph.svg'
+[ FAIL 0 | WARN 1 | SKIP 0 | PASS 1 ]
+
+Test complete
 ```
 
 ```{bash}
 #| eval: false 
 #| code-fold: false
 tests/
-├── testthat
-│   ├── _snaps
-│   │   └── scatter_plot
-│   │       └── scatter-plot-graph.svg
-│   └── test-scatter_plot.R
-└── testthat.R
-4 directories, 3 files
+  ├── testthat
+  │   ├── _snaps
+  │   │   └── scatter_plot
+  │   │       └── scatter-plot-graph.svg
+  │   └── test-scatter_plot.R
+  └── testthat.R
 
 ```
 
@@ -529,22 +654,51 @@ Testing modules can be accomplished with `shiny`s `testServer()` function. Altho
 
 
 
-### [`testServer()`]{style="font-size: 1.05em;"}
+### [`testServer()`]{style="font-size: 0.95em;"}
 
-Whichever definition you choose, the goal with `testServer()` is to test *reactive interactions*. This what it would look like for 
+Whichever definition you choose, the goal with `testServer()` is to test *reactive interactions*. If we wanted to test the reactive interactions between the `mod_var_input_server()` and `mod_scatter_display_server()`, we could use the following: 
 
 ```{r}
-
+#| eval: false 
+#| code-fold: false
+test_that("mod_scatter_display_server() works", {
+  shiny::testServer(
+    app = mod_scatter_display_server,
+    args = list(
+      var_inputs = shiny::reactive(
+        list(
+          x = "audience_score",
+          y = "imdb_rating",
+          z = "mpaa_rating",
+          alpha = 0.5,
+          size = 2,
+          plot_title = "Test title")
+        )
+      ), expr = {
+      expect_true(
+        object = shiny::is.reactive(inputs)
+      )
+      test_cmt("mod_scatter_display_server", "is.reactive(inputs())")
+    }
+  )
+})
 ```
 
 
-### [`args = list()`]{style="font-size: 1.05em;"}
+### [`args = list()`]{style="font-size: 0.95em;"}
 
-#### Behavior-driven development (BDD)
+
+## Behavior-driven development (BDD)
 
 > "*[BDD] encourages teams to use conversation and concrete examples to formalize a shared understanding of how the application should behave.*" - [BDD, Wikipedia](https://en.wikipedia.org/wiki/Behavior-driven_development#:~:text)
 
+### [`describe()`]{style="font-size: 0.95em;"}
+
 The `testthat::describe()` function follows a BDD format: 
+
+### [`it()`]{style="font-size: 0.95em;"}
+
+`testthat::it()`
 
 ## System/end-to-end tests
 
