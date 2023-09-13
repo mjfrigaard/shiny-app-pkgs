@@ -121,15 +121,13 @@ If we add the `pkgApp/` directory to the end of the path above, we can view the 
 7 directories, 24 files
 ```
 
-The installed version of `pkgApp` has many of the same files as the 'source' version we've been working on (i.e., the `NAMESPACE` and `DESCRIPTION`). It also might surprise you to see that many of the source package files aren't included in the installed version (`.R`, `.Rd` files. etc.). 
+The installed version of `pkgApp` has many of the same files as the 'source' version we've been working on (i.e., the `NAMESPACE` and `DESCRIPTION`). It also might surprise you to see that many of the source package files aren't included in the installed version (`.R`, `.Rd` files. etc.).
 
-:::{.column-margin}
+Hopefully viewing this folder structure helps demystify what happens when a package is installed.[^inst-view-1] Below is the official documentation on what happens to the `inst/` folder (and it's subfolders) when a package is installed:[^inst-r-pkgs-2]
 
-[The key takeaway here is that the `inst/` subfolders and files are available *unchanged* in the installed version (with the `inst/` folder omitted.).]{style="font-size: 1.05em; color: #DA1212;"}
+[^inst-view-1]: The key takeaway here is that the `inst/` subfolders and files are available *unchanged* in the installed version (with the `inst/` folder omitted.).
 
-:::
-
-Hopefully viewing this folder structure helps demystify what happens when a package is installed. Below is the official documentation on what happens to the `inst/` folder (and it's subfolders) when a package is installed:
+[^inst-r-pkgs-2]: Read more about subdirectories to avoid in `inst/` in [R Packages, 2ed](https://r-pkgs.org/misc.html#sec-misc-inst).
 
 > "*The contents of the `inst/` subdirectory will be copied recursively to the installation directory. Subdirectories of `inst/` should not interfere with those used by R (currently, `R/`, `data/`, `demo/`, `exec/`, `libs/`, `man/`, `help/`, `html/` and `Meta/`, and earlier versions used `latex/`, `R-ex/`).*" - [Writing R extensions, Package subdirectories](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Package-subdirectories)
 
@@ -211,7 +209,7 @@ dplyr::glimpse(
 
 ```{bash}
 #| eval: false 
-#| code-fold: show
+#| code-fold: true
 #| code-summary: 'show/hide glimpse() of movies.fst'
 fstcore package v0.9.14
 (OpenMP was not detected, using single threaded mode)
@@ -269,7 +267,9 @@ git_margin_box(
   repo = 'pkgApp')
 ```
 
-`shiny`'s `addResourcePath()` function will add a "*directory of static resources to Shiny's web server*." In `pkgApp`, want to add the `www` directory that includes the `shiny.png` file (currently in our root (`"."`) folder). 
+The `addResourcePath()` function will add a "*directory of static resources to Shiny's web server*." In `pkgApp`, want to add the `www` directory that includes the `shiny.png` file (currently in our root (`"."`) folder).[^add-resource-path-1]
+
+[^add-resource-path-1]: You can read more about adding external resources in the [documentation for `addResourcePath()`](https://shiny.posit.co/r/reference/shiny/latest/resourcepaths).
 
 If we want to continue keeping external resources in the `www/` folder, we can move `www/` and it's contents into `inst/`:
 
@@ -343,28 +343,28 @@ movies_app()
 
 ::::
 
-You can read more about adding external resources in the [documentation for `addResourcePath()`](https://shiny.posit.co/r/reference/shiny/latest/resourcepaths). We'll also cover adding CSS and JavaScript files in later chapters. 
-
 ## Other uses for [`inst/`]{style="font-size: 1.05em;"} 
 
 The `inst/` folder can also be used to store files we're using in alternate versions of our application. This can include alternate images, CSS styling, JS scripts, data files, or even entirely different apps!
 
 ```{r}
-#| label: git_box_pkgApp_07_bslib-dev
+#| label: git_box_pkgApp_07_dev-bslib
 #| echo: false
 #| results: asis
 #| eval: true
 git_margin_box(
   contents = "alt",
   fig_pw = '60%', 
-  branch = "07_bslib-dev", 
+  branch = "07_dev-bslib", 
   repo = 'pkgApp')
 ```
 
 
 #### Alternate external files
 
-For example, if I wanted to test a different layout using the [`bslib` package](https://rstudio.github.io/bslib/index.html), I could include a `bslib` argument in the `movies_ui()` function and include the alternate image file (in `inst/www/bootstrap.png`):
+We can store `inst/` alternative external files and configure our UI function to test different layouts. In the example below, I've included an optional UI layout from the [`bslib` package](https://rstudio.github.io/bslib/index.html).
+
+The `bslib` argument in the `movies_ui()` includes an alternate image file (stored in `inst/www/bootstrap.png`):
 
 ```{r}
 #| eval: false 
@@ -374,7 +374,7 @@ movies_ui <- function(bslib = FALSE) {
   addResourcePath("www", system.file("www", package = "pkgApp"))
   if (isFALSE(bslib)) {
     tagList(
-      # omitted fluidPage() layout...
+      # I've omitted fluidPage() layout code here
     )
   } else {
     tagList(
@@ -412,7 +412,7 @@ movies_ui <- function(bslib = FALSE) {
 }
 ```
 
-As you can see, this alternate version of `movies_app()` uses the same modules and utility functions as the previous versions, but it will display a different UI layout if `bslib = TRUE`:
+This alternate version of `movies_app()` uses the same modules and utility functions as the previous versions, but when `bslib = TRUE`, the app displays the alternate UI layout:
 
 ```{r}
 #| eval: false 
@@ -430,13 +430,12 @@ pkgApp::movies_app(test = FALSE, bslib = TRUE)
 
 ::::
 
-It's not uncommon to be working on multiple 'development' versions of an application in the same app-package. In situations like this, it's possible to store entire applications in the `inst/` folder and launch them with `runApp()`.
+
 
 ### Development versions
 
-For example, assume we're experimenting with an application that uses a 'tidy' version of the [`ggplot2movies::movies` data](https://cran.r-project.org/web/packages/ggplot2movies/index.html), which we've create with in the [`data-raw/ggp2movies.R`](https://github.com/mjfrigaard/pkgApp/blob/07_dev-ggp2movies/data-raw/ggp2movies.R) file. 
+It's not uncommon to be working on multiple 'development' versions of an application in the same package. In these situations, we might want to store an entire applications in the `inst/` folder (like `inst/dev/` below) and launch it with `runApp()`.
 
-We can create a home for this development version in `inst/dev/`:
 
 ```{bash}
 #| eval: false 
@@ -449,10 +448,84 @@ inst/dev/
 1 directory, 3 files
 ```
 
-In `inst/dev/`, we can place the application's code in an [`app.R` file](https://github.com/mjfrigaard/pkgApp/blob/07_dev-ggp2movies/inst/dev/app.R) with development modules (to load and display the `ggplot2movies` data), and a development standalone app function. We'll also include the alternate image (`bootstrap.png`) and data file (created with `data-raw/ggp2movies.R`):
+This 'development' application uses a tidy version of the [`ggplot2movies::movies` data](https://cran.r-project.org/web/packages/ggplot2movies/index.html)
+  
+  -   We can create this in the [`data-raw/ggp2movies.R`](https://github.com/mjfrigaard/pkgApp/blob/07_dev-ggp2movies/data-raw/ggp2movies.R) file.[^raw-data-3]
 
-However, I can include a call to `library(pkgApp)` at the top of `app.R` if I want to use anything I've already developed in the `R/` folder.
+[^raw-data-3]: We covered the `data-raw/` folder in the [Data chapter](https://mjfrigaard.github.io/shinyap/data.html), and you can read more about it [here in R packages, 2ed](https://r-pkgs.org/data.html#sec-data-data-raw.)
 
+In `inst/dev/`, we can place the application's code in an [`app.R` file](https://github.com/mjfrigaard/pkgApp/blob/07_dev-ggp2movies/inst/dev/app.R). 
+
+  -   In `app.R`, we can create a new `mod_variables_ui()` development module with the correct variable names
+  
+```{r}
+#| eval: false 
+#| code-fold: true 
+#| code-summary: 'show/hide mod_variables_ui()'
+mod_variables_ui <- function(id) {
+  addResourcePath(prefix = "dev", 
+    directoryPath = system.file("dev", package = "pkgApp"))
+    ns <- NS(id)
+    tagList(
+      selectInput(
+        inputId = ns("y"),
+        label = "Y-axis:",
+        choices = c(
+          "Year" = "year",
+          "Length" = "length",
+          "Budget" = "budget",
+          "Rating" = "avg_rating",
+          "Votes" = "votes"
+        ),
+        selected = "budget"
+      ),
+      selectInput(
+        inputId = ns("x"),
+        label = "X-axis:",
+        choices = c(
+          "Year" = "year",
+          "Length" = "length",
+          "Budget" = "budget",
+          "Rating" = "avg_rating",
+          "Votes" = "votes"
+        ),
+        selected = "avg_rating"
+      ),
+      selectInput(
+        inputId = ns("z"),
+        label = "Color by:",
+        choices = c(
+          "MPAA" = "mpaa",
+          "Genres" = "genres"
+        ),
+        selected = "mpaa"
+      ),
+      sliderInput(
+        inputId = ns("alpha"),
+        label = "Alpha:",
+        min = 0, max = 1, step = 0.1,
+        value = 0.4
+      ),
+      sliderInput(
+        inputId = ns("size"),
+        label = "Size:",
+        min = 0, max = 5, step = 0.5,
+        value = 2.5
+      ),
+      textInput(
+        inputId = ns("plot_title"),
+        label = "Plot title",
+        placeholder = "Enter plot title"
+      )
+    )
+}
+```
+
+However, by including a call to `library(pkgApp)` at the top of `app.R`, I can pair the `mod_variables_ui()` function with the `mod_var_input_server()` function.[^export-modules-4]
+
+[^export-modules-4]: This requires exporting `mod_var_input_server()` with `@export` in the `R/` folder.
+
+We'll also include the alternate image (`bootstrap.png`) and data file (created with `data-raw/ggp2movies.R`). Finally, we'll launch the development version of the app with a different standalone app function, stored in `R/ggplot2movies_app.R`.
 
 ```{r}
 #| label: git_box_07_dev-ggp2movies
@@ -466,7 +539,7 @@ git_margin_box(
   repo = 'pkgApp')
 ```
 
-To run this development version of `movies_app()`, I'll create `R/ggplot2movies_app.R`: 
+To run this development app, I'll create the `ggplot2movies_app()` function below:
 
 ```{r}
 #| eval: false 

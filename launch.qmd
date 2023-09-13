@@ -85,7 +85,7 @@ movies_app()
 ```
 
 
-`movies_app()` is a wrapper function for `shiny::shinyApp()`, but it creates the `ui` and `server` arguments internally (with the modules). As we can see in the image below, the **Run App** icon is available in the **Source** pane:
+`movies_app()` is a wrapper function for `shinyApp()`, but it creates the `ui` and `server` arguments internally (with the modules). As we can see in the image below, the **Run App** icon is available in the **Source** pane:
 
 :::{#fig-05_app_main_runApp_icon}
 
@@ -94,7 +94,7 @@ movies_app()
 **Run App** icon in `app.R` of `main` branch
 :::
 
-Clicking on **Run App** will call `shiny::runApp()` in the **Console**, but it also produces a warning: 
+Clicking on **Run App** will call `runApp()` in the **Console**, but it also produces a warning: 
 
 :::{#fig-05_app_main_runApp_console}
 
@@ -105,7 +105,7 @@ Clicking on **Run App** in `app.R` of `main` branch
 
 So even though `app.R` contains a call to `shinyApp()`, `movies_app()` is *actually* run with `runApp()` (we'll come back to this in a moment).
 
-### [`loadSupport`]{style="font-size: 1.10em"} warning
+### [`loadSupport()`]{style="font-size: 0.95em"} warning
 
 The warning in the **Console** tells us we should be mindful of '*unexpected behavior(s)*' when sourcing the `R/` subdirectory in an R package (or app-package in this case):
 
@@ -117,13 +117,13 @@ Warning in loadSupport(appDir, renv = sharedEnv, globalrenv = NULL) :
   contain an R package. Sourcing files in R/ may cause unexpected behavior.
 ```
 
-[`loadSupport()`](https://shiny.posit.co/r/reference/shiny/1.5.0/loadsupport) is how the `R/` and `www/` folders are automatically sourced/served when we launched our app (before it was converted into a package).
+If you recall, we covered [`loadSupport()`](https://shiny.posit.co/r/reference/shiny/1.5.0/loadsupport) back in the shiny chapter.[^load-support-1] The warning above also tells us that despite `pkgApp` being structured as an app-package, the `R/` folding is still being sourced like it's a shiny project.
 
-The warning above also tells us that despite `pkgApp` being structured as an app-package, the `R/` folding is still being sourced like it's a shiny project.
+[^load-support-1]: `loadSupport()` is how the `R/` and `www/` folders are automatically sourced/served when we launched our app. 
 
 ## [`app.R`]{style="font-size: 1.05em"} ([`02_roxygen2`]{style="font-size: 1.05em"})
 
-Let's fast-forward to the `02_roxygen2` branch of `pkgApp`. This is the first version of `movies_app()` that's contained in the `R/` folder (in `R/movies_app.R`).
+Let's jump ahead to the `02_roxygen2` branch of `pkgApp`, which was the first version of `movies_app()` that we contained in the `R/` folder (in `R/movies_app.R`).
 
 ```{r}
 #| label: git_box_pkgApp_02_roxygen2
@@ -151,8 +151,7 @@ R/
 1 directory, 6 files
 ```
 
-
-If you recall, in the `02_roxygen2` branch, `movies_app()` isn't exported yet, so the error below is expected when we run the contents of `app.R`:
+In the `02_roxygen2` branch, the `movies_app()` function wasn't exported yet, so we saw the error below when we run the contents of `app.R`:
 
 ```{r}
 #| eval: false
@@ -174,7 +173,7 @@ movies_app()
 Error in movies_app() : could not find function "movies_app"
 ```
 
-However, if we run call `shiny::runApp()` in the **Console**, we see the following: 
+However, if we run call `runApp()` in the **Console**, we see the following: 
 
 ::: {#fig-05_app_roxygen2_runApp_console}
 
@@ -185,17 +184,29 @@ The application is launched (with the `loadSupport()` warning)
 
 #### Feature or bug?
 
-The example above demonstrates 1) the differences between `shinyApp()` and `runApp()`, and 2) the tensions between the R package structure and the `shiny` framework. 
+The examples above demonstrate the differences between `shinyApp()` and `runApp()`, and the tensions between the R package structure and the `shiny` framework:
 
--   The reason we're able to call `runApp()` in the **Console** and launch the application in `movies_app()` is because `runApp()` is designed to work with directories containing shiny apps (not `ui` and `server` arguments).
+-   The reason we're able to call `runApp()` in the **Console** and launch the application in `movies_app()` is because `runApp()` is designed to work with directories containing shiny apps.
 
--   We're seeing the `loadSupport()` warning because one of the features of `shiny` projects is to `source()` the files in the `R/` folder (which we covered in [Chapter 1](https://mjfrigaard.github.io/shinyap/shiny.html#r)). However, after converting the contents of `pkgApp` into an app-package (like the versions in the `main` and `02_roxygen2` branches), the contents of `R/` are loaded with `devtools::load_all()`. 
+-   We're seeing the `loadSupport()` warning because one of the features of `shiny` projects is that all `.R` files in the `R/` folder  are `source()`ed when app launches.[^load-support-2]
 
-In the following section, we'll compare `shinyApp()` and `runApp()` to determine which one to use in `R/movies_app.R` and the `app.R` file.   
+[^load-support-2]: We covered this topic in [Chapter 1](https://mjfrigaard.github.io/shinyap/shiny.html#r). 
+
+After converting the contents of `pkgApp` into an app-package, the contents of `R/` are loaded with `devtools::load_all()`. In the following section, we'll compare `shinyApp()` and `runApp()` to determine which one to use in `R/movies_app.R` and the `app.R` file.   
 
 ## [`shinyApp()`]{style="font-size: 1.05em"} vs. [`runApp()`]{style="font-size: 1.05em"}
 
-`shinyApp()` is typically used to create apps within an interactive R session (like the R console or in Posit Workbench). Developers can use `shinyApp()` to quickly spin up simple applications by defining `ui` and `server` arguments (e.g. as `shinyApp(ui, server)`), which is why its included as the boilerplate app with new `shiny` project. 
+`shinyApp()` is typically used to create apps within an interactive R session (like the R console or in Posit Workbench). `runApp()` is designed to run standalone apps located in a separate directory containing `ui.R` and `server.R` (or `app.R`) files. [^shiny-app-1]
+
+[^shiny-app-1]: It's worthwhile to read the documentation on  [`shinyApp()`](https://shiny.posit.co/r/reference/shiny/0.14/shinyapp) and [`runApp()`](https://shiny.posit.co/r/reference/shiny/1.7.4/runapp).
+
+:::{layout="[40,60]"}
+
+### [`shinyApp()`]{style="font-size: 0.95em"}
+
+Developers can use `shinyApp()` to quickly spin up simple applications by defining `ui` and `server` arguments (e.g. as `shinyApp(ui, server)`).
+
+###
 
 ```{r}
 #| eval: false 
@@ -211,13 +222,24 @@ shinyApp(
 ```
 
 
-`runApp()` is designed to run standalone apps located in a separate directory containing `ui.R` and `server.R` (or `app.R`) files. This feature is beneficial for app-packages, because apps can be organized inside a dedicated sub-directory and provided to the `appDir` argument.
+### [`runApp()`]{style="font-size: 0.95em"}
+
+`runApp()` is more suited to be used in app-packages because it can launch app organized inside a dedicated sub-directories (and the path can be provided to the `appDir` argument).
+
+###
 
 ```{r}
 #| eval: false 
 #| code-fold: false
 runApp(appDir = "path/to/app/folder")
 ```
+
+
+
+
+
+
+:::
 
 ## Updated [`movies_app()`]{style="font-size: 1.10em"}
 
@@ -248,7 +270,7 @@ List of 5
  - attr(*, "class")= chr "shiny.appobj"
 ```
 
-We'll rewrite `movies_app()` below using `shiny::runApp()`.
+We'll rewrite `movies_app()` below using `runApp()`.
 
 #### [`shiny.launch.browser`]{style="font-size: 1.05em"}
 
@@ -411,17 +433,9 @@ Written this way, in a non-interactive R session, `app.R` will re-direct the err
 
 ### [`pkgload::load_all()`]{style="font-size: 0.95em"}
 
-If the session ***is*** interactive (i.e., `!interactive() == FALSE`), we want `app.R` to load all the code in the `R/` folder with `pkgload::load_all()`.
+If the session ***is*** interactive (i.e., `!interactive() == FALSE`), we want `app.R` to load all the code in the `R/` folder with `pkgload::load_all()`.[^pkgload-load_all]
 
-:::{.column-margin}
-
-:::{style="font-size: 1.05em"}
-
-`pkgload` is part of the [conscious uncoupling](https://www.tidyverse.org/blog/2018/10/devtools-2-0-0/) of the `devtools` package we learned about back in [Chapter 3](https://mjfrigaard.github.io/shinyap/devtools.html). 
-
-:::
-
-:::
+[^pkgload-load_all]: `pkgload` is part of the [conscious uncoupling](https://www.tidyverse.org/blog/2018/10/devtools-2-0-0/) of the `devtools` package we learned about back in [Chapter 3](https://mjfrigaard.github.io/shinyap/dependencies.html).
 
 ```{r}
 #| eval: false 
@@ -438,7 +452,7 @@ if (!interactive()) {
 }
 ```
 
-Recall that `pkgload::load_all()` is function [actually called when we run `devtools::load_all()`](https://www.tidyverse.org/blog/2018/10/devtools-2-0-0/) (or use [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd>]{style="font-weight: bold; font-size: 0.75em"}), and that this is analogous to running `library(pkgApp)`
+Recall that `pkgload::load_all()` is function actually called when we run `devtools::load_all()` (or use [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd>]{style="font-weight: bold; font-size: 0.75em"}), and this is analogous to running `library(pkgApp)`
 
 ## Calling [`movies_app()`]{style="font-size: 1.10em"}
 
@@ -509,7 +523,7 @@ co_box(
   contents = "
 In the documentation for `loadSupport()`, you'll find an option to remove the R/ directory sourcing by placing a file named `_disable_autoload.R` in your `R/` directory (this is also one of the behaviors of the [`golem` framework](https://github.com/ThinkR-open/golem/blob/365a5cc303b189973abab0dd375c64be79bcf74a/R/disable_autoload.R), which we will cover in the following chapters).
   
-It's perfectly fine to adopt this behavior--this chapter demonstrates a way to remove the `loadSupport` warning without having to add this file.
+It's perfectly fine to adopt this behavior--this chapter demonstrates a way to remove the `loadSupport()` warning without having to add this file.
   
   ",
   fold = TRUE
