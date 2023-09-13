@@ -418,7 +418,7 @@ Caution!
 </div>
 </div>
 <p>Writing tests for your app-package poses some unique challenges. Shiny functions are written in the context of its <a href="https://shiny.posit.co/r/articles/build/reactivity-overview/">reactive model</a>, so some conventional testing techniques and methods for regular R packages don’t directly apply. Fortunately, the infrastructure for storing and running tests in your app-package is identical to a standard R package.</p>
-<p>This chapter will cover three layers of tests: unit tests, integration/module tests, and end-to-end or system tests. I’ll focus on <em>what to test</em> and <em>why to test it</em>, not <em>how to write tests</em>, because plenty of those resources exist<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>, <a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>. The only exception being some tricks I’ve learned for using <code>testServer()</code> with module server functions (because I’ve found the available documentation to be lacking<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>).</p>
+<p>This chapter will cover three layers of tests: unit tests, integration/module tests, and end-to-end or system tests. I’ll focus on <em>what to test</em> and <em>why to test it</em>, not <em>how to write tests</em>, because plenty of those resources exist.<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> <a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a> The only exception being some tricks I’ve learned for using <code>testServer()</code> with module server functions.<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a></p>
 <p>I’ll also touch on the links between user requirements, functional specifications, and using a traceability matrix to track issues &amp; features.</p>
 <p>The code chunk below will load the necessary testing packages.</p>
 <div class="cell">
@@ -538,7 +538,7 @@ Mastering Shiny <code>monthApp</code> tests
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html">test_that</a></span><span class="op">(</span>desc <span class="op">=</span> <span class="st">"multiplication works"</span>, code <span class="op">=</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html">expect_equal</a></span><span class="op">(</span><span class="fl">2</span> <span class="op">*</span> <span class="fl">2</span>, <span class="fl">4</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
-<span><span class="co">## Test passed 😸</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span><span class="co">## Test passed 🥇</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section><section id="expectations" class="level4"><h4 class="anchored" data-anchor-id="expectations">Expectations</h4>
 <p>Most expectation have two parts: an <code>observed</code> object, and an <code>expected</code> object. The <code>observed</code> object is an artifact of some code you’ve written, and it’s being compared against a known result (i.e., what is <code>expected</code>)</p>
@@ -666,9 +666,10 @@ Mastering Shiny <code>monthApp</code> tests
 <span id="cb22-22"><a href="#cb22-22" aria-hidden="true" tabindex="-1"></a>`expected$CHR` is a character vector ('B', 'C', 'D')</span>
 <span id="cb22-23"><a href="#cb22-23" aria-hidden="true" tabindex="-1"></a>[ FAIL 1 | WARN 0 | SKIP 0 | PASS 0 ]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section></section><section id="test-supporting-files" class="level3"><h3 class="anchored" data-anchor-id="test-supporting-files">Test supporting files</h3>
-<p>It’s often useful to include helper functions or data to use for testing. Test data can be helpful for experimenting with various graph outputs and application performance.</p>
+<p>Sometimes testing functions in isolation is not enough and it’s useful to include either helper functions or data. This is especially true when the code we’re testing goes beyond the function’s borders, such as connecting to a database or API. The term for these supporting files are <strong>test fixtures</strong>,<a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a> and below we’ll cover including them in the <code>tests/</code> folder.</p>
 <section id="test-data" class="level4"><h4 class="anchored" data-anchor-id="test-data">Test data</h4>
-<p>Test data are can be stored in <code>tests/testthat/fixtures/</code>.</p>
+<p>Test data can be helpful for experimenting with various table and graphing package outputs, file formats, and application performance. Test data files can be stored in <code>tests/testthat/fixtures/</code>, and I’ve provided an example below of of the tidy <code>ggplot2movies</code> data we used in a previous branch.</p>
+<p>The code used to create the test data–<code>make-ggp2-movies.R</code>–is stored in the same location as the output it creates (i.e., <code>ggp2_movies.rds</code>):</p>
 <div class="cell">
 <details><summary>show/hide make-ggp2-movies.R</summary><div class="sourceCode" id="cb23"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="co">## code to prepare `ggp2movies` dataset goes here</span></span>
 <span><span class="co"># pkgs &lt;- c('ggplot2movies', 'tidyr', 'dplyr', 'stringr', 'purrr')</span></span>
@@ -723,44 +724,68 @@ Mastering Shiny <code>monthApp</code> tests
 <span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html">saveRDS</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">ggp2movies</span>, file <span class="op">=</span> <span class="st">"tests/testthat/fixtures/ggp2_movies.rds"</span><span class="op">)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
-</section><section id="test-helpers" class="level4"><h4 class="anchored" data-anchor-id="test-helpers">Test helpers</h4>
-<p>Test helpers are typically functions that make testing a little easier. I’ve included an example function includes messages for testing, <code>test_cmt()</code>.</p>
 <div class="cell">
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="co"># test comment helper</span></span>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="ex">tests/</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>  <span class="ex">└──</span> testthat/</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>      <span class="ex">└──</span> fixtures/</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>            <span class="ex">├──</span> ggp2_movies.rds</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>            <span class="ex">└──</span> make-ggp2-movies.R</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>       </span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a><span class="ex">3</span> directories, 2 files</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section><section id="test-helpers" class="level4"><h4 class="anchored" data-anchor-id="test-helpers">Test helpers</h4>
+<p>Test helpers are typically functions that make testing a little easier. I’ve included a small example function that includes nicely formatted messages for testing, <code>test_cmt()</code>.</p>
+<div class="cell">
+<details><summary>show/hide test_cmt() helper</summary><div class="sourceCode" id="cb25"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="co"># test comment helper</span></span>
 <span><span class="va">test_cmt</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">start</span> <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">end</span> <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">msg</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html">is.null</a></span><span class="op">(</span><span class="va">start</span><span class="op">)</span> <span class="op">&amp;</span> <span class="fu"><a href="https://rdrr.io/r/base/NULL.html">is.null</a></span><span class="op">(</span><span class="va">end</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/cat.html">cat</a></span><span class="op">(</span><span class="st">"\n"</span>, <span class="fu">glue</span><span class="fu">::</span><span class="fu"><a href="https://glue.tidyverse.org/reference/glue.html">glue</a></span><span class="op">(</span><span class="st">"[{Sys.time()}| {msg}]"</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/cat.html">cat</a></span><span class="op">(</span><span class="st">"\n"</span>, </span>
+<span>      <span class="fu">stringr</span><span class="fu">::</span><span class="fu"><a href="https://stringr.tidyverse.org/reference/str_glue.html">str_glue</a></span><span class="op">(</span><span class="st">"[{Sys.time()}| {msg}]"</span><span class="op">)</span>, </span>
+<span>      <span class="st">"\n"</span><span class="op">)</span></span>
 <span>  <span class="op">}</span> <span class="kw">else</span> <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html">is.null</a></span><span class="op">(</span><span class="va">start</span><span class="op">)</span> <span class="op">&amp;</span> <span class="fu"><a href="https://rdrr.io/r/base/NULL.html">is.null</a></span><span class="op">(</span><span class="va">end</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/cat.html">cat</a></span><span class="op">(</span><span class="st">"\n"</span>, <span class="fu">glue</span><span class="fu">::</span><span class="fu"><a href="https://glue.tidyverse.org/reference/glue.html">glue</a></span><span class="op">(</span><span class="st">"[ START | {Sys.time()} | {start} = {msg}]"</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/cat.html">cat</a></span><span class="op">(</span><span class="st">"\n"</span>, </span>
+<span>      <span class="fu">stringr</span><span class="fu">::</span><span class="fu"><a href="https://stringr.tidyverse.org/reference/str_glue.html">str_glue</a></span><span class="op">(</span><span class="st">"[ START | {Sys.time()} | {start} = {msg}]"</span><span class="op">)</span>,</span>
+<span>      <span class="st">"\n"</span><span class="op">)</span></span>
 <span>  <span class="op">}</span> <span class="kw">else</span> <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html">is.null</a></span><span class="op">(</span><span class="va">start</span><span class="op">)</span> <span class="op">&amp;</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html">is.null</a></span><span class="op">(</span><span class="va">end</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/cat.html">cat</a></span><span class="op">(</span><span class="st">"\n"</span>, <span class="fu">glue</span><span class="fu">::</span><span class="fu"><a href="https://glue.tidyverse.org/reference/glue.html">glue</a></span><span class="op">(</span><span class="st">"[ END   | {Sys.time()} | {end} = {msg}]"</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/cat.html">cat</a></span><span class="op">(</span><span class="st">"\n"</span>, </span>
+<span>      <span class="fu">stringr</span><span class="fu">::</span><span class="fu"><a href="https://stringr.tidyverse.org/reference/str_glue.html">str_glue</a></span><span class="op">(</span><span class="st">"[ END   | {Sys.time()} | {end} = {msg}]"</span><span class="op">)</span>, </span>
+<span>      <span class="st">"\n"</span><span class="op">)</span></span>
 <span>  <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/cat.html">cat</a></span><span class="op">(</span><span class="st">"\n"</span>, <span class="fu">glue</span><span class="fu">::</span><span class="fu"><a href="https://glue.tidyverse.org/reference/glue.html">glue</a></span><span class="op">(</span><span class="st">"[ START | {Sys.time()} | {start} = {msg}]"</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/cat.html">cat</a></span><span class="op">(</span><span class="st">"\n"</span>, <span class="fu">glue</span><span class="fu">::</span><span class="fu"><a href="https://glue.tidyverse.org/reference/glue.html">glue</a></span><span class="op">(</span><span class="st">"[ END   | {Sys.time()} | {end} = {msg}]"</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/cat.html">cat</a></span><span class="op">(</span><span class="st">"\n"</span>, </span>
+<span>      <span class="fu">stringr</span><span class="fu">::</span><span class="fu"><a href="https://stringr.tidyverse.org/reference/str_glue.html">str_glue</a></span><span class="op">(</span><span class="st">"[ START | {Sys.time()} | {start} = {msg}]"</span><span class="op">)</span>,</span>
+<span>      <span class="st">"\n"</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/cat.html">cat</a></span><span class="op">(</span><span class="st">"\n"</span>, </span>
+<span>      <span class="fu">stringr</span><span class="fu">::</span><span class="fu"><a href="https://stringr.tidyverse.org/reference/str_glue.html">str_glue</a></span><span class="op">(</span><span class="st">"[ END   | {Sys.time()} | {end} = {msg}]"</span><span class="op">)</span>,</span>
+<span>      <span class="st">"\n"</span><span class="op">)</span></span>
 <span>  <span class="op">}</span></span>
 <span><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 </div>
+<p><code>test_cmt()</code> can be used to log when your test beings and ends, and includes a message for the context.<a href="#fn6" class="footnote-ref" id="fnref6" role="doc-noteref"><sup>6</sup></a></p>
 <div class="cell">
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">test_cmt</span><span class="op">(</span>start <span class="op">=</span> <span class="st">"mod_fun()"</span>, msg <span class="op">=</span> <span class="st">"messge"</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html">test_that</a></span><span class="op">(</span>desc <span class="op">=</span> <span class="st">"multiplication works"</span>, code <span class="op">=</span> <span class="op">{</span></span>
+<span>  <span class="fu">test_cmt</span><span class="op">(</span>start <span class="op">=</span> <span class="st">"multiplication"</span>, msg <span class="op">=</span> <span class="st">"2 * 2 = 4"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html">expect_equal</a></span><span class="op">(</span><span class="fl">2</span> <span class="op">*</span> <span class="fl">2</span>, <span class="fl">4</span><span class="op">)</span></span>
+<span>  <span class="fu">test_cmt</span><span class="op">(</span>end <span class="op">=</span> <span class="st">"multiplication"</span>, msg <span class="op">=</span> <span class="st">"2 * 2 = 4"</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">##  [ START | 2023-09-12 22:26:55 | mod_fun() = messge]</span></span>
-<span><span class="co"># test contents</span></span>
-<span><span class="fu">test_cmt</span><span class="op">(</span>end <span class="op">=</span> <span class="st">"mod_fun()"</span>, msg <span class="op">=</span> <span class="st">"messge"</span><span class="op">)</span></span>
+<span><span class="co">##  [ START | 2023-09-13 12:11:59 | multiplication = 2 * 2 = 4] </span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">##  [ END   | 2023-09-12 22:26:55 | mod_fun() = messge]</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span><span class="co">##  [ END   | 2023-09-13 12:11:59 | multiplication = 2 * 2 = 4] </span></span>
+<span><span class="co">## Test passed 🥳</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>Functions like these can be stored in <code>tests/testthat/helper.R</code>:</p>
-<div class="sourceCode" id="cb26"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>tests/</span>
-<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>  └── testthat/</span>
-<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>      ├── fixtures/</span>
-<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>      │   ├── make-ggp2-movies.R</span>
-<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>      │   └── ggp2_movies.rds</span>
-<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>      ├── helper.R</span>
-<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>      └── ... all test files...</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Functions like <code>test_cmt()</code> can be stored in <code>tests/testthat/helper.R</code>, which is automatically loaded with <code><a href="https://devtools.r-lib.org/reference/load_all.html">devtools::load_all()</a></code>:</p>
+<div class="sourceCode" id="cb27"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>tests/</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>  └── testthat/</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>      ├── fixtures/</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>      │   ├── make-ggp2-movies.R</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>      │   └── ggp2_movies.rds</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>      ├── helper.R</span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>      └── ... all test files...</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section></section><section id="snapshots" class="level3 page-columns page-full"><h3 class="anchored" data-anchor-id="snapshots">Snapshots</h3>
 <p>Writing tests for graph outputs can be difficult, because we’re evaluating the output from a custom plotting function like <code>scatter_plot()</code>. If we try to compare the output from <code>scatter_plot()</code> against a graph built with analogous <code>ggplot2</code> code, this test will fail:</p>
 <div class="cell">
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html">test_that</a></span><span class="op">(</span>desc <span class="op">=</span> <span class="st">"scatter_plot() works"</span>, code <span class="op">=</span> <span class="op">{</span></span>
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html">test_that</a></span><span class="op">(</span>desc <span class="op">=</span> <span class="st">"scatter_plot() works"</span>, code <span class="op">=</span> <span class="op">{</span></span>
 <span>  </span>
 <span>  <span class="va">ggp_graph</span> <span class="op">&lt;-</span> <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="va">mtcars</span>, </span>
 <span>                <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">mpg</span>, y <span class="op">=</span> <span class="va">disp</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> </span>
@@ -783,7 +808,7 @@ Mastering Shiny <code>monthApp</code> tests
 </div>
 <p>We can see why with <code><a href="https://rdrr.io/pkg/diffobj/man/diffObj.html">diffobj::diffObj()</a></code>:</p>
 <div class="cell">
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">diffobj</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/diffobj/man/diffObj.html">diffObj</a></span><span class="op">(</span><span class="va">ggp_graph</span>, <span class="va">app_graph</span><span class="op">)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">diffobj</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/diffobj/man/diffObj.html">diffObj</a></span><span class="op">(</span><span class="va">ggp_graph</span>, <span class="va">app_graph</span><span class="op">)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="column-page-inset-right">
 <div id="fig-08_tests_diffobj_scatter_plot" class="quarto-figure quarto-figure-center anchored">
@@ -794,68 +819,67 @@ Mastering Shiny <code>monthApp</code> tests
 <figcaption class="figure-caption">Figure&nbsp;4: Graph objects are difficult to use as test objects</figcaption></figure>
 </div>
 </div>
-<p>Another option for testing the <code>scatter_plot()</code> function is to use the <code><a href="https://testthat.r-lib.org/reference/expect_snapshot_file.html">expect_snapshot_file()</a></code> function.<a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a></p>
+<p>Another option for using snapshots for testing is the <code><a href="https://testthat.r-lib.org/reference/expect_snapshot_file.html">expect_snapshot_file()</a></code> function, <a href="#fn7" class="footnote-ref" id="fnref7" role="doc-noteref"><sup>7</sup></a> but for graph outputs it’s easier to use the <code>expect_doppelganger()</code> function from the <a href="https://vdiffr.r-lib.org/"><code>vdiffr</code> package</a>.</p>
 <section id="vdiffr" class="level4"><h4 class="anchored" data-anchor-id="vdiffr"><span style="font-size: 1.05em;"><code>vdiffr</code></span></h4>
-<p>The <a href="https://vdiffr.r-lib.org/"><code>vdiffr</code> package</a> has it’s own expectation, <code>expect_doppelganger()</code>, that has <code>title</code> and <code>fig</code> arguments:</p>
+<p>The <code>expect_doppelganger()</code> function from <a href="https://vdiffr.r-lib.org/"><code>vdiffr</code></a> has <code>title</code> and <code>fig</code> arguments, and is designed specifically to work with <a href="https://vdiffr.r-lib.org/reference/expect_doppelganger.html">‘<em>graphical plots</em>’</a></p>
 <div class="cell">
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html">test_that</a></span><span class="op">(</span>desc <span class="op">=</span> <span class="st">"scatter_plot() works"</span>, code <span class="op">=</span> <span class="op">{</span></span>
-<span>  </span>
-<span>  <span class="fu">test_cmt</span><span class="op">(</span>start <span class="op">=</span>  <span class="st">"scatter_plot()"</span>, </span>
-<span>           msg <span class="op">=</span> <span class="st">"ggplot2movies::movies snapshot"</span><span class="op">)</span></span>
-<span>  </span>
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html">test_that</a></span><span class="op">(</span>desc <span class="op">=</span> <span class="st">"scatter_plot() works"</span>, code <span class="op">=</span> <span class="op">{</span></span>
+<span>  <span class="fu">test_cmt</span><span class="op">(</span>start <span class="op">=</span>  <span class="st">"scatter_plot()"</span>, msg <span class="op">=</span> <span class="st">"ggplot2movies::movies snapshot"</span><span class="op">)</span></span>
 <span>  <span class="va">ggp2_movies</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html">readRDS</a></span><span class="op">(</span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_path.html">test_path</a></span><span class="op">(</span><span class="st">"fixtures"</span>, <span class="st">"ggp2_movies.rds"</span><span class="op">)</span><span class="op">)</span></span>
-<span>  </span>
 <span>    <span class="fu">vdiffr</span><span class="fu">::</span><span class="fu"><a href="https://vdiffr.r-lib.org/reference/expect_doppelganger.html">expect_doppelganger</a></span><span class="op">(</span></span>
 <span>      title <span class="op">=</span> <span class="st">"scatter_plot() graph"</span>, </span>
 <span>      fig <span class="op">=</span> <span class="fu">scatter_plot</span><span class="op">(</span><span class="va">ggp2_movies</span>, </span>
-<span>                    x_var <span class="op">=</span> <span class="st">"avg_rating"</span>, </span>
-<span>                    y_var <span class="op">=</span> <span class="st">"length"</span>, </span>
+<span>                    x_var <span class="op">=</span> <span class="st">"budget"</span>, </span>
+<span>                    y_var <span class="op">=</span> <span class="st">"avg_rating"</span>, </span>
 <span>                    col_var <span class="op">=</span> <span class="st">"mpaa"</span>, </span>
 <span>                    alpha_var <span class="op">=</span> <span class="fl">0.4</span>, </span>
 <span>                    size_var <span class="op">=</span> <span class="fl">2.5</span><span class="op">)</span><span class="op">)</span></span>
-<span>    </span>
-<span>    <span class="fu">test_cmt</span><span class="op">(</span>end <span class="op">=</span>  <span class="st">"scatter_plot()"</span>, </span>
-<span>             msg <span class="op">=</span> <span class="st">"ggplot2movies::movies snapshot"</span><span class="op">)</span></span>
-<span>    </span>
+<span>    <span class="fu">test_cmt</span><span class="op">(</span>end <span class="op">=</span>  <span class="st">"scatter_plot()"</span>, msg <span class="op">=</span> <span class="st">"ggplot2movies::movies snapshot"</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>On the initial run, a snapshot is saved into the <code>tests/testthat/_snaps/</code> folder:</p>
-<div class="sourceCode" id="cb30"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>==&gt; Testing R file using 'testthat'</span>
-<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>ℹ Loading pkgApp</span>
-<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]</span>
-<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a> [ START | 2023-09-11 13:55:49 | scatter_plot() = ggplot2movies::movies snapshot] </span>
-<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 1 | SKIP 0 | PASS 1 ]</span>
-<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a> [ END   | 2023-09-11 13:55:50 | scatter_plot() = ggplot2movies::movies snapshot] </span>
-<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a>── Warning (test-scatter_plot.R:4:5): scatter_plot() works ─────────────────────</span>
-<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a>Adding new file snapshot: 'tests/testthat/_snaps/scatter-plot-graph.svg'</span>
-<span id="cb30-12"><a href="#cb30-12" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 1 | SKIP 0 | PASS 1 ]</span>
-<span id="cb30-13"><a href="#cb30-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-14"><a href="#cb30-14" aria-hidden="true" tabindex="-1"></a>Test complete</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb31"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>==&gt; Testing R file using 'testthat'</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>ℹ Loading pkgApp</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]</span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a> [ START | 2023-09-13 11:58:04 | scatter_plot() = ggplot2movies::movies snapshot] </span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 1 | SKIP 0 | PASS 1 ]</span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a> [ END   | 2023-09-13 11:58:05 | scatter_plot() = ggplot2movies::movies snapshot] </span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a>── Warning (test-scatter_plot.R:4:5): scatter_plot() works ─────────────────────</span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a>Adding new file snapshot: 'tests/testthat/_snaps/scatter-plot-graph.svg'</span>
+<span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 1 | SKIP 0 | PASS 1 ]</span>
+<span id="cb31-13"><a href="#cb31-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-14"><a href="#cb31-14" aria-hidden="true" tabindex="-1"></a>Test complete</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="ex">tests/</span></span>
-<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>  <span class="ex">├──</span> testthat</span>
-<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>  <span class="ex">│</span>   ├── _snaps</span>
-<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>  <span class="ex">│</span>   │   └── scatter_plot</span>
-<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>  <span class="ex">│</span>   │       └── scatter-plot-graph.svg</span>
-<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>  <span class="ex">│</span>   └── test-scatter_plot.R</span>
-<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>  <span class="ex">└──</span> testthat.R</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="ex">tests/</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>  <span class="ex">├──</span> testthat/</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>  <span class="ex">│</span>   ├── _snaps/</span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>  <span class="ex">│</span>   │   └── scatter_plot/</span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>  <span class="ex">│</span>   │       └── scatter-plot-graph.svg</span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>  <span class="ex">│</span>   └── test-scatter_plot.R</span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>  <span class="ex">└──</span> testthat.R</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>The <code>scatter-plot-graph.svg</code> file becomes our baseline comparison object, when is used in future tests.</p>
 <p>After writing tests, we’ll load, document, and build:</p>
 <p><span style="font-style: italic; font-weight: bold; font-size: 1.10em"><kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd> / <kbd>D</kbd> / <kbd>B</kbd></span></p>
 <p>Then we test <code>pkgApp</code>:</p>
 <p><span style="font-style: italic; font-weight: bold; font-size: 1.10em"><kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>T</kbd></span></p>
-<div class="sourceCode" id="cb32"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>devtools::test()</span>
-<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>ℹ Testing pkgApp</span>
-<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>✔ | F W S  OK | Context</span>
-<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>✔ |         1 | scatter_plot  </span>
-<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>══ Results ═══════════════════</span>
-<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 0 | SKIP 0 | PASS 1 ]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb33"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>==&gt; devtools::test()</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>ℹ Testing pkgApp</span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>✔ | F W S  OK | Context</span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>⠏ |         0 | scatter_plot  </span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a> [ START | 2023-09-13 11:58:53 | scatter_plot() = ggplot2movies::movies snapshot] </span>
+<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a>⠋ |         1 | scatter_plot  </span>
+<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a> [ END   | 2023-09-13 11:58:54 | scatter_plot() = ggplot2movies::movies snapshot] </span>
+<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a>✔ |         1 | scatter_plot</span>
+<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-11"><a href="#cb33-11" aria-hidden="true" tabindex="-1"></a>══ Results ═══════════════════</span>
+<span id="cb33-12"><a href="#cb33-12" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 0 | SKIP 0 | PASS 1 ]</span>
+<span id="cb33-13"><a href="#cb33-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-14"><a href="#cb33-14" aria-hidden="true" tabindex="-1"></a>😸</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section></section></section><section id="module-tests" class="level2"><h2 class="anchored" data-anchor-id="module-tests">Module tests</h2>
 <p>Testing modules can be accomplished with <code>shiny</code>s <code>testServer()</code> function. Although typically stored in a single file, modules consist of a pair of UI and server functions. You might want to consider module server function tests ‘integration’ or ‘interaction’ testing, because we’re testing how the module’s server function ‘integrates’ or ‘interacts’ with input values, or how it will communicate with other modules.</p>
 <!--
@@ -867,29 +891,6 @@ Mastering Shiny <code>monthApp</code> tests
 -->
 <section id="testserver" class="level3"><h3 class="anchored" data-anchor-id="testserver"><span style="font-size: 0.95em;"><code>testServer()</code></span></h3>
 <p>Whichever definition you choose, the goal with <code>testServer()</code> is to test <em>reactive interactions</em>. If we wanted to test the reactive interactions between the <code>mod_var_input_server()</code> and <code>mod_scatter_display_server()</code>, we could use the following:</p>
-<div class="cell">
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html">test_that</a></span><span class="op">(</span><span class="st">"mod_scatter_display_server() works"</span>, <span class="op">{</span></span>
-<span>  <span class="fu">shiny</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/shiny/man/testServer.html">testServer</a></span><span class="op">(</span></span>
-<span>    app <span class="op">=</span> <span class="va">mod_scatter_display_server</span>,</span>
-<span>    args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span></span>
-<span>      var_inputs <span class="op">=</span> <span class="fu">shiny</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/shiny/man/reactive.html">reactive</a></span><span class="op">(</span></span>
-<span>        <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span></span>
-<span>          x <span class="op">=</span> <span class="st">"audience_score"</span>,</span>
-<span>          y <span class="op">=</span> <span class="st">"imdb_rating"</span>,</span>
-<span>          z <span class="op">=</span> <span class="st">"mpaa_rating"</span>,</span>
-<span>          alpha <span class="op">=</span> <span class="fl">0.5</span>,</span>
-<span>          size <span class="op">=</span> <span class="fl">2</span>,</span>
-<span>          plot_title <span class="op">=</span> <span class="st">"Test title"</span><span class="op">)</span></span>
-<span>        <span class="op">)</span></span>
-<span>      <span class="op">)</span>, expr <span class="op">=</span> <span class="op">{</span></span>
-<span>      <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html">expect_true</a></span><span class="op">(</span></span>
-<span>        object <span class="op">=</span> <span class="fu">shiny</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/shiny/man/reactive.html">is.reactive</a></span><span class="op">(</span><span class="va">inputs</span><span class="op">)</span></span>
-<span>      <span class="op">)</span></span>
-<span>      <span class="fu">test_cmt</span><span class="op">(</span><span class="st">"mod_scatter_display_server"</span>, <span class="st">"is.reactive(inputs())"</span><span class="op">)</span></span>
-<span>    <span class="op">}</span></span>
-<span>  <span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
 </section><section id="args-list" class="level3"><h3 class="anchored" data-anchor-id="args-list"><span style="font-size: 0.95em;"><code>args = list()</code></span></h3>
 </section></section><section id="behavior-driven-development-bdd" class="level2"><h2 class="anchored" data-anchor-id="behavior-driven-development-bdd">Behavior-driven development (BDD)</h2>
 <blockquote class="blockquote">
@@ -931,7 +932,9 @@ Testing an R package with a Shiny application can be challenging due to the vari
 <li id="fn2"><p><code>shinytest2</code> has <a href="https://rstudio.github.io/shinytest2/">excellent documentation</a> (and <a href="https://www.youtube.com/watch?v=Gucwz865aqQ">videos</a>), and I highly recommend reading through those resources.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn3"><p>The <a href="https://shiny.posit.co/r/articles/improve/server-function-testing/"><code>testServer()</code></a> documentation is sparse, so I’ll provide a few tips and tricks I’ve learned for testing module server functions.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn4"><p>“The tests should be written before the functionality that is to be tested. This has been claimed to have many benefits. It helps ensure that the application is written for testability, as the developers must consider how to test the application from the outset rather than adding it later.” - <a href="https://en.wikipedia.org/wiki/Test-driven_development">TDD, Wikipedia</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn5"><p>Follow the example from the <a href="https://testthat.r-lib.org/reference/expect_snapshot_file.html#ref-examples"><code>testthat</code> documentation</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn5"><p>Test fixtures are described in-depth in <a href="https://r-pkgs.org/testing-advanced.html#test-fixtures">R Packages, 2ed</a>.<a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn6"><p>If you like verbose logging outputs, check out the <a href="https://daroczig.github.io/logger/"><code>logger</code> package</a><a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn7"><p>Follow the <code><a href="https://testthat.r-lib.org/reference/expect_snapshot_file.html">expect_snapshot_file()</a></code> example from the <a href="https://testthat.r-lib.org/reference/expect_snapshot_file.html#ref-examples"><code>testthat</code> documentation</a><a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol></section></main><!-- /main --><script id="quarto-html-after-body" type="application/javascript">
 window.document.addEventListener("DOMContentLoaded", function (event) {
   const toggleBodyColorMode = (bsSheetEl) => {
