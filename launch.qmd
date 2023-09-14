@@ -234,17 +234,11 @@ shinyApp(
 runApp(appDir = "path/to/app/folder")
 ```
 
-
-
-
-
-
 :::
 
 ## Updated [`movies_app()`]{style="font-size: 1.10em"}
 
 One of the key features of `shinyApp()` is the creation of the `shiny.appobj` (a `shiny` app object):
-
 
 ```{r}
 #| eval: false 
@@ -274,15 +268,9 @@ We'll rewrite `movies_app()` below using `runApp()`.
 
 #### [`shiny.launch.browser`]{style="font-size: 1.05em"}
 
-We want to have control over where the shiny application will be launched from (i.e., the **Viewer** pane, the IDE **Window**, or an external browser). We can access this with the `shiny.launch.browser` option:
+We want to have control over where the shiny application will be launched from (i.e., the **Viewer** pane, the IDE **Window**, or an external browser). We can access this with the `shiny.launch.browser` option:[^shiny-launch-browser-2]
 
-```{r}
-#| eval: false 
-#| code-fold: false
-options(shiny.launch.browser = ...)
-```
-
-The three options above are covered in [here](https://www.garrickadenbuie.com/blog/shiny-tip-option-where-to-run/), and we want to combine them into a `run` argument in `movies_app()`
+[^shiny-launch-browser-2]: The `shiny.launch.browser` options are covered in [this blog post by Garrick Aden-Buie](https://www.garrickadenbuie.com/blog/shiny-tip-option-where-to-run/), and I've combined them into a `run` argument in `movies_app()`
 
 ```{r}
 #| eval: false 
@@ -290,7 +278,8 @@ The three options above are covered in [here](https://www.garrickadenbuie.com/bl
   switch(EXPR = run, 
   	view = options(shiny.launch.browser = .rs.invokeShinyPaneViewer),
   	browser = options(shiny.launch.browser = .rs.invokeShinyWindowExternal),
-  	win = options(shiny.launch.browser = .rs.invokeShinyWindowViewer)
+  	win = options(shiny.launch.browser = .rs.invokeShinyWindowViewer),
+    default = getOption(x = 'shiny.launch.browser')
   )
 ```
 
@@ -307,14 +296,14 @@ We'll make `test` an logical argument (defaulting to `TRUE`) in our updated  `mo
 ```{r}
 #| eval: false 
 #| code-fold: false
-movies_app <- function(test = TRUE, run = "view") {
-  app <- shinyApp(
-                  ui = movies_ui, 
+movies_app <- function(test = TRUE, run = "default") {
+  app <- shinyApp(ui = movies_ui, 
                   server = movies_server)
   switch(EXPR = run, 
-  	view = options(shiny.launch.browser = .rs.invokeShinyPaneViewer),
-  	browser = options(shiny.launch.browser = .rs.invokeShinyWindowExternal),
-  	win = options(shiny.launch.browser = .rs.invokeShinyWindowViewer)
+    view = options(shiny.launch.browser = .rs.invokeShinyPaneViewer),
+    browser = options(shiny.launch.browser = .rs.invokeShinyWindowExternal),
+    win = options(shiny.launch.browser = .rs.invokeShinyWindowViewer),
+    default = getOption(x = 'shiny.launch.browser')
   )
    if (test)
       runApp(appDir = app, test.mode = TRUE)
@@ -347,7 +336,8 @@ The updated `roxygen2` documentation for `movies_app()` is below:
 #'  * `view` = launch in viewer  
 #'  * `browse` = launch in external browser  
 #'  * `win` = launch in window
-#'
+#'  * `default` = `getOption(x = 'shiny.launch.browser')`
+#' 
 #' @return shiny app
 #' 
 #' 

@@ -176,6 +176,17 @@ tests/
 
 ## Unit tests
 
+```{r}
+#| label: git_box_08_testthat-tests
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  fig_pw = '75%', 
+  branch = "08_testthat-tests", 
+  repo = 'pkgApp')
+```
+
 <!--
 > Test Core Functions: Use the `testthat` package to write unit tests for all core logic functions. These are the building blocks of your application and should be thoroughly tested.
 
@@ -183,7 +194,7 @@ tests/
 
 > Boundary Conditions: Test edge cases and boundary conditions to ensure stability.
 
-> Test Coverage: Use tools like covr to measure test coverage and aim for a high percentage.
+> Test Coverage: Use tools like `covr` to measure test coverage and aim for a high percentage.
 -->
 
 If I'm writing write a unit test for the `scatter_plot()` function in `R/scatter_plot.R`, I'll create test file with `usethis::use_test("scatter_plot")`.
@@ -244,7 +255,7 @@ expect_equal(
 
 ### Comparisons
 
-All tests are based on comparisons, and I've found knowing what package is performing the underlying comparison often saves me from surprising tests results. 
+Comparison is the backbone of testing, and I've found knowing what package is performing the underlying comparison often saves me from surprising tests results. 
 
 For example, `testthat::expect_equal()` compares the `observed` and `expected` objects with the [`waldo` package](https://www.tidyverse.org/blog/2021/08/waldo-0-3-0/), with some help from [`diffobj`](https://github.com/brodieG/diffobj).
 
@@ -290,15 +301,17 @@ For example, suppose we have two objects: `old` and `new`
 #| eval: true 
 #| code-fold: false
 #| collapse: true
-str(old)
+old
 ```
 
 ```{r}
 #| eval: true 
 #| code-fold: false
 #| collapse: true
-str(new)
+new
 ```
+
+The outputs below show us both 'No differences' and the types of differences detected with `waldo::compare()`:
 
 ::: {layout="[[30,70]]"}
 
@@ -322,6 +335,8 @@ compare(
 ```
 
 :::
+
+`compare()` displays the differences in classes, names, and any individual value differences. 
 
 #### [`diffobj`]{style="font-size: 1.05em;"}
 
@@ -399,13 +414,13 @@ Sometimes testing functions in isolation is not enough and it's useful to includ
 
 Test data can be helpful for experimenting with various table and graphing package outputs, file formats, and application performance. Test data files can be stored in `tests/testthat/fixtures/`, and I've provided an example below of of the tidy `ggplot2movies` data we used in a previous branch.
 
-The code used to create the test data--`make-ggp2-movies.R`--is stored in the same location as the output it creates (i.e., `ggp2_movies.rds`):
+The code used to create the test data (`make-ggp2-movies.R`) is stored in the same location as the output it creates (i.e., `ggp2_movies.rds`):
 
 ```{r}
 #| eval: false 
 #| code-fold: true 
 #| code-summary: 'show/hide make-ggp2-movies.R'
-## code to prepare `ggp2movies` dataset goes here
+# code to prepare `ggp2movies` test data
 # pkgs <- c('ggplot2movies', 'tidyr', 'dplyr', 'stringr', 'purrr')
 # install.packages(pkgs, quiet = TRUE)
 
@@ -534,38 +549,27 @@ tests/
 
 ### Snapshots
 
-Writing tests for graph outputs can be difficult, because we're evaluating the output from a custom plotting function like `scatter_plot()`. If we try to compare the output from `scatter_plot()` against a graph built with analogous `ggplot2` code, this test will fail: 
+Writing tests for graph outputs can be difficult because we're evaluating the "correctness" of the graph is somewhat subjective and requires human judgment.
+
+If we try to compare the output from a custom plotting function like `scatter_plot()` against a graph built with analogous `ggplot2` code, we can see why this test will fail by passing both objects to `diffobj::diffObj()`:
 
 ```{r}
 #| eval: false 
 #| code-fold: false
-test_that(desc = "scatter_plot() works", code = {
+ggp_graph <- ggplot2::ggplot(mtcars, 
+              ggplot2::aes(x = mpg, y = disp)) + 
+              ggplot2::geom_point(
+                ggplot2::aes(color = cyl), 
+                             alpha = 0.5, 
+                             size = 3)
   
-  ggp_graph <- ggplot2::ggplot(mtcars, 
-                ggplot2::aes(x = mpg, y = disp)) + 
-                ggplot2::geom_point(
-                  ggplot2::aes(color = cyl), 
-                               alpha = 0.5, 
-                               size = 3)
-  
-  app_graph <- scatter_plot(mtcars, 
-                    x_var = "mpg", 
-                    y_var = "disp", 
-                    col_var = "cyl", 
-                    alpha_var = 0.5, 
-                    size_var = 3)
-  
-  expect_equal(
-    object = ggp_graph, 
-    expected = app_graph)
-})
-```
+app_graph <- scatter_plot(mtcars, 
+                  x_var = "mpg", 
+                  y_var = "disp", 
+                  col_var = "cyl", 
+                  alpha_var = 0.5, 
+                  size_var = 3)
 
-We can see why with `diffobj::diffObj()`:
-
-```{r}
-#| eval: false 
-#| code-fold: false
 diffobj::diffObj(ggp_graph, app_graph)
 ```
 
@@ -581,19 +585,37 @@ Graph objects are difficult to use as test objects
 
 ::::
 
-Another option for using snapshots for testing is the `expect_snapshot_file()` function, [^expect-snapshot-file-2] but for graph outputs it's easier to use the `expect_doppelganger()` function from the [`vdiffr` package](https://vdiffr.r-lib.org/).
+The output shows us differences in the `mapping` and plot environment (`plot_env`), which we can assume *will* be different in the application. 
 
-[^expect-snapshot-file-2]: Follow the `expect_snapshot_file()` example from the [`testthat` documentation](https://testthat.r-lib.org/reference/expect_snapshot_file.html#ref-examples)
+In cases like this, a snapshot test might be warrented. The [`vdiffr`](https://vdiffr.r-lib.org/) package allows us to perform a 'visual unit test' by saving by capturing the expected output as a snapshot that we can compare with future versions.
 
 #### [`vdiffr`]{style="font-size: 1.05em;"}
 
-The `expect_doppelganger()` function from [`vdiffr`](https://vdiffr.r-lib.org/) has `title` and `fig` arguments, and is designed specifically to work with ['*graphical plots*'](https://vdiffr.r-lib.org/reference/expect_doppelganger.html)
+The `expect_doppelganger()` function from `vdiffr` is designed specifically to work with ['graphical plots'](https://vdiffr.r-lib.org/reference/expect_doppelganger.html). 
+
+```{r}
+#| eval: false 
+#| code-fold: false
+vdiffr::expect_doppelganger(
+      title = "name of graph", 
+      fig = # ...code to create graph...
+  )
+```
+
+
+`expect_doppelganger()` can be dropped in `test_that()` like any other expectation. Below is an example comparing the graph outputs from `ggplot2` and the custom `scatter_plot()` utility function in `pkgApp`. 
+
+Notice I've loaded the `ggp2_movies.rds` data[^test-path-7] and included the `test_cmt()` helper with `start` and `end` messages (before and after the test code).
+
+[^test-path-7]: Accessing test files is made easier with `testtthat::test_path()`
 
 ```{r}
 #| eval: false 
 #| code-fold: false
 test_that(desc = "scatter_plot() works", code = {
-  test_cmt(start =  "scatter_plot()", msg = "ggplot2movies::movies snapshot")
+  test_cmt(
+    start =  "scatter_plot()", 
+    msg = "ggplot2movies::movies snapshot")
   ggp2_movies <- readRDS(test_path("fixtures", "ggp2_movies.rds"))
     vdiffr::expect_doppelganger(
       title = "scatter_plot() graph", 
@@ -603,11 +625,13 @@ test_that(desc = "scatter_plot() works", code = {
                     col_var = "mpaa", 
                     alpha_var = 0.4, 
                     size_var = 2.5))
-    test_cmt(end =  "scatter_plot()", msg = "ggplot2movies::movies snapshot")
+    test_cmt(
+      end =  "scatter_plot()", 
+      msg = "ggplot2movies::movies snapshot")
 })
 ```
 
-On the initial run, a snapshot is saved into the `tests/testthat/_snaps/` folder:
+When we initially run the test it passes, but with a warning that tells us the baseline snapshot was saved in `tests/testthat/_snaps/`:
 
 ```{verbatim}
 #| eval: false 
@@ -628,6 +652,14 @@ Adding new file snapshot: 'tests/testthat/_snaps/scatter-plot-graph.svg'
 Test complete
 ```
 
+::: {.column-margin}
+
+`test_cmt()` is handy because it let's me track how long each test takes to run (unit test are should be fast). 
+
+:::
+
+After the inital test run, if we view the `tests/` folder, we can see the new `tests/testthat/_snaps` is created:
+
 ```{bash}
 #| eval: false 
 #| code-fold: false
@@ -641,13 +673,17 @@ tests/
 
 ```
 
-The `scatter-plot-graph.svg` file becomes our baseline comparison object, when is used in future tests. 
+The `scatter-plot-graph.svg` file is our baseline comparison object, which is then used in future tests. 
 
-After writing tests, we'll load, document, and build:
+#### Snapshots are brittle
+
+The term "brittle" in the context of unit tests refers to their susceptibility to changes (meaningful or not). Using snapshots can produce false negatives—a test fails when comparing a new graph to the baseline image—due to inconsequential changes in the graph.
+
+In a typical workflow, we'd write additional tests, then load, document, and build the package:
 
 [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd> / <kbd>D</kbd> / <kbd>B</kbd>]{style="font-style: italic; font-weight: bold; font-size: 1.10em"}
 
-Then we test `pkgApp`:
+Subsequent tests in `pkgApp` will pass without a warning:
 
 [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>T</kbd>]{style="font-style: italic; font-weight: bold; font-size: 1.10em"}
 
@@ -670,83 +706,179 @@ Then we test `pkgApp`:
 😸
 ```
 
+Another option for using snapshots for testing is the `expect_snapshot_file()` function [^expect-snapshot-file-8] but `expect_doppelganger()` is probably the better option for comparing graph outputs.
+
+[^expect-snapshot-file-8]: Follow the `expect_snapshot_file()` example from the [`testthat` documentation](https://testthat.r-lib.org/reference/expect_snapshot_file.html#ref-examples)
 
 ## Module tests
 
-Testing modules can be accomplished with `shiny`s `testServer()` function. Although typically stored in a single file, modules consist of a pair of UI and server functions. You might want to consider module server function tests 'integration' or 'interaction' testing, because we're testing how the module's server function 'integrates' or 'interacts' with input values, or how it will communicate with other modules. 
-
-<!--
-> Data Flow: Test how well the different units work together by simulating a complete data flow.
-
-> Database Interactions: If your package interacts with a database, write tests to ensure that read/write operations are working as expected.
-
-> API Calls: If your package makes API calls, use package like httptest to mock API responses and test the integration.
--->
-
-
+Although they’re typically stored in a single file, modules consist of UI and server functions, which would classify their tests as ‘integration’ or ‘interaction’ testing. Still, we can only pass the module server functions to `testServer()`, so these are still unit tests.
 
 ### [`testServer()`]{style="font-size: 0.95em;"}
 
-Whichever definition you choose, the goal with `testServer()` is to test *reactive interactions*. If we wanted to test the reactive interactions between the `mod_var_input_server()` and `mod_scatter_display_server()`, we could use the following: 
+`testServer()` is designed to test *reactive interactions*, which gives us the ability to write tests to verify the inputs, outputs, and returned values from module server functions. 
+
+#### Testing initial values 
+
+Shiny inputs are initiated with a `NULL` value, so it's tempting to want to test an `inputId` exists using `expect_null(input$x)`. However, this test is not helpful because *any* value will pass this test: 
 
 ```{r}
 #| eval: false 
+#| include: true 
 #| code-fold: false
-#| include: false
+# this test passes...
 shiny::testServer(app = mod_var_input_server, expr = {
-  test_cmt(start = "mod_var_input_server", msg = "initial null")
-  testthat::expect_equal(input$x, NULL)
-  test_cmt(end = "mod_var_input_server", msg = "initial null")
-}) 
-
-shiny::testServer(app = mod_var_input_server, expr = {
-  test_cmt(start = "mod_var_input_server", msg = "value types")
-  session$setInputs(x = "imdb_rating", 
-                    y = "audience_score", 
-                    z = "genre", 
-                    alpha = 0.5, 
-                    size = 2,  
-                    plot_title = "example title")
-  testthat::expect_true(
-    object = is.character(session$returned()$y))
-  testthat::expect_true(
-    object = is.character(session$returned()$x))
-  testthat::expect_true(
-    object = is.character(session$returned()$z))
-  testthat::expect_true(
-    object = is.numeric(session$returned()$alpha))
-  testthat::expect_true(
-    object = is.numeric(session$returned()$size))
-  testthat::expect_true(
-    object = is.character(session$returned()$plot_title))
-  test_cmt(end = "mod_var_input_server", msg = "value types")
+  test_cmt(start = "input$x", msg = "initial null")
+  testthat::expect_null(input$x)
+  test_cmt(end = "input$x", msg = "initial null")
 })
+```
 
-shiny::testServer(app = mod_var_input_server, expr = {
-  session$setInputs(x = "imdb_rating", 
-                    y = "audience_score", 
-                    z = "genre", 
-                    alpha = 0.5, 
-                    size = 2,  
-                    plot_title = "example title")
-  test_cmt(start = "mod_var_input_server", msg = "var_input class")
-  testthat::expect_equal(
-    object = session$returned(), 
-    expected = list("y" = "audience_score",
-                    "x" = "imdb_rating",
-                    "z" = "genre",
-                    "alpha" = 0.5,
-                    "size" = 2,
-                    "plot_title" = "example title"
-                  )
-                )
-  test_cmt(end = "mod_var_input_server", msg = "var_input class")
-})
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]
+ [ START | 2023-09-14 11:58:59 | input$x = initial null] 
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 1 ]
+ [ END   | 2023-09-14 11:58:59 | input$x = initial null]  
 ```
 
 ```{r}
 #| eval: false 
+#| include: true 
 #| code-fold: false
+# but so does this...
+shiny::testServer(app = mod_var_input_server, expr = {
+  test_cmt(start = "input$anything", msg = "initial null")
+  testthat::expect_null(input$anything)
+  test_cmt(end = "input$anything", msg = "initial null")
+})
+```
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+ [ START | 2023-09-14 11:58:59 | input$anything = initial null] 
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 2 ]
+ [ END   | 2023-09-14 11:58:59 | input$anything = initial null] 
+```
+
+To check the initial `NULL` value of an `inputId`, it's better to build the shiny app object, then pass this to `testServer()`.[^shiny-app-obj-9]
+
+[^shiny-app-obj-9]: The `shiny::is.shiny.appobj()` will test if an object is a 'shiny app object.'
+
+```{r}
+#| eval: false 
+#| code-fold: false
+# build app object with shinyApp()
+app <- shinyApp(ui = movies_ui(bslib = FALSE), 
+                  server = movies_server)
+shiny::testServer(app = app, expr = {
+  # check shiny app object 
+  test_cmt(start = "is.shiny.appobj", msg = "movies_app()")
+  testthat::expect_true(is.shiny.appobj(app))
+  test_cmt(end = "is.shiny.appobj", msg = "movies_app()")
+  # check input for y axis is initially NULL
+  test_cmt(start = "input$`vars-y`", msg = "initial NULL")
+  testthat::expect_null(
+    object = input$`vars-y`)
+  test_cmt(end = "input$`vars-y`", msg = "initial NULL")
+})
+```
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]
+
+ [ START | 2023-09-14 12:08:53 | is.shiny.appobj = movies_app()] 
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 1 ]
+ [ END   | 2023-09-14 12:08:53 | is.shiny.appobj = movies_app()] 
+
+ [ START | 2023-09-14 12:08:53 | input$`vars-y` = initial NULL] 
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 2 ]
+ [ END   | 2023-09-14 12:08:53 | input$`vars-y` = initial NULL] 
+```
+
+Note the use of the `input` with the appended module IDs. This is an easy place to get tripped up with `testServer()`: in the `app` object, we have to access the inputs with  ```` input$`[module id]-[inputId]` ````
+
+#### Testing returned values
+
+To confirm the returned list of graph inputs from `mod_var_input_server()`, I can use `session$setInputs()` to build the list of inputs, and `session$returned()` to confirm it's returned object:
+
+```{r}
+#| eval: false 
+#| include: true
+#| code-fold: false
+shiny::testServer(app = mod_var_input_server, expr = {
+  test_vals <- list(
+                  y = "audience_score",
+                  x = "imdb_rating",
+                  z = "genre",
+                  alpha = 0.5,
+                  size = 2,
+                  plot_title = "example title"
+                )
+  session$setInputs(
+                  y = "audience_score",
+                  x = "imdb_rating",
+                  z = "genre",
+                  alpha = 0.5,
+                  size = 2,
+                  plot_title = "example title"
+                )
+  test_cmt(start = "returned(var_input)", msg = "var_input structure")
+  testthat::expect_equal(
+    object = session$returned(),
+    expected = test_vals
+  )
+  test_cmt(end = "returned(var_input)", msg = "var_input structure")
+})
+```
+
+```{verbatim}
+#| eval: false 
+#| include: true
+#| code-fold: false
+==> devtools::test()
+
+ℹ Testing pkgApp
+✔ | F W S  OK | Context
+⠏ |         0 | mod_var_input_server                                                  Loading required package: shiny
+ [ START | 2023-09-14 12:21:17 | is.shiny.appobj = movies_app()] 
+⠋ |         1 | mod_var_input_server                          
+ [ END   | 2023-09-14 12:21:17 | is.shiny.appobj = movies_app()]  
+
+ [ START | 2023-09-14 12:21:17 | input$`vars-y` = initial NULL] 
+ [ END   | 2023-09-14 12:21:17 | input$`vars-y` = initial NULL] 
+
+ [ START | 2023-09-14 12:21:17 | returned(var_input) = var_input structure] 
+ [ END   | 2023-09-14 12:21:18 | returned(var_input) = var_input structure] 
+✔ |         3 | mod_var_input_server
+```
+
+
+### [`args = list()`]{style="font-size: 0.95em;"}
+
+Now that we've confirmed the returned value from `mod_var_input_server()` is a list, we want to make sure it's read correctly by the `var_inputs` argument in `mod_scatter_display_server()`. I've included the `movies_server()` function below refresh our memory of how this *should* work:[^confirm-returned-10]
+
+```{r}
+#| eval: false 
+#| code-fold: false
+movies_server <- function(input, output, session) {
+
+      selected_vars <- mod_var_input_server("vars")
+
+      mod_scatter_display_server("plot", var_inputs = selected_vars)
+      
+}
+```
+
+[^confirm-returned-10]: `selected_vars` are the reactive plot values returned from `mod_var_input_server()` we confirmed `test-mod_var_input_server.R`.
+
+
+```{r}
+#| eval: false 
 #| include: false
 # shiny::is.reactive(inputs()) ----------------------------------------------
 shiny::testServer(
@@ -879,11 +1011,18 @@ shiny::testServer(
 #     test_cmt(end = "mod_scatter_display_server", msg = "print(plot)")
 #   }
 # )
-
+# 💅 Your tests are beautiful 💅
 ```
 
 
-### [`args = list()`]{style="font-size: 0.95em;"}
+
+<!--
+> Data Flow: Test how well the different units work together by simulating a complete data flow.
+
+> Database Interactions: If your package interacts with a database, write tests to ensure that read/write operations are working as expected.
+
+> API Calls: If your package makes API calls, use package like httptest to mock API responses and test the integration.
+-->
 
 
 ## Behavior-driven development (BDD)
