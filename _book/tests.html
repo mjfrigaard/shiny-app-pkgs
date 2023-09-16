@@ -314,7 +314,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <nav id="TOC" role="doc-toc" class="toc-active"><h2 id="toc-title">Contents</h2>
    
   <ul>
-<li><a href="#running-tests" id="toc-running-tests" class="nav-link active" data-scroll-target="#running-tests">Running <span style="font-size: 1.05em;"><code>test()</code></span>s</a></li>
+<li>
+<a href="#user-specifications-requirements" id="toc-user-specifications-requirements" class="nav-link active" data-scroll-target="#user-specifications-requirements">User specifications &amp; requirements</a>
+  <ul>
+<li><a href="#user-requirements" id="toc-user-requirements" class="nav-link" data-scroll-target="#user-requirements">User Requirements</a></li>
+  <li><a href="#feature-requirements" id="toc-feature-requirements" class="nav-link" data-scroll-target="#feature-requirements">Feature Requirements</a></li>
+  <li>
+<a href="#functional-requirements" id="toc-functional-requirements" class="nav-link" data-scroll-target="#functional-requirements">Functional Requirements</a>
+  <ul>
+<li><a href="#traceability-matrix" id="toc-traceability-matrix" class="nav-link" data-scroll-target="#traceability-matrix">Traceability matrix</a></li>
+  </ul>
+</li>
+  </ul>
+</li>
   <li>
 <a href="#the-test-suite" id="toc-the-test-suite" class="nav-link" data-scroll-target="#the-test-suite">The test suite</a>
   <ul>
@@ -350,7 +362,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <a href="#snapshots" id="toc-snapshots" class="nav-link" data-scroll-target="#snapshots">Snapshots</a>
   <ul>
 <li><a href="#vdiffr" id="toc-vdiffr" class="nav-link" data-scroll-target="#vdiffr"><span style="font-size: 1.05em;"><code>vdiffr</code></span></a></li>
-  <li><a href="#snapshots-are-brittle" id="toc-snapshots-are-brittle" class="nav-link" data-scroll-target="#snapshots-are-brittle">Snapshots are brittle</a></li>
+  </ul>
+</li>
+  <li>
+<a href="#running-tests" id="toc-running-tests" class="nav-link" data-scroll-target="#running-tests">Running <span style="font-size: 1.05em;"><code>test()</code></span>s</a>
+  <ul>
+<li><a href="#snapshots-are-brittle" id="toc-snapshots-are-brittle" class="nav-link" data-scroll-target="#snapshots-are-brittle">Snapshots are brittle</a></li>
   </ul>
 </li>
   </ul>
@@ -361,8 +378,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>
 <a href="#testserver" id="toc-testserver" class="nav-link" data-scroll-target="#testserver"><span style="font-size: 0.95em;"><code>testServer()</code></span></a>
   <ul>
-<li><a href="#testing-initial-values" id="toc-testing-initial-values" class="nav-link" data-scroll-target="#testing-initial-values">Testing initial values</a></li>
-  <li><a href="#testing-returned-values" id="toc-testing-returned-values" class="nav-link" data-scroll-target="#testing-returned-values">Testing returned values</a></li>
+<li><a href="#initial-values" id="toc-initial-values" class="nav-link" data-scroll-target="#initial-values">Initial values</a></li>
+  <li><a href="#returned-values" id="toc-returned-values" class="nav-link" data-scroll-target="#returned-values">Returned values</a></li>
   </ul>
 </li>
   <li><a href="#args-list" id="toc-args-list" class="nav-link" data-scroll-target="#args-list"><span style="font-size: 0.95em;"><code>args = list()</code></span></a></li>
@@ -425,36 +442,8 @@ Caution!
 </div>
 </div>
 <p>Writing tests for your app-package poses some unique challenges. Shiny functions are written in the context of its <a href="https://shiny.posit.co/r/articles/build/reactivity-overview/">reactive model</a>, so some conventional testing techniques and methods for regular R packages don’t directly apply. Fortunately, the infrastructure for storing and running tests in your app-package is identical to a standard R package.</p>
-<p>This chapter will cover three layers of tests: unit tests, integration/module tests, and end-to-end or system tests. I’ll focus on <em>what to test</em> and <em>why to test it</em>, not <em>how to write tests</em>, because plenty of those resources exist.<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> <a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a> The only exception being some tricks I’ve learned for using <code>testServer()</code> with module server functions.<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a></p>
-<p>I’ll also touch on the links between user requirements, functional specifications, and using a traceability matrix to track issues &amp; features.</p>
-<p>The code chunk below will load the necessary testing packages.</p>
-<div class="cell">
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"testthat"</span>, <span class="st">"shinytest2"</span>, <span class="st">"covr"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://testthat.r-lib.org">testthat</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://rstudio.github.io/shinytest2/">shinytest2</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://covr.r-lib.org">covr</a></span><span class="op">)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<p>(<em>If you’re using <code>devtools</code>, you won’t have to worry about installing <code>testthat</code> and <code>covr</code></em>)</p>
-<section id="running-tests" class="level2 page-columns page-full"><h2 class="anchored" data-anchor-id="running-tests">Running <span style="font-size: 1.05em;"><code>test()</code></span>s</h2>
-<p>The fourth <code>devtools</code> <span style="font-weight: bold; font-size: 1.0em; color: #772953">habit</span> to adopt is regularly writing and running tests. If you’re using Posit Workbench and have <code>devtools</code> installed, you can test your app-package using the <strong>Build</strong> pane or the keyboard shortcut:</p>
-
-<div class="no-row-height column-margin column-container"><div class="">
-<p><span style="font-weight: bold; font-style: italic; font-size: 1.20em"><kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>T</kbd></span></p>
-</div></div><div id="fig-08_tests_build_pane_test" class="quarto-figure quarto-figure-center anchored">
-<figure class="figure"><div id="fig-08_tests_build_pane_test" class="quarto-figure quarto-figure-center anchored">
-<figure class="figure"><p><img src="img/08_tests_build_pane_test.png" class="img-fluid figure-img" style="width:100.0%" data-align="center" data-ref-parent="fig-08_tests_build_pane_test"></p>
-<figcaption class="figure-caption">(a) Test you app-package</figcaption></figure>
-</div>
-<figcaption class="figure-caption">Figure&nbsp;1: <code><a href="https://devtools.r-lib.org/reference/test.html">devtools::test()</a></code> (run all tests in your <code>tests/</code> folder)</figcaption></figure>
-</div>
-<p>When we initially run <code><a href="https://devtools.r-lib.org/reference/test.html">devtools::test()</a></code> in <code>pkgApp</code>, we see the following:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>==&gt; devtools::test()</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>ℹ No testing infrastructure found.</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>• Setup testing with `usethis::use_testthat()`.</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>This shouldn’t be surprising–we haven’t written any tests for <code>pkgApp</code> yet!</p>
-<div class="callout callout-style-default callout-tip callout-titled">
-<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="true" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
@@ -463,24 +452,1511 @@ Mastering Shiny <code>monthApp</code> tests
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
-<div id="callout-2" class="callout-2-contents callout-collapse collapse">
+<div id="callout-2" class="callout-2-contents callout-collapse collapse show">
 <div class="callout-body-container callout-body">
-<div style="font-size: 1.05em; color: #696969;">
-<p>If you downloaded, loaded and installed <a href="https://github.com/hadley/monthApp"><code>monthApp</code> example from Mastering Shiny</a>, then clicked on <strong>Test</strong> in the <strong>Build</strong> pane, you also saw the following:</p>
+<div class="{style='font-size:">
+<p>If you downloaded or cloned the <a href="https://github.com/hadley/monthApp"><code>monthApp</code></a> example from <a href="https://mastering-shiny.org/">Mastering Shiny</a>, then clicked on <strong>Test</strong> in the <strong>Build</strong> pane, you saw the following:</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure"><p><img src="img/monthApp_test.png" class="img-fluid figure-img" style="width:100.0%"></p>
 <figcaption class="figure-caption">Testing <code>monthApp</code> app-package</figcaption></figure>
 </div>
+<p>However, the <a href="https://mastering-shiny.org/scaling-testing.html">Testing</a> chapter covers setting up and running unit tests with <a href="https://mastering-shiny.org/scaling-testing.html#testing-functions"><code>testthat</code></a> and how to use Shiny’s <a href="https://mastering-shiny.org/scaling-testing.html#testing-reactivity"><code>testServer()</code></a> function to test reactivity and module server functions.</p>
+<p>In this Chapter, I’ll expand on testing your shiny app-package and provide some testing strategies to consider adopting before moving your application into production.</p>
+<p>em; color: #696969;’}</p>
+<p>Your text</p>
 </div>
 </div>
 </div>
 </div>
-<p>The error is informative because it tells us that <code>pkgApp</code> doesn’t have the testing infrastructure set up. In packages using <code>devtools</code>, the unit testing infrastructure is built with <code><a href="https://usethis.r-lib.org/reference/use_testthat.html">usethis::use_testthat()</a></code></p>
-</section><section id="the-test-suite" class="level2"><h2 class="anchored" data-anchor-id="the-test-suite">The test suite</h2>
-<p>Multiple strategies exist for testing code. For example, if you’ve adopted test-driven development (TDD)<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>, you’ll develop tests before writing utility functions, modules, or your standalone app function. However, if you’re a mere mortal like the rest of us, you’ll typically develop your tests and functions in tandem.</p>
-<p>Regardless of the testing strategy, we should follow the advice presented to us in the output above and set up the testing infrastructure with the <a href="https://testthat.r-lib.org/"><code>testthat</code> package</a>:</p>
+<p>This chapter will cover three layers of tests: unit tests, integration/module tests, and end-to-end or system tests. I’ll focus on <em>what to test</em> and <em>why to test it</em>, not <em>how to write tests</em>, because plenty of those resources exist<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> <a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a> (the only exception being some tricks I’ve learned for using <code>testServer()</code> with module server functions<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>).</p>
+<p>I’ll also touch on the links between user specifications, functional requirements, and how to use a traceability matrix to track your tests.</p>
+<p>The code chunk below will load the necessary testing packages.</p>
+<div class="cell">
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"testthat"</span>, <span class="st">"shinytest2"</span>, <span class="st">"covr"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://testthat.r-lib.org">testthat</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://rstudio.github.io/shinytest2/">shinytest2</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://covr.r-lib.org">covr</a></span><span class="op">)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>(<em>If you’re using <code>devtools</code>, you won’t have to worry about installing <code>testthat</code> and <code>covr</code></em>)</p>
+<section id="user-specifications-requirements" class="level2 page-columns page-full"><h2 class="anchored" data-anchor-id="user-specifications-requirements">User specifications &amp; requirements</h2>
+<p>When developing tests, everyone is faced with the same two questions:</p>
+<ol type="1">
+<li>What do I test?<br>
+</li>
+<li>How do I test it?</li>
+</ol>
+<p>So far, the shiny app-package we’ve been using didn’t explain it’s intended purpose or the problem it’s designed to solve. In regular application development, the user specifications, feature requirements and functional requirements are the guidelines that direct the development process, albeit from slightly different perspectives.</p>
+<p>Understanding their relationship is important for knowing the application we’re developing meets the technical standards and satisfies the user needs.</p>
+<section id="user-requirements" class="level3"><h3 class="anchored" data-anchor-id="user-requirements">User Requirements</h3>
+<p><strong>User Requirements</strong> are what the end-user (i.e., a film analyst) wants to achieve with the dashboard.<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a></p>
+<div class="callout callout-style-simple callout-note no-icon callout-titled">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-3-contents" aria-controls="callout-3" aria-expanded="true" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Scatter plot user requirements
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-3" class="callout-3-contents callout-collapse collapse show">
+<div class="callout-body-container callout-body">
+<div style="font-size: 1.10em; color: #696969;">
+<p><strong>UR1</strong>: The user wants to view an interactive scatter plot on a dashboard that consolidates movie reviews from multiple sources to quickly compare and analyze trends and outliers in movie ratings.</p>
+</div>
+</div>
+</div>
+</div>
+</section><section id="feature-requirements" class="level3"><h3 class="anchored" data-anchor-id="feature-requirements">Feature Requirements</h3>
+<p>Each <strong>Feature Requirement</strong> is a high-level description of the feature’s capabilities (i.e, the scatter plot), phrased at satisfying the end-user’s needs outlined in the <strong>User Requirements</strong>.<a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a></p>
+<div class="callout callout-style-simple callout-caution no-icon callout-titled">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-4-contents" aria-controls="callout-4" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Scatter plot feature requirements
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-4" class="callout-4-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<div style="font-size: 1.10em; color: #696969;">
+<p><strong>FE1</strong>: The Shiny app should offer an interactive scatter plot feature that allows users to visualize and compare movie reviews from at least two data sources (IMDb, Rotten Tomatoes). The scatter plot should offer options for selecting variables of interest (i.e., audience scores, website ratings, runtime, etc.) to zoom into specific data points for detailed analysis.</p>
+</div>
+</div>
+</div>
+</div>
+</section><section id="functional-requirements" class="level3 page-columns page-full"><h3 class="anchored" data-anchor-id="functional-requirements">Functional Requirements</h3>
+<p>The <strong>Functional Requirements</strong> are written for the developer and provide technical details on <em>how the feature</em> (i.e., the scatter plot) <em>should behave</em> and <em>what it needs to do</em>.<a href="#fn6" class="footnote-ref" id="fnref6" role="doc-noteref"><sup>6</sup></a></p>
+<div class="callout callout-style-simple callout-warning no-icon callout-titled">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-5-contents" aria-controls="callout-5" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Scatter plot functional requirements
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-5" class="callout-5-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<div style="font-size: 1.10em; color: #696969;">
+<ul>
+<li><p><strong>FR1</strong>: The system shall display movie reviews from IMDb and Rotten Tomatoes collected from their respective APIs.</p></li>
+<li><p><strong>FR2</strong>: The scatter plot shall be displayed on the dashboard and updated with new user inputs.</p></li>
+<li><p><strong>FR3</strong>: Each data point on the scatter plot shall represent a movie and be color-coded based on MPAA ratings, genre, title type, critics rating, and audience rating.</p></li>
+<li><p><strong>FR4</strong>: The scatter plot shall have axes labeled with rating scales and must include a legend to differentiate between data sources.</p></li>
+<li><p><strong>FR5</strong>: Users can zoom into specific areas of the scatter plot for a more detailed view.</p></li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<section id="traceability-matrix" class="level4 page-columns page-full"><h4 class="anchored" data-anchor-id="traceability-matrix">Traceability matrix</h4>
+<p>In our app-package, we want to ensure that corresponding functionalities and tests address all user requirements and that every functionality is justified in terms of user needs and has been tested. A traceability matrix is typically used to link the user specifications (and corresponding feature requirements) to the functional requirements they give rise to and the tests used to verify that the application has been developed correctly.</p>
+<p>Fortunately, the R package structure gives us the tools we need to capture this documentation in the form of vignettes. We’ll write the specifications for <code>pkgApp</code> in the <code>specs</code> vignette by using <code><a href="https://usethis.r-lib.org/reference/use_vignette.html">usethis::use_vignette()</a></code>:</p>
+
+<div class="no-row-height column-margin column-container"><div class="">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure"><p><img src="img/new_branch_ico.png" class="img-fluid figure-img" style="width:75.0%"></p>
+<figcaption class="figure-caption">Git Branch</figcaption></figure>
+</div>
+<p>This section’s code is in the <a href="https://github.com/mjfrigaard/pkgApp"><code>pkgApp</code></a> repo’s <a href="https://github.com/mjfrigaard/pkgApp/tree/08_tests-specs"><code>08_tests-specs</code></a> branch</p>
+</div></div><div class="cell">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">usethis</span><span class="fu">::</span><span class="fu"><a href="https://usethis.r-lib.org/reference/use_vignette.html">use_vignette</a></span><span class="op">(</span><span class="st">"specs"</span><span class="op">)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Adding our first vignette to the <code>vignettes/</code> folder does the following:</p>
+<ul>
+<li><p>Adds the <code>knitr</code> and <code>rmarkdown</code> packages to the <code>Suggests</code> field in <code>DESCRIPTION</code></p></li>
+<li><p>Adds <code>knitr</code> to the <code>VignetteBuilder</code> field</p></li>
+<li><p>Adds <code>inst/doc</code> to <code>.gitignore</code> and <code>*.html</code>, <code>*.R</code> to <code>vignettes/.gitignore</code></p></li>
+</ul>
+<div class="cell">
+<div class="cell-output-display">
+
+<div id="ajeusxaxau" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#ajeusxaxau table {
+  font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#ajeusxaxau thead, #ajeusxaxau tbody, #ajeusxaxau tfoot, #ajeusxaxau tr, #ajeusxaxau td, #ajeusxaxau th {
+  border-style: none;
+}
+
+#ajeusxaxau p {
+  margin: 0;
+  padding: 0;
+}
+
+#ajeusxaxau .gt_table {
+  display: table;
+  border-collapse: collapse;
+  line-height: normal;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#ajeusxaxau .gt_caption {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+#ajeusxaxau .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#ajeusxaxau .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 3px;
+  padding-bottom: 5px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#ajeusxaxau .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#ajeusxaxau .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#ajeusxaxau .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#ajeusxaxau .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#ajeusxaxau .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#ajeusxaxau .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#ajeusxaxau .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#ajeusxaxau .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#ajeusxaxau .gt_spanner_row {
+  border-bottom-style: hidden;
+}
+
+#ajeusxaxau .gt_group_heading {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  text-align: left;
+}
+
+#ajeusxaxau .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#ajeusxaxau .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#ajeusxaxau .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#ajeusxaxau .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#ajeusxaxau .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#ajeusxaxau .gt_stub_row_group {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+  vertical-align: top;
+}
+
+#ajeusxaxau .gt_row_group_first td {
+  border-top-width: 2px;
+}
+
+#ajeusxaxau .gt_row_group_first th {
+  border-top-width: 2px;
+}
+
+#ajeusxaxau .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#ajeusxaxau .gt_first_summary_row {
+  border-top-style: solid;
+  border-top-color: #D3D3D3;
+}
+
+#ajeusxaxau .gt_first_summary_row.thick {
+  border-top-width: 2px;
+}
+
+#ajeusxaxau .gt_last_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#ajeusxaxau .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#ajeusxaxau .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#ajeusxaxau .gt_last_grand_summary_row_top {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: double;
+  border-bottom-width: 6px;
+  border-bottom-color: #D3D3D3;
+}
+
+#ajeusxaxau .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#ajeusxaxau .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#ajeusxaxau .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#ajeusxaxau .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#ajeusxaxau .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#ajeusxaxau .gt_sourcenote {
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#ajeusxaxau .gt_left {
+  text-align: left;
+}
+
+#ajeusxaxau .gt_center {
+  text-align: center;
+}
+
+#ajeusxaxau .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#ajeusxaxau .gt_font_normal {
+  font-weight: normal;
+}
+
+#ajeusxaxau .gt_font_bold {
+  font-weight: bold;
+}
+
+#ajeusxaxau .gt_font_italic {
+  font-style: italic;
+}
+
+#ajeusxaxau .gt_super {
+  font-size: 65%;
+}
+
+#ajeusxaxau .gt_footnote_marks {
+  font-size: 75%;
+  vertical-align: 0.4em;
+  position: initial;
+}
+
+#ajeusxaxau .gt_asterisk {
+  font-size: 100%;
+  vertical-align: 0;
+}
+
+#ajeusxaxau .gt_indent_1 {
+  text-indent: 5px;
+}
+
+#ajeusxaxau .gt_indent_2 {
+  text-indent: 10px;
+}
+
+#ajeusxaxau .gt_indent_3 {
+  text-indent: 15px;
+}
+
+#ajeusxaxau .gt_indent_4 {
+  text-indent: 20px;
+}
+
+#ajeusxaxau .gt_indent_5 {
+  text-indent: 25px;
+}
+</style>
+<table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false">
+<thead><tr class="gt_col_headings">
+<th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="User Specification">User Specification</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="Feature Requirement">Feature Requirement</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="Functional Requirements">Functional Requirements</th>
+    </tr></thead>
+<tbody class="gt_table_body"><tr>
+<td headers="User Specification" class="gt_row gt_left">UR1: scatter plot data visualization</td>
+<td headers="Feature Requirement" class="gt_row gt_left">FE1: interactive scatter plot (two data sources, options to explore variables of interest)</td>
+<td headers="Functional Requirements" class="gt_row gt_left">FR1: data source</td>
+</tr></tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+
+<div id="rlyjpbqajj" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#rlyjpbqajj table {
+  font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#rlyjpbqajj thead, #rlyjpbqajj tbody, #rlyjpbqajj tfoot, #rlyjpbqajj tr, #rlyjpbqajj td, #rlyjpbqajj th {
+  border-style: none;
+}
+
+#rlyjpbqajj p {
+  margin: 0;
+  padding: 0;
+}
+
+#rlyjpbqajj .gt_table {
+  display: table;
+  border-collapse: collapse;
+  line-height: normal;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#rlyjpbqajj .gt_caption {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+#rlyjpbqajj .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#rlyjpbqajj .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 3px;
+  padding-bottom: 5px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#rlyjpbqajj .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#rlyjpbqajj .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#rlyjpbqajj .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#rlyjpbqajj .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#rlyjpbqajj .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#rlyjpbqajj .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#rlyjpbqajj .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#rlyjpbqajj .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#rlyjpbqajj .gt_spanner_row {
+  border-bottom-style: hidden;
+}
+
+#rlyjpbqajj .gt_group_heading {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  text-align: left;
+}
+
+#rlyjpbqajj .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#rlyjpbqajj .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#rlyjpbqajj .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#rlyjpbqajj .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#rlyjpbqajj .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#rlyjpbqajj .gt_stub_row_group {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+  vertical-align: top;
+}
+
+#rlyjpbqajj .gt_row_group_first td {
+  border-top-width: 2px;
+}
+
+#rlyjpbqajj .gt_row_group_first th {
+  border-top-width: 2px;
+}
+
+#rlyjpbqajj .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#rlyjpbqajj .gt_first_summary_row {
+  border-top-style: solid;
+  border-top-color: #D3D3D3;
+}
+
+#rlyjpbqajj .gt_first_summary_row.thick {
+  border-top-width: 2px;
+}
+
+#rlyjpbqajj .gt_last_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#rlyjpbqajj .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#rlyjpbqajj .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#rlyjpbqajj .gt_last_grand_summary_row_top {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: double;
+  border-bottom-width: 6px;
+  border-bottom-color: #D3D3D3;
+}
+
+#rlyjpbqajj .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#rlyjpbqajj .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#rlyjpbqajj .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#rlyjpbqajj .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#rlyjpbqajj .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#rlyjpbqajj .gt_sourcenote {
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#rlyjpbqajj .gt_left {
+  text-align: left;
+}
+
+#rlyjpbqajj .gt_center {
+  text-align: center;
+}
+
+#rlyjpbqajj .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#rlyjpbqajj .gt_font_normal {
+  font-weight: normal;
+}
+
+#rlyjpbqajj .gt_font_bold {
+  font-weight: bold;
+}
+
+#rlyjpbqajj .gt_font_italic {
+  font-style: italic;
+}
+
+#rlyjpbqajj .gt_super {
+  font-size: 65%;
+}
+
+#rlyjpbqajj .gt_footnote_marks {
+  font-size: 75%;
+  vertical-align: 0.4em;
+  position: initial;
+}
+
+#rlyjpbqajj .gt_asterisk {
+  font-size: 100%;
+  vertical-align: 0;
+}
+
+#rlyjpbqajj .gt_indent_1 {
+  text-indent: 5px;
+}
+
+#rlyjpbqajj .gt_indent_2 {
+  text-indent: 10px;
+}
+
+#rlyjpbqajj .gt_indent_3 {
+  text-indent: 15px;
+}
+
+#rlyjpbqajj .gt_indent_4 {
+  text-indent: 20px;
+}
+
+#rlyjpbqajj .gt_indent_5 {
+  text-indent: 25px;
+}
+</style>
+<table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false">
+<thead><tr class="gt_col_headings">
+<th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="User Specification">User Specification</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="Feature Requirement">Feature Requirement</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="Functional Requirements">Functional Requirements</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="Test">Test</th>
+    </tr></thead>
+<tbody class="gt_table_body"><tr>
+<td headers="User Specification" class="gt_row gt_left">UR1: scatter plot data visualization</td>
+<td headers="Feature Requirement" class="gt_row gt_left">FE1: interactive scatter plot (two data sources, options to explore variables of interest)</td>
+<td headers="Functional Requirements" class="gt_row gt_left">FR1: data source</td>
+<td headers="Test" class="gt_row gt_left">T1: </td>
+</tr></tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+
+<div id="zjtuusrqfx" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#zjtuusrqfx table {
+  font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#zjtuusrqfx thead, #zjtuusrqfx tbody, #zjtuusrqfx tfoot, #zjtuusrqfx tr, #zjtuusrqfx td, #zjtuusrqfx th {
+  border-style: none;
+}
+
+#zjtuusrqfx p {
+  margin: 0;
+  padding: 0;
+}
+
+#zjtuusrqfx .gt_table {
+  display: table;
+  border-collapse: collapse;
+  line-height: normal;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#zjtuusrqfx .gt_caption {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+#zjtuusrqfx .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#zjtuusrqfx .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 3px;
+  padding-bottom: 5px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#zjtuusrqfx .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#zjtuusrqfx .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#zjtuusrqfx .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#zjtuusrqfx .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#zjtuusrqfx .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#zjtuusrqfx .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#zjtuusrqfx .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#zjtuusrqfx .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#zjtuusrqfx .gt_spanner_row {
+  border-bottom-style: hidden;
+}
+
+#zjtuusrqfx .gt_group_heading {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  text-align: left;
+}
+
+#zjtuusrqfx .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#zjtuusrqfx .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#zjtuusrqfx .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#zjtuusrqfx .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#zjtuusrqfx .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#zjtuusrqfx .gt_stub_row_group {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+  vertical-align: top;
+}
+
+#zjtuusrqfx .gt_row_group_first td {
+  border-top-width: 2px;
+}
+
+#zjtuusrqfx .gt_row_group_first th {
+  border-top-width: 2px;
+}
+
+#zjtuusrqfx .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#zjtuusrqfx .gt_first_summary_row {
+  border-top-style: solid;
+  border-top-color: #D3D3D3;
+}
+
+#zjtuusrqfx .gt_first_summary_row.thick {
+  border-top-width: 2px;
+}
+
+#zjtuusrqfx .gt_last_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#zjtuusrqfx .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#zjtuusrqfx .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#zjtuusrqfx .gt_last_grand_summary_row_top {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: double;
+  border-bottom-width: 6px;
+  border-bottom-color: #D3D3D3;
+}
+
+#zjtuusrqfx .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#zjtuusrqfx .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#zjtuusrqfx .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#zjtuusrqfx .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#zjtuusrqfx .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#zjtuusrqfx .gt_sourcenote {
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#zjtuusrqfx .gt_left {
+  text-align: left;
+}
+
+#zjtuusrqfx .gt_center {
+  text-align: center;
+}
+
+#zjtuusrqfx .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#zjtuusrqfx .gt_font_normal {
+  font-weight: normal;
+}
+
+#zjtuusrqfx .gt_font_bold {
+  font-weight: bold;
+}
+
+#zjtuusrqfx .gt_font_italic {
+  font-style: italic;
+}
+
+#zjtuusrqfx .gt_super {
+  font-size: 65%;
+}
+
+#zjtuusrqfx .gt_footnote_marks {
+  font-size: 75%;
+  vertical-align: 0.4em;
+  position: initial;
+}
+
+#zjtuusrqfx .gt_asterisk {
+  font-size: 100%;
+  vertical-align: 0;
+}
+
+#zjtuusrqfx .gt_indent_1 {
+  text-indent: 5px;
+}
+
+#zjtuusrqfx .gt_indent_2 {
+  text-indent: 10px;
+}
+
+#zjtuusrqfx .gt_indent_3 {
+  text-indent: 15px;
+}
+
+#zjtuusrqfx .gt_indent_4 {
+  text-indent: 20px;
+}
+
+#zjtuusrqfx .gt_indent_5 {
+  text-indent: 25px;
+}
+</style>
+<table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false">
+<thead><tr class="gt_col_headings">
+<th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="User Specification">User Specification</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="Feature Requirement">Feature Requirement</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="Functional Requirements">Functional Requirements</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="Test">Test</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="Status">Status</th>
+    </tr></thead>
+<tbody class="gt_table_body"><tr>
+<td headers="User Specification" class="gt_row gt_left">UR1: scatter plot data visualization</td>
+<td headers="Feature Requirement" class="gt_row gt_left">FE1: interactive scatter plot (two data sources, options to explore variables of interest)</td>
+<td headers="Functional Requirements" class="gt_row gt_left">FR1: data source</td>
+<td headers="Test" class="gt_row gt_left">T1: </td>
+<td headers="Status" class="gt_row gt_left">Status T1: </td>
+</tr></tbody>
+</table>
+</div>
+</div>
+</div>
+</section></section></section><section id="the-test-suite" class="level2"><h2 class="anchored" data-anchor-id="the-test-suite">The test suite</h2>
+<p>Multiple strategies exist for testing code. For example, if you’ve adopted test-driven development (TDD)<a href="#fn7" class="footnote-ref" id="fnref7" role="doc-noteref"><sup>7</sup></a>, you’ll develop tests before writing utility functions, modules, or your standalone app function. However, if you’re a mere mortal like the rest of us, you’ll typically develop your tests and functions in tandem.</p>
+<p>Regardless of the testing strategy, we’ll set up the testing infrastructure in our app-package with the <a href="https://testthat.r-lib.org/"><code>testthat</code> package</a>:</p>
 <section id="use_testthat" class="level3"><h3 class="anchored" data-anchor-id="use_testthat"><span style="font-size: 1.05em;"><code>use_testthat()</code></span></h3>
-<p>The ‘infrastructure’ created by running <code><a href="https://usethis.r-lib.org/reference/use_testthat.html">usethis::use_testthat()</a></code> is detailed below:</p>
+<p>In packages using <code>devtools</code>, the unit testing infrastructure is built with <code><a href="https://usethis.r-lib.org/reference/use_testthat.html">usethis::use_testthat()</a></code>:</p>
 <div class="cell">
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">usethis</span><span class="fu">::</span><span class="fu"><a href="https://usethis.r-lib.org/reference/use_testthat.html">use_testthat</a></span><span class="op">(</span><span class="op">)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
@@ -552,7 +2028,7 @@ Mastering Shiny <code>monthApp</code> tests
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html">test_that</a></span><span class="op">(</span>desc <span class="op">=</span> <span class="st">"multiplication works"</span>, code <span class="op">=</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html">expect_equal</a></span><span class="op">(</span><span class="fl">2</span> <span class="op">*</span> <span class="fl">2</span>, <span class="fl">4</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
-<span><span class="co">## Test passed 🎊</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span><span class="co">## Test passed 😸</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section><section id="expectations" class="level4"><h4 class="anchored" data-anchor-id="expectations">Expectations</h4>
 <p>Most expectation have two parts: an <code>observed</code> object, and an <code>expected</code> object. The <code>observed</code> object is an artifact of some code you’ve written, and it’s being compared against a known result (i.e., what is <code>expected</code>)</p>
@@ -640,7 +2116,7 @@ Mastering Shiny <code>monthApp</code> tests
 <div class="quarto-layout-cell" style="flex-basis: 70.0%;justify-content: center;">
 <div id="fig-08_tests_diffobj" class="quarto-figure quarto-figure-center anchored">
 <figure class="figure"><p><img src="img/08_tests_diffobj.png" class="img-fluid figure-img" data-align="center"></p>
-<figcaption class="figure-caption">Figure&nbsp;2: Viewer ouput from <code><a href="https://rdrr.io/pkg/diffobj/man/diffObj.html">diffobj::diffObj()</a></code></figcaption></figure>
+<figcaption class="figure-caption">Figure&nbsp;1: Viewer ouput from <code><a href="https://rdrr.io/pkg/diffobj/man/diffObj.html">diffobj::diffObj()</a></code></figcaption></figure>
 </div>
 </div>
 </div>
@@ -656,7 +2132,7 @@ Mastering Shiny <code>monthApp</code> tests
 <div class="quarto-layout-cell" style="flex-basis: 70.0%;justify-content: center;">
 <div id="fig-08_tests_diffobj" class="quarto-figure quarto-figure-center anchored">
 <figure class="figure"><p><img src="img/08_tests_diffstr.png" class="img-fluid figure-img" data-align="center"></p>
-<figcaption class="figure-caption">Figure&nbsp;3: Viewer ouput from <code><a href="https://rdrr.io/pkg/diffobj/man/diffStr.html">diffobj::diffStr()</a></code></figcaption></figure>
+<figcaption class="figure-caption">Figure&nbsp;2: Viewer ouput from <code><a href="https://rdrr.io/pkg/diffobj/man/diffStr.html">diffobj::diffStr()</a></code></figcaption></figure>
 </div>
 </div>
 </div>
@@ -686,7 +2162,7 @@ Mastering Shiny <code>monthApp</code> tests
 <span id="cb22-22"><a href="#cb22-22" aria-hidden="true" tabindex="-1"></a>`expected$CHR` is a character vector ('B', 'C', 'D')</span>
 <span id="cb22-23"><a href="#cb22-23" aria-hidden="true" tabindex="-1"></a>[ FAIL 1 | WARN 0 | SKIP 0 | PASS 0 ]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section></section><section id="test-supporting-files" class="level3"><h3 class="anchored" data-anchor-id="test-supporting-files">Test supporting files</h3>
-<p>Sometimes testing functions in isolation is not enough and it’s useful to include either helper functions or data. This is especially true when the code we’re testing goes beyond the function’s borders, such as connecting to a database or API. The term for these supporting files are <strong>test fixtures</strong>,<a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a> and below we’ll cover including them in the <code>tests/</code> folder.</p>
+<p>Sometimes testing functions in isolation is not enough and it’s useful to include either helper functions or data. This is especially true when the code we’re testing goes beyond the function’s borders, such as connecting to a database or API. The term for these supporting files are <strong>test fixtures</strong>,<a href="#fn8" class="footnote-ref" id="fnref8" role="doc-noteref"><sup>8</sup></a> and below we’ll cover including them in the <code>tests/</code> folder.</p>
 <section id="test-data" class="level4"><h4 class="anchored" data-anchor-id="test-data">Test data</h4>
 <p>Test data can be helpful for experimenting with various table and graphing package outputs, file formats, and application performance. Test data files can be stored in <code>tests/testthat/fixtures/</code>, and I’ve provided an example below of of the tidy <code>ggplot2movies</code> data we used in a previous branch.</p>
 <p>The code used to create the test data (<code>make-ggp2-movies.R</code>) is stored in the same location as the output it creates (i.e., <code>ggp2_movies.rds</code>):</p>
@@ -781,7 +2257,7 @@ Mastering Shiny <code>monthApp</code> tests
 <span><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
-<p><code>test_cmt()</code> can be used to log when your test beings and ends, and includes a message for the context.<a href="#fn6" class="footnote-ref" id="fnref6" role="doc-noteref"><sup>6</sup></a></p>
+<p><code>test_cmt()</code> can be used to log when your test beings and ends, and includes a message for the context.<a href="#fn9" class="footnote-ref" id="fnref9" role="doc-noteref"><sup>9</sup></a></p>
 <div class="cell">
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html">test_that</a></span><span class="op">(</span>desc <span class="op">=</span> <span class="st">"multiplication works"</span>, code <span class="op">=</span> <span class="op">{</span></span>
 <span>  <span class="fu">test_cmt</span><span class="op">(</span>start <span class="op">=</span> <span class="st">"multiplication"</span>, msg <span class="op">=</span> <span class="st">"2 * 2 = 4"</span><span class="op">)</span></span>
@@ -789,10 +2265,10 @@ Mastering Shiny <code>monthApp</code> tests
 <span>  <span class="fu">test_cmt</span><span class="op">(</span>end <span class="op">=</span> <span class="st">"multiplication"</span>, msg <span class="op">=</span> <span class="st">"2 * 2 = 4"</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">##  [ START | 2023-09-15 11:24:07 | multiplication = 2 * 2 = 4] </span></span>
+<span><span class="co">##  [ START | 2023-09-16 10:19:45 | multiplication = 2 * 2 = 4] </span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">##  [ END   | 2023-09-15 11:24:07 | multiplication = 2 * 2 = 4] </span></span>
-<span><span class="co">## Test passed 😸</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span><span class="co">##  [ END   | 2023-09-16 10:19:45 | multiplication = 2 * 2 = 4] </span></span>
+<span><span class="co">## Test passed 🎉</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Functions like <code>test_cmt()</code> can be stored in <code>tests/testthat/helper.R</code>, which is automatically loaded with <code><a href="https://devtools.r-lib.org/reference/load_all.html">devtools::load_all()</a></code>:</p>
 <div class="sourceCode" id="cb27"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>tests/</span>
@@ -803,6 +2279,7 @@ Mastering Shiny <code>monthApp</code> tests
 <span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>      ├── helper.R</span>
 <span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>      └── ... all test files...</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section></section><section id="snapshots" class="level3 page-columns page-full"><h3 class="anchored" data-anchor-id="snapshots">Snapshots</h3>
+<p>If the expected output we’re interesting in testing is cumbersome to describe programmatically, we can consider using a snapshot tests. Examples of this include UI elements (which are mostly HTML created by Shiny’s UI layout and input/output functions) and data visualizations.<a href="#fn10" class="footnote-ref" id="fnref10" role="doc-noteref"><sup>10</sup></a></p>
 <p>Writing tests for graph outputs can be difficult because we’re evaluating the “correctness” of the graph is somewhat subjective and requires human judgment.</p>
 <p>If we try to compare the output from a custom plotting function like <code>scatter_plot()</code> against a graph built with analogous <code>ggplot2</code> code, we can see why this test will fail by passing both objects to <code><a href="https://rdrr.io/pkg/diffobj/man/diffObj.html">diffobj::diffObj()</a></code>:</p>
 <div class="cell">
@@ -828,12 +2305,12 @@ Mastering Shiny <code>monthApp</code> tests
 <figure class="figure"><p><img src="img/08_tests_diffobj_scatter_plot.png" class="img-fluid figure-img" style="width:100.0%" data-align="center" data-ref-parent="fig-08_tests_diffobj_scatter_plot"></p>
 <figcaption class="figure-caption">(a) <code><a href="https://rdrr.io/pkg/diffobj/man/diffObj.html">diffobj::diffObj()</a></code> on graph outputs</figcaption></figure>
 </div>
-<figcaption class="figure-caption">Figure&nbsp;4: Graph objects are difficult to use as test objects</figcaption></figure>
+<figcaption class="figure-caption">Figure&nbsp;3: Graph objects are difficult to use as test objects</figcaption></figure>
 </div>
 </div>
-<p>The output shows us differences in the <code>mapping</code> and plot environment (<code>plot_env</code>), which we can assume <em>will</em> be different in the application.</p>
-<p>In cases like this, a snapshot test might be warrented. The <a href="https://vdiffr.r-lib.org/"><code>vdiffr</code></a> package allows us to perform a ‘visual unit test’ by saving by capturing the expected output as a snapshot that we can compare with future versions.</p>
-<section id="vdiffr" class="level4 page-columns page-full"><h4 class="anchored" data-anchor-id="vdiffr"><span style="font-size: 1.05em;"><code>vdiffr</code></span></h4>
+<p>The output shows us differences in the <code>mapping</code> and plot environment (<code>plot_env</code>), which we can assume <em>will</em> be different in the application, so using <code><a href="https://testthat.r-lib.org/reference/equality-expectations.html">testthat::expect_equal()</a></code> will fail.</p>
+<p>In cases like this, a snapshot test might be warranted. The <a href="https://vdiffr.r-lib.org/"><code>vdiffr</code></a> package allows us to perform a ‘visual unit test’ by saving by capturing the expected output as a snapshot that we can compare with future versions.</p>
+<section id="vdiffr" class="level4"><h4 class="anchored" data-anchor-id="vdiffr"><span style="font-size: 1.05em;"><code>vdiffr</code></span></h4>
 <p>The <code>expect_doppelganger()</code> function from <code>vdiffr</code> is designed specifically to work with <a href="https://vdiffr.r-lib.org/reference/expect_doppelganger.html">‘graphical plots’</a>.</p>
 <div class="cell">
 <div class="sourceCode" id="cb29"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">vdiffr</span><span class="fu">::</span><span class="fu"><a href="https://vdiffr.r-lib.org/reference/expect_doppelganger.html">expect_doppelganger</a></span><span class="op">(</span></span>
@@ -842,7 +2319,7 @@ Mastering Shiny <code>monthApp</code> tests
 <span>  <span class="op">)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p><code>expect_doppelganger()</code> can be dropped in <code><a href="https://testthat.r-lib.org/reference/test_that.html">test_that()</a></code> like any other expectation. Below is an example comparing the graph outputs from <code>ggplot2</code> and the custom <code>scatter_plot()</code> utility function in <code>pkgApp</code>.</p>
-<p>Notice I’ve loaded the <code>ggp2_movies.rds</code> data<a href="#fn7" class="footnote-ref" id="fnref7" role="doc-noteref"><sup>7</sup></a> and included the <code>test_cmt()</code> helper with <code>start</code> and <code>end</code> messages (before and after the test code).</p>
+<p>Notice I’ve loaded the <code>ggp2_movies.rds</code> data<a href="#fn11" class="footnote-ref" id="fnref11" role="doc-noteref"><sup>11</sup></a> and included the <code>test_cmt()</code> helper with <code>start</code> and <code>end</code> messages (before and after the test code).</p>
 <div class="cell">
 <div class="sourceCode" id="cb30"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html">test_that</a></span><span class="op">(</span>desc <span class="op">=</span> <span class="st">"scatter_plot() works"</span>, code <span class="op">=</span> <span class="op">{</span></span>
 <span>  <span class="fu">test_cmt</span><span class="op">(</span></span>
@@ -862,6 +2339,18 @@ Mastering Shiny <code>monthApp</code> tests
 <span>      msg <span class="op">=</span> <span class="st">"ggplot2movies::movies snapshot"</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+</section></section><section id="running-tests" class="level3 page-columns page-full"><h3 class="anchored" data-anchor-id="running-tests">Running <span style="font-size: 1.05em;"><code>test()</code></span>s</h3>
+<p>The fourth <code>devtools</code> <span style="font-weight: bold; font-size: 1.0em;">habit</span> to adopt is regularly writing and running tests. If you’re using Posit Workbench and have <code>devtools</code> installed, you can test your app-package using the <strong>Build</strong> pane or the keyboard shortcut:</p>
+
+<div class="no-row-height column-margin column-container"><div class="">
+<p><span style="font-weight: bold; font-style: italic; font-size: 1.20em"><kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>T</kbd></span></p>
+</div></div><div id="fig-08_tests_build_pane_test" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure"><div id="fig-08_tests_build_pane_test" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure"><p><img src="img/08_tests_build_pane_test.png" class="img-fluid figure-img" style="width:100.0%" data-align="center" data-ref-parent="fig-08_tests_build_pane_test"></p>
+<figcaption class="figure-caption">(a) Test you app-package</figcaption></figure>
+</div>
+<figcaption class="figure-caption">Figure&nbsp;4: <code><a href="https://devtools.r-lib.org/reference/test.html">devtools::test()</a></code> (run all tests in your <code>tests/</code> folder)</figcaption></figure>
+</div>
 <p>When we initially run the test it passes, but with a warning that tells us the baseline snapshot was saved in <code>tests/testthat/_snaps/</code>:</p>
 <div class="sourceCode" id="cb31"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>==&gt; Testing R file using 'testthat'</span>
 <span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -879,7 +2368,7 @@ Mastering Shiny <code>monthApp</code> tests
 <span id="cb31-14"><a href="#cb31-14" aria-hidden="true" tabindex="-1"></a>Test complete</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 
 <div class="no-row-height column-margin column-container"><div class="">
-<p><code>test_cmt()</code> is handy because it let’s me track how long each test takes to run (unit test are should be fast).</p>
+<p><code>test_cmt()</code> is handy because it let’s me track how long each test takes to run (unit test should be fast).</p>
 </div></div><p>After the inital test run, if we view the <code>tests/</code> folder, we can see the new <code>tests/testthat/_snaps</code> is created:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb32"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="ex">tests/</span></span>
@@ -891,8 +2380,8 @@ Mastering Shiny <code>monthApp</code> tests
 <span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>  <span class="ex">└──</span> testthat.R</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>The <code>scatter-plot-graph.svg</code> file is our baseline comparison object, which is then used in future tests.</p>
-</section><section id="snapshots-are-brittle" class="level4"><h4 class="anchored" data-anchor-id="snapshots-are-brittle">Snapshots are brittle</h4>
-<p>The term “brittle” in the context of unit tests refers to their susceptibility to changes (meaningful or not). Using snapshots can produce false negatives—a test fails when comparing a new graph to the baseline image—due to inconsequential changes in the graph.</p>
+<section id="snapshots-are-brittle" class="level4"><h4 class="anchored" data-anchor-id="snapshots-are-brittle">Snapshots are brittle</h4>
+<p>The term “brittle” in the context of testing refers to their susceptibility to changes (meaningful or not) that can produce false negatives (i.e., a test fails due to inconsequential changes in the graph) when comparing a new graph to the baseline image.</p>
 <p>In a typical workflow, we’d write additional tests, then load, document, and build the package:</p>
 <p><span style="font-style: italic; font-weight: bold; font-size: 1.10em"><kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd> / <kbd>D</kbd> / <kbd>B</kbd></span></p>
 <p>Subsequent tests in <code>pkgApp</code> will pass without a warning:</p>
@@ -911,37 +2400,39 @@ Mastering Shiny <code>monthApp</code> tests
 <span id="cb33-12"><a href="#cb33-12" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 0 | SKIP 0 | PASS 1 ]</span>
 <span id="cb33-13"><a href="#cb33-13" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb33-14"><a href="#cb33-14" aria-hidden="true" tabindex="-1"></a>😸</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>Another option for using snapshots for testing is the <code><a href="https://testthat.r-lib.org/reference/expect_snapshot_file.html">expect_snapshot_file()</a></code> function <a href="#fn8" class="footnote-ref" id="fnref8" role="doc-noteref"><sup>8</sup></a> but <code>expect_doppelganger()</code> is probably the better option for comparing graph outputs.</p>
+<p>Another option for using snapshots for testing is the <code><a href="https://testthat.r-lib.org/reference/expect_snapshot_file.html">expect_snapshot_file()</a></code> function <a href="#fn12" class="footnote-ref" id="fnref12" role="doc-noteref"><sup>12</sup></a> but <code>expect_doppelganger()</code> is probably the better option for comparing graph outputs.</p>
 </section></section></section><section id="module-tests" class="level2"><h2 class="anchored" data-anchor-id="module-tests">Module tests</h2>
-<p>Although they’re typically stored in a single file, modules consist of UI and server functions, which would classify their tests as ‘integration’ or ‘interaction’ testing. Still, we can only pass the module server functions to <code>testServer()</code>, so these are still unit tests.</p>
+<p>Although they’re typically stored in a single file, modules consist of UI and server functions, which would classify their tests as ‘integration’ or ‘interaction’ testing. Still, we can only pass the module server functions to <code>testServer()</code>, so these are still unit tests. Below are a few examples and tips for testing modules.</p>
 <section id="testserver" class="level3"><h3 class="anchored" data-anchor-id="testserver"><span style="font-size: 0.95em;"><code>testServer()</code></span></h3>
 <p><code>testServer()</code> is designed to test <em>reactive interactions</em>, which gives us the ability to write tests to verify the inputs, outputs, and returned values from module server functions.</p>
-<section id="testing-initial-values" class="level4"><h4 class="anchored" data-anchor-id="testing-initial-values">Testing initial values</h4>
-<p>Shiny inputs are initiated with a <code>NULL</code> value, so it’s tempting to want to test an <code>inputId</code> exists using <code>expect_null(input$x)</code>. However, this test is not helpful because <em>any</em> value will pass this test:</p>
+<section id="initial-values" class="level4"><h4 class="anchored" data-anchor-id="initial-values">Initial values</h4>
+<p>Shiny inputs are initiated with a <code>NULL</code> value, so it’s tempting to want to test an <code>inputId</code> exists using <code>expect_null(input$x)</code>. However, this test is not helpful because <em>any</em> value will pass this test.</p>
+<p>For example, the test below looks like it tests an initial <code>NULL</code> value for <code>input$x</code> in <code>mod_var_input_server()</code>:</p>
 <div class="cell">
-<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="co"># this test passes...</span></span>
-<span><span class="fu">shiny</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/shiny/man/testServer.html">testServer</a></span><span class="op">(</span>app <span class="op">=</span> <span class="va">mod_var_input_server</span>, expr <span class="op">=</span> <span class="op">{</span></span>
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">shiny</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/shiny/man/testServer.html">testServer</a></span><span class="op">(</span>app <span class="op">=</span> <span class="va">mod_var_input_server</span>, expr <span class="op">=</span> <span class="op">{</span></span>
 <span>  <span class="fu">test_cmt</span><span class="op">(</span>start <span class="op">=</span> <span class="st">"input$x"</span>, msg <span class="op">=</span> <span class="st">"initial null"</span><span class="op">)</span></span>
 <span>  <span class="fu">testthat</span><span class="fu">::</span><span class="fu"><a href="https://testthat.r-lib.org/reference/expect_null.html">expect_null</a></span><span class="op">(</span><span class="va">input</span><span class="op">$</span><span class="va">x</span><span class="op">)</span></span>
 <span>  <span class="fu">test_cmt</span><span class="op">(</span>end <span class="op">=</span> <span class="st">"input$x"</span>, msg <span class="op">=</span> <span class="st">"initial null"</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>This test passes:</p>
 <div class="sourceCode" id="cb35"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]</span>
 <span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a> [ START | 2023-09-14 11:58:59 | input$x = initial null] </span>
 <span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 0 | SKIP 0 | PASS 1 ]</span>
 <span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a> [ END   | 2023-09-14 11:58:59 | input$x = initial null]  </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Unfortunately, we can pass anything to <code><a href="https://testthat.r-lib.org/reference/expect_null.html">expect_null()</a></code> when <code>testServer()</code> is used this way:</p>
 <div class="cell">
-<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="co"># but so does this...</span></span>
-<span><span class="fu">shiny</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/shiny/man/testServer.html">testServer</a></span><span class="op">(</span>app <span class="op">=</span> <span class="va">mod_var_input_server</span>, expr <span class="op">=</span> <span class="op">{</span></span>
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">shiny</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/shiny/man/testServer.html">testServer</a></span><span class="op">(</span>app <span class="op">=</span> <span class="va">mod_var_input_server</span>, expr <span class="op">=</span> <span class="op">{</span></span>
 <span>  <span class="fu">test_cmt</span><span class="op">(</span>start <span class="op">=</span> <span class="st">"input$anything"</span>, msg <span class="op">=</span> <span class="st">"initial null"</span><span class="op">)</span></span>
 <span>  <span class="fu">testthat</span><span class="fu">::</span><span class="fu"><a href="https://testthat.r-lib.org/reference/expect_null.html">expect_null</a></span><span class="op">(</span><span class="va">input</span><span class="op">$</span><span class="va">anything</span><span class="op">)</span></span>
 <span>  <span class="fu">test_cmt</span><span class="op">(</span>end <span class="op">=</span> <span class="st">"input$anything"</span>, msg <span class="op">=</span> <span class="st">"initial null"</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>This test also passes:</p>
 <div class="sourceCode" id="cb37"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a> [ START | 2023-09-14 11:58:59 | input$anything = initial null] </span>
 <span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 0 | SKIP 0 | PASS 2 ]</span>
 <span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a> [ END   | 2023-09-14 11:58:59 | input$anything = initial null] </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>To check the initial <code>NULL</code> value of an <code>inputId</code>, it’s better to build the shiny app object, then pass this to <code>testServer()</code>.<a href="#fn9" class="footnote-ref" id="fnref9" role="doc-noteref"><sup>9</sup></a></p>
+<p>To check the initial <code>NULL</code> value of an <code>inputId</code>, it’s better to build the shiny app object, then pass this to <code>testServer()</code>.<a href="#fn13" class="footnote-ref" id="fnref13" role="doc-noteref"><sup>13</sup></a></p>
 <div class="cell">
 <div class="sourceCode" id="cb38"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="co"># build app object with shinyApp()</span></span>
 <span><span class="va">app</span> <span class="op">&lt;-</span> <span class="fu">shinyApp</span><span class="op">(</span>ui <span class="op">=</span> <span class="fu">movies_ui</span><span class="op">(</span>bslib <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>, </span>
@@ -968,8 +2459,8 @@ Mastering Shiny <code>monthApp</code> tests
 <span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 0 | SKIP 0 | PASS 2 ]</span>
 <span id="cb39-9"><a href="#cb39-9" aria-hidden="true" tabindex="-1"></a> [ END   | 2023-09-14 12:08:53 | input$`vars-y` = initial NULL] </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>Note the use of the <code>input</code> with the appended module IDs. This is an easy place to get tripped up with <code>testServer()</code>: in the <code>app</code> object, we have to access the inputs with <code>input$`[module id]-[inputId]`</code></p>
-</section><section id="testing-returned-values" class="level4"><h4 class="anchored" data-anchor-id="testing-returned-values">Testing returned values</h4>
-<p>To confirm the returned list of graph inputs from <code>mod_var_input_server()</code>, I can use <code>session$setInputs()</code> to build the list of inputs, and <code>session$returned()</code> to confirm it’s returned object:</p>
+</section><section id="returned-values" class="level4"><h4 class="anchored" data-anchor-id="returned-values">Returned values</h4>
+<p>To confirm the returned list of graph inputs from <code>mod_var_input_server()</code>, we can build the list of inputs, then pass identical values to <code>session$setInputs()</code> and confirm the returned object with <code>session$returned()</code>:</p>
 <div class="cell">
 <div class="sourceCode" id="cb40"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu">shiny</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/shiny/man/testServer.html">testServer</a></span><span class="op">(</span>app <span class="op">=</span> <span class="va">mod_var_input_server</span>, expr <span class="op">=</span> <span class="op">{</span></span>
 <span>  <span class="va">test_vals</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span></span>
@@ -1001,18 +2492,13 @@ Mastering Shiny <code>monthApp</code> tests
 <span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>ℹ Testing pkgApp</span>
 <span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>✔ | F W S  OK | Context</span>
 <span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>⠏ |         0 | mod_var_input_server                                                  Loading required package: shiny</span>
-<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a> [ START | 2023-09-14 12:21:17 | is.shiny.appobj = movies_app()] </span>
-<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>⠋ |         1 | mod_var_input_server                          </span>
-<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a> [ END   | 2023-09-14 12:21:17 | is.shiny.appobj = movies_app()]  </span>
-<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a> [ START | 2023-09-14 12:21:17 | input$`vars-y` = initial NULL] </span>
-<span id="cb41-11"><a href="#cb41-11" aria-hidden="true" tabindex="-1"></a> [ END   | 2023-09-14 12:21:17 | input$`vars-y` = initial NULL] </span>
-<span id="cb41-12"><a href="#cb41-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb41-13"><a href="#cb41-13" aria-hidden="true" tabindex="-1"></a> [ START | 2023-09-14 12:21:17 | returned(var_input) = var_input structure] </span>
-<span id="cb41-14"><a href="#cb41-14" aria-hidden="true" tabindex="-1"></a> [ END   | 2023-09-14 12:21:18 | returned(var_input) = var_input structure] </span>
-<span id="cb41-15"><a href="#cb41-15" aria-hidden="true" tabindex="-1"></a>✔ |         3 | mod_var_input_server</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a> [ START | 2023-09-14 12:21:17 | returned(var_input) = var_input structure] </span>
+<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a> [ END   | 2023-09-14 12:21:18 | returned(var_input) = var_input structure] </span>
+<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a>✔ |         3 | mod_var_input_server</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This confirms the structure of the returned object from <code>mod_var_input_server()</code>.</p>
 </section></section><section id="args-list" class="level3"><h3 class="anchored" data-anchor-id="args-list"><span style="font-size: 0.95em;"><code>args = list()</code></span></h3>
-<p>Now that we’ve confirmed the returned value from <code>mod_var_input_server()</code> is a list, we want to make sure it’s read correctly by the <code>var_inputs</code> argument in <code>mod_scatter_display_server()</code>. I’ve included the <code>movies_server()</code> function below refresh our memory of how this <em>should</em> work:<a href="#fn10" class="footnote-ref" id="fnref10" role="doc-noteref"><sup>10</sup></a></p>
+<p>Now that we’ve confirmed the returned values from <code>mod_var_input_server()</code> are in a list, we want to make sure it’s read correctly by the <code>var_inputs</code> argument in <code>mod_scatter_display_server()</code>. I’ve included the <code>movies_server()</code> function below refresh our memory of how this <em>should</em> work:<a href="#fn14" class="footnote-ref" id="fnref14" role="doc-noteref"><sup>14</sup></a></p>
 <div class="cell">
 <div class="sourceCode" id="cb42"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">movies_server</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">input</span>, <span class="va">output</span>, <span class="va">session</span><span class="op">)</span> <span class="op">{</span></span>
 <span></span>
@@ -1021,6 +2507,71 @@ Mastering Shiny <code>monthApp</code> tests
 <span>      <span class="fu">mod_scatter_display_server</span><span class="op">(</span><span class="st">"plot"</span>, var_inputs <span class="op">=</span> <span class="va">selected_vars</span><span class="op">)</span></span>
 <span>      </span>
 <span><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>When we pass <code>selected_vars</code> to the <code>var_inputs</code> argument of <code>mod_scatter_display_server()</code>, we’re not passing the returned values (this is why we don’t need the parentheses). We’re calling on the method (or function) created by <code>reactive()</code>.</p>
+<p>If we pause execution with the debugger,<a href="#fn15" class="footnote-ref" id="fnref15" role="doc-noteref"><sup>15</sup></a> we can see the difference between calling <code>selected_vars</code> and <code>selected_vars()</code>:</p>
+<div class="quarto-layout-panel">
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="quarto-layout-cell" style="flex-basis: 49.0%;justify-content: center;">
+<div class="sourceCode" id="cb43"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>Browse[1]&gt; selected_vars</span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>reactive({</span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>    list(</span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>      y = input$y, </span>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a>      x = input$x, </span>
+<span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a>      z = input$z, </span>
+<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a>      alpha = input$alpha, </span>
+<span id="cb43-8"><a href="#cb43-8" aria-hidden="true" tabindex="-1"></a>      size = input$size, </span>
+<span id="cb43-9"><a href="#cb43-9" aria-hidden="true" tabindex="-1"></a>      plot_title = input$plot_title</span>
+<span id="cb43-10"><a href="#cb43-10" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb43-11"><a href="#cb43-11" aria-hidden="true" tabindex="-1"></a>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="quarto-figure-spacer quarto-layout-cell" style="flex-basis: 2.0%;justify-content: center;">
+<p>&nbsp;</p>
+</div>
+<div class="quarto-layout-cell" style="flex-basis: 49.0%;justify-content: center;">
+<div class="sourceCode" id="cb44"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>Browse[1]&gt; selected_vars()</span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>$y</span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>[1] "audience_score"</span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a>$x</span>
+<span id="cb44-6"><a href="#cb44-6" aria-hidden="true" tabindex="-1"></a>[1] "imdb_rating"</span>
+<span id="cb44-7"><a href="#cb44-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-8"><a href="#cb44-8" aria-hidden="true" tabindex="-1"></a>$z</span>
+<span id="cb44-9"><a href="#cb44-9" aria-hidden="true" tabindex="-1"></a>[1] "mpaa_rating"</span>
+<span id="cb44-10"><a href="#cb44-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-11"><a href="#cb44-11" aria-hidden="true" tabindex="-1"></a>$alpha</span>
+<span id="cb44-12"><a href="#cb44-12" aria-hidden="true" tabindex="-1"></a>[1] 0.5</span>
+<span id="cb44-13"><a href="#cb44-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-14"><a href="#cb44-14" aria-hidden="true" tabindex="-1"></a>$size</span>
+<span id="cb44-15"><a href="#cb44-15" aria-hidden="true" tabindex="-1"></a>[1] 2</span>
+<span id="cb44-16"><a href="#cb44-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-17"><a href="#cb44-17" aria-hidden="true" tabindex="-1"></a>$plot_title</span>
+<span id="cb44-18"><a href="#cb44-18" aria-hidden="true" tabindex="-1"></a>[1] ""</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</div>
+</div>
+<p>This distinction becomes important when we’re testing the communication between module server functions.</p>
+<div class="cell">
+<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">test_vals</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"audience_score"</span>,</span>
+<span>                  y <span class="op">=</span> <span class="st">"imdb_rating"</span>,</span>
+<span>                  z <span class="op">=</span> <span class="st">"mpaa_rating"</span>,</span>
+<span>                  alpha <span class="op">=</span> <span class="fl">0.5</span>,</span>
+<span>                  size <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>                  plot_title <span class="op">=</span> <span class="st">"Test title case"</span><span class="op">)</span></span>
+<span><span class="fu">shiny</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/shiny/man/testServer.html">testServer</a></span><span class="op">(</span></span>
+<span>  app <span class="op">=</span> <span class="va">mod_scatter_display_server</span>,</span>
+<span>  args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span></span>
+<span>    var_inputs <span class="op">=</span> <span class="fu">shiny</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/shiny/man/reactive.html">reactive</a></span><span class="op">(</span><span class="va">test_vals</span><span class="op">)</span></span>
+<span>  <span class="op">)</span>, expr <span class="op">=</span> <span class="op">{</span></span>
+<span>    </span>
+<span>    <span class="fu">test_cmt</span><span class="op">(</span>start <span class="op">=</span> <span class="st">"mod_scatter_display_server"</span>, msg <span class="op">=</span> <span class="st">"is.reactive(inputs())"</span><span class="op">)</span></span>
+<span>    </span>
+<span>    <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html">expect_true</a></span><span class="op">(</span>object <span class="op">=</span> <span class="fu">is.reactive</span><span class="op">(</span><span class="va">inputs</span><span class="op">)</span><span class="op">)</span></span>
+<span>    </span>
+<span>    <span class="fu">test_cmt</span><span class="op">(</span>end <span class="op">=</span> <span class="st">"mod_scatter_display_server"</span>, msg <span class="op">=</span> <span class="st">"is.reactive(inputs())"</span><span class="op">)</span></span>
+<span>    </span>
+<span>  <span class="op">}</span></span>
+<span><span class="op">)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <!--
 > Data Flow: Test how well the different units work together by simulating a complete data flow.
@@ -1046,6 +2597,978 @@ Mastering Shiny <code>monthApp</code> tests
 > User Scenarios: Script typical user interaction scenarios to ensure that the whole system, including front-end and back-end, work seamlessly.
 -->
 <section id="shinytest2" class="level3"><h3 class="anchored" data-anchor-id="shinytest2"><span style="font-size: 1.05em;"><code>shinytest2</code></span></h3>
+<div class="cell">
+<div class="cell-output-display">
+
+<div id="ashwozmslc" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#ashwozmslc table {
+  font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#ashwozmslc thead, #ashwozmslc tbody, #ashwozmslc tfoot, #ashwozmslc tr, #ashwozmslc td, #ashwozmslc th {
+  border-style: none;
+}
+
+#ashwozmslc p {
+  margin: 0;
+  padding: 0;
+}
+
+#ashwozmslc .gt_table {
+  display: table;
+  border-collapse: collapse;
+  line-height: normal;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#ashwozmslc .gt_caption {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+#ashwozmslc .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#ashwozmslc .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 3px;
+  padding-bottom: 5px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#ashwozmslc .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#ashwozmslc .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#ashwozmslc .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#ashwozmslc .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#ashwozmslc .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#ashwozmslc .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#ashwozmslc .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#ashwozmslc .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#ashwozmslc .gt_spanner_row {
+  border-bottom-style: hidden;
+}
+
+#ashwozmslc .gt_group_heading {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  text-align: left;
+}
+
+#ashwozmslc .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#ashwozmslc .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#ashwozmslc .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#ashwozmslc .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#ashwozmslc .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#ashwozmslc .gt_stub_row_group {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+  vertical-align: top;
+}
+
+#ashwozmslc .gt_row_group_first td {
+  border-top-width: 2px;
+}
+
+#ashwozmslc .gt_row_group_first th {
+  border-top-width: 2px;
+}
+
+#ashwozmslc .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#ashwozmslc .gt_first_summary_row {
+  border-top-style: solid;
+  border-top-color: #D3D3D3;
+}
+
+#ashwozmslc .gt_first_summary_row.thick {
+  border-top-width: 2px;
+}
+
+#ashwozmslc .gt_last_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#ashwozmslc .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#ashwozmslc .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#ashwozmslc .gt_last_grand_summary_row_top {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: double;
+  border-bottom-width: 6px;
+  border-bottom-color: #D3D3D3;
+}
+
+#ashwozmslc .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#ashwozmslc .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#ashwozmslc .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#ashwozmslc .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#ashwozmslc .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#ashwozmslc .gt_sourcenote {
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#ashwozmslc .gt_left {
+  text-align: left;
+}
+
+#ashwozmslc .gt_center {
+  text-align: center;
+}
+
+#ashwozmslc .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#ashwozmslc .gt_font_normal {
+  font-weight: normal;
+}
+
+#ashwozmslc .gt_font_bold {
+  font-weight: bold;
+}
+
+#ashwozmslc .gt_font_italic {
+  font-style: italic;
+}
+
+#ashwozmslc .gt_super {
+  font-size: 65%;
+}
+
+#ashwozmslc .gt_footnote_marks {
+  font-size: 75%;
+  vertical-align: 0.4em;
+  position: initial;
+}
+
+#ashwozmslc .gt_asterisk {
+  font-size: 100%;
+  vertical-align: 0;
+}
+
+#ashwozmslc .gt_indent_1 {
+  text-indent: 5px;
+}
+
+#ashwozmslc .gt_indent_2 {
+  text-indent: 10px;
+}
+
+#ashwozmslc .gt_indent_3 {
+  text-indent: 15px;
+}
+
+#ashwozmslc .gt_indent_4 {
+  text-indent: 20px;
+}
+
+#ashwozmslc .gt_indent_5 {
+  text-indent: 25px;
+}
+</style>
+<table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false">
+<thead><tr class="gt_col_headings">
+<th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="User Specification">User Specification</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="Feature Requirement">Feature Requirement</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="Functional Requirements">Functional Requirements</th>
+    </tr></thead>
+<tbody class="gt_table_body">
+<tr>
+<td headers="User Specification" class="gt_row gt_left">UR1: scatter plot data visualization</td>
+<td headers="Feature Requirement" class="gt_row gt_left">FE1: interactive scatter plot (two data sources, options to explore variables of interest)</td>
+<td headers="Functional Requirements" class="gt_row gt_left">FR1: data source</td>
+</tr>
+<tr>
+<td headers="User Specification" class="gt_row gt_left">-</td>
+<td headers="Feature Requirement" class="gt_row gt_left">-</td>
+<td headers="Functional Requirements" class="gt_row gt_left">FR2: user-input updating</td>
+</tr>
+<tr>
+<td headers="User Specification" class="gt_row gt_left">-</td>
+<td headers="Feature Requirement" class="gt_row gt_left">-</td>
+<td headers="Functional Requirements" class="gt_row gt_left">FR3: color-coded data points</td>
+</tr>
+<tr>
+<td headers="User Specification" class="gt_row gt_left">-</td>
+<td headers="Feature Requirement" class="gt_row gt_left">-</td>
+<td headers="Functional Requirements" class="gt_row gt_left">FR4: plot axis and legend</td>
+</tr>
+<tr>
+<td headers="User Specification" class="gt_row gt_left">-</td>
+<td headers="Feature Requirement" class="gt_row gt_left">-</td>
+<td headers="Functional Requirements" class="gt_row gt_left">FR5: plot zoom capability</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+
+<div id="jhwjyqezfu" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#jhwjyqezfu table {
+  font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#jhwjyqezfu thead, #jhwjyqezfu tbody, #jhwjyqezfu tfoot, #jhwjyqezfu tr, #jhwjyqezfu td, #jhwjyqezfu th {
+  border-style: none;
+}
+
+#jhwjyqezfu p {
+  margin: 0;
+  padding: 0;
+}
+
+#jhwjyqezfu .gt_table {
+  display: table;
+  border-collapse: collapse;
+  line-height: normal;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#jhwjyqezfu .gt_caption {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+#jhwjyqezfu .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#jhwjyqezfu .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 3px;
+  padding-bottom: 5px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#jhwjyqezfu .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#jhwjyqezfu .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#jhwjyqezfu .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#jhwjyqezfu .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#jhwjyqezfu .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#jhwjyqezfu .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#jhwjyqezfu .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#jhwjyqezfu .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#jhwjyqezfu .gt_spanner_row {
+  border-bottom-style: hidden;
+}
+
+#jhwjyqezfu .gt_group_heading {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  text-align: left;
+}
+
+#jhwjyqezfu .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#jhwjyqezfu .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#jhwjyqezfu .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#jhwjyqezfu .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#jhwjyqezfu .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#jhwjyqezfu .gt_stub_row_group {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+  vertical-align: top;
+}
+
+#jhwjyqezfu .gt_row_group_first td {
+  border-top-width: 2px;
+}
+
+#jhwjyqezfu .gt_row_group_first th {
+  border-top-width: 2px;
+}
+
+#jhwjyqezfu .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#jhwjyqezfu .gt_first_summary_row {
+  border-top-style: solid;
+  border-top-color: #D3D3D3;
+}
+
+#jhwjyqezfu .gt_first_summary_row.thick {
+  border-top-width: 2px;
+}
+
+#jhwjyqezfu .gt_last_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#jhwjyqezfu .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#jhwjyqezfu .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#jhwjyqezfu .gt_last_grand_summary_row_top {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: double;
+  border-bottom-width: 6px;
+  border-bottom-color: #D3D3D3;
+}
+
+#jhwjyqezfu .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#jhwjyqezfu .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#jhwjyqezfu .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#jhwjyqezfu .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#jhwjyqezfu .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#jhwjyqezfu .gt_sourcenote {
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#jhwjyqezfu .gt_left {
+  text-align: left;
+}
+
+#jhwjyqezfu .gt_center {
+  text-align: center;
+}
+
+#jhwjyqezfu .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#jhwjyqezfu .gt_font_normal {
+  font-weight: normal;
+}
+
+#jhwjyqezfu .gt_font_bold {
+  font-weight: bold;
+}
+
+#jhwjyqezfu .gt_font_italic {
+  font-style: italic;
+}
+
+#jhwjyqezfu .gt_super {
+  font-size: 65%;
+}
+
+#jhwjyqezfu .gt_footnote_marks {
+  font-size: 75%;
+  vertical-align: 0.4em;
+  position: initial;
+}
+
+#jhwjyqezfu .gt_asterisk {
+  font-size: 100%;
+  vertical-align: 0;
+}
+
+#jhwjyqezfu .gt_indent_1 {
+  text-indent: 5px;
+}
+
+#jhwjyqezfu .gt_indent_2 {
+  text-indent: 10px;
+}
+
+#jhwjyqezfu .gt_indent_3 {
+  text-indent: 15px;
+}
+
+#jhwjyqezfu .gt_indent_4 {
+  text-indent: 20px;
+}
+
+#jhwjyqezfu .gt_indent_5 {
+  text-indent: 25px;
+}
+</style>
+<table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false">
+<thead><tr class="gt_col_headings">
+<th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="User Specification">User Specification</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="Feature Requirement">Feature Requirement</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="Functional Requirements">Functional Requirements</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="Status">Status</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="Test">Test</th>
+    </tr></thead>
+<tbody class="gt_table_body">
+<tr>
+<td headers="User Specification" class="gt_row gt_left">UR1: scatter plot data visualization</td>
+<td headers="Feature Requirement" class="gt_row gt_left">FE1: interactive scatter plot (two data sources, options to explore variables of interest)</td>
+<td headers="Functional Requirements" class="gt_row gt_left">FR1: data source</td>
+<td headers="Status" class="gt_row gt_left">Status T1: </td>
+<td headers="Test" class="gt_row gt_left">T1: </td>
+</tr>
+<tr>
+<td headers="User Specification" class="gt_row gt_left">-</td>
+<td headers="Feature Requirement" class="gt_row gt_left">-</td>
+<td headers="Functional Requirements" class="gt_row gt_left">FR2: user-input updating</td>
+<td headers="Status" class="gt_row gt_left">Status T2: </td>
+<td headers="Test" class="gt_row gt_left">T2: </td>
+</tr>
+<tr>
+<td headers="User Specification" class="gt_row gt_left">-</td>
+<td headers="Feature Requirement" class="gt_row gt_left">-</td>
+<td headers="Functional Requirements" class="gt_row gt_left">FR3: color-coded data points</td>
+<td headers="Status" class="gt_row gt_left">Status T3: </td>
+<td headers="Test" class="gt_row gt_left">T3: </td>
+</tr>
+<tr>
+<td headers="User Specification" class="gt_row gt_left">-</td>
+<td headers="Feature Requirement" class="gt_row gt_left">-</td>
+<td headers="Functional Requirements" class="gt_row gt_left">FR4: plot axis and legend</td>
+<td headers="Status" class="gt_row gt_left">Status T4: </td>
+<td headers="Test" class="gt_row gt_left">T4: </td>
+</tr>
+<tr>
+<td headers="User Specification" class="gt_row gt_left">-</td>
+<td headers="Feature Requirement" class="gt_row gt_left">-</td>
+<td headers="Functional Requirements" class="gt_row gt_left">FR5: plot zoom capability</td>
+<td headers="Status" class="gt_row gt_left">Status T5: </td>
+<td headers="Test" class="gt_row gt_left">T5: </td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
 </section></section><section id="test-coverage" class="level2"><h2 class="anchored" data-anchor-id="test-coverage">Test coverage</h2>
 <section id="covr" class="level3"><h3 class="anchored" data-anchor-id="covr"><span style="font-size: 1.05em;"><code>covr</code></span></h3>
 </section><section id="covrpage" class="level3"><h3 class="anchored" data-anchor-id="covrpage"><span style="font-size: 1.05em;"><code>covrpage</code></span></h3>
@@ -1068,13 +3591,18 @@ Testing an R package with a Shiny application can be challenging due to the vari
 <li id="fn1"><p>Unit tests are covered extensively in <a href="https://r-pkgs.org/testing-basics.html">R Packages, 2ed</a> and the <a href="https://testthat.r-lib.org/index.html"><code>testthat</code> documentation</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn2"><p><code>shinytest2</code> has <a href="https://rstudio.github.io/shinytest2/">excellent documentation</a> (and <a href="https://www.youtube.com/watch?v=Gucwz865aqQ">videos</a>), and I highly recommend reading through those resources.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn3"><p>The <a href="https://shiny.posit.co/r/articles/improve/server-function-testing/"><code>testServer()</code></a> documentation is sparse, so I’ll provide a few tips and tricks I’ve learned for testing module server functions.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn4"><p>“The tests should be written before the functionality that is to be tested. This has been claimed to have many benefits. It helps ensure that the application is written for testability, as the developers must consider how to test the application from the outset rather than adding it later.” - <a href="https://en.wikipedia.org/wiki/Test-driven_development">TDD, Wikipedia</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn5"><p>Test fixtures are described in-depth in <a href="https://r-pkgs.org/testing-advanced.html#test-fixtures">R Packages, 2ed</a>.<a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn6"><p>If you like verbose logging outputs, check out the <a href="https://daroczig.github.io/logger/"><code>logger</code> package</a><a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn7"><p>Accessing test files is made easier with <code>testtthat::test_path()</code><a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn8"><p>Follow the <code><a href="https://testthat.r-lib.org/reference/expect_snapshot_file.html">expect_snapshot_file()</a></code> example from the <a href="https://testthat.r-lib.org/reference/expect_snapshot_file.html#ref-examples"><code>testthat</code> documentation</a><a href="#fnref8" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn9"><p>The <code><a href="https://rdrr.io/pkg/shiny/man/shiny.appobj.html">shiny::is.shiny.appobj()</a></code> will test if an object is a ‘shiny app object.’<a href="#fnref9" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn10"><p><code>selected_vars</code> are the reactive plot values returned from <code>mod_var_input_server()</code> we confirmed <code>test-mod_var_input_server.R</code>.<a href="#fnref10" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4"><p>User Requirements are sometimes referred to as “user stories,” “use cases,” or “general requirements”<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn5"><p>“Feature requirements” and “functional requirements” are sometimes used interchangeably, but they refer to different aspects of the software. <strong>Feature requirements</strong> are the high-level characteristics the system <em>should have</em> and often capture a collection of smaller functionalities (which are broken down into specific functional requirements).<a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn6"><p><strong>Functional requirements</strong> describe what a software system <em>should do</em> and are precise, measurable, and testable.<a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn7"><p>“The tests should be written before the functionality that is to be tested. This has been claimed to have many benefits. It helps ensure that the application is written for testability, as the developers must consider how to test the application from the outset rather than adding it later.” - <a href="https://en.wikipedia.org/wiki/Test-driven_development">TDD, Wikipedia</a><a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn8"><p>Test fixtures are described in-depth in <a href="https://r-pkgs.org/testing-advanced.html#test-fixtures">R Packages, 2ed</a>.<a href="#fnref8" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn9"><p>If you like verbose logging outputs, check out the <a href="https://daroczig.github.io/logger/"><code>logger</code> package</a><a href="#fnref9" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn10"><p>Mastering Shiny covers <a href="https://mastering-shiny.org/scaling-testing.html#user-interface-functions">creatng a snapshot file</a> to test UI elements, but notes this is probably not the best approach.<a href="#fnref10" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn11"><p>Accessing test files is made easier with <code>testtthat::test_path()</code><a href="#fnref11" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn12"><p>Follow the <code><a href="https://testthat.r-lib.org/reference/expect_snapshot_file.html">expect_snapshot_file()</a></code> example from the <a href="https://testthat.r-lib.org/reference/expect_snapshot_file.html#ref-examples"><code>testthat</code> documentation</a><a href="#fnref12" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn13"><p>The <code><a href="https://rdrr.io/pkg/shiny/man/shiny.appobj.html">shiny::is.shiny.appobj()</a></code> will test if an object is a ‘shiny app object.’<a href="#fnref13" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn14"><p><code>selected_vars</code> are the reactive plot values returned from <code>mod_var_input_server()</code> we confirmed <code>test-mod_var_input_server.R</code>.<a href="#fnref14" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn15"><p>We’ll cover using <code><a href="https://rdrr.io/r/base/browser.html">browser()</a></code> and the IDE’s debugger in a future chapter.<a href="#fnref15" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol></section></main><!-- /main --><script id="quarto-html-after-body" type="application/javascript">
 window.document.addEventListener("DOMContentLoaded", function (event) {
   const toggleBodyColorMode = (bsSheetEl) => {

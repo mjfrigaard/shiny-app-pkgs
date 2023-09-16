@@ -2,7 +2,7 @@
 options(width = 50L,
   pillar.width = 50L)
 
-co_box <- function(color, header, contents = "Your text", fold = FALSE, look = "default") {
+co_box <- function(color, size = "1.05", header, contents = "Your text", fold = FALSE, look = "default") {
   
   if (look == "simple") {
     look <- "simple"
@@ -27,7 +27,7 @@ co_box <- function(color, header, contents = "Your text", fold = FALSE, look = "
       "\n",
       ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "'}", "\n\n",
       "## ", header, "\n\n",
-      "::: {style='font-size: 1.05em; color: #696969;'}\n\n",
+      "::: {style='font-size: ", size, "em; color: #696969;'}\n\n",
       glue::glue_collapse(contents), "\n\n",
       "::: \n\n",
       "::::", "\n"
@@ -36,7 +36,7 @@ co_box <- function(color, header, contents = "Your text", fold = FALSE, look = "
       "\n",
       ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "'}", "\n\n",
       "## ", header, "\n\n",
-      "::: {style='font-size: 1.05em; color: #696969;'}\n\n",
+      "::: {style='font-size: ", size, "em; color: #696969;'}\n\n",
       glue::glue_collapse(contents), "\n\n",
       "::: \n\n",
       "::::", "\n"
@@ -45,7 +45,7 @@ co_box <- function(color, header, contents = "Your text", fold = FALSE, look = "
       "\n",
       ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "'}", "\n\n",
       "## ", header, "\n\n",
-      "::: {style='font-size: 1.05em; color: #696969;'}\n\n",
+      "::: {style='font-size: ", size, "em; color: #696969;'}\n\n",
       glue::glue_collapse(contents), "\n\n",
       "::: \n\n",
       "::::", "\n"
@@ -54,7 +54,7 @@ co_box <- function(color, header, contents = "Your text", fold = FALSE, look = "
       "\n",
       ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "'}", "\n\n",
       "## ", header, "\n\n",
-      "::: {style='font-size: 1.05em; color: #696969;'}\n\n",
+      "::: {style='font-size: ", size, "em; color: #696969;'}\n\n",
       glue::glue_collapse(contents), "\n\n",
       "::: \n\n",
       "::::", "\n"
@@ -63,7 +63,7 @@ co_box <- function(color, header, contents = "Your text", fold = FALSE, look = "
       "\n",
       ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "'}", "\n\n",
       "## ", header, "\n\n",
-      "::: {style='font-size: 1.05em; color: #696969;'}\n\n",
+      "::: {style='font-size: ", size, "em; color: #696969;'}\n\n",
       glue::glue_collapse(contents), "\n\n",
       "::: \n\n",
       "::::", "\n"

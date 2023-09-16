@@ -6,6 +6,7 @@
 #| include: false
 source("_common.R")
 library(testthat)
+library(gt)
 ```
 
 ```{r}
@@ -22,15 +23,36 @@ co_box(
 
 Writing tests for your app-package poses some unique challenges. Shiny functions are written in the context of its [reactive model](https://shiny.posit.co/r/articles/build/reactivity-overview/), so some conventional testing techniques and methods for regular R packages don’t directly apply. Fortunately, the infrastructure for storing and running tests in your app-package is identical to a standard R package.
 
-This chapter will cover three layers of tests: unit tests, integration/module tests, and end-to-end or system tests. I'll focus on *what to test* and *why to test it*, not *how to write tests*, because plenty of those resources exist.[^unit-tests-1] [^system-tests-2] The only exception being some tricks I've learned for using `testServer()` with module server functions.[^test-server-tests-3]
+```{r}
+#| label: co_box_monthApp_tests
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "r", fold = FALSE,
+  header = "Mastering Shiny `monthApp` tests",
+" 
+If you downloaded or cloned the [`monthApp`](https://github.com/hadley/monthApp) example from [Mastering Shiny](https://mastering-shiny.org/), then clicked on **Test** in the **Build** pane, you saw the following:
 
-I’ll also touch on the links between user requirements, functional specifications, and using a traceability matrix to track issues & features.
+![Testing `monthApp` app-package](img/monthApp_test.png){width='100%' fig-align='center'}
+  
+However, the [Testing](https://mastering-shiny.org/scaling-testing.html) chapter covers setting up and running unit tests with [`testthat`](https://mastering-shiny.org/scaling-testing.html#testing-functions) and how to use Shiny's [`testServer()`](https://mastering-shiny.org/scaling-testing.html#testing-reactivity) function to test reactivity and module server functions.
+  
+In this Chapter, I'll expand on testing your shiny app-package and provide some testing strategies to consider adopting before moving your application into production.
 
-[^unit-tests-1]: Unit tests are covered extensively in [R Packages, 2ed](https://r-pkgs.org/testing-basics.html) and the [`testthat` documentation](https://testthat.r-lib.org/index.html)
+"
+  )
+```
 
-[^system-tests-2]: `shinytest2` has [excellent documentation](https://rstudio.github.io/shinytest2/) (and [videos](https://www.youtube.com/watch?v=Gucwz865aqQ)), and I highly recommend reading through those resources.
+This chapter will cover three layers of tests: unit tests, integration/module tests, and end-to-end or system tests. I'll focus on *what to test* and *why to test it*, not *how to write tests*, because plenty of those resources exist[^tests-1] [^tests-2] (the only exception being some tricks I've learned for using `testServer()` with module server functions[^tests-3]).
 
-[^test-server-tests-3]: The [`testServer()`](https://shiny.posit.co/r/articles/improve/server-function-testing/) documentation is sparse, so I'll provide a few tips and tricks I've learned for testing module server functions.
+I’ll also touch on the links between user specifications, functional requirements, and how to use a traceability matrix to track your tests.
+
+[^tests-1]: Unit tests are covered extensively in [R Packages, 2ed](https://r-pkgs.org/testing-basics.html) and the [`testthat` documentation](https://testthat.r-lib.org/index.html)
+
+[^tests-2]: `shinytest2` has [excellent documentation](https://rstudio.github.io/shinytest2/) (and [videos](https://www.youtube.com/watch?v=Gucwz865aqQ)), and I highly recommend reading through those resources.
+
+[^tests-3]: The [`testServer()`](https://shiny.posit.co/r/articles/improve/server-function-testing/) documentation is sparse, so I'll provide a few tips and tricks I've learned for testing module server functions.
 
 The code chunk below will load the necessary testing packages.
 
@@ -45,74 +67,190 @@ library(covr)
 
 (*If you're using `devtools`, you won't have to worry about installing `testthat` and `covr`*)
 
-## Running [`test()`]{style="font-size: 1.05em;"}s
+## User specifications & requirements
+
+When developing tests, everyone is faced with the same two questions: 
+
+1. What do I test?  
+2. How do I test it?  
+
+So far, the shiny app-package we've been using didn't explain it's intended purpose or the problem it's designed to solve. In regular application development, the user specifications, feature requirements and functional requirements are the guidelines that direct the development process, albeit from slightly different perspectives.
+
+Understanding their relationship is important for knowing the application we're developing meets the technical standards and satisfies the user needs.
+
+### User Requirements
+
+**User Requirements** are what the end-user (i.e., a film analyst) wants to achieve with the dashboard.[^tests-specs-1]
+
+[^tests-specs-1]: User Requirements are sometimes referred to as "user stories," "use cases," or "general requirements"
 
 ```{r}
-#| label: co_box_tests_pkgApp
-#| echo: false
-#| eval: false
-```
-
- 
-The fourth `devtools` [habit]{style="font-weight: bold; font-size: 1.0em; color: #772953"} to adopt is regularly writing and running tests. If you're using Posit Workbench and have `devtools` installed, you can test your app-package using the **Build** pane or the keyboard shortcut:
-
-::: {.column-margin}
-
-[<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>T</kbd>]{style="font-weight: bold; font-style: italic; font-size: 1.20em"}
-
-:::
-
-
-::: {#fig-08_tests_build_pane_test}
-
-![Test you app-package](img/08_tests_build_pane_test.png){#fig-08_tests_build_pane_test width='100%' align='center'}
-
-`devtools::test()` (run all tests in your `tests/` folder)
-:::
-
-When we initially run `devtools::test()` in `pkgApp`, we see the following:
-
-```{verbatim}
-#| eval: false
-#| code-fold: false
-==> devtools::test()
-
-ℹ No testing infrastructure found.
-• Setup testing with `usethis::use_testthat()`.
-```
-
-This shouldn't be surprising--we haven't written any tests for `pkgApp` yet!
-
-```{r}
-#| label: co_box_monthApp_tests
+#| label: co_box_user_specs
 #| echo: false
 #| results: asis
 #| eval: true
 co_box(
-  color = "g", fold = TRUE,
-  header = "Mastering Shiny `monthApp` tests",
+  color = "b", fold = FALSE, look = "minimal", 
+  size = '1.10', header = "Scatter plot user requirements",
+  contents = 
 " 
-If you downloaded, loaded and installed [`monthApp` example from Mastering Shiny](https://github.com/hadley/monthApp), then clicked on **Test** in the **Build** pane, you also saw the following:
 
-![Testing `monthApp` app-package](img/monthApp_test.png){width='100%' fig-align='center'}
-
-"
-  )
+**UR1**: The user wants to view an interactive scatter plot on a dashboard that consolidates movie reviews from multiple sources to quickly compare and analyze trends and outliers in movie ratings.
+  
+  ")
 ```
 
-The error is informative because it tells us that `pkgApp` doesn’t have the testing infrastructure set up. In packages using `devtools`, the unit testing infrastructure is built with `usethis::use_testthat()`
+### Feature Requirements
+
+Each **Feature Requirement** is a high-level description of the feature's capabilities (i.e, the scatter plot), phrased at satisfying the end-user's needs outlined in the **User Requirements**.[^tests-specs-2]
+
+[^tests-specs-2]: "Feature requirements" and "functional requirements" are sometimes used interchangeably, but they refer to different aspects of the software. **Feature requirements** are the high-level characteristics the system *should have* and often capture a collection of smaller functionalities (which are broken down into specific functional requirements).
+
+```{r}
+#| label: co_box_feat_reqs
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "y", fold = TRUE, look = "minimal",
+  size = '1.10', header = "Scatter plot feature requirements",
+  contents = 
+" 
+
+**FE1**: The Shiny app should offer an interactive scatter plot feature that allows users to visualize and compare movie reviews from at least two data sources (IMDb, Rotten Tomatoes). The scatter plot should offer options for selecting variables of interest (i.e., audience scores, website ratings, runtime, etc.) to zoom into specific data points for detailed analysis.
+  
+  ")
+```
+
+### Functional Requirements
+
+The **Functional Requirements** are written for the developer and provide technical details on *how the feature* (i.e., the scatter plot) *should behave* and *what it needs to do*.[^tests-specs-3]
+
+[^tests-specs-3]: **Functional requirements** describe what a software system *should do* and are precise, measurable, and testable. 
+
+```{r}
+#| label: co_box_fun_reqs
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "o", fold = TRUE, look = "minimal",
+  size = '1.10', header = "Scatter plot functional requirements",
+  contents = 
+" 
+  - **FR1**: The system shall display movie reviews from IMDb and Rotten Tomatoes collected from their respective APIs.
+
+  - **FR2**: The scatter plot shall be displayed on the dashboard and updated with new user inputs.
+
+  - **FR3**: Each data point on the scatter plot shall represent a movie and be color-coded based on MPAA ratings, genre, title type, critics rating, and audience rating.
+  
+  - **FR4**: The scatter plot shall have axes labeled with rating scales and must include a legend to differentiate between data sources.
+
+  - **FR5**: Users can zoom into specific areas of the scatter plot for a more detailed view.
+  
+  ")
+```
+
+#### Traceability matrix
+
+In our app-package, we want to ensure that corresponding functionalities and tests address all user requirements and that every functionality is justified in terms of user needs and has been tested. A traceability matrix is typically used to link the user specifications (and corresponding feature requirements) to the functional requirements they give rise to and the tests used to verify that the application has been developed correctly.
+
+Fortunately, the R package structure gives us the tools we need to capture this documentation in the form of vignettes. We'll write the specifications for `pkgApp` in the `specs` vignette by using `usethis::use_vignette()`:
+
+```{r}
+#| label: git_box_08_tests-specs
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  fig_pw = '75%', 
+  branch = "08_tests-specs", 
+  repo = 'pkgApp')
+```
+
+```{r}
+#| eval: false 
+#| code-fold: false
+usethis::use_vignette("specs")
+```
+
+Adding our first vignette to the `vignettes/` folder does the following:
+
+- Adds the `knitr` and `rmarkdown` packages to the `Suggests` field in `DESCRIPTION`
+
+- Adds `knitr` to the `VignetteBuilder` field
+
+- Adds `inst/doc` to `.gitignore` and `*.html`, `*.R` to `vignettes/.gitignore`
+
+
+```{r}
+#| label: co_box_trace_matrix
+#| echo: false
+#| code-fold: false
+trace_matrix <- tibble::tibble(
+  `User Specification` = c(
+    "UR1: scatter plot data visualization"
+  ),
+  `Feature Requirement` = c(
+    "FE1: interactive scatter plot (two data sources, options to explore variables of interest)"
+  ),
+  `Functional Requirements` = c(
+    "FR1: data source"
+  )
+) 
+trace_matrix |> 
+  gt::gt(auto_align = TRUE) |> 
+  gt::sub_missing(
+  columns = gt::everything(),
+  rows = gt::everything(),
+  missing_text = "-"
+)
+```
+
+```{r}
+#| label: co_box_trace_matrix_add_test
+#| echo: false
+#| code-fold: false
+trace_matrix |> 
+  tibble::add_column(Test = 
+      paste0("T", 1:nrow(trace_matrix), ": "), .after = 3) |> 
+  gt::gt() |> 
+  gt::sub_missing(
+  columns = gt::everything(),
+  rows = gt::everything(),
+  missing_text = "-"
+)
+```
+
+```{r}
+#| label: co_box_trace_matrix_add_test_status
+#| echo: false
+#| code-fold: false
+trace_matrix |> 
+  tibble::add_column(Test = 
+      paste0("T", 1:nrow(trace_matrix), ": "), .after = 3) |> 
+  tibble::add_column(Status = 
+      paste0("Status T", 1:nrow(trace_matrix), ": "), .after = 4) |> 
+  gt::gt() |> 
+  gt::sub_missing(
+  columns = gt::everything(),
+  rows = gt::everything(),
+  missing_text = "-"
+)
+```
+
 
 ## The test suite
 
-Multiple strategies exist for testing code. For example, if you've adopted test-driven development (TDD)[^test-driven-dev-4], you'll develop tests before writing utility functions, modules, or your standalone app function. However, if you're a mere mortal like the rest of us, you'll typically develop your tests and functions in tandem. 
+Multiple strategies exist for testing code. For example, if you've adopted test-driven development (TDD)[^tests-4], you'll develop tests before writing utility functions, modules, or your standalone app function. However, if you're a mere mortal like the rest of us, you'll typically develop your tests and functions in tandem. 
 
-[^test-driven-dev-4]: "The tests should be written before the functionality that is to be tested. This has been claimed to have many benefits. It helps ensure that the application is written for testability, as the developers must consider how to test the application from the outset rather than adding it later." - [TDD, Wikipedia](https://en.wikipedia.org/wiki/Test-driven_development) 
+[^tests-4]: "The tests should be written before the functionality that is to be tested. This has been claimed to have many benefits. It helps ensure that the application is written for testability, as the developers must consider how to test the application from the outset rather than adding it later." - [TDD, Wikipedia](https://en.wikipedia.org/wiki/Test-driven_development) 
 
-Regardless of the testing strategy, we should follow the advice presented to us in the output above and set up the testing infrastructure with the [`testthat` package](https://testthat.r-lib.org/):
+Regardless of the testing strategy, we'll set up the testing infrastructure in our app-package with the [`testthat` package](https://testthat.r-lib.org/):
 
 ### [`use_testthat()`]{style="font-size: 1.05em;"}
 
-The 'infrastructure' created by running `usethis::use_testthat()` is detailed below: 
+In packages using `devtools`, the unit testing infrastructure is built with `usethis::use_testthat()`:
 
 ```{r}
 #| eval: false
@@ -406,9 +544,9 @@ After seeing the `old` vs `new` comparisons with `waldo` and `diffobj`, you shou
 
 ### Test supporting files
 
-Sometimes testing functions in isolation is not enough and it's useful to include either helper functions or data. This is especially true when the code we're testing goes beyond the function's borders, such as connecting to a database or API. The term for these supporting files are **test fixtures**,[^test-fixtures-5] and below we'll cover including them in the `tests/` folder.
+Sometimes testing functions in isolation is not enough and it's useful to include either helper functions or data. This is especially true when the code we're testing goes beyond the function's borders, such as connecting to a database or API. The term for these supporting files are **test fixtures**,[^tests-5] and below we'll cover including them in the `tests/` folder.
 
-[^test-fixtures-5]: Test fixtures are described in-depth in [R Packages, 2ed](https://r-pkgs.org/testing-advanced.html#test-fixtures). 
+[^tests-5]: Test fixtures are described in-depth in [R Packages, 2ed](https://r-pkgs.org/testing-advanced.html#test-fixtures). 
 
 #### Test data 
 
@@ -517,9 +655,9 @@ test_cmt <- function(start = NULL, end = NULL, msg) {
 }
 ```
 
-`test_cmt()` can be used to log when your test beings and ends, and includes a message for the context.[^logger-6]
+`test_cmt()` can be used to log when your test beings and ends, and includes a message for the context.[^tests-6]
 
-[^logger-6]: If you like verbose logging outputs, check out the [`logger` package](https://daroczig.github.io/logger/) 
+[^tests-6]: If you like verbose logging outputs, check out the [`logger` package](https://daroczig.github.io/logger/) 
 
 ```{r}
 #| collapse: true
@@ -548,6 +686,10 @@ tests/
 
 
 ### Snapshots
+
+If the expected output we're interesting in testing is cumbersome to describe programmatically, we can consider using a snapshot tests. Examples of this include UI elements (which are mostly HTML created by Shiny's UI layout and input/output functions) and data visualizations.[^tests-7] 
+
+[^tests-7]: Mastering Shiny covers [creatng a snapshot file](https://mastering-shiny.org/scaling-testing.html#user-interface-functions) to test UI elements, but notes this is probably not the best approach.
 
 Writing tests for graph outputs can be difficult because we're evaluating the "correctness" of the graph is somewhat subjective and requires human judgment.
 
@@ -585,9 +727,9 @@ Graph objects are difficult to use as test objects
 
 ::::
 
-The output shows us differences in the `mapping` and plot environment (`plot_env`), which we can assume *will* be different in the application. 
+The output shows us differences in the `mapping` and plot environment (`plot_env`), which we can assume *will* be different in the application, so using `testthat::expect_equal()` will fail.
 
-In cases like this, a snapshot test might be warrented. The [`vdiffr`](https://vdiffr.r-lib.org/) package allows us to perform a 'visual unit test' by saving by capturing the expected output as a snapshot that we can compare with future versions.
+In cases like this, a snapshot test might be warranted. The [`vdiffr`](https://vdiffr.r-lib.org/) package allows us to perform a 'visual unit test' by saving by capturing the expected output as a snapshot that we can compare with future versions.
 
 #### [`vdiffr`]{style="font-size: 1.05em;"}
 
@@ -605,9 +747,9 @@ vdiffr::expect_doppelganger(
 
 `expect_doppelganger()` can be dropped in `test_that()` like any other expectation. Below is an example comparing the graph outputs from `ggplot2` and the custom `scatter_plot()` utility function in `pkgApp`. 
 
-Notice I've loaded the `ggp2_movies.rds` data[^test-path-7] and included the `test_cmt()` helper with `start` and `end` messages (before and after the test code).
+Notice I've loaded the `ggp2_movies.rds` data[^tests-8] and included the `test_cmt()` helper with `start` and `end` messages (before and after the test code).
 
-[^test-path-7]: Accessing test files is made easier with `testtthat::test_path()`
+[^tests-8]: Accessing test files is made easier with `testtthat::test_path()`
 
 ```{r}
 #| eval: false 
@@ -630,6 +772,25 @@ test_that(desc = "scatter_plot() works", code = {
       msg = "ggplot2movies::movies snapshot")
 })
 ```
+
+### Running [`test()`]{style="font-size: 1.05em;"}s
+
+ 
+The fourth `devtools` [habit]{style="font-weight: bold; font-size: 1.0em;"} to adopt is regularly writing and running tests. If you're using Posit Workbench and have `devtools` installed, you can test your app-package using the **Build** pane or the keyboard shortcut:
+
+::: {.column-margin}
+
+[<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>T</kbd>]{style="font-weight: bold; font-style: italic; font-size: 1.20em"}
+
+:::
+
+
+::: {#fig-08_tests_build_pane_test}
+
+![Test you app-package](img/08_tests_build_pane_test.png){#fig-08_tests_build_pane_test width='100%' align='center'}
+
+`devtools::test()` (run all tests in your `tests/` folder)
+:::
 
 When we initially run the test it passes, but with a warning that tells us the baseline snapshot was saved in `tests/testthat/_snaps/`:
 
@@ -654,7 +815,7 @@ Test complete
 
 ::: {.column-margin}
 
-`test_cmt()` is handy because it let's me track how long each test takes to run (unit test are should be fast). 
+`test_cmt()` is handy because it let's me track how long each test takes to run (unit test should be fast). 
 
 :::
 
@@ -677,7 +838,7 @@ The `scatter-plot-graph.svg` file is our baseline comparison object, which is th
 
 #### Snapshots are brittle
 
-The term "brittle" in the context of unit tests refers to their susceptibility to changes (meaningful or not). Using snapshots can produce false negatives—a test fails when comparing a new graph to the baseline image—due to inconsequential changes in the graph.
+The term "brittle" in the context of testing refers to their susceptibility to changes (meaningful or not) that can produce false negatives (i.e., a test fails due to inconsequential changes in the graph) when comparing a new graph to the baseline image. 
 
 In a typical workflow, we'd write additional tests, then load, document, and build the package:
 
@@ -706,33 +867,36 @@ Subsequent tests in `pkgApp` will pass without a warning:
 😸
 ```
 
-Another option for using snapshots for testing is the `expect_snapshot_file()` function [^expect-snapshot-file-8] but `expect_doppelganger()` is probably the better option for comparing graph outputs.
+Another option for using snapshots for testing is the `expect_snapshot_file()` function [^tests-9] but `expect_doppelganger()` is probably the better option for comparing graph outputs.
 
-[^expect-snapshot-file-8]: Follow the `expect_snapshot_file()` example from the [`testthat` documentation](https://testthat.r-lib.org/reference/expect_snapshot_file.html#ref-examples)
+[^tests-9]: Follow the `expect_snapshot_file()` example from the [`testthat` documentation](https://testthat.r-lib.org/reference/expect_snapshot_file.html#ref-examples)
 
 ## Module tests
 
-Although they’re typically stored in a single file, modules consist of UI and server functions, which would classify their tests as ‘integration’ or ‘interaction’ testing. Still, we can only pass the module server functions to `testServer()`, so these are still unit tests.
+Although they’re typically stored in a single file, modules consist of UI and server functions, which would classify their tests as ‘integration’ or ‘interaction’ testing. Still, we can only pass the module server functions to `testServer()`, so these are still unit tests. Below are a few examples and tips for testing modules.
 
 ### [`testServer()`]{style="font-size: 0.95em;"}
 
 `testServer()` is designed to test *reactive interactions*, which gives us the ability to write tests to verify the inputs, outputs, and returned values from module server functions. 
 
-#### Testing initial values 
+#### Initial values 
 
-Shiny inputs are initiated with a `NULL` value, so it's tempting to want to test an `inputId` exists using `expect_null(input$x)`. However, this test is not helpful because *any* value will pass this test: 
+Shiny inputs are initiated with a `NULL` value, so it's tempting to want to test an `inputId` exists using `expect_null(input$x)`. However, this test is not helpful because *any* value will pass this test.
+
+For example, the test below looks like it tests an initial `NULL` value for `input$x` in `mod_var_input_server()`:
 
 ```{r}
 #| eval: false 
 #| include: true 
 #| code-fold: false
-# this test passes...
 shiny::testServer(app = mod_var_input_server, expr = {
   test_cmt(start = "input$x", msg = "initial null")
   testthat::expect_null(input$x)
   test_cmt(end = "input$x", msg = "initial null")
 })
 ```
+
+This test passes:
 
 ```{verbatim}
 #| eval: false 
@@ -743,17 +907,20 @@ shiny::testServer(app = mod_var_input_server, expr = {
  [ END   | 2023-09-14 11:58:59 | input$x = initial null]  
 ```
 
+Unfortunately, we can pass anything to `expect_null()` when `testServer()` is used this way:
+
 ```{r}
 #| eval: false 
 #| include: true 
 #| code-fold: false
-# but so does this...
 shiny::testServer(app = mod_var_input_server, expr = {
   test_cmt(start = "input$anything", msg = "initial null")
   testthat::expect_null(input$anything)
   test_cmt(end = "input$anything", msg = "initial null")
 })
 ```
+
+This test also passes:
 
 ```{verbatim}
 #| eval: false 
@@ -763,9 +930,9 @@ shiny::testServer(app = mod_var_input_server, expr = {
  [ END   | 2023-09-14 11:58:59 | input$anything = initial null] 
 ```
 
-To check the initial `NULL` value of an `inputId`, it's better to build the shiny app object, then pass this to `testServer()`.[^shiny-app-obj-9]
+To check the initial `NULL` value of an `inputId`, it's better to build the shiny app object, then pass this to `testServer()`.[^tests-10]
 
-[^shiny-app-obj-9]: The `shiny::is.shiny.appobj()` will test if an object is a 'shiny app object.'
+[^tests-10]: The `shiny::is.shiny.appobj()` will test if an object is a 'shiny app object.'
 
 ```{r}
 #| eval: false 
@@ -802,9 +969,9 @@ shiny::testServer(app = app, expr = {
 
 Note the use of the `input` with the appended module IDs. This is an easy place to get tripped up with `testServer()`: in the `app` object, we have to access the inputs with  ```` input$`[module id]-[inputId]` ````
 
-#### Testing returned values
+#### Returned values
 
-To confirm the returned list of graph inputs from `mod_var_input_server()`, I can use `session$setInputs()` to build the list of inputs, and `session$returned()` to confirm it's returned object:
+To confirm the returned list of graph inputs from `mod_var_input_server()`, we can build the list of inputs, then pass identical values to `session$setInputs()` and confirm the returned object with `session$returned()`:
 
 ```{r}
 #| eval: false 
@@ -845,22 +1012,17 @@ shiny::testServer(app = mod_var_input_server, expr = {
 ℹ Testing pkgApp
 ✔ | F W S  OK | Context
 ⠏ |         0 | mod_var_input_server                                                  Loading required package: shiny
- [ START | 2023-09-14 12:21:17 | is.shiny.appobj = movies_app()] 
-⠋ |         1 | mod_var_input_server                          
- [ END   | 2023-09-14 12:21:17 | is.shiny.appobj = movies_app()]  
-
- [ START | 2023-09-14 12:21:17 | input$`vars-y` = initial NULL] 
- [ END   | 2023-09-14 12:21:17 | input$`vars-y` = initial NULL] 
 
  [ START | 2023-09-14 12:21:17 | returned(var_input) = var_input structure] 
  [ END   | 2023-09-14 12:21:18 | returned(var_input) = var_input structure] 
 ✔ |         3 | mod_var_input_server
 ```
 
+This confirms the structure of the returned object from `mod_var_input_server()`.
 
 ### [`args = list()`]{style="font-size: 0.95em;"}
 
-Now that we've confirmed the returned value from `mod_var_input_server()` is a list, we want to make sure it's read correctly by the `var_inputs` argument in `mod_scatter_display_server()`. I've included the `movies_server()` function below refresh our memory of how this *should* work:[^confirm-returned-10]
+Now that we've confirmed the returned values from `mod_var_input_server()` are in a list, we want to make sure it's read correctly by the `var_inputs` argument in `mod_scatter_display_server()`. I've included the `movies_server()` function below refresh our memory of how this *should* work:[^tests-11]
 
 ```{r}
 #| eval: false 
@@ -874,7 +1036,83 @@ movies_server <- function(input, output, session) {
 }
 ```
 
-[^confirm-returned-10]: `selected_vars` are the reactive plot values returned from `mod_var_input_server()` we confirmed `test-mod_var_input_server.R`.
+[^tests-11]: `selected_vars` are the reactive plot values returned from `mod_var_input_server()` we confirmed `test-mod_var_input_server.R`.
+
+When we pass `selected_vars` to the `var_inputs` argument of `mod_scatter_display_server()`, we're not passing the returned values (this is why we don't need the parentheses). We're calling on the method (or function) created by `reactive()`.
+
+If we pause execution with the debugger,[^tests-12] we can see the difference between calling `selected_vars` and `selected_vars()`:
+
+[^tests-12]: We'll cover using `browser()` and the IDE's debugger in a future chapter.
+
+::: {layout="[49, -2, 49]"}
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+Browse[1]> selected_vars
+reactive({
+    list(
+      y = input$y, 
+      x = input$x, 
+      z = input$z, 
+      alpha = input$alpha, 
+      size = input$size, 
+      plot_title = input$plot_title
+      )
+})
+```
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+Browse[1]> selected_vars()
+$y
+[1] "audience_score"
+
+$x
+[1] "imdb_rating"
+
+$z
+[1] "mpaa_rating"
+
+$alpha
+[1] 0.5
+
+$size
+[1] 2
+
+$plot_title
+[1] ""
+```
+
+:::
+
+This distinction becomes important when we're testing the communication between module server functions. 
+
+```{r}
+#| eval: false 
+#| code-fold: false
+test_vals <- list(x = "audience_score",
+                  y = "imdb_rating",
+                  z = "mpaa_rating",
+                  alpha = 0.5,
+                  size = 2,
+                  plot_title = "Test title case")
+shiny::testServer(
+  app = mod_scatter_display_server,
+  args = list(
+    var_inputs = shiny::reactive(test_vals)
+  ), expr = {
+    
+    test_cmt(start = "mod_scatter_display_server", msg = "is.reactive(inputs())")
+    
+    expect_true(object = is.reactive(inputs))
+    
+    test_cmt(end = "mod_scatter_display_server", msg = "is.reactive(inputs())")
+    
+  }
+)
+```
 
 
 ```{r}
@@ -1049,6 +1287,61 @@ The `testthat::describe()` function follows a BDD format:
 
 
 ### [`shinytest2`]{style="font-size: 1.05em;"}
+
+```{r}
+#| label: co_box_trace_matrix_fun_reqs
+#| echo: false
+#| code-fold: false
+#| include: true
+trace_matrix <- tibble::tibble(
+  `User Specification` = c(
+    "UR1: scatter plot data visualization",
+    NA_character_,
+    NA_character_,
+    NA_character_,
+    NA_character_
+  ),
+  `Feature Requirement` = c(
+    "FE1: interactive scatter plot (two data sources, options to explore variables of interest)",
+    NA_character_,
+    NA_character_,
+    NA_character_,
+    NA_character_
+  ),
+  `Functional Requirements` = c(
+    "FR1: data source",
+    "FR2: user-input updating",
+    "FR3: color-coded data points",
+    "FR4: plot axis and legend",
+    "FR5: plot zoom capability"
+  )
+) 
+trace_matrix |> 
+  gt::gt(auto_align = TRUE) |> 
+  gt::sub_missing(
+  columns = gt::everything(),
+  rows = gt::everything(),
+  missing_text = "-"
+)
+```
+
+```{r}
+#| label: co_box_trace_matrix_tests
+#| echo: false
+#| code-fold: false
+#| include: true
+trace_matrix |> 
+  tibble::add_column(Test = 
+      paste0("T", 1:nrow(trace_matrix), ": "), .after = 3) |> 
+ tibble::add_column(Status = 
+      paste0("Status T", 1:nrow(trace_matrix), ": "), .after = 3) |>
+  gt::gt() |> 
+  gt::sub_missing(
+  columns = gt::everything(),
+  rows = gt::everything(),
+  missing_text = "-"
+)
+```
 
 ## Test coverage 
 
