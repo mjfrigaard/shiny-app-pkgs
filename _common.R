@@ -13,6 +13,7 @@ co_box <- function(color, size = "1.05", header, contents = "Your text", fold = 
   }
   
   fold <- tolower(as.character(fold))
+  size <- as.character(size)
   
   class <- switch(color,
     b = "note",

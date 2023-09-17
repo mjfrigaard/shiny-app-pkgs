@@ -21,7 +21,7 @@ co_box(
 )
 ```
 
-Writing tests for your app-package poses some unique challenges. Shiny functions are written in the context of its [reactive model](https://shiny.posit.co/r/articles/build/reactivity-overview/), so some conventional testing techniques and methods for regular R packages don’t directly apply. Fortunately, the infrastructure for storing and running tests in your app-package is identical to a standard R package.
+Writing tests for shiny app-packages pose some unique challenges. Shiny functions are written in the context of its [reactive model](https://shiny.posit.co/r/articles/build/reactivity-overview/), so some conventional testing techniques and methods for regular R packages don’t directly apply. Fortunately, the infrastructure for storing and running tests in your app-package is identical to a standard R package.
 
 ```{r}
 #| label: co_box_monthApp_tests
@@ -30,29 +30,32 @@ Writing tests for your app-package poses some unique challenges. Shiny functions
 #| eval: true
 co_box(
   color = "r", fold = FALSE,
-  header = "Mastering Shiny `monthApp` tests",
-" 
-If you downloaded or cloned the [`monthApp`](https://github.com/hadley/monthApp) example from [Mastering Shiny](https://mastering-shiny.org/), then clicked on **Test** in the **Build** pane, you saw the following:
+  header = "Mastering Shiny `monthApp` tests", 
+  contents = " 
+The [Testing chapter](https://mastering-shiny.org/scaling-testing.html) of Mastering Shiny covers setting up and running unit tests with [`testthat`](https://mastering-shiny.org/scaling-testing.html#testing-functions), and how to use Shiny's [`testServer()`](https://mastering-shiny.org/scaling-testing.html#testing-reactivity) function to test reactivity.
+  
+However, if you downloaded or cloned the [`monthApp`](https://github.com/hadley/monthApp) example from the [Modules chapter](https://mastering-shiny.org/scaling-modules.html), then clicked on **Test** in the **Build** pane, you saw the following:
 
 ![Testing `monthApp` app-package](img/monthApp_test.png){width='100%' fig-align='center'}
   
-However, the [Testing](https://mastering-shiny.org/scaling-testing.html) chapter covers setting up and running unit tests with [`testthat`](https://mastering-shiny.org/scaling-testing.html#testing-functions) and how to use Shiny's [`testServer()`](https://mastering-shiny.org/scaling-testing.html#testing-reactivity) function to test reactivity and module server functions.
-  
-In this Chapter, I'll expand on testing your shiny app-package and provide some testing strategies to consider adopting before moving your application into production.
+
+This chapter will attempt to connect the concepts in the [Testing chapter](https://mastering-shiny.org/scaling-testing.html) to our shiny app-package, and provide some general strategies to consider adopting before moving your application into production.
 
 "
   )
 ```
 
-This chapter will cover three layers of tests: unit tests, integration/module tests, and end-to-end or system tests. I'll focus on *what to test* and *why to test it*, not *how to write tests*, because plenty of those resources exist[^tests-1] [^tests-2] (the only exception being some tricks I've learned for using `testServer()` with module server functions[^tests-3]).
+This chapter will cover three layers of tests: unit tests, integration/module tests, and end-to-end or system tests. I'll focus on *what to test* and *why to test it*, not *how to write tests*, because plenty of those resources exist. [^tests-into-1] [^tests-into-2] [^tests-into-3] The only exception being some tricks I've learned for using `testServer()` with module server functions.[^tests-into-4]
 
-I’ll also touch on the links between user specifications, functional requirements, and how to use a traceability matrix to track your tests.
+I’ll also touch on the links between user specifications, functional requirements, and show how to use a traceability matrix to track your tests.
 
-[^tests-1]: Unit tests are covered extensively in [R Packages, 2ed](https://r-pkgs.org/testing-basics.html) and the [`testthat` documentation](https://testthat.r-lib.org/index.html)
+[^tests-into-1]: Unit tests are covered extensively in [R Packages, 2ed](https://r-pkgs.org/testing-basics.html) and the [`testthat` documentation](https://testthat.r-lib.org/index.html)
 
-[^tests-2]: `shinytest2` has [excellent documentation](https://rstudio.github.io/shinytest2/) (and [videos](https://www.youtube.com/watch?v=Gucwz865aqQ)), and I highly recommend reading through those resources.
+[^tests-into-2]: `shinytest2` has [excellent documentation](https://rstudio.github.io/shinytest2/) (and [videos](https://www.youtube.com/watch?v=Gucwz865aqQ)), and I highly recommend reading through those resources.
 
-[^tests-3]: The [`testServer()`](https://shiny.posit.co/r/articles/improve/server-function-testing/) documentation is sparse, so I'll provide a few tips and tricks I've learned for testing module server functions.
+[^tests-into-3]: Mastering shiny has a [Chapter on Testing](https://mastering-shiny.org/scaling-testing.html), which covers [unit tests](https://mastering-shiny.org/scaling-testing.html#basic-structure) and [`testServer()`](https://mastering-shiny.org/scaling-testing.html#testing-reactivity), and also includes some tips for using JavaScript with [`shinytest`](https://mastering-shiny.org/scaling-testing.html#testing-javascript) (not to be confused with [`shinytest2`](https://rstudio.github.io/shinytest2/)) 
+
+[^tests-into-4]: The [`testServer()`](https://shiny.posit.co/r/articles/improve/server-function-testing/) documentation is sparse, so I'll provide a few tips and tricks I've learned for testing module server functions.
 
 The code chunk below will load the necessary testing packages.
 
@@ -74,7 +77,7 @@ When developing tests, everyone is faced with the same two questions:
 1. What do I test?  
 2. How do I test it?  
 
-So far, the shiny app-package we've been using didn't explain it's intended purpose or the problem it's designed to solve. In regular application development, the user specifications, feature requirements and functional requirements are the guidelines that direct the development process, albeit from slightly different perspectives.
+The shiny app in `pkgApp` we've been developing doesn't have a software requirements specification (SRS), which is the document that typically captures the application's intended purpose or the problem it's designed to solve. In regular app development, the SRS contains the user specifications, feature requirements and functional requirements, which are are the guidelines that direct the development process, albeit from slightly different perspectives.
 
 Understanding their relationship is important for knowing the application we're developing meets the technical standards and satisfies the user needs.
 
@@ -151,7 +154,7 @@ co_box(
   ")
 ```
 
-#### Traceability matrix
+### Traceability matrix
 
 In our app-package, we want to ensure that corresponding functionalities and tests address all user requirements and that every functionality is justified in terms of user needs and has been tested. A traceability matrix is typically used to link the user specifications (and corresponding feature requirements) to the functional requirements they give rise to and the tests used to verify that the application has been developed correctly.
 
@@ -176,18 +179,36 @@ usethis::use_vignette("specs")
 
 Adding our first vignette to the `vignettes/` folder does the following:
 
-- Adds the `knitr` and `rmarkdown` packages to the `Suggests` field in `DESCRIPTION`
+- Adds the `knitr` and `rmarkdown` packages to the `Suggests` field in `DESCRIPTION`[^test-specs-4]
 
-- Adds `knitr` to the `VignetteBuilder` field
+    ```bash
+    Suggests: 
+        knitr,
+        rmarkdown
+    ```
 
-- Adds `inst/doc` to `.gitignore` and `*.html`, `*.R` to `vignettes/.gitignore`
+- Adds `knitr` to the `VignetteBuilder` field[^test-specs-5]
 
+    ```bash
+    VignetteBuilder: knitr
+    ```
+
+- Adds `inst/doc` to `.gitignore` and `*.html`, `*.R` to `vignettes/.gitignore`[^test-specs-6]
+
+
+[^test-specs-4]: We didn't cover the `Suggests` field in the [Dependencies](https://mjfrigaard.github.io/shinyap/dependencies.html) chapter, but "*lists packages that are not necessarily needed. This includes packages used only in examples, tests or vignettes ... and packages loaded in the body of functions.*" - [Writing R Extensions, Pakcage Dependencies](https://cran.r-project.org/doc/manuals/R-exts.html#Package-Dependencies)
+
+[^test-specs-5]: The [documentation](https://cran.r-project.org/doc/manuals/R-exts.html#The-DESCRIPTION-file) on `VignetteBuilder` is an excellent example of how challenging if can be to manage dependencies, "*Note that if, for example, a vignette has engine `knitr::rmarkdown`, then `knitr` provides the engine but both `knitr` and `rmarkdown` are needed for using it, so both these packages need to be in the `VignetteBuilder` field and at least suggested (as `rmarkdown` is only suggested by `knitr`, and hence not available automatically along with it).*"
+
+[^test-specs-6]: We learned about the `inst/` folder in the [External Files chapter](https://mjfrigaard.github.io/shinyap/), so this should help explain where knitted vignettes end up when a package is installed. 
+
+When building the traceability matrix, start with the user specifications. The general language used in these descriptions can typically provide a basis for deriving the more technical (but still high-level) feature requirements, which form a basis for us to derive multiple functional requirements. 
 
 ```{r}
 #| label: co_box_trace_matrix
 #| echo: false
 #| code-fold: false
-trace_matrix <- tibble::tibble(
+tibble::tibble(
   `User Specification` = c(
     "UR1: scatter plot data visualization"
   ),
@@ -196,6 +217,44 @@ trace_matrix <- tibble::tibble(
   ),
   `Functional Requirements` = c(
     "FR1: data source"
+  )
+) |> 
+  gt::gt(auto_align = TRUE) |> 
+  gt::sub_missing(
+  columns = gt::everything(),
+  rows = gt::everything(),
+  missing_text = "-"
+)
+```
+
+In this way, a single user specification usually gives rise to multiple functional requirements.
+
+```{r}
+#| label: co_box_trace_matrix_fun_reqs
+#| echo: false
+#| code-fold: false
+#| include: true
+trace_matrix <- tibble::tibble(
+  `User Specification` = c(
+    "UR1: scatter plot data visualization",
+    NA_character_,
+    NA_character_,
+    NA_character_,
+    NA_character_
+  ),
+  `Feature Requirement` = c(
+    "FE1: interactive scatter plot (two data sources, options to explore variables of interest)",
+    NA_character_,
+    NA_character_,
+    NA_character_,
+    NA_character_
+  ),
+  `Functional Requirements` = c(
+    "FR1: data source",
+    "FR2: user-input updating",
+    "FR3: color-coded data points",
+    "FR4: plot axis and legend",
+    "FR5: plot zoom capability"
   )
 ) 
 trace_matrix |> 
@@ -207,13 +266,16 @@ trace_matrix |>
 )
 ```
 
+Now that we have the technical details for our application requirement, we can identify what needs to be tested: 
+
 ```{r}
-#| label: co_box_trace_matrix_add_test
+#| label: co_box_trace_matrix_tests
 #| echo: false
 #| code-fold: false
+#| include: true
 trace_matrix |> 
   tibble::add_column(Test = 
-      paste0("T", 1:nrow(trace_matrix), ": "), .after = 3) |> 
+      paste0("T", 1:nrow(trace_matrix), ": "), .after = 3) |>
   gt::gt() |> 
   gt::sub_missing(
   columns = gt::everything(),
@@ -221,6 +283,15 @@ trace_matrix |>
   missing_text = "-"
 )
 ```
+
+
+After we’ve written our tests, we can include their results in the matrix to ensure:
+
+1. Each user specification has an accompanying feature requirement.
+
+2. The feature requirements have been broken down into precise, measurable, and testable pieces of code.
+
+3. Tests have been written for each functional requirement (and indicate whether they are passing or not).
 
 ```{r}
 #| label: co_box_trace_matrix_add_test_status
@@ -230,7 +301,7 @@ trace_matrix |>
   tibble::add_column(Test = 
       paste0("T", 1:nrow(trace_matrix), ": "), .after = 3) |> 
   tibble::add_column(Status = 
-      paste0("Status T", 1:nrow(trace_matrix), ": "), .after = 4) |> 
+      paste0("T", 1:nrow(trace_matrix), " Status: "), .after = 4) |> 
   gt::gt() |> 
   gt::sub_missing(
   columns = gt::everything(),
@@ -240,11 +311,13 @@ trace_matrix |>
 ```
 
 
+Vignettes are a great place to store this information (although it probably shouldn't be the *only* place to store it), because it's self-contained and travels with the package whenever the code is updated.
+
 ## The test suite
 
-Multiple strategies exist for testing code. For example, if you've adopted test-driven development (TDD)[^tests-4], you'll develop tests before writing utility functions, modules, or your standalone app function. However, if you're a mere mortal like the rest of us, you'll typically develop your tests and functions in tandem. 
+Multiple strategies exist for testing code. For example, if you've adopted test-driven development (TDD)[^tests-testthat-1], you'll develop tests before writing utility functions, modules, or your standalone app function. However, if you're a mere mortal like the rest of us, you'll typically develop your tests and functions in tandem. 
 
-[^tests-4]: "The tests should be written before the functionality that is to be tested. This has been claimed to have many benefits. It helps ensure that the application is written for testability, as the developers must consider how to test the application from the outset rather than adding it later." - [TDD, Wikipedia](https://en.wikipedia.org/wiki/Test-driven_development) 
+[^tests-testthat-1]: "*The tests should be written before the functionality that is to be tested. This has been claimed to have many benefits. It helps ensure that the application is written for testability, as the developers must consider how to test the application from the outset rather than adding it later."* - [TDD, Wikipedia](https://en.wikipedia.org/wiki/Test-driven_development) 
 
 Regardless of the testing strategy, we'll set up the testing infrastructure in our app-package with the [`testthat` package](https://testthat.r-lib.org/):
 
@@ -1288,60 +1361,9 @@ The `testthat::describe()` function follows a BDD format:
 
 ### [`shinytest2`]{style="font-size: 1.05em;"}
 
-```{r}
-#| label: co_box_trace_matrix_fun_reqs
-#| echo: false
-#| code-fold: false
-#| include: true
-trace_matrix <- tibble::tibble(
-  `User Specification` = c(
-    "UR1: scatter plot data visualization",
-    NA_character_,
-    NA_character_,
-    NA_character_,
-    NA_character_
-  ),
-  `Feature Requirement` = c(
-    "FE1: interactive scatter plot (two data sources, options to explore variables of interest)",
-    NA_character_,
-    NA_character_,
-    NA_character_,
-    NA_character_
-  ),
-  `Functional Requirements` = c(
-    "FR1: data source",
-    "FR2: user-input updating",
-    "FR3: color-coded data points",
-    "FR4: plot axis and legend",
-    "FR5: plot zoom capability"
-  )
-) 
-trace_matrix |> 
-  gt::gt(auto_align = TRUE) |> 
-  gt::sub_missing(
-  columns = gt::everything(),
-  rows = gt::everything(),
-  missing_text = "-"
-)
-```
 
-```{r}
-#| label: co_box_trace_matrix_tests
-#| echo: false
-#| code-fold: false
-#| include: true
-trace_matrix |> 
-  tibble::add_column(Test = 
-      paste0("T", 1:nrow(trace_matrix), ": "), .after = 3) |> 
- tibble::add_column(Status = 
-      paste0("Status T", 1:nrow(trace_matrix), ": "), .after = 3) |>
-  gt::gt() |> 
-  gt::sub_missing(
-  columns = gt::everything(),
-  rows = gt::everything(),
-  missing_text = "-"
-)
-```
+
+
 
 ## Test coverage 
 
