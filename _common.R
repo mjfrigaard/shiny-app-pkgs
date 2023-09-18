@@ -25,47 +25,47 @@ co_box <- function(color, size = "1.05", header, contents = "Your text", fold = 
   )
   switch(color,
     b = cat(paste0(
-      "\n",
+      "\n\n",
       ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "'}", "\n\n",
-      "## ", header, "\n\n",
+      "## [", header, "]{style='font-weight: bold; font-size: 1.20em;'}\n\n",
       "::: {style='font-size: ", size, "em; color: #696969;'}\n\n",
-      glue::glue_collapse(contents), "\n\n",
+      "\n", glue::glue_collapse(contents), "\n\n",
       "::: \n\n",
       "::::", "\n"
     )),
     g = cat(paste0(
-      "\n",
+      "\n\n",
       ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "'}", "\n\n",
-      "## ", header, "\n\n",
+      "## [", header, "]{style='font-weight: bold; font-size: 1.20em;'}\n\n",
       "::: {style='font-size: ", size, "em; color: #696969;'}\n\n",
-      glue::glue_collapse(contents), "\n\n",
+      "\n", glue::glue_collapse(contents), "\n\n",
       "::: \n\n",
       "::::", "\n"
     )),
     y = cat(paste0(
-      "\n",
+      "\n\n",
       ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "'}", "\n\n",
-      "## ", header, "\n\n",
+      "## [", header, "]{style='font-weight: bold; font-size: 1.20em;'}\n\n",
       "::: {style='font-size: ", size, "em; color: #696969;'}\n\n",
-      glue::glue_collapse(contents), "\n\n",
+      "\n", glue::glue_collapse(contents), "\n\n",
       "::: \n\n",
       "::::", "\n"
     )),
     o = cat(paste0(
-      "\n",
+      "\n\n",
       ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "'}", "\n\n",
-      "## ", header, "\n\n",
+      "## [", header, "]{style='font-weight: bold; font-size: 1.20em;'}\n\n",
       "::: {style='font-size: ", size, "em; color: #696969;'}\n\n",
-      glue::glue_collapse(contents), "\n\n",
+      "\n", glue::glue_collapse(contents), "\n\n",
       "::: \n\n",
       "::::", "\n"
     )),
     r = cat(paste0(
-      "\n",
+      "\n\n",
       ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "'}", "\n\n",
-      "## ", header, "\n\n",
+      "## [", header, "]{style='font-weight: bold; font-size: 1.20em;'}\n\n",
       "::: {style='font-size: ", size, "em; color: #696969;'}\n\n",
-      glue::glue_collapse(contents), "\n\n",
+      "\n", glue::glue_collapse(contents), "\n\n",
       "::: \n\n",
       "::::", "\n"
     )),

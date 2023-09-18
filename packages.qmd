@@ -7,15 +7,27 @@
 source("_common.R")
 ```
 
+::: {layout="[85, 15]" layout-valign="top"}
+
+This chapter covers the 'necessary ingredients' of R packages. We’ll start by covering the differences between shiny projects, R packages, and shiny app-packages. Then, we’ll dive into the requirements for 1) creating new shiny app-packages, and 2) converting shiny app projects into shiny app-packages.
+
+![](img/r_pkg.png){fig-align="right"}
+
+:::
+
 ```{r}
 #| label: co_box_tldr
 #| echo: false
 #| results: asis
 #| eval: true
 co_box(
-  color = "g", look = "default",
-  header = "TLDR", fold = FALSE,
+  color = "b", look = "minimal",
+  header = "![](img/00_index_pkg.png){width='9%'} &emsp; TLDR", 
+  fold = TRUE,
   contents = "
+  
+#####
+  
 Functional packages require three things:
   
   1. A `DESCRITPION` file with the following fields:\n
@@ -46,46 +58,6 @@ Functional packages require three things:
   "
 )
 ```
-
-This chapter covers the 'necessary ingredients' of R packages. We’ll start by covering the differences between shiny projects, R packages, and shiny app-packages. Then, we’ll dive into the requirements for 1) creating new shiny app-packages, and 2) converting shiny app projects into shiny app-packages.
-
-:::: {.callout-important collapse='false' appearance='default'}
-
-## Mastering Shiny Packages Chapter (a caveat)
-
-::: {style='font-size: 1.05em; color: #696969;'}
-
-This chapter was written because the transition from shiny applications to R packages is complicated and involves a shift in focus, skill set, and development practices. Everyone enters these relative areas with varying experience levels and development environments, so creating a resource with the information necessary for *your* specific application is impossible.
-
-For example, if you happen to download or clone the [`monthApp`](https://github.com/hadley/monthApp) example from the [Packages](https://mastering-shiny.org/scaling-packaging.html) Chapter in Mastering Shiny, you might notice a few things:
-
-1. The [`DESCRIPTION` file](https://github.com/hadley/monthApp/blob/master/DESCRIPTION) contains additional fields that are not addressed.[^pkgs-1] 
-
-2. The `monthApp.Rproj` file has been configured to work with package.[^pkgs-2]
-
-3. Dependency management is discussed briefly but not documented in the application.[^pkgs-3]
-  
-4. `monthApp` doesn't have any documentation[^pkgs-4] or tests.[^pkgs-5] 
-
-None of the items above make the `monthApp` example from Mastering Shiny incomplete or incorrect--it's been written for an audience with a particular experience level and skill-set.[^pkgs-6] 
-
-[^pkgs-1]: [Mastering Shiny](https://mastering-shiny.org/scaling-packaging.html#a-package) recommends using the `usethis::use_description()` function, but not all of the `fields` in this function are required (and there are a few we can adapt or remove to save time).
-
-[^pkgs-2]: The `.Rproj` file is the connection between the `DESCRIPTION` fields, the code in the `R/` folder, and the IDE's **Build** pane or “package development mode.” If you already have an `.Rproj` file in your shiny app project, you can activate these settings in **Tools** > **Project Options** > **Build Tools**.
-
-[^pkgs-3]: The [`NAMESPACE` file](https://github.com/hadley/monthApp/blob/master/NAMESPACE) is empty (although the Chapter recommends [importing `shiny`](https://mastering-shiny.org/scaling-packaging.html#r-cmd-check)), and the `Imports` field is missing from the [`DESCRIPTION`](https://github.com/hadley/monthApp/blob/master/DESCRIPTION).
-
-[^pkgs-4]: The [Package](https://mastering-shiny.org/scaling-packaging.html) Chapter mentions `roxygen2` (and that it's beyond the scope of this book), but for now just know `roxygen2` syntax is placed in the code below `R/` is to create the help files and the `NAMESPACE`.
-
-[^pkgs-5]: Testing is also covered in [Mastering Shiny](https://mastering-shiny.org/scaling-testing.html), but `monthApp` doesn't have the testing infrastructure provided by [`testthat`](https://testthat.r-lib.org/) (and can be quickly created using `usethis::use_testthat()`).
-
-[^pkgs-6]: Mastering shiny doesn't make many assumptions about your experience with package development, but [Engineering Production-Grade Shiny Apps](https://engineering-shiny.org/) and the [`golem` package](https://thinkr-open.github.io/golem/) assumes readers "*are comfortable with building an R package.*"
-
-The contents of this book are intended to broaden that audience.
-
-::: 
-
-::::
 
 
 ## Projects, packages, and app-packages
@@ -126,7 +98,7 @@ Regardless of the reason, you've likely found yourself in one of two circumstanc
 
 The previous chapter covered a few practices to adopt during shiny development that improve the extensibility of your [**shiny app project**]{style="color: #00916e"} to an [**shiny app-package**]{style="color: #00a6ed"}.[^pkgs-7]
 
-[^pkgs-7]: Advanced shiny app project features are covered in the [Project Folders](https://mjfrigaard.github.io/shinyap/shiny.html#project-folders) section of the Shiny apps chapter.
+[^pkgs-7]: Shiny app project features are covered in the [Project Folders](https://mjfrigaard.github.io/shinyap/shiny.html#project-folders) section of the Shiny apps chapter.
 
 ```{r}
 #| label: co_workbench_app_packages
@@ -158,9 +130,7 @@ It’s also possible to use many of the development workflow functions we’ll c
 
 ### [R packages]{style='font-weight: bold; color: #ad343e;'} vs. [Shiny app projects]{style="font-weight: bold; color: #00916e"}
 
-Below is a folder tree with some of the typical files and folders found in [**R packages**]{style='color: #ad343e;'}. At first glance, the contents can seem daunting when compared to the folders and files that currently exist in your [**shiny app project**]{style='color: #00916e;'} (like `projApp`):[^pkgs-8]
-
-[^pkgs-8]: Fortunately, [**shiny app-package**]{style="color: #00a6ed;"} don't require *all* the files and folders displayed in the folder tree to gain the functionality and benefits of an [**R package**]{style='color: #ad343e;'}
+Below is are folder trees with some of the typical files and folders found in [**R packages**]{style='color: #ad343e;'} (on the left) and the files that currently exist in `projApp` (on the right), our [**shiny app project**]{style='color: #00916e;'}. 
 
 ::: {layout="[45, 55]"}
 
@@ -210,7 +180,10 @@ projApp/
 
 :::
 
-[**R packages**]{style='color: #ad343e;'} can be easily shared, reused, and reproduced because they all have a familiar structure, and each folder and file plays an essential role in extending R’s capabilities.
+
+[**R packages**]{style='color: #ad343e;'} can be easily shared, reused, and reproduced because they all have a familiar structure, and each folder and file plays an essential role in extending R’s capabilities.[^pkgs-8]
+
+[^pkgs-8]: Fortunately, [**shiny app-packages**]{style="color: #00a6ed;"} don't require *all* the files and folders displayed in the folder tree to gain the functionality and benefits of an [**R package**]{style='color: #ad343e;'}. 
 
 This chapter will cover the minimum requirements for an [**R package**]{style='color: #ad343e;'}, so you can handle both creating new [**shiny app-packages**]{style="color: #00a6ed"} and converting existing [**shiny projects**]{style="color: #00916e"} into [**shiny app-packages**]{style="color: #00a6ed"}.
 
@@ -225,15 +198,13 @@ If you've done some research on [**R packages**]{style='color: #ad343e;'}, you'v
 
 The information above should be confusing if you've been following along with the code in `projApp`. 
 
-We've created 1) a [**shiny app project**]{style='color: #00916e;'}, 2) with a `DESCRIPTION` file, 3) and an `R/` directory, but it's *not a functioning [**R package**]{style='color: #ad343e;'}*. 
+We've created a [**shiny app project**]{style='color: #00916e;'} (`projApp`) with a `DESCRIPTION` file and an `R/` directory, but it's not a functioning [**R package**]{style='color: #ad343e;'}. 
 
 As we noted above, a functioning [**R package**]{style='color: #ad343e;'} can be installed and loaded into an R session *and* has access to the **Build** pane in the IDE.
 
-### [`devtools`]{style="font-size: 1.05em"} functions
+### Can we load it with [`devtools`]{style="font-size: 1.05em"}?
 
-Package development kicks off with the `load_all()` function from `devtools`, which is similar to calling `library(pkgApp)` (we'll cover this function extensively in the `devtools` chapter). 
-
-However, when we attempt to load the code in the `R/` folder with `load_all()`, we see the following error:
+Package development kicks off with the `load_all()` function from `devtools`, which is similar to calling `library()` (we'll cover this function extensively in the `devtools` chapter). However, when we attempt to load the code in the `R/` folder with `load_all()`, we see the following error:
 
 ```{r}
 #| eval: false 
@@ -247,12 +218,14 @@ devtools::load_all()
 ::: {#fig-02_pkgs_load_all_error}
 ![Load All Error](img/02_pkgs_load_all_error.png){#fig-02_pkgs_load_all_error width="100%" fig-align="center"}
 
-`devtools` is looking for the **`Package` field** in the `DESCRIPTION` file
+`devtools` is looking for the **`Package` field** in our `DESCRIPTION` file
 :::
 
-### The Build pane
+### Where is the 'Build' pane?
 
-When opened, functioning [**R packages**]{style='color: #ad343e;'} have access to the **Build** pane, which allows us to iterate between loading, installing, and testing quickly. But when `projApp` is opened, the **Build** pane is not displayed in the IDE:
+When opened, functioning [**R packages**]{style='color: #ad343e;'} have access to the **Build** pane, which allows developers to quickly load, install, and test their packages. 
+
+But when `projApp` is opened, the **Build** pane is not displayed in the IDE:
 
 :::: {.column-page-inset-right}
 
@@ -265,15 +238,13 @@ Project IDE panes
 ::::
 
 
-As we've just learned, the presence of the `DESCRIPTION` file and an `R/` folder are insufficient to turn your [**shiny app project**]{style='color: #00916e;'} into a functioning [**R package**]{style='color: #ad343e;'} (or an [**shiny app-packages**]{style="color: #00a6ed;"}).
+As we've just learned, the presence of the `DESCRIPTION` file and an `R/` folder are insufficient to turn a [**shiny app project**]{style='color: #00916e;'} into a functioning [**R package**]{style='color: #ad343e;'} (or a [**shiny app-packages**]{style="color: #00a6ed;"}).
 
 ## What *really* makes an R [package]{style='font-weight: bold; color: #ad343e;'}?
 
-For our purposes, I'll rewrite the minimum requirements for creating a 'functional' [**R package**]{style='color: #ad343e;'}:
+> "*A project needs **a `DESCRIPTION` file with specific fields**, a directory of `R/` files, and **a properly configured `.Rproj` file** to be a **functioning** R package.*"
 
-> "*A project needs **a `DESCRIPTION` file with specific fields**, a directory of `R/` files, and **a properly configured `.Rproj` file** to be a package.*"
-
-Let's see how each of these requirements works together to convert the contents of `projApp` from a [**shiny app project**]{style="color: #00916e"} into a [**shiny app-package**]{style='color: #ad343e;'}.
+Let's see how each of these requirements work together to convert the contents of `projApp` from a [**shiny app project**]{style="color: #00916e"} into a [**shiny app-package**]{style='color: #ad343e;'}.
 
 ### [`DESCRIPTION`]{style="font-size: 0.95em"} fields
 
@@ -345,17 +316,17 @@ After adding the mandatory fields to the `DESCRIPTION` file in `projApp`, `load_
 ::::
 
 
-### [Project]{style="font-weight: bold; color: #00916e"} options 
+### [Project]{style="font-weight: bold; color: #00916e"} Options...
 
-[i.e., the [`.Rproj`]{style="font-size: 1.10em"} file]{style="font-style: italic; font-size: 1.30em"}
+[(i.e., the [`.Rproj`]{style="font-size: 1.10em"} file)]{style="font-style: italic; font-size: 1.30em"}
 
-`.Rproj` files are plain text files with various settings for the IDE. We ran `devtools::load_all()` above without the presence of the **Build** pane because the IDE displays the **Build** pane after reading the fields in the `projApp.Rproj` file.  
+`.Rproj` files are plain text files with various settings for the IDE. We were able to run `devtools::load_all()` above *without* the presence of the **Build** pane because the IDE displays the **Build** pane after reading the fields in the `.Rproj` file.  
 
-The quickest way to access the fields in the `.Rproj` file is under **Tools** > **Project options**.
+The quickest way to access the fields in the `.Rproj` file is under **Tools** > **Project Options...**.
 
 #### Default options
 
-**Tools** > **Project options** provide access to the project-level options. For example, fields 2 - 4 are available under **General**, 5 - 8 affect the **Code** options, and the final two fields deal with **Sweave**. 
+**Tools** > **Project Options...** provide access to the project-level options. For example, fields 2 - 4 are available under **General**, 5 - 8 affect the **Code** options, and the final two fields deal with **Sweave**. 
 
 ::: {#fig-02_pkgs_rproj_defaults}
 ![`projApp.Rproj` fields](img/02_pkgs_rproj_defaults.png){#fig-02_pkgs_rproj_defaults width="100%" fig-align="center"}
@@ -367,7 +338,7 @@ The default settings were created when we selected the [**shiny app project**]{s
 
 #### Build tools
 
-I’ve placed the `.Rproj` file from `pkgApp` with the example `.Rproj` file from R Packages (2ed), side-by-side so you can compare them below:[^pkgs-11]
+I’ve placed the `.Rproj` file from `pkgApp` with the example `.Rproj` file from [R Packages, (2ed)](https://r-pkgs.org/) side-by-side so you can compare them below:[^pkgs-11]
 
 [^pkgs-11]: `.Rproj` files are covered in the [What makes an RStudio Project? section of R Packages (2 ed)](https://r-pkgs.org/workflow101.html#what-makes-an-rstudio-projec)
 
@@ -524,35 +495,35 @@ In a functional [**R package**]{style='color: #ad343e;'}:
 
 2.   The `.Rproj` file contains the three package configuration fields (`BuildType: Package`, `PackageUseDevtools: Yes`, and `PackageInstallArgs: --no-multiarch --with-keep.source`), which makes the **Build** pane accessible and functional. 
 
-The items above will create a functional [**R package**]{style='color: #ad343e;'}, but these are the first steps (we haven't developed anything yet!) on our way to an [**shiny app-packages**]{style="color: #00a6ed;"}.
+The items above will create a functional [**R package**]{style='color: #ad343e;'}, but these are the first steps (we haven't developed anything yet!) on our way to a [**shiny app-package**]{style="color: #00a6ed;"}.
 
-Think of the two items above as a two-part process: `devtools` requires specific the `DESCRIPTION` fields,[^pkgs-13] and the IDE requires `.Rproj` fields to trigger the **Build** pane.[^pkgs-14]
+Think of the two items above as a two-part process: the `DESCRIPTION` requires specific fields,[^pkgs-13] and the IDE requires `.Rproj` fields to trigger the **Build** pane.[^pkgs-14]
 
-[^pkgs-13]: `devtools` *and* the [official R documentation](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#The-DESCRIPTION-file) require specific fields in the `DESCRIPTION` file
+[^pkgs-13]: The [mandatory fields](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#The-DESCRIPTION-file) prevent the `devtools` error we encountered above.
 
 [^pkgs-14]: If you'd like to learn more about the topics in this chapter, you should read
 [Writing R Extensions](https://cran.r-project.org/doc/manuals/r-release/R-exts.html) (the official documentation for creating R packages) and [R Packages, 2ed](https://r-pkgs.org/).
 
 ## Creating [**shiny app-packages**]{style='font-weight: bold; color: #00a6ed;'} with [`create_package()`]{style="font-size: 0.95em"}
 
-The Posit documentation[^pkgs-15] lists the following ways to create [**R packages**]{style='color: #ad343e;'}, 
-
-[^pkgs-15]: You can read more about package development in the Posit Workbench IDE in the [Writing R Packages](https://docs.posit.co/ide/user/ide/guide/pkg-devel/writing-packages.html) documentation
+The Posit documentation[^pkgs-15a] lists the following ways to create [**R packages**]{style='color: #ad343e;'},[^pkgs-15b]
 
 > 1. Call `usethis::create_package()`.
 > 
 > 2. In RStudio, do **File** > **New Project** > **New Directory** > **R Package**. This ultimately calls `usethis::create_package()`, so really there’s just one way.
 > 
 
-We now know his information isn't *technically* incorrect, because we just demonstrated it's possible to create an [**R package**]{style='color: #ad343e;'} without the `usethis::create_package()` function. 
+[^pkgs-15a]: This information comes from the [Writing R Packages](https://docs.posit.co/ide/user/ide/guide/pkg-devel/writing-packages.html) documentation for Posit Workbench.
 
-Still, if you're looking for a way to quickly create or convert your [**shiny app project**]{style="color: #00916e"} into a [**shiny app-package**]{style='color: #00a6ed;'}, using `create_package()` is a great option.[^pkgs-16] I've provided some suggestions below for using `create_package()`.
+[^pkgs-15b]: We now know it's possible to create an [**R package**]{style='color: #ad343e;'} with the `DESCRIPTION` file fields and configuring the **Project Build Tools**. 
+
+`create_package()` is a great option if you're looking for a way to quickly create or convert your [**shiny app project**]{style="color: #00916e"} into a [**shiny app-package**]{style='color: #00a6ed;'}.[^pkgs-16] In the following sections I'll cover some suggestions for using `create_package()`.
 
 [^pkgs-16]: `usethis::create_package()` is covered in the ['Fundamental development workflows' chapter of R Packages, 2ed](https://r-pkgs.org/workflow101.html)
 
 ### New [shiny app-packages]{style="font-weight: bold; color: #00a6ed"}
 
-If you want to create a new shiny [**shiny app-packages**]{style="color: #00a6ed;"}, but haven’t written any code, you can create it with the `create_package()` function from the [`usethis` package](https://usethis.r-lib.org/reference/create_package.html).
+If you haven’t written any code and want to create a new [**shiny app-package**]{style="color: #00a6ed;"}, [`create_package()`](https://usethis.r-lib.org/reference/create_package.html) is the quickest way to get started.
 
 First, install `devtools`:
 
@@ -571,7 +542,7 @@ library(devtools)
 Loading required package: usethis
 ```
 
-Assuming your current working directory is where you want your new [**shiny app-packages**]{style="color: #00a6ed;"}, call `usethis::create_package()` with the `path` argument set to `getwd()`
+Assuming your current working directory is where you want your new [**shiny app-package**]{style="color: #00a6ed;"}, call `usethis::create_package()` with the `path` argument set to `getwd()`
 
 ```{r}
 #| eval: false 
@@ -644,7 +615,7 @@ You're now free to develop `newApp`. Store and document any `.R` files in the `R
 
 ### Converting existing [shiny app projects]{style="font-weight: bold; color: #00916e"}
 
-If you already have a [**shiny app project**]{style='color: #00916e;'} that needs to be converted into an [**shiny app-package**]{style="color: #00a6ed;"} (like the app files stored in the [`03_projApp` branch](https://github.com/mjfrigaard/projApp/tree/03_projApp)), you can also use `create_package(path = getwd())` in your root folder, but I recommend using the following arguments:
+If you already have a [**shiny app project**]{style='color: #00916e;'} that needs to be converted into a [**shiny app-package**]{style="color: #00a6ed;"} (like the app files stored in the [`03_projApp` branch](https://github.com/mjfrigaard/projApp/tree/03_projApp)), you can also use `create_package(path = getwd())` in your root folder, but I recommend using the following arguments:
 
 #### [`DESCRIPTION`]{style="font-size: 0.95em"} arguments
 
@@ -702,13 +673,13 @@ co_box(
 
 When converting your existing shiny app project into a shiny app-package with `usethis::create_package()`, don't use `'.'` in the `path` argument:
   
-`\`\`\r
+\`\`\`r
 usethis::create_package('.')
-`\`\`\
+\`\`\`
   
 This will return the following warning about creating nested projects, and ask if you want to proceed anyway:
   
-`\`\`\bash
+`\`\`r
 New project 'projApp' is nested inside an existing project
 './', which is rarely a good idea. If this is unexpected, 
 the here package has a function,
@@ -725,10 +696,10 @@ Do you want to create anyway?
 
 We can avoid this warning altogether by passing `getwd()` to the `path` argument, so I recommend cancelling the project creation:
 
-`\`\`\bash
+\`\`\`r
 Selection: 2
 Error: Cancelling project creation.
-`\`\`\
+\`\`\`
 
   "
 )
@@ -780,7 +751,7 @@ Overwrite pre-existing file 'DESCRIPTION'?
 Overwrite pre-existing file 'projApp.Rproj'?
 ```
 
-The [**shiny app-packages**]{style="color: #00a6ed;"} structure is below:
+The [**shiny app-package**]{style="color: #00a6ed;"} structure is below:
    
 ```{bash}
 #| eval: false 
