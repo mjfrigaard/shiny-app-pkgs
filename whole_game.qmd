@@ -1,0 +1,631 @@
+# Whole app game
+
+```{r}
+#| eval: true 
+#| echo: false 
+#| include: false
+source("_common.R")
+```
+
+```{r}
+#| label: co_box_tldr
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b",
+  header = "TLDR: I've seen this before...",
+  contents = "[R Packages, 2ed](https://r-pkgs.org/whole-game.html) has a similar opening chapter that takes the reader through the 'whole game' of package development using a minimal 'toy' package. I've returned to this chapter frequently while developing packages, so this is an attempt to provide a similar resource for developing shiny app packages.",
+  fold = FALSE
+)
+```
+
+This chapter resembles the [Whole Game](https://r-pkgs.org/whole-game.html) chapter in R Packages, 2ed. We'll go through the development of a small [app-package](https://github.com/hadley/monthApp)[^whole-game-month-app]. Rather than merely duplicating how to use the `devtools`/`usethis` functions and package development workflow, I'll focus on areas that differ from shiny application development. Each section is covered in more detail in the following chapters. The final result is a shiny application with the necessary components of a functioning R package.
+
+
+[^whole-game-month-app]: The application we're going to be developing comes from the [packages chapter of Mastering Shiny](https://mastering-shiny.org/scaling-packaging.html). 
+
+## Toy app-package: monthAppPkg
+
+I've stored the code for this application in the `monthAppPkg` to avoid confusing it with the *actual* application repo for this chapter. 
+
+## [`use_description()`]{style='font-size: 1.05em;'}
+
+Every package needs a `DESCRIPTION`--calling `devtools::load_all()` without a `DESCRIPTION` will result in an error. The quickest way to create a description file is with `usethis::use_description()`.[^whole-game-use-desc] I've provided values to the `fields` list so this file isn't generated with the boilerplate contents.
+
+[^whole-game-use-desc]: The [Whole Game](https://r-pkgs.org/whole-game.html) chapter of R Packages, 2ed begins with the `usethis::create_package()` function, which calls `usethis::use_description()` internally. 
+
+```{r}
+#| eval: false
+#| code-fold: false
+usethis::use_description(
+  list(Package = 'monthAppPkg',
+       Title = 'An example app-pkg',
+       Version = '0.0.0.9000',
+       Description = 'A shiny application built inside an R package.',
+       "Authors@R" = NULL,
+       Author = utils::person(                     
+          given = "Jane", 
+          family = "Doe", 
+          role = c("aut", "cre")),
+        Maintainer = utils::person(
+          given = "Jane", 
+          family = "Doe",
+          email = "Jane.Doeh@email.io"),
+        License = "GPL-3"))
+```
+
+The [documentation](https://usethis.r-lib.org/reference/use_description.html) for `use_description()` mentions putting this in your `.Rprofile` if you develop a lot of R packages (or app-packages!) 
+
+Every R package needs the following seven fields: 
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+Package: monthAppPkg
+Title: An example app-pkg
+Version: 0.0.0.9000
+Author: Jane Doe [aut, cre]
+Maintainer: Jane Doe <Jane.Doeh@email.io>
+Description: A shiny application built inside an R package.
+License: GPL-3
+```
+
+We get the following fields for free (they will be required for function documentation and dependency management).
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
+```
+
+## [`use_data()`]{style='font-size: 1.05em;'}
+
+To include the `stones` data in `monthAppPkg`, we load it into the Global Environment and pass it to `usethis::use_data()`:
+
+```{r}
+#| eval: false
+#| code-fold: false
+use_data(stones)
+```
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+✔ Adding 'R' to Depends field in DESCRIPTION
+✔ Setting LazyData to 'true' in 'DESCRIPTION'
+✔ Saving 'stones' to 'data/stones.rda'
+• Document your data (see 'https://r-pkgs.org/data.html')
+```
+
+Data should be documented using `roxygen2`,[^whole-game-data-doc] which we'll cover in the data chapter. 
+
+[^whole-game-data-doc]: View the documented `stones` dataset [here on GitHub](https://github.com/mjfrigaard/monthAppPkg/blob/main/R/data.R). 
+
+## [`use_package()`]{style='font-size: 1.05em;'}
+
+Every Shiny app-package will need to import the `shiny` package as a dependency, which starts by listing it under the `Imports` field the `DESCRIPTION` file. We can do this using `usethis::use_package()`.[^whole-game-use-pkg]
+
+[^whole-game-use-pkg]: Whenever you use a function from another package, start by running `usethis::use_package()` to ensure it's in the `DESCRIPTION` file.
+
+```{r}
+#| eval: false
+#| code-fold: false
+usethis::use_package("shiny")
+```
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+✔ Adding 'shiny' to Imports field in DESCRIPTION
+• Refer to functions with `shiny::fun()`
+```
+
+We're advised again to use explicit namespacing (i.e., `pkg::fun()`), but we can avoid this by importing Shiny's functions into our package namespace. 
+
+The `@import` tag from `roxygen2` can be used to import "*the entire [`shiny`] namespace*" into `monthAppPkg`.[^whole-game-import]
+
+[^whole-game-import]: I've included `@import shiny` above the definition of our standalone app function (`R/movies_app.R`), which means I don't need to add `shiny::` when using Shiny functions below` R/`.
+
+## [`load_all()`]{style='font-size: 1.05em;'}
+
+Shiny app development typically involves *something like* the following workflow: 
+
+1. Write UI code  
+2. Write server code   
+3. Click **Run App**  
+4. Rinse, repeat
+
+When making the switch to app-package development, calling `load_all()` is somewhat analogous to clicking on the **Run App** icon--you'll do it often (more than any other `devtools` or `usethis` function).
+
+```{r}
+#| eval: false
+#| code-fold: false
+devtools::load_all()
+```
+
+
+
+The output we're looking for from `load_all()` is straightforward:
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+ℹ Loading monthAppPkg
+```
+
+`load_all()` is similar to calling `library`, but it's specifically designed to be used during package development. 
+
+## [`use_r()`]{style='font-size: 1.05em;'}
+
+Create new R files using `use_r()`, and the accompanying tests using `use_test()`:
+
+```{r}
+#| eval: false
+#| code-fold: false
+usethis::use_r("monthFeedback")
+```
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+✔ Setting active project to '/projects/apps/monthAppPkg'
+• Modify 'R/monthFeedback.R'
+```
+
+Both UI and server module functions are stored in `R/monthFeedback.R` and `R/birthstone.R`, but tests should be created for each function.
+
+## [`use_test()`]{style='font-size: 1.05em;'}
+
+The first time you run `use_test()`, it will detect if your package has the `testthat` infrastructure (and create the necessary files if you don't).[^whole-game-use_testthat]
+
+[^whole-game-use_testthat]: You can also set up the `testthat` infrastructure by calling `usethis::use_testthat()`
+
+```{r}
+#| eval: false
+#| code-fold: false
+usethis::use_test("monthFeedbackServer")
+```
+
+Calling `use_test()` will add the `testthat` package to the `Suggests` field in the `DESCRIPTION` and include the edition (which is currently `3`).
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+✔ Adding 'testthat' to Suggests field in DESCRIPTION
+✔ Adding '3' to Config/testthat/edition
+```
+
+The `tests/` folder will hold the necessary testing folder and files: 
+
+```{bash}
+#| eval: false
+#| code-fold: false
+tests/
+├── testthat/
+│   ├── test-birthstoneServer.R
+│   └── test-monthFeedbackServer.R
+└── testthat.R
+
+2 directories, 3 files
+```
+
+Tests are covered in Mastering Shiny,[^whole-game-tests-ms] on the Shiny website,[^whole-game-tests-test-server] and in various testing packages (like `shinytest`[^whole-game-tests-shinytest] and `shinytest2`[^whole-game-tests-shinytest2])
+
+[^whole-game-tests-ms]: The [Testing chapter](https://mastering-shiny.org/scaling-testing.html) in Mastering Shiny covers [unit tests](https://mastering-shiny.org/scaling-testing.html#testing-functions) with `testthat`, [`shiny::testServer()`](https://mastering-shiny.org/scaling-testing.html#testing-reactivity), and the [`shinytest` package](https://mastering-shiny.org/scaling-testing.html#testing-javascript). 
+
+[^whole-game-tests-test-server]: See the '[Server Function Testing](https://shiny.posit.co/r/articles/improve/server-function-testing/)' article on the Shiny website for more information on `testServer()`
+
+[^whole-game-tests-shinytest]: Check the `shinytest` [package website](https://rstudio.github.io/shinytest/articles/shinytest.html) and [video tutorial](https://posit.co/resources/videos/testing-shiny-applications-with-shinytest-shiny-developers-now-have-tools-for-automated-testing-of-complete-applications/) for more information on testing your app. 
+
+[^whole-game-tests-shinytest2]: [`shinytest2`](https://rstudio.github.io/shinytest2/) is an updated verison of `shinytest` with [excellent documentation](https://rstudio.github.io/shinytest2/articles/in-depth.html) and [videos.](https://www.youtube.com/watch?v=Gucwz865aqQ) 
+
+## New [`app.R`]{style='font-size: 1.05em;'} file contents
+
+The contents of app.R have been converted to a standalone app function (`monthApp()`), which is stored in the `R/` folder. 
+
+The new contents of `app.R` will only include a call to `pkgload::load_all()` and `monthApp()`:
+
+```{r}
+#| eval: false
+#| code-fold: false
+pkgload::load_all(".")
+monthApp()
+```
+
+`pkgload` needs to be listed under `Imports` in the `DESCRIPTION` file (just like we did with `shiny` above). 
+
+```{r}
+#| eval: false
+#| code-fold: false
+usethis::use_package("pkgload")
+```
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+✔ Adding 'pkgload' to Imports field in DESCRIPTION
+• Refer to functions with `pkgload::fun()`
+```
+
+Because we're only going to use `load_all()` from `pkgload`, we'll use explicit namespacing (i.e., `pkg::fun()`).[^whole-game-pkgload]
+
+[^whole-game-pkgload]: We typically call `devtools::load_all()`, but using [`pkgload` ](https://pkgload.r-lib.org/) reduces the number of dependencies included with `devtools`. Read more about `pkgload` in the ['Conscious uncoupling' of `devtools`](https://github.com/r-lib/devtools#conscious-uncoupling). 
+
+### [`use_package_doc()`]{style='font-size: 1.05em;'}
+
+The `use_package_doc()` creates the `R/[[name]-package].R` file, which can be used as a single location for declaring the functions we're importing and exporting from `monthAppPkg`: 
+
+```{r}
+#| eval: false
+#| code-fold: false
+usethis::use_package_doc()
+```
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+✔ Setting active project to 'projects/apps/monthAppPkg'
+✔ Writing 'R/monthAppPkg-package.R'
+• Modify 'R/monthAppPkg-package.R'
+```
+
+We'll use `@importFrom` to add *only* the `load_all()` function to the `NAMESPACE`.
+
+```{r}
+#| eval: false
+#| code-fold: false
+#' @keywords internal
+"_PACKAGE"
+
+## usethis namespace: start
+#' @importFrom pkgload load_all
+## usethis namespace: end
+NULL
+```
+
+### [`use_build_ignore()`]{style='font-size: 1.05em;'}
+
+R packages don't typically have an `app.R` file in their root folder, so we'll let `devtools` know this file should be ignored by creating a `.Rbuildignore` and include a pattern that excludes `app.R` whenever the package is built.
+
+```{r}
+#| eval: false
+#| code-fold: false
+usethis::use_build_ignore("app.R")
+```
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+✔ Adding '^app\\.R$' to '.Rbuildignore'
+```
+
+It's best to let `use_build_ignore()` handle excluding any files or folders from your package builds because it automatically writes the correct regular expression pattern. 
+
+## [`LICENSE`]{style='font-size: 1.05em;'}
+
+Including a `LICENSE` file can be done with one of the [`usethis` license functions](https://usethis.r-lib.org/reference/licenses.html). 
+
+The license file should match the `License` field in the `DESCRIPTION` file (in this case, it's `MIT`). `use_mit_license()` will automatically include the `LICENSE.md` file in the root folder (and includes the necessary pattern in the `.Rbuildignore` to exclude it from the package builds).
+
+```{r}
+#| eval: false
+#| code-fold: false
+usethis::use_mit_license()
+```
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+✔ Adding 'MIT + file LICENSE' to License
+✔ Writing 'LICENSE'
+✔ Writing 'LICENSE.md'
+✔ Adding '^LICENSE\\.md$' to '.Rbuildignore'
+```
+
+## [`document()`]{style='font-size: 1.05em;'} 
+
+All of the files below `R/` should include `roxygen2` documentation. You can include an Roxygen skeleton in the IDE by clicking on **Code** > **Insert Roxygen Skeleton**, or using the keyboard shortcut:
+
+[<kbd>Option/⌥</kbd> + <kbd>Shift⇧</kbd> + <kbd>Ctrl/Cmd</kbd> + <kbd>R</kbd>]{style="font-weight: bold; font-style: italic;"}
+
+After writing the documentation for the data, modules, and standalone app function, calling `devtools::document()()` will generate the `.Rd` files and `NAMESPACE`
+
+```{r}
+#| eval: false
+#| code-fold: false
+devtools::document()
+```
+
+The output from `document()` tells me what files have been created (and if there were any errors in them).[^whole-game-document]
+
+[^whole-game-document]: The files created by `document()` rely on the `roxygen2` package (and should not be edited manually).
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+ℹ Updating monthAppPkg documentation
+ℹ Loading monthAppPkg
+Writing NAMESPACE
+Writing NAMESPACE
+Writing birthstoneUI.Rd
+Writing birthstoneServer.Rd
+Writing monthApp.Rd
+Writing monthFeedbackUI.Rd
+Writing monthFeedbackServer.Rd
+```
+
+### [`NAMESPACE`]{style='font-size: 1.05em;'} 
+
+The `NAMESPACE` file contains the exported functions from `monthAppPkg`, and the two imports (`shiny` and `pkgload::load_all()`): 
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+# Generated by roxygen2: do not edit by hand
+
+export(birthstoneServer)
+export(birthstoneUI)
+export(monthApp)
+export(monthFeedbackServer)
+export(monthFeedbackUI)
+import(shiny)
+importFrom(pkgload,load_all)
+
+```
+
+
+## [`.Rproj`]{style='font-size: 1.05em;'} 
+
+In order to enable the **Build** pane and keyboard shortcuts in the IDE, we need to update our `.Rproj` file. We can edit this file using `file.edit()`:
+
+```{r}
+#| eval: false
+#| code-fold: false
+file.edit("monthAppPkg.Rproj")
+```
+
+If `monthAppPkg` was initially built as an RStudio project (not a package), the following fields should be included at the bottom of `monthAppPkg.Rproj`:  
+ 
+```{verbatim}
+#| eval: false
+#| code-fold: false
+BuildType: Package
+PackageUseDevtools: Yes
+PackageInstallArgs: --no-multiarch --with-keep.source
+PackageRoxygenize: rd,collate,namespace
+```
+
+These options are also available under **Tools** > **Project Options ...** > **Build Tools**
+
+## [`use_git()`]{style='font-size: 1.05em;'} 
+
+This step is performed [much earlier](https://r-pkgs.org/whole-game.html#use_git) in R Packages, 2ed, but I've saved it for this step, because using Git will prompt the IDE to re-initialize to display the Git pane (and it will also read our new settings in the `.Rproj` file).
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+✔ Setting active project to '/projects/apps/monthAppPkg'
+✔ Initialising Git repo
+✔ Adding '.Rproj.user', '.Rhistory', '.Rdata', '.httr-oauth', '.DS_Store', '.quarto' to '.gitignore'
+There are 12 uncommitted files:
+* '.gitignore'
+* '.Rbuildignore'
+* 'app.R'
+* 'data/'
+* 'DESCRIPTION'
+* 'LICENSE'
+* 'LICENSE.md'
+* 'man/'
+* 'monthAppPkg.Rproj'
+* 'NAMESPACE'
+* ...
+Is it ok to commit them?
+
+1: Absolutely not
+2: Not now
+3: Absolutely
+```
+
+I'll agree to commit these files to Git:
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+Selection: 3
+✔ Adding files
+✔ Making a commit with message 'Initial commit'
+• A restart of RStudio is required to activate the Git pane
+Restart now?
+
+1: Not now
+2: Negative
+3: Absolutely
+```
+
+Restarting RStudio will activate the **Git** and **Build** panes: 
+
+![Git Pane](img/git_pane.png){width=100% fig-align='center'}
+
+![Build Pane](img/build_pane.png){width=100% fig-align='center'}
+
+This will also activate the `devtools` keyboard shortcuts: 
+
+
+### [`devtools`]{style='font-size: 1.05em;'} keyboard shortcuts
+
+::: {layout="[50, 50], [50, 50]]"}
+
+#### `load_all()`
+
+[<kbd>Shift</kbd> + <kbd>Ctrl/Cmd</kbd> + <kbd>L</kbd>]{style="font-weight: bold; font-style: italic;"}
+
+#### `document()`
+
+[<kbd>Shift</kbd> + <kbd>Ctrl/Cmd</kbd> + <kbd>D</kbd>]{style="font-weight: bold; font-style: italic;"}
+
+#### `install()`
+
+[<kbd>Shift</kbd> + <kbd>Ctrl/Cmd</kbd> + <kbd>B</kbd>]{style="font-weight: bold; font-style: italic;"}
+
+#### `test()`
+
+[<kbd>Shift</kbd> + <kbd>Ctrl/Cmd</kbd> + <kbd>T</kbd>]{style="font-weight: bold; font-style: italic;"}
+
+:::
+
+## [`install()`]{style='font-size: 1.05em;'} 
+
+Now we're ready to install `monthAppPkg` with `devtools::install()`, which produces see the following output in the **Build** pane:
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+==> devtools::document(roclets = c('rd', 'collate', 'namespace'))
+
+ℹ Updating monthAppPkg documentation
+ℹ Loading monthAppPkg
+Documentation completed
+
+==> R CMD INSTALL --preclean --no-multiarch --with-keep.source monthAppPkg
+
+* installing to library ‘/path/to/Library/R/x86_64/4.2/library’
+* installing *source* package ‘monthAppPkg’ ...
+** using staged installation
+** R
+** data
+*** moving datasets to lazyload DB
+** byte-compile and prepare package for lazy loading
+** help
+*** installing help indices
+** building package indices
+** testing if installed package can be loaded from temporary location
+** testing if installed package can be loaded from final location
+** testing if installed package keeps a record of temporary installation path
+* DONE (monthAppPkg)
+```
+
+Back in the **Console**, RStudio will restart and call `library(monthAppPkg)`:
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+Restarting R session...
+
+> library(monthAppPkg)
+```
+
+We can now launch the app using `monthApp()`
+
+```{r}
+#| eval: false
+#| code-fold: false
+monthApp()
+```
+
+![`monthApp()`](img/monthAppPkg.png)
+
+## Additional files 
+
+The following sections cover additional files you should include in your ap-package (but are not required). 
+
+### [`use_readme_rmd()`]{style='font-size: 1.05em;'} 
+
+The `README.md` file is usually the initial point of contact for users and contributors looking for information about your app-package. `use_readme_rmd()` will create a `README.Rmd` (i.e., the file you'll edit), which serves as the source document for your `README.md`.
+
+```{r}
+#| eval: false
+#| code-fold: false
+usethis::use_readme_rmd()
+```
+
+The `README.Rmd` pattern is automatically added to the `.Rbuildignore`, and  
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+✔ Adding '^README\\.Rmd$' to '.Rbuildignore'
+✔ Writing '.git/hooks/pre-commit'
+```
+
+### [`use_news_md()`]{style='font-size: 1.05em;'} 
+
+A `NEWS.md` is helpful for logging updates to your app-package and tracking release information.
+
+```{r}
+#| eval: false
+#| code-fold: false
+usethis::use_news_md()
+```
+
+`use_news_md()` will also prompt me to add and commit this file to the Git repository:
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+There is 1 uncommitted file:
+* 'NEWS.md'
+Is it ok to commit it?
+
+1: Negative
+2: Yeah
+3: Absolutely not
+
+Selection: 2
+✔ Adding files
+✔ Making a commit with message 'Add NEWS.md'
+```
+
+The contents of the `NEWS.md` are below: 
+
+```Markdown
+# monthAppPkg (development version)
+
+* Initial CRAN submission.
+```
+
+### [`use_vignette()`]{style='font-size: 1.05em;'} 
+
+Vignettes can be used to store detailed tutorials, explanations of core concepts, use-cases, FAQs and troubleshooting, integration with other packages, etc.
+
+```{r}
+#| eval: false
+#| code-fold: false
+use_vignette("monthAppPkg")
+```
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+✔ Adding 'knitr' to Suggests field in DESCRIPTION
+✔ Adding 'rmarkdown' to Suggests field in DESCRIPTION
+✔ Adding 'knitr' to VignetteBuilder
+```
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+✔ Adding 'inst/doc' to '.gitignore'
+✔ Creating 'vignettes/'
+✔ Adding '*.html', '*.R' to 'vignettes/.gitignore'
+```
+
+
+
+<!--
+
+```{r}
+#| eval: false
+#| code-fold: false
+
+```
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+
+```
+
+-->
