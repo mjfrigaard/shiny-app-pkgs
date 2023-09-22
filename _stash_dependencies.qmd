@@ -1,0 +1,608 @@
+
+
+1. Use a 'fully qualified variable reference' (i.e., the `pkg::fun()` syntax)[^pkg-fun-syntax-4] for calls to add-on functions in the `R/` folder
+
+[^pkg-fun-syntax-4]: We're already using this method in the functions for [`shinyAppPkg`](https://github.com/mjfrigaard/shinyAppPkg/tree/04_pkg-imports/R) 
+
+2. List add-on packages in the `Imports` field of the `DESCRIPTION` file
+
+3. Include an `@import` or `@importFrom` tag for add-on packages in the `R/` folder  `roxygen2`[^roxygen-imports-tags-5] 
+
+[^roxygen-imports-tags-5]: The `@import` and `@importFrom` tags will add the `import()` or `importFrom()` directives in the `NAMESPACE`, respectively.
+
+:::: {.callout-note collapse="false" icon=false title="How and where to use..."}
+
+::: {.panel-tabset}
+
+### [`pkg::fun()`]{style="font-size: 0.90em;"}
+
+[Writing R Extensions](https://cran.r-project.org/doc/manuals/r-release/R-exts.html) refers to the `pkg::fun()` syntax as a 'fully-qualified reference':
+
+> "*[A fully-qualified reference]{style="color: #DA1212;"} to the function `f` in package `foo` is of the form `foo::f`.*" - [Specifying imports and exports](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Specifying-imports-and-exports)
+
+Using '`pkg::fun()`' can seem tedious at first, but fortunately we have tools like tab-completion (if you're using the Posit Workbench IDE) and packages like [`sinew`](https://yonicd.github.io/sinew/) (which we'll cover in a later chapter)
+
+### [`Imports` (`DESCRIPTION`)]{style="font-size: 0.90em;"}
+
+[R Packages, 2ed](https://r-pkgs.org/) recommends using the `usethis::use_package()` function to include add-on packages to the `Imports` field of the `DESCRIRPTION` file[^how-imports-description-r-doc-6]
+
+[^how-imports-description-r-doc-6]: The [official R documentation](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#The-DESCRIPTION-file) assumes you'll adding dependencies to the `DESCRIPTION` file manually
+
+> "*Remember `usethis::use_package()` is helpful for [adding dependencies to `DESCRIPTION`]{style="color: #DA1212;"}*" - [Dependencies: In Practice](https://r-pkgs.org/dependencies-in-practice.html#fn2)
+
+
+### [`@import/@importFrom` (`NAMESPACE`)]{style="font-size: 0.90em;"}
+
+[R Packages, 2ed](https://r-pkgs.org/) assumes you'll be building your app-package with `roxygen2` and `devtools::document()`, so the authors recommend using the `usethis::use_import_from()`[^how-imports-namespace-r-doc-7]
+
+[^how-imports-namespace-r-doc-7]: The [official R documentation](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Specifying-imports-and-exports) assumes you'll be editing the `NAMESPACE` manually (i.e., with `export()`, `import()`, and `importFrom()` directives)
+
+> "*A handy function [for your interactive workflow]{style="color: #DA1212;"} is `usethis::use_import_from()`*" - [In code below R/](https://r-pkgs.org/dependencies-in-practice.html#sec-dependencies-in-imports-r-code)
+
+Using `usethis::use_import_from()` also adds a new `R/[app-package]-package.R` file, which can server as a 'central repository' for the imported functions and packages (see `usethis::use_package_doc()` also).
+
+:::
+
+::::
+
+
+
+Now let's cover when and why to list these packages and functions as imports.
+
+### [When and why?]{style="font-weight: bold; font-size: 1.05em;"}
+
+Knowing [when and why]{style="font-weight: bold;"} to use each import method is just as important as knowing [how and where]{style="font-weight: bold;"} to import add-on packages and functions.
+
+I've done my best to distill the available information into actionable decisions below:
+
+:::: {.callout-note collapse="false" icon=false title="When and why to use..."}
+
+::: {.panel-tabset}
+
+### [`pkg::fun()`]{style="font-size: 0.90em;"}
+
+If your app-package only uses a handful of functions from an add-on package, using `pkg::fun()` is fine[^when-pkg-fun-imports-8]
+
+[^when-pkg-fun-imports-8]: This is the case for `ggplot2` in our exported `scatter_plot()` function from `shinyAppPkg`
+
+> "*If a package [only needs a few objects from another package]{style="color: #DA1212;"} it can use a fully qualified variable reference (`foo::f`) in the code instead of a formal import.*" - [Specifying imports and exports](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Specifying-imports-and-exports)
+
+If there is a potential name conflict, use the `pkg::fun()` syntax:
+
+> *Using the `foo::f` form will be necessary when a package needs to use a function of the [same name from more than one namespace.]{style="color: #DA1212;"}*" - [Specifying imports and exports](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Specifying-imports-and-exports)
+
+On the other hand, [R Packages, 2ed](https://r-pkgs.org/) recommends defaulting to `pkg::fun()` for calls to *any* add-on packages in the `R/` folder because it makes these calls more explicit:
+
+> "*...the `package::function()` calling style is also our default recommendation for how to use your dependencies in the code below R/, [because it eliminates all ambiguity.]{style="color: #DA1212;"}*" - [R packages, Namespace](https://r-pkgs.org/dependencies-mindset-background.html#sec-dependencies-namespace-motivation)
+> 
+
+
+### [`Imports` (`DESCRIPTION`)]{style="font-size: 0.90em;"}
+
+[Writing R Extensions](https://r-pkgs.org/dependencies-mindset-background.html) states that any add-on package functions using `pkg::fun()` should be listed in the `DESCRIPTION`  (specifically, the `Imports` field).
+
+> "*The `Imports` field lists packages whose namespaces are imported from (as specified in the `NAMESPACE` file) but which do not need to be attached. [Namespaces accessed by the `::` and `:::` operators must be listed here.]{style="color: #DA1212;"}*" - [Package Dependencies](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Package-Dependencies)
+
+You might be wondering, "*What if I list a package in `DESCRIPTION`/`Imports` field, but don't list it in the `NAMESPACE`*?" [R Packages, 2ed](https://r-pkgs.org/) addresses this:
+
+> "*It is common for a package to be listed in `Imports` in `DESCRIPTION`, but not in `NAMESPACE`. The converse is not true. [Every package mentioned in `NAMESPACE` must also be present in the `Imports` or `Depends` fields.]{style="color: #DA1212;"}*" - [Confusion about Imports](https://r-pkgs.org/dependencies-in-practice.html#confusion-about-imports)
+
+On when to use `Imports` vs. `Depends`:
+
+> *Unless there is a good reason otherwise, [you should always list packages in `Imports` not `Depends`]{style="color: #DA1212;"}.*" - [Whether to Import or Depend](https://r-pkgs.org/dependencies-mindset-background.html#sec-dependencies-namespace)
+
+### [`@import/@importFrom` (`NAMESPACE`)]{style="font-size: 0.90em;"}
+
+[Writing R Extensions](https://r-pkgs.org/dependencies-mindset-background.html) states 'variables exported from other packages' need to be listed in the `NAMESPACE` (and recommends using `@importFrom` over `@import` in most cases):
+
+> "*Variables exported from [other packages with namespaces need to be imported explicitly using the directives `Imports` and `importFrom`]{style="color: #DA1212;"}*" [Specifying imports and exports](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Specifying-imports-and-exports)
+>
+> 
+
+Using `pkg::fun()` is also referred to as less efficient than a 'formal import' in [Writing R Extensions](https://r-pkgs.org/dependencies-mindset-background.html) (a 'formal import' means the add-on package function uses a directive in the `NAMESPACE`): 
+
+> "*[`foo::f`] is slightly [less efficient than a formal import]{style="color: #DA1212;"} and also loses the advantage of recording all dependencies in the `NAMESPACE` file"* - [Specifying imports and exports](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Specifying-imports-and-exports). 
+
+
+However, [R Packages, 2ed](https://r-pkgs.org/) recommends minimizing the use of both `@import` and `@importFrom` (*the `aaapkg` represents a hypothetical package listed in the `Imports` field of the `DESCRIPTION` file in the example below*)
+
+But [R Packages, 2ed](https://r-pkgs.org/) also notes the following exceptions to this rule in [Package is listed in `Imports`](https://r-pkgs.org/dependencies-in-practice.html#sec-dependencies-in-imports):
+
+> "*Sometimes you make such [heavy use of so many functions from another package that you want to import its entire namespace]{style="color: #DA1212;"}.*" [^when-pkg-import-9]
+> 
+> "*You can’t call an [operator from another package]{style="color: #DA1212;"} via ::, so you must import it.*" [^when-pkg-fun-import-from-10]
+
+[^when-pkg-import-9]: App-packages should include `@import shiny` because nearly all the functions (modules, standalone app functions, etc.) will require `shiny`.
+
+[^when-pkg-fun-import-from-10]: Our use of `.data` in `scatter_plot()` requires `@importFrom` because it's not accessible with `::` from [`rlang`](https://rlang.r-lib.org/reference/dot-data.html).
+
+If you happen to read the advice from the footnote, you'll also find somewhat conflicting advice: 
+
+> "*[Always use a `NAMESPACE` to specify imports]{style="color: #DA1212;"} so that your package code isn't harmed by other peoples' use of `Depends`.*" - [Whether to Import or Depend: footnote reference ](https://r-pkgs.org/dependencies-mindset-background.html#fn6)
+:::
+
+::::
+
+
+
+
+I've found the best guidance on when and why to use each method (`pkg::fun()`, `Imports` in the `DESCRIPTION`, or `@import`/`@importFrom`) comes from the `roxygen2` documentation:
+
+> *"if you are using just a few functions from another package, we recommending adding the package to the `Imports:` field of the `DESCRIPTION` file and calling the functions explicitly using `::`, e.g., `pkg::fun()`"*
+>
+> *"If the repetition of the package name becomes annoying you can `@importFrom` and drop the [`pkg::fun()`]"* - [Importing functions](https://roxygen2.r-lib.org/articles/namespace.html#functions)
+
+Following this advice (and the exceptions to the rule regarding 'heavy use'[^pkg-heavy-use-11] and 'operators'[^pkg-operators-12] from add-on packages) we can: 
+
+[^pkg-heavy-use-11]: "*Sometimes you make such heavy use of so many functions from another package that you want to import its entire namespace.*", [R Packages, 2ed, In code below `R/`](https://r-pkgs.org/dependencies-in-practice.html#sec-dependencies-in-imports-r-code)"
+
+[^pkg-operators-12]: "*You can’t call an operator from another package via `::`, so you must import it*", [R Packages, 2ed, In code below `R/`](https://r-pkgs.org/dependencies-in-practice.html#sec-dependencies-in-imports-r-code)"
+
+
+In the next section, we're going to cover what happens when these packages and functions were included as imports in `shinyAppPkg`.
+
+
+
+
+
+<!--
+
+We'll load, document, and install the package. 
+
+::: {style="font-style: italic; font-weight: bold; font-size: 1.10em"}
+<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd> / <kbd>D</kbd> / <kbd>B</kbd>
+:::
+
+
+#### Attached vs. loaded 
+
+The differences between loading and attaching a package can be seen when calling `library(package)` or `require(package)` vs. `requireNamespace(package)` (`requireNamespace()` loads a package without attaching it on the search list).
+
+This is why we can use both `loadedNamespaces()` and `isNamespaceLoaded()` to confirm `ggplot2` isn't loaded with `shinyAppPkg`.
+
+```{r}
+#| eval: false
+#| code-fold: false
+"ggplot2" %in% loadedNamespaces()
+```
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+[1] FALSE
+```
+
+```{r}
+#| eval: false
+#| code-fold: false
+isNamespaceLoaded("ggplot2")
+```
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+[1] FALSE
+```
+
+
+
+```{r}
+#| eval: false
+#| code-fold: false
+"package:ggplot2" %in% search()
+```
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+[1] FALSE
+```
+
+We can see the only object from `shinyAppPkg` is `scatter_plot`
+
+```{r}
+#| eval: false
+#| code-fold: false
+ls(name = "package:shinyAppPkg")
+```
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+[1] "scatter_plot"
+```
+
+
+
+
+
+So far, we haven't been using `devtools::check()`, which [is fine at this stage of development](https://mastering-shiny.org/scaling-packaging.html#r-cmd-check). However, `check()` is helpful here in identifying a common point of confusion when managing dependencies, so I've included a specific `ERROR` you'd find from running `check()` on `shinyAppPkg`:  
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+── R CMD check results ────────────────── shinyAppPkg 0.0.0.9000 ────
+Duration: 7.7s
+
+❯ checking package dependencies ... ERROR
+  Namespace dependencies missing from DESCRIPTION Imports/Depends entries:
+    'ggplot2', 'rlang'
+  
+  See section ‘The DESCRIPTION file’ in the ‘Writing R Extensions’
+  manual.
+```
+
+This particular error brings us (intentionally) to a critical point about dependency management in R packages:
+
+
+My advice is to try to remember that whenever you update the `NAMESPACE` directives with `@import` or `@importFrom`, it's crucial to sync this with the `Imports:` field in the `DESCRIPTION` file: 
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+Package: shinyAppPkg
+Version: 0.0.0.9000
+Type: Package
+Title: movies app
+Description: A movies data shiny application.
+Author: John Smith [aut, cre]
+Maintainer: John Smith <John.Smith@email.io>
+License: GPL-3
+DisplayMode: Showcase
+RoxygenNote: 7.2.3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+Imports:
+  ggplot2,
+  rlang
+
+```
+
+You can also add packages to the `DESCRIPTION` file with `usethis::use_package()`.
+
+The previous chapter illustrated how [`roxygen2`](https://roxygen2.r-lib.org/) tags connect the code in `R/` to the documentation in `man/`. `roxygen2` tags are also used to manage the package's function-level dependencies in the `NAMESPACE` file.
+
+The `NAMESPACE` file serves two essential purposes: 1) it lists which functions and objects from the app-package are exposed to other users, and 2) it controls which functions from external (i.e., add-on) packages your app-package imports. 
+
+### [`roxygen2`]{style="font-size: 1.05em;"} imports
+
+Now that we've covered how to make functions accessible to any users of `shinyAppPkg`, we need to address the functions `shinyAppPkg` imports. If we continue using `scatter_plot()` as an example, we see it contains functions from two add-on packages (`ggplot2` and `rlang`):
+
+```{r}
+#| eval: false
+#| code-fold: show
+#| code-summary: 'show/hide scatter_plot()'
+scatter_plot <- function(df, x_var, y_var, col_var, alpha_var, size_var) {
+    ggplot2::ggplot(data = df,
+      ggplot2::aes(x = .data[[x_var]],
+          y = .data[[y_var]],
+          color = .data[[col_var]])) +
+      ggplot2::geom_point(alpha = alpha_var, size = size_var)
+
+}
+```
+
+These functions are called using explicit namespacing (or 'fully qualified variable reference') syntax:
+
+```{r}
+#| eval: false
+#| code-fold: false 
+package::function()
+```
+
+Using the explicit namespace syntax will load the package, but not attach it to the search list. For example, if I run the 
+
+
+
+Two components help to ensure both `ggplot2` and `rlang` functions become part of `shinyAppPkg`:
+
+1) Explicitly namespace add-on package functions (i.e., `package::function()`)
+
+2) Include them in the `NAMESPACE` by using either `@importFrom` or `@import`
+
+Explicit namespacing lets users know which functions are from your package and which are from external packages, and using the import tags with external functions and packages ensures they become part of your package `NAMESPACE` when users install and load your package. 
+
+```{r}
+#| label: co_box_explicit_namespacing
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g", 
+  header = "Why use the `package::function()` syntax?",
+  contents = "Think of add-on packages and their functions as families you can invite to a party. `@import` will invite the entire family, and `@importFrom` will only invite specific family members (this is helpful if it's a huge family and you don't have unlimited food and drinks).
+
+When you're at the party, it's clearer to refer to the guests by their first and last name, i.e., 'This is my friend, Beth Johnson, she's an amazing breakdancer!' which avoids confusing them with another guest (maybe 'Beth Smith,' who has two left feet). 
+
+This metaphor should help explain why we use the `package::function()` syntax when referring to functions from add-on packages: our package can quickly become a massive party with many guests, and we don't want anyone confused about who's capable of performing what.", 
+  fold = TRUE
+)
+```
+
+#### [`@importFrom`]{style="font-size: 1.05em;"} or [`@import`]{style="font-size: 1.05em;"}
+
+I've included both tags below, but you should use `@importFrom` [far more](https://r-pkgs.org/dependencies-in-practice.html#sec-dependencies-in-imports-r-code) than `@import` (with the exception being `@import shiny`). Read more [here](https://mastering-shiny.org/scaling-packaging.html#r-cmd-check):
+
+
+Below is an example of `@importFrom` in `R/scatter_plot.R`:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+#' 
+#' @importFrom ggplot2 ggplot aes geom_point
+#' @importFrom rlang .data
+#' 
+```
+
+To record these changes in the `NAMESPACE`, I'll `load_all()` and `document()`:
+
+::: {style="font-style: italic; font-weight: bold; font-size: 1.10em"}
+<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd>
+:::
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+ℹ Loading shinyAppPkg
+```
+
+::: {style="font-style: italic; font-weight: bold; font-size: 1.10em"}
+<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd>
+:::
+
+Note that the contents of `man/utils.Rd` have now been written to `man/scatter_plot.Rd`:
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+==> devtools::document(roclets = c('rd', 'collate', 'namespace'))
+
+ℹ Updating shinyAppPkg documentation
+ℹ Loading shinyAppPkg
+Writing NAMESPACE
+Writing scatter_plot.Rd
+Writing NAMESPACE
+Documentation completed
+```
+
+You may have noticed the `document()` resulted in the `NAMESPACE` being written twice (one for imports, one for exports).
+
+::: {style="font-style: italic; font-weight: bold; font-size: 1.10em"}
+<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>B</kbd>
+:::
+
+## [`NAMESPACE`]{style="font-size: 1.05em;"} directives
+
+After adding the `@export` and `@importFrom` tags in the `R/scatter_plot.R` file and documenting the package, `roxygen2` writes the exports and imports in the `NAMESPACE` file.
+
+The `NAMESPACE` file contains [directives](https://r-pkgs.org/dependencies-mindset-background.html#sec-dependencies-NAMESPACE-file), which are derived from `roxygen2` tags:
+
+-   The `@export scatter_plot` tag results in the `export(scatter_plot)` directive
+
+-   The `@importFrom` `package` `function` tag creates the `importFrom(package, function)` directives
+
+::: {#fig-import_export_namespace}
+![updated `NAMESPACE` file](img/import_export_namespace.png){#fig-import_export_namespace width='100%' fig-align='center'}
+
+Updated `NAMESPACE` directives
+:::
+
+The `NAMESPACE` file ensures that the package environment is isolated and controls function-level access (i.e., which add-on package functions become part of your package). It also helps avoid naming conflicts between different packages.
+
+
+
+
+## [`NAMESPACE`]{style="font-size: 1.05em;"} in [`shinyAppPkg`]{style="font-size: 1.05em;"}
+
+I've added `@export` to each function in `shinyAppPkg` and used explicit namespacing (`::`) with `@importFrom` to import the functions from the add-on packages.
+
+-   [`R/movies_app.R`]{style="font-size: 1.10em"} 
+
+    -    `movies_app()` is the standalone app function, so we'll export this function and `@import` shiny here
+
+    ```{r}
+    #| eval: false
+    #| code-fold: show
+    #| code-summary: 'show/hide R/movies_app.R roxygen2'
+    #'
+    #' @export
+    #' 
+    #' @import shiny
+    #'
+    ```
+
+-   [`R/movies_ui.R`]{style="font-size: 1.10em"} & [`R/movies_server.R`]{style="font-size: 1.10em"}
+
+    -   `movies_ui()` and `movies_server()` both use only shiny functions, so they don't need an `@import` or `@importFrom` tags (but both are exported):
+
+    ```{r}
+    #| eval: false
+    #| code-fold: show
+    #| code-summary: 'show/hide R/movies_ui.R & R/movies_server.R roxygen2'
+    #'
+    #' @export
+    #' 
+    ```
+
+-   [`R/mod_var_input.R`]{style="font-size: 1.10em"}
+
+    -   `mod_var_input_ui()` and `mod_var_input_server()` only use shiny functions, so there is no need for `@import` or `@importFrom` tags (however, we'll export both module functions).
+
+    ```{r}
+    #| eval: false
+    #| code-fold: show
+    #| code-summary: 'show/hide R/mod_var_input.R roxygen2'
+    #'
+    #' @export
+    #' 
+    ```
+
+-   [`R/mod_scatter_display.R`]{style="font-size: 1.10em"}
+
+    -   `mod_scatter_display_ui()` also only contains shiny functions (no `@import` or `@importFrom`) so this function only gets an `@export` tag
+    
+    ```{r}
+    #| eval: false
+    #| code-fold: show
+    #| code-summary: 'show/hide R/mod_scatter_display.R roxygen2'
+    #' 
+    #' @export
+    #' 
+    ```
+    
+    -   `mod_scatter_display_server()` uses functions from `tools`, `ggplot2` and `stringr` (all are imported with `@importFrom` tags). This function is also exported:
+
+    ```{r}
+    #| eval: false
+    #| code-fold: show
+    #| code-summary: 'show/hide R/mod_scatter_display.R roxygen2'
+    #' 
+    #' @export
+    #' 
+    #' @importFrom tools toTitleCase
+    #' @importFrom stringr str_replace_all
+    #' @importFrom ggplot2 labs theme_minimal theme
+    #' 
+    ```
+
+
+The updated `DESCRIPTION` file is below: 
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+Package: shinyAppPkg
+Version: 0.0.0.9000
+Type: Package
+Title: movies app
+Description: A movies data shiny application.
+Author: John Smith [aut, cre]
+Maintainer: John Smith <John.Smith@email.io>
+License: GPL-3
+DisplayMode: Showcase
+RoxygenNote: 7.2.3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+Imports:
+  shiny,
+  ggplot2,
+  rlang,
+  stringr,
+  tools
+<remember to keep an empty final line>
+```
+
+ 
+[<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd> / <kbd>D</kbd> / <kbd>B</kbd>]{style="font-style: italic; font-weight: bold; font-size: 1.10em"}
+
+After `shinyAppPkg` installs, I'll check the namespace by using `shinyAppPkg::` in the **Console**: 
+
+::: {#fig-pkgApp_namespacing_funs}
+![`shinyAppPkg::` namespace](img/pkgApp_namespacing_funs.png){#fig-pkgApp_namespacing_funs width='100%' fig-align='center'}
+
+Exported functions from `shinyAppPkg`
+:::
+
+## [`app.R`]{style="font-size: 1.05em;"}
+
+As a final step, we want to remove any calls to `library()` in `shinyAppPkg` (these packages are now handled in the `NAMESPACE` and `DESCRIPTION` files). 
+
+`app.R` should now contain a single call to `library(shinyAppPkg)` and then the `movies_app()` function:
+
+```{r}
+#| eval: false 
+#| code-fold: false 
+# pkgs <- c("shiny", "shinythemes", "stringr", "ggplot2", "rlang")
+# install.packages(pkgs, quiet = TRUE)
+
+# load pacakge ----------------------------------
+library(shinyAppPkg)
+
+# movies_app ------------------------------------
+movies_app()
+```
+
+### [`runApp()`]{style="font-size: 1.05em;"}
+
+After loading, documenting, and installing `shinyAppPkg`, the **Run App** icon is no longer available in the `app.R` file.
+
+
+
+
+::: {#fig-03_dependencies_app_dot_r}
+![**Run App** in `app.R`](img/03_dependencies_app_dot_r.png){#fig-03_dependencies_app_dot_r width='100%' fig-align='center'}
+
+The **Run App** icon has been removed from `app.R`
+:::
+
+If we call `shiny::runApp()` in the **Console**, we see the icon image (`www/shiny.png`) in our application UI.
+
+
+::: {#fig-03_dependencies_runApp_ide}
+![**Run App** in `shinyAppPkg`](img/03_dependencies_runApp_ide.png){#fig-03_dependencies_runApp_ide width='100%' fig-align='center'}
+
+IDE from clicking **Run App** in `shinyAppPkg`
+:::
+
+#### [`Warning in loadSupport`]{style="font-weight: bold; font-size: 1.05em;"}
+
+`runApp()` also produces the following warning:
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false 
+Warning in loadSupport(appDir, renv = sharedEnv, globalrenv = NULL) :
+  Loading R/ subdirectory for Shiny application, but this directory appears to 
+  contain an R package. Sourcing files in R/ may cause unexpected behavior.
+```
+
+
+
+### [`shinyApp()`]{style="font-size: 1.05em;"}
+
+However, if we run `movies_app()` in `app.R`--which calls `shinyApp()`--the image is missing from the UI:
+
+::: {#fig-03_dependencies_rmovies_app_ide}
+![`movies_app()` in `shinyAppPkg`](img/03_dependencies_rmovies_app_ide.png){#fig-03_dependencies_rmovies_app_ide width='100%' fig-align='center'}
+
+IDE from running `movies_app()` in `shinyAppPkg`
+:::
+
+
+The differences we're seeing are due to the subtle but important differences between `runApp()` and `shinyApp()` (which we will cover in the next chapter).
+
+```{r}
+#| label: co_box_push_03-dependencies
+#| echo: false
+#| results: asis
+#| eval: false
+co_box(
+  color = "r",
+  header = "GitHub [`shinyAppPkg`]:[`03-dependencies`]",
+  contents = "
+  The code for this section was pushed to the  [[`03-dependencies`](https://github.com/mjfrigaard/shinyAppPkg/tree/03-dependencies)] branch of the [[`shinyAppPkg`](https://github.com/mjfrigaard/shinyAppPkg)] repo.
+  
+  `\`\`\bash
+  git add .
+  git commit -m 'git message'
+  git push 
+  `\`\`\
+  ", 
+  fold = FALSE
+)
+```
+
+::: {.column-margin}
+
+![New Git Branch](img/new_branch_ico.png){width='70%'}
+
+The code for this section is in the  [[`03_dependencies`](https://github.com/mjfrigaard/shinyAppPkg/tree/03_dependencies)] branch of the [[`shinyAppPkg`](https://github.com/mjfrigaard/shinyAppPkg)] repo.
+
+:::
+
+
+## Recap 
+
+
+

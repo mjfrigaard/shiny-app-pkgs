@@ -109,14 +109,14 @@ Learning reactivity can be challenging when you start, but fortunately, there ar
 ## New shiny app projects
 
 ```{r}
-#| label: git_box_projApp_main
+#| label: git_box_shinyAppProj_main
 #| echo: false
 #| results: asis
 #| eval: true
 git_margin_box(
   fig_pw = '75%', 
   branch = "main", 
-  repo = 'projApp')
+  repo = 'shinyAppProj')
 ```
 
 
@@ -140,14 +140,14 @@ After clicking **Create Project**, a new session will open with your project fil
 
 ## Shiny app project contents
 
-Note that the only items in the new shiny app project are `app.R` and the `projApp.Rproj` file.
+Note that the only items in the new shiny app project are `app.R` and the `shinyAppProj.Rproj` file.
 
 ```{bash}
 #| eval: false 
 #| code-fold: false
-projApp/
+shinyAppProj/
     ├── app.R
-    └── projApp.Rproj
+    └── shinyAppProj.Rproj
 
 1 directory, 2 files
 ```
@@ -176,14 +176,14 @@ The boilerplate 'Old Faith Geyser Data' app is a perfect example of what Shiny c
 Most shiny applications move beyond a single `app.R` file. Knowing how to store any utility functions, data, documentation, and metadata will set you up for success as you transition to storing your app in an R package.
 
 ```{r}
-#| label: git_box_projApp_02_movies-app
+#| label: git_box_shinyAppProj_02_movies-app
 #| echo: false
 #| results: asis
 #| eval: true
 git_margin_box(
   fig_pw = '75%', 
   branch = "02_movies-app", 
-  repo = 'projApp')
+  repo = 'shinyAppProj')
 ```
 
 I'm going to work through an example of some intermediate/advanced shiny app features using the application from the [Building Web Applications with Shiny](https://rstudio-education.github.io/shiny-course/) course.  This app is a great use case for the following reasons:
@@ -200,13 +200,14 @@ I'm going to work through an example of some intermediate/advanced shiny app fea
 
 The code below replaces the boilerplate 'Old Faith Geyser Data' app in `app.R`:
 
-::: {.callout-note title="`app.R`" collapse='true' icon='false'}
+#### `app.R`
 
 ```{r}
-#| code-fold: show
+#| code-fold: true
 #| eval: false 
 #| code-summary: 'show/hide movie review shiny app'
-ui <- shiny::fluidPage(theme = shinythemes::shinytheme("spacelab"),
+ui <- shiny::fluidPage(
+  theme = shinythemes::shinytheme("spacelab"),
   shiny::sidebarLayout(
     shiny::sidebarPanel(
       shiny::selectInput(
@@ -221,7 +222,6 @@ ui <- shiny::fluidPage(theme = shinythemes::shinytheme("spacelab"),
         ),
         selected = "audience_score"
       ),
-
       shiny::selectInput(
         inputId = "x",
         label = "X-axis:",
@@ -234,7 +234,6 @@ ui <- shiny::fluidPage(theme = shinythemes::shinytheme("spacelab"),
         ),
         selected = "critics_score"
       ),
-
       shiny::selectInput(
         inputId = "z",
         label = "Color by:",
@@ -247,33 +246,28 @@ ui <- shiny::fluidPage(theme = shinythemes::shinytheme("spacelab"),
         ),
         selected = "mpaa_rating"
       ),
-
       shiny::sliderInput(
         inputId = "alpha",
         label = "Alpha:",
         min = 0, max = 1,
         value = 0.4
       ),
-
       shiny::sliderInput(
         inputId = "size",
         label = "Size:",
         min = 0, max = 5,
         value = 3
       ),
-
       shiny::textInput(
         inputId = "plot_title",
         label = "Plot title",
         placeholder = "Enter text to be used as plot title"
       ),
-
       shiny::actionButton(
         inputId = "update_plot_title",
         label = "Update plot title"
       )
     ),
-
     shiny::mainPanel(
       shiny::br(),
       shiny::p(
@@ -281,39 +275,43 @@ ui <- shiny::fluidPage(theme = shinythemes::shinytheme("spacelab"),
         shiny::a("IMBD", href = "http://www.imbd.com/"), "and",
         shiny::a("Rotten Tomatoes", href = "https://www.rottentomatoes.com/"), "."
       ),
-      shiny::p("The data represent", 
-        nrow(movies), 
-        "randomly sampled movies released between 1972 to 2014 in the United States."),
+      shiny::p(
+        "The data represent",
+        nrow(movies),
+        "randomly sampled movies released between 1972 to 2014 in the United States."
+      ),
       shiny::plotOutput(outputId = "scatterplot"),
       shiny::hr(),
-        shiny::p(shiny::em("The code for this shiny application comes from", 
-          shiny::a("Building Web Applications with shiny", 
-            href = "https://rstudio-education.github.io/shiny-course/"))
-          )
+      shiny::p(shiny::em(
+        "The code for this shiny application comes from",
+        shiny::a("Building Web Applications with shiny",
+          href = "https://rstudio-education.github.io/shiny-course/"
+        )
+      ))
     )
   )
 )
 
 server <- function(input, output, session) {
-  
   new_plot_title <- shiny::reactive({
-      tools::toTitleCase(input$plot_title)
-    }) |> 
-    shiny::bindEvent(input$update_plot_title, 
-                     ignoreNULL = FALSE, 
-                     ignoreInit = FALSE)
-    
+    tools::toTitleCase(input$plot_title)
+  }) |>
+    shiny::bindEvent(input$update_plot_title,
+      ignoreNULL = FALSE,
+      ignoreInit = FALSE
+    )
+
 
   output$scatterplot <- shiny::renderPlot({
     scatter_plot(
-        df = movies,
-        x_var = input$x,
-        y_var = input$y,
-        col_var = input$z,
-        alpha_var = input$alpha,
-        size_var = input$size
-      ) + 
-      ggplot2::labs(title = new_plot_title()) + 
+      df = movies,
+      x_var = input$x,
+      y_var = input$y,
+      col_var = input$z,
+      alpha_var = input$alpha,
+      size_var = input$size
+    ) +
+      ggplot2::labs(title = new_plot_title()) +
       ggplot2::theme_minimal() +
       ggplot2::theme(legend.position = "bottom")
   })
@@ -322,13 +320,11 @@ server <- function(input, output, session) {
 shiny::shinyApp(ui = ui, server = server)
 ```
 
-:::
-
 ### Utility function
 
 I've added the `scatter_plot()` utility function in a new `utils.R` file:
 
-::: {.callout-note title="`utils.R`" collapse='true' icon='false'}
+#### `utils.R`
 
 ```{r}
 #| code-fold: show
@@ -344,29 +340,25 @@ scatter_plot <- function(df, x_var, y_var, col_var, alpha_var, size_var) {
 }
 ```
 
-:::
-
 ### Data
 
 The `movies.RData` dataset contains reviews from [IMDB](https://www.imdb.com/) and [Rotten Tomatoes](https://www.rottentomatoes.com/) 
 
-::: {.callout-note title="`movies.RData`" collapse='true' icon='false'}
+#### `movies.RData`
 
 You can download these data [here](https://github.com/mjfrigaard/bbsa/raw/main/movies.RData)
 
-:::
-
 ### Updated movies app project contents
 
-The `projApp` project now contains the following files:
+The `shinyAppProj` project now contains the following files:
 
 ```{bash}
 #| eval: false 
 #| code-fold: false 
-projApp/
+shinyAppProj/
   ├── app.R
   ├── movies.RData
-  ├── projApp.Rproj
+  ├── shinyAppProj.Rproj
   └── utils.R
 
 2 directories, 4 files
@@ -376,8 +368,6 @@ To run the `movies` app, we need to load the data and source the `utils.R` file 
 
 *After installing the packages below, add a comment (`#`) in front of these lines.*
 
-::: {.callout-note title="`app.R` header" collapse='false' icon='false'}
-
 I've placed the header below in the top of the `app.R` file:
 
 ```{r}
@@ -385,9 +375,9 @@ I've placed the header below in the top of the `app.R` file:
 #| code-fold: false
 # install ------------------------------------
 # after installing, comment this out
-pkgs <- c("shiny", "shinythemes", "stringr", "ggplot2", "rlang")
-install.packages(pkgs, verbose = FALSE)
-
+pkgs <- c("shiny", "shinythemes", "stringr", "ggplot2", "rlang") # <1>
+install.packages(pkgs, verbose = FALSE)                          # <1>
+                                                                 # <1>
 # packages ------------------------------------
 library(shiny)
 library(shinythemes)
@@ -403,7 +393,7 @@ source("utils.R")
 
 ```
 
-:::
+1. Comment out these lines after installing `pkgs` 
 
 Clicking on **Run App** displays the movie review app:
 
@@ -426,14 +416,14 @@ Now that we have a *slightly* more complex application in `app.R`, I’ll add a 
 
 
 ```{r}
-#| label: git_box_projApp_03_projApp
+#| label: git_box_shinyAppProj_03_proj-app
 #| echo: false
 #| results: asis
 #| eval: true
 git_margin_box(
   fig_pw = '75%', 
-  branch = "03_projApp", 
-  repo = 'projApp')
+  branch = "03_proj-app", 
+  repo = 'shinyAppProj')
 ```
 
 ### [`R/`]{style='font-size: 1.05em;'}
@@ -442,12 +432,12 @@ If your shiny app relies on utility or helper functions (outside the `app.R` fil
 
 ::: {.callout-note title="Place `utils.R` in `R/` folder" collapse='false' icon='false'}
 
-I've moved the `utils.R` file into the `R/` folder in `projApp`:
+I've moved the `utils.R` file into the `R/` folder in `shinyAppProj`:
 
 ```{bash}
 #| eval: false 
 #| code-fold: false
-projApp/
+shinyAppProj/
      └── R/
          └── utils.R
 
@@ -471,7 +461,7 @@ I've downloaded the shiny logo ([`shiny.png`](https://raw.githubusercontent.com/
 ```{bash}
 #| eval: false 
 #| code-fold: false
-projApp/
+shinyAppProj/
      └── www/
            └── shiny.png
 
@@ -501,7 +491,7 @@ I've included the content below in the `README.md` file
 
 The original code and data for this shiny app comes from the [Building Web Applications with Shiny](https://rstudio-education.github.io/shiny-course/) course. It's been converted to use [shiny modules](https://shiny.posit.co/r/articles/improve/modules/). 
 
-View the code for this application in the [`projApp` branches](https://github.com/mjfrigaard/projApp/branches/all).
+View the code for this application in the [`shinyAppProj` branches](https://github.com/mjfrigaard/shinyAppProj/branches/all).
 ```
 
 :::
@@ -514,14 +504,14 @@ View the code for this application in the [`projApp` branches](https://github.co
 
 I've included the content below in `DESCRIPTION`:
 
-```{verbatim}
-#| eval: false 
+```{bash}
+#| eval: false
 #| code-fold: false
 Type: shiny
 Title: movies app
 Author: John Smith
-DisplayMode: Showcase
-<empty final line> <- delete me but leave an empty final line!
+DisplayMode: Showcase                                                 
+                                                                      
 ```
 
 :::
@@ -554,20 +544,17 @@ Module UI functions typically wrap the layout, input, and output functions in `s
 #### Variable inputs module 
 
 `mod_var_input_ui()` creates a dedicated namespace for the `inputId`s with `shiny::NS()`: 
-
-::: {.callout-note title="`mod_var_input_ui()`" collapse='true' icon='false'}
-
-Code placed in `R/mod_var_input.R`:
+#####  [`R/mod_var_input.R`]{style='font-size: 0.90em:'}
 
 ```{r}
 #| eval: false
-#| code-fold: show 
+#| code-fold: true 
 #| code-summary: 'show/hide mod_var_input_ui()'
 mod_var_input_ui <- function(id) {
   ns <- shiny::NS(id)
   shiny::tagList(
     shiny::selectInput(
-      inputId = ns("y"),
+      inputId = ns("y"), # <1>
       label = "Y-axis:",
       choices = c(
         "IMDB rating" = "imdb_rating",
@@ -579,7 +566,7 @@ mod_var_input_ui <- function(id) {
       selected = "audience_score"
     ),
     shiny::selectInput(
-      inputId = ns("x"),
+      inputId = ns("x"), # <2>
       label = "X-axis:",
       choices = c(
         "IMDB rating" = "imdb_rating",
@@ -591,7 +578,7 @@ mod_var_input_ui <- function(id) {
       selected = "imdb_rating"
     ),
     shiny::selectInput(
-      inputId = ns("z"),
+      inputId = ns("z"), # <3>
       label = "Color by:",
       choices = c(
         "Title Type" = "title_type",
@@ -603,19 +590,19 @@ mod_var_input_ui <- function(id) {
       selected = "mpaa_rating"
     ),
     shiny::sliderInput(
-      inputId = ns("alpha"),
+      inputId = ns("alpha"),  # <4>
       label = "Alpha:",
       min = 0, max = 1, step = 0.1,
       value = 0.5
     ),
     shiny::sliderInput(
-      inputId = ns("size"),
+      inputId = ns("size"),  # <5>
       label = "Size:",
       min = 0, max = 5,
       value = 2
     ),
     shiny::textInput(
-      inputId = ns("plot_title"),
+      inputId = ns("plot_title"),  # <6>
       label = "Plot title",
       placeholder = "Enter plot title"
     )
@@ -623,15 +610,14 @@ mod_var_input_ui <- function(id) {
 }
 ```
 
-:::
+1. `y` axis numeric variable 
+2. `x` axis numeric variable 
+3. `z` axis categorical variable  
+4. `alpha` numeric value for points  
+5. `size` numeric value for size  
+6. `plot_title` text 
 
 `mod_var_input_server()` returns these values in a reactive list with `shiny::reactive()`:
-
-::: {.callout-note title="`mod_var_input_server()`" collapse='true' icon='false'}
-
-
-Code placed in  `R/mod_var_input.R`
-
 
 ```{r}
 #| eval: false
@@ -643,12 +629,12 @@ mod_var_input_server <- function(id) {
     return(
         reactive({
           list(
-            "y" = input$y,
-            "x" = input$x,
-            "z" = input$z,
-            "alpha" = input$alpha,
-            "size" = input$size,
-            "plot_title" = input$plot_title
+            "y" = input$y, # <1>
+            "x" = input$x, # <2>
+            "z" = input$z, # <3>
+            "alpha" = input$alpha, # <4>
+            "size" = input$size, # <5>
+            "plot_title" = input$plot_title # <6>
           )
         })
     )
@@ -656,15 +642,18 @@ mod_var_input_server <- function(id) {
 }
 ```
 
-:::
+1. `y` axis numeric variable 
+2. `x` axis numeric variable 
+3. `z` axis categorical variable  
+4. `alpha` numeric value for points  
+5. `size` numeric value for size  
+6. `plot_title` text 
 
 #### Scatter-plot display module 
 
 `mod_scatter_display_ui()` creates a dedicated namespace for the plot `outputId` (as `"scatterplot"`), along with some help text:
 
-::: {.callout-note title="`mod_scatter_display_ui()`" collapse='true' icon='false'}
-
-Code placed in  `R/mod_scatter_display.R`
+#####  [`R/mod_scatter_display.R`]{style='font-size: 0.90em:'}
 
 ```{r}
 #| eval: false
@@ -681,66 +670,73 @@ mod_scatter_display_ui <- function(id) {
           href = "https://rstudio-education.github.io/shiny-course/"),
                       "tutorial"))
       ),
-    shiny::plotOutput(outputId = ns("scatterplot"))
+    shiny::plotOutput(outputId = ns("scatterplot")) # <1> 
   )
 }
 ```
 
-:::
+1. Namespaced module `id` for plot in UI
 
 The code to render the `output$scatterplot` is contained in the nested call to `shiny::moduleServer()` in `mod_scatter_display_server()`:
 
-After loading the `movies` data, assembling the returned values from  `mod_var_input_server()`, and creating the `input()` reactive, the `scatter_plot()` utility function creates the `plot` object and adds the `plot_title()`:
+After 1) loading the `movies` data, 2) assembling the returned values from  `mod_var_input_server()`, and creating the `input()` reactive, 3) the `scatter_plot()` utility function creates the `plot` object and adds the `plot_title()` and theme:
 
-::: {.callout-note title="`mod_scatter_display_server()`" collapse='true' icon='false'}
 
-Code placed in `R/mod_scatter_display.R`
 
 ```{r}
-#| eval: false
-#| code-fold: show 
+#| eval: false 
+#| code-fold: show
 #| code-summary: 'show/hide mod_scatter_display_server()'
 mod_scatter_display_server <- function(id, var_inputs) {
   shiny::moduleServer(id, function(input, output, session) {
     
-    # data --------------------------------------------------------------------
-    load("movies.RData")
+    load("movies.RData") # <1>
 
-    inputs <- shiny::reactive({
-      plot_title <- tools::toTitleCase(var_inputs()$plot_title)
-      list(
-        x = var_inputs()$x,
-        y = var_inputs()$y,
-        z = var_inputs()$z,
-        alpha = var_inputs()$alpha,
-        size = var_inputs()$size,
-        plot_title = plot_title
-      )
-    })
-    output$scatterplot <- shiny::renderPlot({
-      plot <- scatter_plot(
-        # data ----------------------------------------------------
-        df = movies,
-        x_var = inputs()$x,
-        y_var = inputs()$y,
-        col_var = inputs()$z,
-        alpha_var = inputs()$alpha,
-        size_var = inputs()$size
-      )
-      plot +
-        ggplot2::labs(
-          title = inputs()$plot_title,
-          x = stringr::str_replace_all(tools::toTitleCase(inputs()$x), "_", " "),
-          y = stringr::str_replace_all(tools::toTitleCase(inputs()$y), "_", " ")
-        ) +
-        ggplot2::theme_minimal() +
-        ggplot2::theme(legend.position = "bottom")
+
+    inputs <- shiny::reactive({ # <2>
+      plot_title <- tools::toTitleCase(var_inputs()$plot_title) # <2>
+      list( # <2>
+        x = var_inputs()$x, # <2>
+        y = var_inputs()$y, # <2>
+        z = var_inputs()$z, # <2>
+        alpha = var_inputs()$alpha, # <2>
+        size = var_inputs()$size, # <2>
+        plot_title = plot_title # <2>
+      )  # <2>
+    }) # <2>
+    output$scatterplot <- shiny::renderPlot({ # <3>
+      plot <- scatter_plot( # <3>
+        df = movies, # <3>
+        x_var = inputs()$x, # <3>
+        y_var = inputs()$y, # <3>
+        col_var = inputs()$z, # <3>
+        alpha_var = inputs()$alpha, # <3>
+        size_var = inputs()$size # <3>
+      ) # <3>
+      plot + # <4>
+        ggplot2::labs( # <4>
+          title = inputs()$plot_title, # <4>
+          x = stringr::str_replace_all( # <4>
+                  tools::toTitleCase( # <4>
+                      inputs()$x), # <4>
+                  "_", " "), # <4>
+          y = stringr::str_replace_all( # <4>
+                  tools::toTitleCase( # <4>
+                    inputs()$y), # <4>
+                "_", " ") # <4>
+        ) + 
+        ggplot2::theme_minimal() + # <5>
+        ggplot2::theme(legend.position = "bottom") # <5>
     })
   })
 }
 ```
 
-:::
+1. loading the `movies` data
+2. assembling the returned values from  `mod_var_input_server()`, and creating the `input()` reactive
+3. `scatter_plot()` utility function creates the `plot` object 
+4. adds the `plot_title()`
+5. add `theme` to layers 
 
 Both UI and server module functions are combined into a single `.R` file, and all modules are placed in the `R/` folder so they are sourced when the application is run. 
 
@@ -759,9 +755,7 @@ Both module functions are combined in the `ui` and `server` arguments of `shiny:
 
 The call to `shiny::shinyApp()` is wrapped in the `movies_app()` function and placed in `app.R`.
 
-::: {.callout-note title="`app.R`" collapse='true' icon='false'}
-
-Code placed in in `app.R`
+##### `app.R`
 
 ```{r}
 #| eval: false
@@ -769,17 +763,17 @@ Code placed in in `app.R`
 #| code-summary: 'show/hide movies_app() in app.R'
 # install ------------------------------------
 # after installing, comment this out
-pkgs <- c("shiny", "shinythemes", "stringr", "ggplot2", "rlang")
-install.packages(pkgs, verbose = FALSE)
+pkgs <- c("shiny", "shinythemes", "stringr", "ggplot2", "rlang") # <1>
+install.packages(pkgs, verbose = FALSE) # <1>
 
 # packages ------------------------------------
-library(shiny)
-library(shinythemes)
-library(stringr)
-library(ggplot2)
-library(rlang)
+library(shiny) # <2>
+library(shinythemes) # <2>
+library(stringr) # <2>
+library(ggplot2) # <2>
+library(rlang) # <2>
 
-movies_app <- function() {
+movies_app <- function() { 
   shiny::shinyApp(
     ui = shiny::fluidPage(
       shiny::titlePanel(
@@ -795,44 +789,50 @@ movies_app <- function() {
       ),
       shiny::sidebarLayout(
         shiny::sidebarPanel(
-          mod_var_input_ui("vars")
+          mod_var_input_ui("vars") # <3>
         ),
         shiny::mainPanel(
-          mod_scatter_display_ui("plot")
+          mod_scatter_display_ui("plot") # <4>
         )
       )
     ),
     server = function(input, output, session) {
-      selected_vars <- mod_var_input_server("vars")
+      
+      selected_vars <- mod_var_input_server("vars") # <5>
 
-      mod_scatter_display_server("plot", var_inputs = selected_vars)
+      mod_scatter_display_server("plot", var_inputs = selected_vars) # <6>
     }
   )
 }
 movies_app()
 ```
 
-:::
+1. Header (comment this out after the packages are installed)
+2. Load packages  
+3. Variable input UI module 
+4. Graph display UI module 
+5. Variable input server module 
+6. Graph display server module 
 
 Now, I can run the app with `movies_app()`. 
 
 :::: {.column-page-inset-right}
 
-::: {#fig-01_shiny_movie_reviews_projApp}
+::: {#fig-01_shiny_movie_reviews_shinyAppProj}
 
-![Movie reviews app](img/01_shiny_movie_reviews_projApp.png){#fig-01_shiny_movie_reviews_projApp width="100%" fig-align="center"}
+![Movie reviews app](img/01_shiny_movie_reviews_proj_app.png){#fig-01_shiny_movie_reviews_shinyAppProj width="100%" fig-align="center"}
 
 View a deployed version [here](https://mjfrigaard.shinyapps.io/projapp/).
 :::
 
 ::::
 
-The deployed files of `projApp` are below: 
+The deployed files of `shinyAppProj` are below: 
 
 ```{bash}
 #| eval: false 
 #| code-fold: false
-projApp/ # 03_projApp branch
+shinyAppProj/ # 03_proj-app branch
 ├── DESCRIPTION
 ├── R/
 │   ├── mod_scatter_display.R
@@ -841,11 +841,11 @@ projApp/ # 03_projApp branch
 ├── README.md
 ├── app.R
 ├── movies.RData
-├── projApp.Rproj
+├── shinyAppProj.Rproj
 ├── rsconnect/
 │   └── shinyapps.io/
 │       └── user/
-│           └── projApp.dcf
+│           └── shinyAppProj.dcf
 └── www/
     └── shiny.png
 
@@ -854,7 +854,7 @@ projApp/ # 03_projApp branch
 
 :::{.column-margin}
 
-The `rsconnect/` folder has been removed from the [`03_projApp`](https://github.com/mjfrigaard/projApp/tree/03_projApp) branch.
+The `rsconnect/` folder has been removed from the [`03_proj-app`](https://github.com/mjfrigaard/shinyAppProj/tree/03_proj-app) branch.
 
 :::
 
@@ -912,7 +912,7 @@ Or in the project root folder
 ├── global.R
 ├── man
 ├── movies.RData
-├── projApp.Rproj
+├── shinyAppProj.Rproj
 └── www
     └── shiny.png
 
@@ -1013,14 +1013,14 @@ The following package(s) will be updated in the lockfile:
 
 Do you want to proceed? [Y/n]: y
 
-- Lockfile written to '~/path/to/projApp/renv.lock'.
+- Lockfile written to '~/path/to/shinyAppProj/renv.lock'.
 ```
 
 :::
 
 ## Recap
 
-This chapter has covered some differences between developing shiny apps and regular R programming, creating new shiny projects in Posit Workbench, and some practices to adopt that can make the transition to app-packages a little easier. The code used in this chapter is stored in the [`projApp` repository](https://github.com/mjfrigaard/projApp/branches/all). 
+This chapter has covered some differences between developing shiny apps and regular R programming, creating new shiny projects in Posit Workbench, and some practices to adopt that can make the transition to app-packages a little easier. The code used in this chapter is stored in the [`shinyAppProj` repository](https://github.com/mjfrigaard/shinyAppProj/branches/all). 
 
 ```{r}
 #| label: co_box_recap

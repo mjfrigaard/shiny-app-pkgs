@@ -23,10 +23,9 @@ co_box(
 
 Writing tests for shiny app-packages pose some unique challenges. Shiny functions are written in the context of its [reactive model](https://shiny.posit.co/r/articles/build/reactivity-overview/), so some conventional testing techniques and methods for regular R packages don’t directly apply. Fortunately, the infrastructure for storing and running tests in your app-package is identical to a standard R package.
 
-This chapter will cover three layers of tests: unit tests, integration/module tests, and end-to-end or system tests. I'll focus on *what to test* and *why to test it*, not *how to write tests*, because plenty of those resources exist. [^tests-into-1] [^tests-into-2] [^tests-into-3] The only exception being some tricks I've learned for using `testServer()` with module server functions.[^tests-into-4]
+This chapter will cover the links between user specifications, functional requirements, and show how to use a traceability matrix to track your tests. I’ll also touch on the three layers of testing: unit tests, integration/module tests, and end-to-end or system tests. I'll focus on *what to test* and *why to test it*, not *how to write tests*, because plenty of those resources exist. [^tests-into-1] [^tests-into-2] [^tests-into-3] The only exception being some tricks I've learned for using `testServer()` with module server functions.[^tests-into-4]
 
-I’ll also touch on the links between user specifications, functional requirements, and show how to use a traceability matrix to track your tests.
-
+ 
 [^tests-into-1]: Unit tests are covered extensively in [R Packages, 2ed](https://r-pkgs.org/testing-basics.html) and the [`testthat` documentation](https://testthat.r-lib.org/index.html)
 
 [^tests-into-2]: `shinytest2` has [excellent documentation](https://rstudio.github.io/shinytest2/) (and [videos](https://www.youtube.com/watch?v=Gucwz865aqQ)), and I highly recommend reading through those resources.
@@ -50,18 +49,26 @@ library(covr)
 
 ## User specifications & requirements
 
-When developing tests, everyone is faced with the same two questions: 
+When you being writing tests for your Shiny app-package, you'll be faced with the two questions: 
 
 1. What do I test?  
 2. How do I test it?  
 
-The shiny app in `pkgApp` we've been developing doesn't have a software requirements specification (SRS), which is the document that typically captures the application's intended purpose or the problem it's designed to solve. In regular app development, the SRS contains the user specifications, feature requirements and functional requirements, which are are the guidelines that direct the development process, albeit from slightly different perspectives.
+There are typically supporting documents and resources to help you address these questions, one of them is the software requirements specification (SRS). The SRS typically captures an application's intended purpose (or the problem it's designed to solve) broken down into three general areas: user specifications, feature requirements, and functional requirements. These are the guidelines that direct the development process, albeit from slightly different perspectives. 
 
-Understanding their relationship is important for knowing the application we're developing meets the technical standards and satisfies the user needs.
+-   **The user specifications capture the needs and expectations of the end-user.** These are usually non-technical and focused on the "why" and the "what" of the application.
+
+-   **The feature requirements list the high-level capabilities of the application.** Features are defined early in the life of a project and become the talking points during discussions with stakeholders to be used for scoping and prioritization. Because their scope can be broad, they may be composed of various functional (and sometimes even non-functional).
+
+-   **Functional requirements are the testable, specific actions, inputs, and outputs.** Functional requirements provide the technical details of how the features will be implemented, and a single feature can give rise to multiple functional requirements.
+
+Understanding the relationship between the specifications, features, and functional requirements is important for knowing if the application we're developing meets the technical standards and satisfies the user's needs.
+
+Below we'll cover a brief example of each.
 
 ### User Requirements
 
-**User Requirements** are what the end-user (i.e., a film analyst) wants to achieve with the dashboard.[^tests-specs-1]
+**User Requirements** are what the end-user (i.e., a film analyst) wants to achieve with the application.[^tests-specs-1]
 
 [^tests-specs-1]: User Requirements are sometimes referred to as "user stories," "use cases," or "general requirements"
 
@@ -83,9 +90,9 @@ co_box(
 
 ### Feature Requirements
 
-Each **Feature Requirement** is a high-level description of the feature's capabilities (i.e, the scatter plot), phrased at satisfying the end-user's needs outlined in the **User Requirements**.[^tests-specs-2]
+The **feature requirement** translates the end-user's expectation into a high-level description of an application capability (i.e, display a scatter plot), phrased at satisfying a specific end-user need outlined in the **user requirements**.[^tests-specs-2]
 
-[^tests-specs-2]: "Feature requirements" and "functional requirements" are sometimes used interchangeably, but they refer to different aspects of the software. **Feature requirements** are the high-level characteristics the system *should have* and often capture a collection of smaller functionalities (which are broken down into specific functional requirements).
+[^tests-specs-2]: "Feature requirements" and "functional requirements" are sometimes used interchangeably, but they refer to different aspects of the software. **Feature requirements** are the desired high-level characteristics the application *should* have, and often capture a collection of smaller functionalities (which are broken down into specific functional requirements).
 
 ```{r}
 #| label: co_box_feat_reqs
@@ -93,21 +100,21 @@ Each **Feature Requirement** is a high-level description of the feature's capabi
 #| results: asis
 #| eval: true
 co_box(
-  color = "y", fold = TRUE, look = "minimal",
+  color = "y", fold = FALSE, look = "minimal",
   size = '1.10', header = "Scatter plot feature requirements",
   contents = 
 " 
 
-**FE1**: The Shiny app should offer an interactive scatter plot feature that allows users to visualize and compare movie reviews from at least two data sources (IMDb, Rotten Tomatoes). The scatter plot should offer options for selecting variables of interest (i.e., audience scores, website ratings, runtime, etc.) to zoom into specific data points for detailed analysis.
+**FE1**: The Shiny app should offer an interactive scatter plot feature that allows users to visualize and compare movie reviews from at least two data sources (IMDb, Rotten Tomatoes), with options for selecting variables of interest (i.e., audience scores, website ratings, runtime, etc.) and the ability to zoom into specific data points for detailed analysis.
   
   ")
 ```
 
 ### Functional Requirements
 
-The **Functional Requirements** are written for the developer and provide technical details on *how the feature* (i.e., the scatter plot) *should behave* and *what it needs to do*.[^tests-specs-3]
+The **Functional Requirements** are written for the developer and provide technical details on *how* the feature (i.e., the scatter plot) should behave* and *what* it needs to do. These requirements are written for developers and represent where the end-user's expectations come into direct contact with code.[^tests-specs-3]
 
-[^tests-specs-3]: **Functional requirements** describe what a software system *should do* and are precise, measurable, and testable. 
+[^tests-specs-3]: **Functional requirements** are precise, measurable, and testable. 
 
 ```{r}
 #| label: co_box_fun_reqs
@@ -115,28 +122,32 @@ The **Functional Requirements** are written for the developer and provide techni
 #| results: asis
 #| eval: true
 co_box(
-  color = "o", fold = TRUE, look = "minimal",
+  color = "r", fold = FALSE, look = "minimal",
   size = '1.10', header = "Scatter plot functional requirements",
   contents = 
 " 
-  - **FR1**: The system shall display movie reviews from IMDb and Rotten Tomatoes collected from their respective APIs.
+  - **FR1**: The system will display movie reviews from IMDb and Rotten Tomatoes collected from their respective APIs.
 
-  - **FR2**: The scatter plot shall be displayed on the dashboard and updated with new user inputs.
+  - **FR2**: The scatter plot will be displayed on the dashboard and updated with new user inputs.
 
-  - **FR3**: Each data point on the scatter plot shall represent a movie and be color-coded based on MPAA ratings, genre, title type, critics rating, and audience rating.
+  - **FR3**: Each data point on the scatter plot will represent a movie and be color-coded based on MPAA ratings, genre, title type, critics rating, and audience rating.
   
-  - **FR4**: The scatter plot shall have axes labeled with rating scales and must include a legend to differentiate between data sources.
+  - **FR4**: The scatter plot will have axes labeled with rating scales and must include a legend to differentiate between data sources.
 
-  - **FR5**: Users can zoom into specific areas of the scatter plot for a more detailed view.
+  - **FR5**: The scatter plot will have interactive capabilities to provide end-users the ability to zoom into specific areas.
   
   ")
 ```
 
 ### Traceability matrix
 
-In our app-package, we want to ensure that corresponding functionalities and tests address all user requirements and that every functionality is justified in terms of user needs and has been tested. A traceability matrix is typically used to link the user specifications (and corresponding feature requirements) to the functional requirements they give rise to and the tests used to verify that the application has been developed correctly.
+In our app-package, we want to ensure the functionalities (i.e., the code) and tests address all the user specifications, *and* that every functionality corresponds to an explicit user need (and that it's been tested). A traceability matrix is a table that links user specifications, feature requirements, and the functional requirements they give rise to with the tests used to verify that the application has been developed correctly.
 
-Fortunately, the R package structure gives us the tools we need to capture this documentation in the form of vignettes. We'll write the specifications for `pkgApp` in the `specs` vignette by using `usethis::use_vignette()`:
+Fortunately, the R package structure gives us some tools to capture this documentation in the form of vignettes. 
+
+#### [`use_vignette()`]{style="font-size: 1.05em;"}
+
+We'll write the specifications for `shinyAppPkg` in the `specs` vignette by using `usethis::use_vignette()`:
 
 ```{r}
 #| label: git_box_08_tests-specs
@@ -146,7 +157,7 @@ Fortunately, the R package structure gives us the tools we need to capture this 
 git_margin_box(
   fig_pw = '75%', 
   branch = "08_tests-specs", 
-  repo = 'pkgApp')
+  repo = 'shinyAppPkg')
 ```
 
 ```{r}
@@ -174,16 +185,18 @@ Adding our first vignette to the `vignettes/` folder does the following:
 - Adds `inst/doc` to `.gitignore` and `*.html`, `*.R` to `vignettes/.gitignore`[^test-specs-6]
 
 
-[^test-specs-4]: We didn't cover the `Suggests` field in the [Dependencies](https://mjfrigaard.github.io/shinyap/dependencies.html) chapter, but "*lists packages that are not necessarily needed. This includes packages used only in examples, tests or vignettes ... and packages loaded in the body of functions.*" - [Writing R Extensions, Package Dependencies](https://cran.r-project.org/doc/manuals/R-exts.html#Package-Dependencies)
+[^test-specs-4]: We briefly covered the `Suggests` field in [Dependencies](https://mjfrigaard.github.io/shinyap/dependencies.html), but in this case it specifically applies to "*packages that are not necessarily needed. This includes packages used only in examples, tests or vignettes...*" - [Writing R Extensions, Package Dependencies](https://cran.r-project.org/doc/manuals/R-exts.html#Package-Dependencies)
 
-[^test-specs-5]: The [documentation](https://cran.r-project.org/doc/manuals/R-exts.html#The-DESCRIPTION-file) on `VignetteBuilder` is an excellent example of how challenging if can be to manage dependencies, "*Note that if, for example, a vignette has engine `knitr::rmarkdown`, then `knitr` provides the engine but both `knitr` and `rmarkdown` are needed for using it, so both these packages need to be in the `VignetteBuilder` field and at least suggested (as `rmarkdown` is only suggested by `knitr`, and hence not available automatically along with it).*"
+[^test-specs-5]: The [documentation](https://cran.r-project.org/doc/manuals/R-exts.html#The-DESCRIPTION-file) on `VignetteBuilder` is an excellent example of how challenging if can be to trace dependencies across packages, "*Note that if, for example, a vignette has engine `knitr::rmarkdown`, then `knitr` provides the engine but both `knitr` and `rmarkdown` are needed for using it, so both these packages need to be in the `VignetteBuilder` field and at least suggested (as `rmarkdown` is only suggested by `knitr`, and hence not available automatically along with it).*"
 
-[^test-specs-6]: We learned about the `inst/` folder in the [External Files chapter](https://mjfrigaard.github.io/shinyap/), so this should help explain where knitted vignettes end up when a package is installed. 
+[^test-specs-6]: We covered the `inst/` folder in the [External Files chapter](https://mjfrigaard.github.io/shinyap/), and you might recall that `docs/` was one of the folders we shouldn't create (now you know why!).
 
-When building the traceability matrix, start with the user specifications. The general language used in these descriptions can typically provide a basis for deriving the more technical (but still high-level) feature requirements, which form a basis for us to derive multiple functional requirements. 
+When building the traceability matrix, I highly suggest using the [Visual Markdown mode]() (especially when building tables). 
+
+We'll start with the user specifications. The language used for these descriptions are non-technical, but should provide a basis for deriving the more technical (but still high-level) feature requirements:
 
 ```{r}
-#| label: co_box_trace_matrix
+#| label: co_box_trace_matrix_specs_features
 #| echo: false
 #| code-fold: false
 tibble::tibble(
@@ -194,7 +207,7 @@ tibble::tibble(
     "FE1: interactive scatter plot (two data sources, options to explore variables of interest)"
   ),
   `Functional Requirements` = c(
-    "FR1: data source"
+    NA_character_
   )
 ) |> 
   gt::gt(auto_align = TRUE) |> 
@@ -205,10 +218,10 @@ tibble::tibble(
 )
 ```
 
-In this way, a single user specification usually gives rise to multiple functional requirements.
+A single functional requirement often gives rise to multiple functional requirements:
 
 ```{r}
-#| label: co_box_trace_matrix_fun_reqs
+#| label: co_box_trace_matrix_specs_features_function_01
 #| echo: false
 #| code-fold: false
 #| include: true
@@ -244,7 +257,7 @@ trace_matrix |>
 )
 ```
 
-Now that we have the technical details for our application requirement, we can identify what needs to be tested: 
+Now that the technical details of the user-needs have been documented, we can identify what needs to be tested: 
 
 ```{r}
 #| label: co_box_trace_matrix_tests
@@ -252,8 +265,8 @@ Now that we have the technical details for our application requirement, we can i
 #| code-fold: false
 #| include: true
 trace_matrix |> 
-  tibble::add_column(Test = 
-      paste0("T", 1:nrow(trace_matrix), ": "), .after = 3) |>
+  tibble::add_column(Tests = 
+      paste0("T", 1:nrow(trace_matrix)), .after = 3) |>
   gt::gt() |> 
   gt::sub_missing(
   columns = gt::everything(),
@@ -265,21 +278,23 @@ trace_matrix |>
 
 After we’ve written our tests, we can include their results in the matrix to ensure:
 
-1. Each user specification has an accompanying feature requirement.
+1. Each user specification has accompanying feature requirements.
 
-2. The feature requirements have been broken down into precise, measurable, and testable pieces of code.
+2. The feature has been broken down into precise, measurable, and testable functional requirements.
 
-3. Tests have been written for each functional requirement (and indicate whether they are passing or not).
+3. Tests have been written for each functional requirement 
+
+If you'd like, an additional column can be added to track whether the test has passed:
 
 ```{r}
 #| label: co_box_trace_matrix_add_test_status
 #| echo: false
 #| code-fold: false
 trace_matrix |> 
-  tibble::add_column(Test = 
-      paste0("T", 1:nrow(trace_matrix), ": "), .after = 3) |> 
-  tibble::add_column(Status = 
-      paste0("T", 1:nrow(trace_matrix), " Status: "), .after = 4) |> 
+  tibble::add_column(Tests = 
+      paste0("T", 1:nrow(trace_matrix)), .after = 3) |> 
+  tibble::add_column(`Test Status` = 
+      paste0("T", 1:nrow(trace_matrix), "-status: "), .after = 4) |> 
   gt::gt() |> 
   gt::sub_missing(
   columns = gt::everything(),
@@ -289,11 +304,15 @@ trace_matrix |>
 ```
 
 
-Vignettes are a great place to store this information (although it probably shouldn't be the *only* place to store it), because it's self-contained and travels with the package whenever the code is updated.
+Vignettes are a great place to store this information because it's self-contained and travels with the package whenever the code is updated.[^test-specs-7]
+
+[^test-specs-7]: Documenting the traceability matrix in vignettes are great for developers, but it's also a good idea use an issue-tracking system with version control, like GitHub Projects or Azure DevOps.
+
+The next section covers setting up tests with `testthat`, the structure of unit tests, and additional elements you should consider using in your app-package: 
 
 ## The test suite
 
-Multiple strategies exist for testing code. For example, if you've adopted test-driven development (TDD)[^tests-testthat-1], you'll develop tests before writing utility functions, modules, or your standalone app function. However, if you're a mere mortal like the rest of us, you'll typically develop your tests and functions in tandem. 
+Multiple strategies exist for writing tests. For example, if you've adopted test-driven development (TDD)[^tests-testthat-1], you'll develop tests before writing utility functions, modules, or your standalone app function. However, if you're a mere mortal like the rest of us, you'll typically develop your tests and functions in tandem. 
 
 [^tests-testthat-1]: "*The tests should be written before the functionality that is to be tested. This has been claimed to have many benefits. It helps ensure that the application is written for testability, as the developers must consider how to test the application from the outset rather than adding it later."* - [TDD, Wikipedia](https://en.wikipedia.org/wiki/Test-driven_development) 
 
@@ -309,59 +328,36 @@ In packages using `devtools`, the unit testing infrastructure is built with `use
 usethis::use_testthat()
 ```
 
--   Set active project to current working directory: 
+- [x]   In the `DESCRIPTION` file, `testthat (>= 3.0.0)` is listed under `Suggests` and `Config/testthat/edition: 3` is used to specify the `testthat` edition
 
-    ```{verbatim}
-    #| eval: false
-    #| code-fold: false
-    ✔ Setting active project to '/path/to/pkgApp'
-    ```
-
--   In the `DESCRIPTION` file, add the `Suggests` field and include `testthat (>= 3.0.0)` and the testthat edition (`Config/testthat/edition: 3`)
-
-    ```{verbatim}
-    #| eval: false
-    #| code-fold: false
-    ✔ Adding 'testthat' to Suggests field in DESCRIPTION
-    ✔ Adding '3' to Config/testthat/edition
-    ```
+```{verbatim}
+#| eval: false
+#| code-fold: false
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+```
     
--   A new `tests/` folder is created, with a `testthat/` subfolder:
+- [x]   A new `tests/` folder is created, with a `testthat/` subfolder. The `testthat.R` file is created (which is sometimes referred to as the 'test runner,' because it runs all our tests).
 
-    ```{verbatim}
-    #| eval: false
-    #| code-fold: false
-    ✔ Creating 'tests/testthat/'
-    ```
-    
--   The `testthat.R` file is created (sometimes referred to as the test 'runner' because it runs all your tests).
-    
-    ```{verbatim}
-    #| eval: false
-    #| code-fold: false
-    ✔ Writing 'tests/testthat.R'
-    ```
+```{bash}
+#| eval: false
+#| code-fold: false
+tests/
+  ├── testthat/
+  └── testthat.R #<1>
 
-Finally, we're given some advice on the next step for creating our first test: 
+2 directories, 1 file
+```
+1. Test runner
+
+- [x]   Finally, we're given some advice on the next step for creating our first test: 
 
 ```{verbatim}
 #| eval: false
 #| code-fold: false
 • Call `use_test()` to initialize a basic test file and open it for editing.
 ```
-
-Our new `tests/` folder structure is below: 
-
-```{bash}
-#| eval: false
-#| code-fold: false
-tests/
-  ├── testthat
-  └── testthat.R
-
-2 directories, 1 file
-```
-
 
 ## Unit tests
 
@@ -373,22 +369,12 @@ tests/
 git_margin_box(
   fig_pw = '75%', 
   branch = "08_testthat-tests", 
-  repo = 'pkgApp')
+  repo = 'shinyAppPkg')
 ```
 
-<!--
-> Test Core Functions: Use the `testthat` package to write unit tests for all core logic functions. These are the building blocks of your application and should be thoroughly tested.
+If I'm writing a unit test for the `scatter_plot()` function in `R/scatter_plot.R`, I'll create test file with `usethis::use_test("scatter_plot")`.[^test-files-folders]
 
-> Mock Inputs: For functions that rely on external data or user input, use mock data to simulate various scenarios.
-
-> Boundary Conditions: Test edge cases and boundary conditions to ensure stability.
-
-> Test Coverage: Use tools like `covr` to measure test coverage and aim for a high percentage.
--->
-
-If I'm writing write a unit test for the `scatter_plot()` function in `R/scatter_plot.R`, I'll create test file with `usethis::use_test("scatter_plot")`.
-
-### New tests with [`use_test()`]{style="font-size: 1.05em;"}
+[^test-files-folders]: Ideally there is a file named for every function in the `R/` folder, and a corresponding test file (with the `test-` prfix) in the `tests/testthat/` folder]
 
 ```{r}
 #| eval: false
@@ -398,7 +384,7 @@ usethis::use_test("scatter_plot")
 
 #### Unit test files
 
-The IDE will automatically open the new test file: 
+The IDE will automatically create and open the new test file: 
 
 ```{verbatim}
 #| eval: false
@@ -409,42 +395,44 @@ The IDE will automatically open the new test file:
 
 #### Tests
 
-The new test file contains a boilerplate test (I've included the argument names):
-
-```{r}
-#| eval: false
-#| code-fold: false
-test_that(desc = "multiplication works", code = {
-  expect_equal(2 * 2, 4)
-})
-```
-
-Each `testthat` test has a test context (supplied to the `desc` argument) followed by the test `code` (supplied in curly brackets). When a test is run, you'll see feedback on whether it passes or fails:
-
-```{r}
-#| eval: true
-#| code-fold: false 
-#| collapse: true
-test_that(desc = "multiplication works", code = {
-  expect_equal(2 * 2, 4)
-})
-```
+The new test file contains a boilerplate test. Each `testthat` test has a test context (supplied to the `desc` argument) followed by the test `code` argument (supplied in curly brackets). 
 
 #### Expectations
 
-Most expectation have two parts: an `observed` object, and an `expected` object. The `observed` object is an artifact of some code you've written, and it's being compared against a known result (i.e., what is `expected`)
+Most expectation have two parts: an `observed` object, and an `expected` object. The `observed` object is an artifact of some code you've written, and it's being compared against a known result (i.e., what is `expected`).
 
 ```{r}
-#| eval: true 
+#| eval: false
+#| code-fold: false 
+#| collapse: true
+expect_equal( # <1> 
+  object = 2 * 2, # <2> 
+  expected = 4 # <3> 
+  ) 
+```
+
+1. The test expectation
+3. What is observed (i.e., the value or object)
+4. What was expected (i.e., the predefined criteria for success) 
+
+When a test is run, you'll see feedback on whether it passes or fails:
+
+```{r}
+#| eval: true
 #| code-fold: false
-expect_equal(
-  object = 2 * 2,
-  expected = 4)
+#| echo: true 
+#| collapse: true
+test_that("multiplication works", { 
+  expect_equal( 
+    object = 2 * 2, 
+    expected = 4 
+    ) 
+})
 ```
 
 ### Comparisons
 
-Comparison is the backbone of testing, and I've found knowing what package is performing the underlying comparison often saves me from surprising tests results. 
+Comparisons are the backbone of testing. I've found exploring how the test performs these comparisons (i.e., the underlying package(s)) can save me from surprising results. 
 
 For example, `testthat::expect_equal()` compares the `observed` and `expected` objects with the [`waldo` package](https://www.tidyverse.org/blog/2021/08/waldo-0-3-0/), with some help from [`diffobj`](https://github.com/brodieG/diffobj).
 
@@ -461,14 +449,16 @@ library(tibble)
 
 #### [`waldo`]{style="font-size: 1.05em;"}
 
-If you'd like a preview of a comparison before writing a formal test, you can pass the your `observed` and `expected` objects to `waldo::compare()` to see what the result will be, but be mindful of the difference in argument names:
+If you'd like a preview of a comparison before writing a formal test, you can pass the your `observed` and `expected` objects to `waldo::compare()`[^waldo-compare-args] 
+
+[^waldo-compare-args]: Be mindful of the difference in arguments between expectation functions (i.e., `expect_equal()`) and `waldo::compare()`
 
 ```{r}
 #| eval: true 
 #| include: false
 old <- tibble(
   chr = LETTERS[2:4],
-  num = as.double(c(1, 2, 3)),
+  num = as.double(c(1.0, 2.0, 3.0)),
   fct = factor(c("low", "med", "high"), 
         levels = c("low", "med", "high"), 
         labels = c("L", "M", "H"),
@@ -482,7 +472,6 @@ new <- data.frame(
         labels = c("low", "med", "high"))
 )
 ```
-
 
 For example, suppose we have two objects: `old` and `new`
 
@@ -500,7 +489,7 @@ old
 new
 ```
 
-The outputs below show us both 'No differences' and the types of differences detected with `waldo::compare()`:
+The outputs below are example outputs from `waldo::compare()`:
 
 ::: {layout="[[30,70]]"}
 
@@ -509,9 +498,10 @@ The outputs below show us both 'No differences' and the types of differences det
 #| code-fold: false
 #| collapse: true
 compare(
-  x = old, 
-  y = old)
+  x = old, # <1>
+  y = old) # <1> 
 ```
+1. Comparing identical objects
 
 
 ```{r}
@@ -519,9 +509,10 @@ compare(
 #| code-fold: false
 #| collapse: true
 compare(
-  x = old, 
-  y = new)
+  x = old, # <1>
+  y = new) # <1>
 ```
+1. Comparing different objects
 
 :::
 
@@ -562,33 +553,35 @@ diffStr(
 ![Viewer ouput from `diffobj::diffStr()`](img/08_tests_diffstr.png){#fig-08_tests_diffobj width='100%' align='center'}
 :::
 
-After seeing the `old` vs `new` comparisons with `waldo` and `diffobj`, you should notice the similarities in the results of a `testthat` test on the same objects:
+After viewing the `old` vs `new` comparisons with `waldo` and `diffobj`, you should notice similarities and differences in the results from `testthat`[^compare-tolerance]
+
+[^compare-tolerance]: The results from `testthat` don't include the differences between `old$num` and `new$num`. This is due to the `tolerance` argument, which can be adjusted in both functions.
 
 ```{verbatim}
 #| eval: false 
 #| code-fold: false
 [ FAIL 1 | WARN 0 | SKIP 0 | PASS 0 ]
 
-── Failure (test-old-vs-new.R:18:3): old vs. new ──────────
-`old` (`actual`) not equal to `new` (`expected`).
+── Failure (test-old_vs_new.R:17:3): old vs. new ───────────────────────────────
+`new` (`actual`) not equal to `old` (`expected`).
 
-`class(actual)`:   "tbl_df" "tbl" "data.frame"
-`class(expected)`:                "data.frame"
+`class(actual)`:   "data.frame"                   
+`class(expected)`: "tbl_df"     "tbl" "data.frame"
 
-`names(actual)`:   "chr" "num" "fct"
-`names(expected)`: "CHR" "num" "fct"
+`names(actual)`:   "CHR" "num" "fct"
+`names(expected)`: "chr" "num" "fct"
 
-`actual$chr` is a character vector ('B', 'C', 'D')
-`expected$chr` is absent
+`actual$CHR` is a character vector ('B', 'C', 'D')
+`expected$CHR` is absent
 
-`class(actual$fct)`:   "ordered" "factor"
-`class(expected$fct)`:           "factor"
+`class(actual$fct)`:   "factor"          
+`class(expected$fct)`: "ordered" "factor"
 
-`levels(actual$fct)`:   "L"   "M"   "H"   
-`levels(expected$fct)`: "low" "med" "high"
+`levels(actual$fct)`:   "low" "med" "high"
+`levels(expected$fct)`: "L"   "M"   "H"   
 
-`actual$CHR` is absent
-`expected$CHR` is a character vector ('B', 'C', 'D')
+`actual$chr` is absent
+`expected$chr` is a character vector ('B', 'C', 'D')
 [ FAIL 1 | WARN 0 | SKIP 0 | PASS 0 ]
 ```
 
@@ -796,7 +789,7 @@ vdiffr::expect_doppelganger(
 ```
 
 
-`expect_doppelganger()` can be dropped in `test_that()` like any other expectation. Below is an example comparing the graph outputs from `ggplot2` and the custom `scatter_plot()` utility function in `pkgApp`. 
+`expect_doppelganger()` can be dropped in `test_that()` like any other expectation. Below is an example comparing the graph outputs from `ggplot2` and the custom `scatter_plot()` utility function in `shinyAppPkg`. 
 
 Notice I've loaded the `ggp2_movies.rds` data[^tests-8] and included the `test_cmt()` helper with `start` and `end` messages (before and after the test code).
 
@@ -850,7 +843,7 @@ When we initially run the test it passes, but with a warning that tells us the b
 #| code-fold: false
 ==> Testing R file using 'testthat'
 
-ℹ Loading pkgApp
+ℹ Loading shinyAppPkg
 [ FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]
  [ START | 2023-09-13 11:58:04 | scatter_plot() = ggplot2movies::movies snapshot] 
 [ FAIL 0 | WARN 1 | SKIP 0 | PASS 1 ]
@@ -895,7 +888,7 @@ In a typical workflow, we'd write additional tests, then load, document, and bui
 
 [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd> / <kbd>D</kbd> / <kbd>B</kbd>]{style="font-style: italic; font-weight: bold; font-size: 1.10em"}
 
-Subsequent tests in `pkgApp` will pass without a warning:
+Subsequent tests in `shinyAppPkg` will pass without a warning:
 
 [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>T</kbd>]{style="font-style: italic; font-weight: bold; font-size: 1.10em"}
 
@@ -904,7 +897,7 @@ Subsequent tests in `pkgApp` will pass without a warning:
 #| code-fold: false
 ==> devtools::test()
 
-ℹ Testing pkgApp
+ℹ Testing shinyAppPkg
 ✔ | F W S  OK | Context
 ⠏ |         0 | scatter_plot  
  [ START | 2023-09-13 11:58:53 | scatter_plot() = ggplot2movies::movies snapshot] 
@@ -1060,7 +1053,7 @@ shiny::testServer(app = mod_var_input_server, expr = {
 #| code-fold: false
 ==> devtools::test()
 
-ℹ Testing pkgApp
+ℹ Testing shinyAppPkg
 ✔ | F W S  OK | Context
 ⠏ |         0 | mod_var_input_server                                                  Loading required package: shiny
 
