@@ -54,7 +54,7 @@ When you being writing tests for your Shiny app-package, you'll be faced with th
 1. What do I test?  
 2. How do I test it?  
 
-There are typically supporting documents and resources to help you address these questions, one of them is the software requirements specification (SRS). The SRS typically captures an application's intended purpose (or the problem it's designed to solve) broken down into three general areas: user specifications, feature requirements, and functional requirements. These are the guidelines that direct the development process, albeit from slightly different perspectives. 
+There are typically supporting documents and resources to help you address these questions, one of them is the software requirements specification (SRS). The SRS typically breaks down an application's intended purpose (or the problem it's designed to solve) into three general areas: user specifications, feature requirements, and functional requirements. These are the guidelines that direct the development process, albeit from slightly different perspectives. 
 
 -   **The user specifications capture the needs and expectations of the end-user.** These are usually non-technical and focused on the "why" and the "what" of the application.
 
@@ -112,7 +112,7 @@ co_box(
 
 ### Functional Requirements
 
-The **Functional Requirements** are written for the developer and provide technical details on *how* the feature (i.e., the scatter plot) should behave* and *what* it needs to do. These requirements are written for developers and represent where the end-user's expectations come into direct contact with code.[^tests-specs-3]
+The **Functional Requirements** are written for the developer and provide technical details on *how* the feature (i.e., the scatter plot) should behave and *what* it needs to do. These requirements are written for developers and represent where the end-user's expectations come into direct contact with code.[^tests-specs-3]
 
 [^tests-specs-3]: **Functional requirements** are precise, measurable, and testable. 
 
@@ -145,9 +145,9 @@ In our app-package, we want to ensure the functionalities (i.e., the code) and t
 
 Fortunately, the R package structure gives us some tools to capture this documentation in the form of vignettes. 
 
-#### [`use_vignette()`]{style="font-size: 1.05em;"}
+#### [`vignettes/`]{style="font-size: 1.05em;"}
 
-We'll write the specifications for `shinyAppPkg` in the `specs` vignette by using `usethis::use_vignette()`:
+Package vignettes are a great place store the a draft of the traceability matrix, and they can be quickly created using `usethis::use_vignette()`:
 
 ```{r}
 #| label: git_box_08_tests-specs
@@ -163,7 +163,7 @@ git_margin_box(
 ```{r}
 #| eval: false 
 #| code-fold: false
-usethis::use_vignette("specs")
+usethis::use_vignette("test-specs")
 ```
 
 Adding our first vignette to the `vignettes/` folder does the following:
@@ -382,7 +382,7 @@ If I'm writing a unit test for the `scatter_plot()` function in `R/scatter_plot.
 usethis::use_test("scatter_plot")
 ```
 
-#### Unit test files
+#### Test files
 
 The IDE will automatically create and open the new test file: 
 
@@ -396,6 +396,15 @@ The IDE will automatically create and open the new test file:
 #### Tests
 
 The new test file contains a boilerplate test. Each `testthat` test has a test context (supplied to the `desc` argument) followed by the test `code` argument (supplied in curly brackets). 
+
+```{r}
+#| eval: false
+#| code-fold: false 
+test_that(desc = "multiplication works", code = { 
+ 
+})
+```
+
 
 #### Expectations
 
@@ -586,7 +595,7 @@ After viewing the `old` vs `new` comparisons with `waldo` and `diffobj`, you sho
 ```
 
 
-### Test supporting files
+### Helpers and fixtures
 
 Sometimes testing functions in isolation is not enough and it's useful to include either helper functions or data. This is especially true when the code we're testing goes beyond the function's borders, such as connecting to a database or API. The term for these supporting files are **test fixtures**,[^tests-5] and below we'll cover including them in the `tests/` folder.
 
@@ -602,7 +611,6 @@ The code used to create the test data (`make-ggp2-movies.R`) is stored in the sa
 #| eval: false 
 #| code-fold: true 
 #| code-summary: 'show/hide make-ggp2-movies.R'
-# code to prepare `ggp2movies` test data
 # pkgs <- c('ggplot2movies', 'tidyr', 'dplyr', 'stringr', 'purrr')
 # install.packages(pkgs, quiet = TRUE)
 
@@ -613,42 +621,34 @@ library(stringr)
 library(purrr)
 
 ggp2movies <- ggplot2movies::movies |>
-  dplyr::mutate(id = 1:n()) |>
-  tidyr::pivot_longer(
-    cols = Action:Short,
-    names_to = "Genre",
-    values_to = "GenreMember"
+  pivot_longer(c(Action:Short),
+    names_to = "genre_key",
+    values_to = "genre_value"
   ) |>
-  dplyr::group_by(
-    dplyr::across(-c(Genre, GenreMember))) |>
-  tidyr::nest() |>
-  dplyr::mutate(
-    Genres = purrr::map(data, ~ if (all(.x$GenreMember == 0)) {
-      character(0)
-    } else {
-      .x$Genre[.x$GenreMember == 1]
-    })
+  dplyr::mutate(genre_value = as.logical(genre_value)) |>
+  dplyr::select(
+    title, genre_key, genre_value, length,
+    year, budget, avg_rating = rating, votes, mpaa
+  ) |>
+  dplyr::filter(genre_value == TRUE) |>
+  group_by(title) |>
+  dplyr:::mutate(
+    genres = paste0(genre_key, collapse = ", ")
+  ) |>
+  dplyr::select(
+    title, genres, length, year,
+    budget, avg_rating, votes, mpaa
   ) |>
   dplyr::ungroup() |>
-  dplyr::select(title, Genres, length, year, 
-                budget, rating, votes, mpaa) |>
-  dplyr:::mutate(
-    genres = purrr::map_chr(
-      .x = Genres,
-      .f = stringr::str_c, collapse = ", "
-    )
-  ) |>
-  dplyr::select(title, genres, length, year, 
-                budget, avg_rating = rating, 
-                votes, mpaa) |>
+  dplyr::distinct(.keep_all = TRUE) |>
   dplyr::mutate(
+    genres = dplyr::na_if(x = genres, ""),
+    genres = factor(genres),
     mpaa = dplyr::na_if(x = mpaa, y = ""),
     mpaa = factor(mpaa,
       levels = c("G", "PG", "PG-13", "R", "NC-17"),
       labels = c("G", "PG", "PG-13", "R", "NC-17")
-    ),
-    genres = dplyr::na_if(x = genres, ""),
-    genres = factor(genres)
+    )
   ) |> 
   tidyr::drop_na()
 # save to tests/testthat/fixtures/
@@ -673,28 +673,25 @@ Test helpers are typically functions that make testing a little easier. I've inc
 
 ```{r}
 #| code-fold: true
+#| eval: true
 #| code-summary: 'show/hide test_cmt() helper' 
 # test comment helper
 test_cmt <- function(start = NULL, end = NULL, msg) {
+  withr::local_options(digits.secs = 4)
   if (is.null(start) & is.null(end)) {
-    cat("\n", 
-      stringr::str_glue("[{Sys.time()}| {msg}]"), 
-      "\n")
+    cat("\n")
+    cli::cli_alert_info("\n[{Sys.time()}| {msg}]")
   } else if (!is.null(start) & is.null(end)) {
-    cat("\n", 
-      stringr::str_glue("[ START | {Sys.time()} | {start} = {msg}]"),
-      "\n")
+    cat("\n")
+    cli::cli_alert_info("\n[ START | {Sys.time()} | {start} = {msg}]")
   } else if (is.null(start) & !is.null(end)) {
-    cat("\n", 
-      stringr::str_glue("[ END   | {Sys.time()} | {end} = {msg}]"), 
-      "\n")
+    cat("\n")
+    cli::cli_alert_info("\n[ END   | {Sys.time()} | {end} = {msg}]")
   } else {
-    cat("\n", 
-      stringr::str_glue("[ START | {Sys.time()} | {start} = {msg}]"),
-      "\n")
-    cat("\n", 
-      stringr::str_glue("[ END   | {Sys.time()} | {end} = {msg}]"),
-      "\n")
+    cat("\n")
+    cli::cli_alert_info("\n[ START | {Sys.time()} | {start} = {msg}]")
+    cat("\n")
+    cli::cli_alert_info("\n[ END   | {Sys.time()} | {end} = {msg}]")
   }
 }
 ```
@@ -711,7 +708,6 @@ test_that(desc = "multiplication works", code = {
   expect_equal(2 * 2, 4)
   test_cmt(end = "multiplication", msg = "2 * 2 = 4")
 })
-
 ```
 
 Functions like `test_cmt()` can be stored in `tests/testthat/helper.R`, which is automatically loaded with `devtools::load_all()`:
