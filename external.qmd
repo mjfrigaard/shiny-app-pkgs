@@ -19,9 +19,9 @@ co_box(
 )
 ```
 
-In the previous chapter we covered including external datasets in the `inst/extdata/` folder, and accessing these files with `system.file()`. As you'll see, the `inst/` folder plays a special role in R packages, and we can leverage this role when designing the structure of our app-package.  
+In the previous chapter we included an external dataset in the `inst/extdata/` folder. In this chapter, we'll cover the special role the `inst/` folder plays in R packages, and how we can leverage it's functionality in our app-package for multiple purposes.  
 
-In this chapter we'll cover how to add external resources (i.e., the files stored and previously served from the `www/` folder) to your shiny app-packages.
+In this chapter we'll also cover how to add external resources (i.e., files previously stored and served from the `www/` folder) to your app-package, and how to use `inst/` to store and run multiple applications.
 
 
 ```{r}
@@ -30,9 +30,27 @@ In this chapter we'll cover how to add external resources (i.e., the files store
 #| eval: false
 ```
 
-## This is your app-package
+## What happened to our icon/image?
 
-The current files and folders of `shinyAppPkg` are displayed below:
+When we launch our app using the standalone app function (`movies_app()`), we see the following: 
+
+:::: {.column-body-outset-right}
+
+::: {#fig-08_inst_movies_app_data_no_img}
+![`movies_app()` without logo](img/08_inst_movies_app_data_no_img.png){#fig-08_inst_movies_app_data_no_img width='100%' fig-align='center'}
+
+The `shiny.png` in `www` is not accessible when we launch the app
+:::
+
+::::
+
+The `shiny.png` logo in `www/` is not being loaded into the UI when the application is launched. This is a common problem developers encounter when converting shiny app into app-packages.[^external-common-problem] In the sections below, I'll cover where the contents of `www/` belong in an R package (and how to add them to your application).
+
+[^external-common-problem]: See [this popular thread](https://community.rstudio.com/t/shiny-app-as-a-package-directory-structure-and-www-folder/135323/8) on Posit Community.
+
+## Your app-package
+
+While developing, we get used to interacting with our app-package from the **Files** pane, or via the file explorer on your native operating system (Finder on macOS, or the File Explorer on Windows):
 
 ```{r}
 #| label: git_box_pkgApp_06_data
@@ -46,49 +64,50 @@ git_margin_box(
   repo = 'shinyAppPkg')
 ```
 
-::: {#fig-07_inst_files_pane}
-![The 'source' files for `shinyAppPkg`](img/07_inst_files_pane.png){#fig-07_inst_files_pane width='80%' fig-align='center'}
+::: {layout="[10,-1,10]" layout-valign="top"}
 
-Source files for the `shinyAppPkg` app-package
-:::
+!['Source' files `shinyAppPkg` in **Files** pane](img/08_inst_files_pane.png)
 
-If we're using the Posit Workbench IDE, the **Files** pane is how we  typically interact with the our app-package. For example, when we run `movies_app()`, we see the following: 
-
-:::: {.column-body-outset-right}
-
-::: {#fig-08_inst_movies_app_data_no_img}
-![`movies_app()` without logo](img/08_inst_movies_app_data_no_img.png){#fig-08_inst_movies_app_data_no_img width='100%' fig-align='center'}
-
-`www` not accessible in `shinyAppPkg`
-:::
+!['Source' files `shinyAppPkg` in **Finder** (macOS)](img/08_inst_finder_pkg.png)
 
 ::::
 
-The `shiny.png` logo in `www/` is not being loaded into the UI when the application is launched. Before we dive into how to add the contents of `www/` into `shinyAppPkg`, we'll take a step back and investigate what happens when a package is installed.
-
-## This is your app-package ... *installed*
-
-We've been running `load_all()`, `document()`, and `install()` on `shinyAppPkg`, but we haven't looked at the contents of the installed package. Reviewing the installed package will help us understand what the `system.file()` function is doing, and how we can use the `inst/` folder to include external resources to our app-package.
-
-When we run `devtools::install()`, the output tells us where the package is being installed:
-
-```{verbatim}
-#| eval: false 
-#| code-fold: false
-==> R CMD INSTALL --preclean --no-multiarch --with-keep.source shinyAppPkg
-
-* installing to library ‘/path/to/install/Library/R/x86_64/4.2/library’
-```
-
-If we add the `shinyAppPkg/` directory to the end of the path above, we can view the contents of the installed package (I'm using the `tree` command in the Terminal, but the `fs::dir_tree()` function will also print a folder tree):[^path-package-1]
-
-[^path-package-1]: Using `fs::path_packcage(package = "shinyAppPkg")` will also return the path to your installed package.
+However, when we run `install()` (or use [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>B</kbd>]{style="font-weight: bold; font-size: 0.80em"}), the output in the **Build** pane gives us the location of our *installed* package:
 
 ```{bash}
 #| eval: false 
 #| code-fold: false
-/path/to/install/Library/R/x86_64/4.2/library/shinyAppPkg/
-  ├── DESCRIPTION
+==> R CMD INSTALL --preclean --no-multiarch --with-keep.source shinyAppPkg
+
+* installing to library ‘/path/to/installed/package/shinyAppPkg/’ # <1>
+* installing *source* package ‘shinyAppPkg’ ...
+** using staged installation
+** R
+** data
+*** moving datasets to lazyload DB
+** inst
+** byte-compile and prepare package for lazy loading
+** help
+*** installing help indices
+** building package indices
+** testing if installed package can be loaded from temporary location
+** testing if installed package can be loaded from final location
+** testing if installed package keeps a record of temporary installation path
+* DONE 
+```
+1. This is the location of the installed version of `shinyAppPkg` 
+
+## Your app-package ... *installed*
+
+If we add `shinyAppPkg/` to the path above, it allows us to view the contents of the *installed* package (I'm using the `tree` command in the Terminal, but the `fs::dir_tree()` function will also print a folder tree):[^path-package]
+
+[^path-package]: Using `fs::path_packcage(package = "shinyAppPkg")` will also return the path to your installed package.
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+/path/to/installed/package/shinyAppPkg/
+  ├── DESCRIPTION # <1> 
   ├── INDEX
   ├── Meta/
   │   ├── Rd.rds
@@ -98,18 +117,18 @@ If we add the `shinyAppPkg/` directory to the end of the path above, we can view
   │   ├── links.rds
   │   ├── nsInfo.rds
   │   └── package.rds
-  ├── NAMESPACE
-  ├── R/
+  ├── NAMESPACE # <2> 
+  ├── R/ # <3> 
   │   ├── shinyAppPkg
   │   ├── shinyAppPkg.rdb
   │   └── shinyAppPkg.rdx
-  ├── data/
+  ├── data/ # <4> 
   │   ├── Rdata.rdb
   │   ├── Rdata.rds
   │   └── Rdata.rdx
-  ├── extdata/
+  ├── extdata/ # <5> 
   │   └── movies.fst
-  ├── help/
+  ├── help/ # <6> 
   │   ├── AnIndex
   │   ├── aliases.rds
   │   ├── paths.rds
@@ -118,29 +137,688 @@ If we add the `shinyAppPkg/` directory to the end of the path above, we can view
   └── html/
       ├── 00Index.html
       └── R.css
-
-7 directories, 24 files
 ```
+1. Copied over from source files (with a `Built` field added)  
+2. Directly copied over from source files  
+3. `R/` copied over from source files (`.R` files converted)   
+4. `data/` copied over from source files (`.RData` and `.rda` files converted)
+5. `inst/` sub-folder in source files   
+6. The contents of the `man/` folder (`.Rd` files converted)
 
-The installed version of `shinyAppPkg` has many of the same files as the 'source' version we've been working on (i.e., the `NAMESPACE` and `DESCRIPTION`). It also might surprise you to see that many of the source package files aren't included in the installed version (`.R`, `.Rd` files. etc.).
+The installed version of `shinyAppPkg` has many of the same files as the 'source' version we've been working with (i.e., `NAMESPACE` and `DESCRIPTION`). It also might surprise you to see that many of the source files aren't included in the installed version of `shinyAppPkg` (`.R`, `.Rd` files. etc.).
 
-Hopefully viewing this folder structure helps demystify what happens when a package is installed.[^inst-view-2] Below is the official documentation on what happens to the `inst/` folder (and it's subfolders) when a package is installed:[^inst-r-pkgs-3]
+Viewing the contents of an installed package should 1) demystify what happens when a package is installed and 2) give you an idea of how `system.file()` works. There are a few folder names we have to avoid using in `inst/`:[^inst-r-pkgs]
 
-[^inst-view-2]: The key takeaway here is that the `inst/` subfolders and files are available *unchanged* in the installed version (with the `inst/` folder omitted.).
 
-[^inst-r-pkgs-3]: Read more about sub-directories to avoid in `inst/` in [R Packages, 2ed](https://r-pkgs.org/misc.html#sec-misc-inst).
+
+[^inst-r-pkgs]: Read more about sub-directories to avoid in `inst/` in [R Packages, 2ed](https://r-pkgs.org/misc.html#sec-misc-inst).
 
 > "*The contents of the `inst/` subdirectory will be copied recursively to the installation directory. Subdirectories of `inst/` should not interfere with those used by R (currently, `R/`, `data/`, `demo/`, `exec/`, `libs/`, `man/`, `help/`, `html/` and `Meta/`, and earlier versions used `latex/`, `R-ex/`).*" - [Writing R extensions, Package subdirectories](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Package-subdirectories)
+
+## [`system.file()`]{style="font-size: 0.95em;"} 
+
+`system.file()` gives us access to the package files *on installation* (i.e., the files we saw in the folder tree above). In the previous chapter, we used `system.file()` to access the `movies.fst` file in `inst/extdata/`: 
+
+```{r}
+#| eval: false 
+#| code-fold: false
+fst::read_fst(
+  path = system.file("extdata/", "movies.fst", 
+                     package = "shinyAppPkg")
+  )
+```
+
+As we can see, the `movies.fst` has two locations: the 'source' package location, and the 'installed' package location.
+
+:::{layout="[45,55]" layout-valign="top"}
+
+#### Source package files 
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+inst/
+  └── extdata/
+        └── movies.fst
+```
+
+#### Installed package files 
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+└── extdata/
+      └── movies.fst
+```
+
+:::
+
+`system.file()` is accessing `movies.fst` from the *installed* location.[^inst-view]
+
+[^inst-view]: The key takeaway here is that the `inst/` subfolders and files are available *unchanged* in the installed version (with the `inst/` folder omitted.).
+
+To include the contents of `www/` in our app-package, we'll need to use `isnt/` folder, `system.file()`, and the `shiny::addResourcePath()` function. 
+
+## [`addResourcePath()`]{style="font-size: 0.95em;"}
+
+```{r}
+#| label: git_box_pkgApp_07_inst-www
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "standard",
+  fig_pw = '75%', 
+  branch = "07_inst-www", 
+  repo = 'shinyAppPkg')
+```
+
+The `addResourcePath()` function will add a "*directory of static resources to Shiny's web server*." In `shinyAppPkg`, want to add the `www` directory that includes the `shiny.png` file.[^add-resource-path-4]
+
+[^add-resource-path-4]: You can read more about adding external resources in the [documentation for `addResourcePath()`](https://shiny.posit.co/r/reference/shiny/latest/resourcepaths).
+
+If we want to continue keeping external resources in the `www/` folder, we can move `www/` and it's contents into `inst/`:
+
+::: {layout="[10,-1, 10]" layout-valign="top"}
+
+#### [Current `www` location]{style="font-size: 0.95em;"}
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+├── inst
+│   └── extdata
+│       └── movies.fst
+└── www
+    └── shiny.png
+```
+
+#### [New `www` location]{style="font-size: 0.95em;"} 
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+inst/
+  ├── extdata/
+  │   └── movies.fst
+  └── www/
+      └── shiny.png
+```
+
+:::
+
+In `R/movies_ui.R` function, we'll include the `addResourcePath()` at the top of the `tagList()` and reference the image in `img()` using only the subfolder in the path:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+movies_ui <- function() {
+  addResourcePath(
+    prefix = 'www', # <1> 
+    directoryPath = system.file('www', package = 'shinyAppPkg')) # <2> 
+  tagList(
+    fluidPage(
+      theme = shinythemes::shinytheme("spacelab"),
+      titlePanel(
+        div(
+          img(
+            src = "www/shiny.png", # <3> 
+            height = 60,
+            width = 55,
+            style = "margin:10px 10px"
+            ), 
+         "Movie Reviews"
+        )
+      ),
+      sidebarLayout(
+        sidebarPanel(
+          mod_var_input_ui("vars")
+        ),
+        mainPanel(
+          mod_scatter_display_ui("plot")
+        )
+      )
+    )
+  )
+} 
+```
+1. Prefix (or folder name) of installed location  
+2. Path to installed package files  
+3. Reference to installed package image file   
+
+After loading, documenting, and installing, the application now includes the image file.
+
+[<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd> / <kbd>D</kbd> / <kbd>B</kbd>]{style="font-style: italic; font-weight: bold; font-size: 1.10em"}
+
+```{r}
+#| eval: false 
+#| code-fold: false
+library(shinyAppPkg)
+movies_app()
+```
+
+
+:::: {.column-body-outset-right}
+
+::: {#fig-07_inst_movies_app_img}
+![`movies_app()` with logo](img/07_inst_movies_app_img.png){#fig-07_inst_movies_app_img width='100%' fig-align='center'}
+
+`inst/www` accessible with `addResourcePath()`
+:::
+
+::::
+
+## Other uses for [`inst/`]{style="font-size: 1.05em;"} 
+
+The `inst/` folder can also be used to store files we're using in alternate versions of our application. This can include alternate images, CSS styling, JS scripts, data files, or even entirely different apps!
+
+```{r}
+#| label: git_box_pkgApp_07_dev-bslib
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  fig_pw = '75%', 
+  branch = "07_dev-bslib", 
+  repo = 'shinyAppPkg')
+```
+
+
+#### Alternate external files
+
+We can store `inst/` alternative external files and configure our UI function to test different layouts. In the example below, I've included an optional UI layout from the [`bslib` package](https://rstudio.github.io/bslib/index.html).
+
+The `bslib` argument in the `movies_ui()` includes an alternate image file (stored in `inst/www/bootstrap.png`):
+
+```{r}
+#| eval: false 
+#| code-fold: true 
+#| code-summary: 'show/hide movies_ui()'
+movies_ui <- function(bslib = FALSE) {
+  addResourcePath( # <1>
+    prefix = 'www', # <1>
+    directoryPath = system.file('www', package = 'shinyAppPkg')) # <1>
+  if (isFALSE(bslib)) {
+  tagList( # <2>
+    fluidPage( # <2>
+      theme = shinythemes::shinytheme("spacelab"), # <2>
+      titlePanel( # <2>
+        div( # <2>
+          img( # <2>
+            src = "www/shiny.png", # <2>
+            height = 60, # <2>
+            width = 55, # <2>
+            style = "margin:10px 10px" # <2>
+            ), # <2>
+         "Movie Reviews" # <2>
+        ) # <2>
+      ), # <2>
+      sidebarLayout( # <2>
+        sidebarPanel( # <2>
+          mod_var_input_ui("vars") # <2>
+        ), # <2>
+        mainPanel( # <2>
+          mod_scatter_display_ui("plot") # <2>
+        ) # <2>
+      ) # <2>
+    ) # <2>
+  ) # <2>
+  } else { # <3>
+    tagList( # <3>
+      bslib::page_fillable( # <3>
+        title = "Movie Reviews (bslib)", # <3>
+        theme = bslib::bs_theme( # <3>
+          bg = "#101010", # <3>
+          fg = "#F6F5F5", # <3>
+          primary = "#EE6F57", # <3>
+          secondary = "#32E0C4", # <3>
+          success = "#FF4B5C", # <3>
+          base_font = sass::font_google("Ubuntu"), # <3>
+          heading_font = sass::font_google("Ubuntu") # <3>
+        ), # <3>
+        bslib::layout_sidebar( # <3>
+          sidebar = bslib::sidebar( # <3>
+            mod_var_input_ui("vars") # <3>
+          ), # <3>
+          bslib::card( # <3>
+            full_screen = TRUE, # <3>
+                bslib::card_header( # <3>
+                  tags$img( # <3>
+                  src = "www/bootstrap.png", # <4>
+                  height = 80, # <3>
+                  width = 100, # <3>
+                  style = "margin:10px 10px" # <3>
+                ) # <3>
+              ), # <3>
+             bslib::card_body( # <3>
+              mod_scatter_display_ui("plot") # <3>
+            ) # <3>
+          ) # <3>
+        ) # <3>
+      ) # <3>
+    ) # <3>
+  }# <3>
+} 
+```
+1. Include `inst/www` resources  
+2. Standard `fluidPage()`    
+3. `bslib` layout   
+4. Reference to alternate image (`bootstrap.png`)   
+
+This alternate version of `movies_app()` uses the same modules and utility functions as the previous versions, but when `bslib = TRUE`, the app displays the alternate UI layout:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+shinyAppPkg::movies_app(test = FALSE, bslib = TRUE)
+```
+
+:::: {.column-body-outset-right}
+
+::: {#fig-07_inst_bslib_app}
+![`movies_app()` with logo](img/07_inst_bslib_app.png){#fig-07_inst_bslib_app width='100%' fig-align='center'}
+
+`inst/www/bootstrap.png` image from `movies_ui()`
+:::
+
+::::
+
+```{r}
+#| label: co_box_bslib
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "o", look = 'minimal',
+  header = "Dependency watch!",
+  contents = "
+Remember to include the `bslib` and `sass` packages to your `DESCRIPTION` with `usethis::use_package()`.
+",
+  fold = FALSE
+)
+```
+
+ 
+### Development versions
+
+It's not uncommon to be working on multiple 'development' versions of an application in the same package. In these situations, we might want to begin developing our application in the `inst/dev` folder:
+
+```{r}
+#| label: git_box_07_dev-ggp2movies
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  fig_pw = '75%', 
+  branch = "07_dev-ggp2movies", 
+  repo = 'shinyAppPkg')
+```
+
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+inst/dev/
+  ├── app.R
+  ├── tidy_movies.fst
+  └── imdb.png
+
+1 directory, 3 files
+```
+
+#### [`dev/` data]{style="font-size: 0.95em;"} 
+
+The 'development' application in `shinyAppPkg` uses a tidy version of the [`ggplot2movies::movies` data](https://cran.r-project.org/web/packages/ggplot2movies/index.html), which we created in the [`data-raw/tidy_movies.R`](https://github.com/mjfrigaard/shinyAppPkg/blob/07_dev-ggp2movies/data-raw/tidy_movies.R) file.[^raw-data-5]
+
+```{r}
+#| eval: false 
+#| code-fold: true 
+#| code-summary: 'show/hide data-raw/tidy_movies.R'
+## code to prepare `ggp2movies` dataset goes here
+# pkgs <- c('ggplot2movies', 'tidyr', 'dplyr', 'stringr', 'fst')
+# install.packages(pkgs, quiet = TRUE)
+
+# load packages --------------------
+library(tidyr)
+library(dplyr)
+library(stringr)
+library(fst)
+
+# tidy_movies
+tidy_movies <- ggplot2movies::movies |>
+  tidyr::pivot_longer(c(Action:Short),
+    names_to = "genre_key",
+    values_to = "genre_value"
+  ) |>
+  dplyr::mutate(genre_value = as.logical(genre_value)) |>
+  dplyr::select(
+    title, genre_key, genre_value, length,
+    year, budget, avg_rating = rating, votes, mpaa
+  ) |>
+  dplyr::filter(genre_value == TRUE) |>
+  dplyr::group_by(title) |>
+  dplyr:::mutate(
+    genres = paste0(genre_key, collapse = ", ")
+  ) |>
+  dplyr::select(
+    title, genres, length, year,
+    budget, avg_rating, votes, mpaa
+  ) |>
+  dplyr::ungroup() |>
+  dplyr::distinct(.keep_all = TRUE) |>
+  dplyr::mutate(
+    genres = dplyr::na_if(x = genres, ""),
+    genre = dplyr::case_when(
+                stringr::str_detect(genres, ",") ~ 'Multiple genres',
+                TRUE ~ genres),
+    genre = factor(genre),
+    mpaa = dplyr::na_if(x = mpaa, y = ""),
+    mpaa = factor(mpaa,
+      levels = c("G", "PG", "PG-13", "R", "NC-17"),
+      labels = c("G", "PG", "PG-13", "R", "NC-17"))
+    ) |> 
+  dplyr::select(-genres)
+# save to inst/dev/
+fst::write_fst(x = tidy_movies, path = "inst/dev/tidy_movies.fst")
+```
+
+[^raw-data-5]: We covered the `data-raw/` folder in the [Data chapter](https://mjfrigaard.github.io/shinyap/data.html), and you can read more about it [here in R packages, 2ed](https://r-pkgs.org/data.html#sec-data-data-raw.)
+
+#### [`dev/` modules]{style="font-size: 0.95em;"}
+
+In `inst/dev/`, we've place the application modules in [`app.R` file](https://github.com/mjfrigaard/shinyAppPkg/blob/07_dev-ggp2movies/inst/dev/app.R):
+
+1. The `mod_variables_ui()` development module contains choices for the names in the `tidy_movies` data:
+  
+```{r}
+#| eval: false 
+#| code-fold: true 
+#| code-summary: 'show/hide mod_variables_ui()'
+mod_variables_ui <- function(id) {
+      ns <- NS(id)
+      tagList(
+        textInput(
+          inputId = ns("plot_title"),
+          label = "Plot title",
+          placeholder = "Enter plot title"
+        ),
+        selectInput(
+          inputId = ns("y"),
+          label = "Y-axis:",
+          choices = c(
+            "Year" = "year",
+            "Length" = "length",
+            "Budget" = "budget",
+            "Rating" = "avg_rating",
+            "Votes" = "votes"
+          ),
+          selected = "budget"
+        ),
+        selectInput(
+          inputId = ns("x"),
+          label = "X-axis:",
+          choices = c(
+            "Year" = "year",
+            "Length" = "length",
+            "Budget" = "budget",
+            "Rating" = "avg_rating",
+            "Votes" = "votes"
+          ),
+          selected = "year"
+        ),
+        selectInput(
+          inputId = ns("z"),
+          label = "Color by:",
+          choices = c(
+            "MPAA" = "mpaa",
+            "Genre" = "genre"
+          ),
+          selected = "mpaa"
+        ),
+        sliderInput(
+          inputId = ns("alpha"),
+          label = "Alpha:",
+          min = 0, max = 1, step = 0.1,
+          value = 0.4
+        ),
+        sliderInput(
+          inputId = ns("size"),
+          label = "Size:",
+          min = 0, max = 5, step = 0.5,
+          value = 2.5
+        )
+      )
+  }
+```
+      
+2. The 'development' version of the display module imports the `tidy_movies.fst` data file and an option for removing missing values.
+  
+```{r}
+#| eval: false 
+#| code-fold: true 
+#| code-summary: 'show/hide mod_scatter_plot'
+mod_scatter_plot_ui <- function(id) {
+  ns <- NS(id)
+  tagList(
+    tags$br(),
+    tags$blockquote(
+      tags$em(
+        tags$h6(
+        "The data for this application comes from the ",  # <1> 
+          tags$a("ggplot2movies",  # <1> 
+          href = "https://github.com/hadley/ggplot2movies"  # <1> 
+          ),
+          "package"
+        )
+      )
+    ),
+    tags$div(
+      checkboxInput( # <2> 
+        inputId = ns("missing"), # <2> 
+        label = "Remove missing", # <2> 
+        value = TRUE # <2> 
+      ), # <2> 
+      plotOutput(outputId = ns("scatterplot"))
+      )
+    )
+  }
+  mod_scatter_plot_server <- function(id, var_inputs) {
+    moduleServer(id, function(input, output, session) {
+      # load alternate data
+      all_data <- fst::read_fst("tidy_movies.fst")
+  
+      
+      graph_data <- reactive({ # <3> 
+        if (input$missing) { # <3> 
+          graph_data <- tidyr::drop_na(data = all_data)  # <3> 
+        } else {  # <3> 
+          graph_data <- all_data  # <3> 
+        }   # <3> 
+      }) |>  # <4> 
+        bindEvent(input$missing)  # <4> 
+  
+      inputs <- reactive({
+        plot_title <- tools::toTitleCase(var_inputs()$plot_title)
+        list(
+          x = var_inputs()$x,
+          y = var_inputs()$y,
+          z = var_inputs()$z,
+          alpha = var_inputs()$alpha,
+          size = var_inputs()$size,
+          plot_title = plot_title
+        )
+      })
+  
+      observe({ # <5>
+        output$scatterplot <- renderPlot({
+          plot <- scatter_plot(
+            df = graph_data(),
+            x_var = inputs()$x,
+            y_var = inputs()$y,
+            col_var = inputs()$z,
+            alpha_var = inputs()$alpha,
+            size_var = inputs()$size
+          )
+          plot +
+            ggplot2::labs(
+              title = inputs()$plot_title,
+              x = stringr::str_replace_all(
+                        tools::toTitleCase(inputs()$x), "_", " "),
+              y = stringr::str_replace_all(
+                        tools::toTitleCase(inputs()$y), "_", " ")
+            ) +
+            ggplot2::theme_minimal() +
+            ggplot2::theme(legend.position = "bottom")
+        })
+      }) |> # <5>
+        bindEvent(graph_data(), inputs()) # <5>
+    })
+  }
+```
+1. Alternate help text for `ggplot2movies` data  
+2. Check-box to remove missing values     
+3. Build reactive data based on missing checkbox input    
+4. Bind `missing` input to update when UI changes   
+5. Bind plot output to update with variable inputs and 'missing' checkbox output  
+
+By including a call to `library(shinyAppPkg)` at the top of `app.R`, the `scatter_plot()` function is available to use in the development app module.
+
+#### [`dev/` UI and server]{style="font-size: 0.95em;"} 
+
+`app.R` also contains development app UI and server functions. 
+
+In `appUI()`, development modules are paired with package modules (`mod_variables_ui()` with the `mod_var_input_server()`), and we've include an alternate image (`bootstrap.png`).[^export-modules-6]
+
+[^export-modules-6]: This requires exporting `mod_var_input_server()` with `@export` in the `R/` folder.
+
+```{r}
+#| eval: false 
+#| code-fold: true 
+#| code-summary: 'show/hide appUI()'
+appUI <- function() {
+    addResourcePath( # <1>
+      prefix = "dev", # <1>
+      directoryPath = system.file("dev", # <1>
+                                  package = "shinyAppPkg") # <1>
+    ) # <1>
+  tagList(
+    bslib::page_fillable(
+      title = "Movie Reviews (ggplot2movies)",
+      theme = bslib::bs_theme(
+        bg = "#043b67",
+        fg = "#ffffff",
+        primary = "#ffcf22",
+        secondary = "#38B44A",
+        success = "#32E0C4",
+        base_font = sass::font_google("Ubuntu"),
+        heading_font = sass::font_google("Ubuntu")
+      ),
+      bslib::layout_sidebar(
+        sidebar = bslib::sidebar(
+          mod_variables_ui("vars")
+        ),
+        bslib::card(
+          full_screen = TRUE,
+          bslib::card_header(
+              tags$div(
+                tags$img(
+                  src = "dev/imdb.png", # <2>
+                  height = 80,
+                  width = 110,
+                  style = "margin:10px 10px"
+                )
+              )
+            ),
+          bslib::card_body(
+            mod_scatter_plot_ui("plot")
+          )
+        )
+      )
+    )
+  )
+}
+```
+1. Add alternate path to include image file 
+2. Refer to alternate image  
+
+```{r}
+#| eval: false 
+#| code-fold: true 
+#| code-summary: 'show/hide appServer()'
+appServer <- function(input, output, session) {
+  
+  selected_vars <- mod_var_input_server("vars") # <1>
+
+  mod_scatter_plot_server("plot", var_inputs = selected_vars) # <2>
+  
+}
+```
+1. `mod_var_input()` from `R/` folder  
+2. Defined in `dev/inst/app.R`
+
+#### [Launching `dev/`]{style="font-size: 0.95em;"} app
+
+Finally, we'll the development version of the app is launched with it's own standalone app function (stored in `R/ggplot2movies_app.R`). The `ggplot2movies_app()` function looks a lot like `movies_app()`, but without the `display_type()` helper and the `appDir` argument set to the location of the development app (which we provide with `system.file()`).
+
+```{r}
+#| eval: false 
+#| code-fold: false
+#' Development `ggplot2movies` app standalone function
+#'
+#' Wrapper function for `shinyAppDir()`
+#' 
+#' @param test logical, run in `test.mode`? Defaults to `TRUE`.
+#' 
+#' @return shiny app
+#' 
+#'
+#' @export
+ggp2_movies_app <- function(test = TRUE) {
+      
+      if (test) {
+        
+        shinyAppDir(appDir = system.file("dev", 
+                                         package = "shinyAppPkg"), 
+               options(test.mode = TRUE))
+        
+      } else {
+        
+        shinyAppDir(appDir = system.file("dev", 
+                                         package = "shinyAppPkg"), 
+               options(test.mode = FALSE))
+      }
+    
+}
+```
+
+<br>
+
+After loading, documenting, and installing `shinyAppPkg`, we can run the development version using `ggplot2movies_app()`:
+
+[<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd> / <kbd>D</kbd> / <kbd>B</kbd>]{style="font-style: italic; font-weight: bold; font-size: 1.10em"}
+
+:::: {.column-body-outset-right}
+
+::: {#fig-07_inst_ggp2movies_app}
+![`ggplot2movies_app()`](img/07_inst_ggp2movies_app.png){#fig-07_inst_ggp2movies_app width='100%' fig-align='center'}
+
+`inst/dev/` app with `dev_movies_ui()`
+:::
+
+::::
+
+You may have noticed that I've used a different color and theme for the two development examples above. I've found this can be a quick and easy way to differentiate 'development' and 'production' versions of an application. 
 
 ```{r}
 #| label: co_box_install
 #| echo: false
 #| results: asis
 #| eval: true
+#| include: true
 co_box(
   color = "g", fold = TRUE,
-  header = "Uses of `inst/` in other packages",
-"
+  header = "Uses of `inst/` in other packages", size = "1.0", 
+  contents = "
 You can explore the structure of other installed packages to see how they work 'under the hood' to gain insight into how they use the `inst/` folder. 
   
 - For example, the `inst/extdata/` folder in the [`readr` package](https://readr.tidyverse.org/) holds a variety of datasets:
@@ -194,407 +872,7 @@ You can explore the structure of other installed packages to see how they work '
 ")
 ```
 
-### Using [`system.file()`]{style="font-size: 0.95em;"}
 
-`system.file()` gives us access to the package files *on installation* (i.e., the files we see at the path above). In the previous chapter, we used `system.file()` to access the `movies.fst` file in `inst/extdata/`: 
-
-```{r}
-#| eval: false 
-#| code-fold: false
-dplyr::glimpse(  
-  fst::read_fst(path = 
-      system.file("extdata/", "movies.fst", package = "shinyAppPkg")
-    )
-  )
-```
-
-```{bash}
-#| eval: false 
-#| code-fold: true
-#| code-summary: 'show/hide glimpse() of movies.fst'
-fstcore package v0.9.14
-(OpenMP was not detected, using single threaded mode)
-Rows: 651
-Columns: 34
-$ title            <chr> "Filly Brown", "The Dish", "Waiting for…
-$ title_type       <fct> Feature Film, Feature Film, Feature Fil…
-$ genre            <fct> Drama, Drama, Comedy, Drama, Horror, Do…
-$ runtime          <dbl> 80, 101, 84, 139, 90, 78, 142, 93, 88, …
-$ mpaa_rating      <fct> R, PG-13, R, PG, R, Unrated, PG-13, R, …
-$ studio           <fct> Indomina Media Inc., Warner Bros. Pictu…
-$ thtr_rel_date    <dttm> 2013-04-18 21:00:00, 2001-03-13 21:00:…
-$ thtr_rel_year    <dbl> 2013, 2001, 1996, 1993, 2004, 2009, 198…
-$ thtr_rel_month   <dbl> 4, 3, 8, 10, 9, 1, 1, 11, 9, 3, 6, 12, …
-$ thtr_rel_day     <dbl> 19, 14, 21, 1, 10, 15, 1, 8, 7, 2, 19, …
-$ dvd_rel_date     <dttm> 2013-07-29 21:00:00, 2001-08-27 21:00:…
-$ dvd_rel_year     <dbl> 2013, 2001, 2001, 2001, 2005, 2010, 200…
-$ dvd_rel_month    <dbl> 7, 8, 8, 11, 4, 4, 2, 3, 1, 8, 5, 9, 7,…
-$ dvd_rel_day      <dbl> 30, 28, 21, 6, 19, 20, 18, 2, 21, 14, 1…
-$ imdb_rating      <dbl> 5.5, 7.3, 7.6, 7.2, 5.1, 7.8, 7.2, 5.5,…
-$ imdb_num_votes   <int> 899, 12285, 22381, 35096, 2386, 333, 50…
-$ critics_rating   <fct> Rotten, Certified Fresh, Certified Fres…
-$ critics_score    <dbl> 45, 96, 91, 80, 33, 91, 57, 17, 90, 83,…
-$ audience_rating  <fct> Upright, Upright, Upright, Upright, Spi…
-$ audience_score   <dbl> 73, 81, 91, 76, 27, 86, 76, 47, 89, 66,…
-$ best_pic_nom     <fct> no, no, no, no, no, no, no, no, no, no,…
-$ best_pic_win     <fct> no, no, no, no, no, no, no, no, no, no,…
-$ best_actor_win   <fct> no, no, no, yes, no, no, no, yes, no, n…
-$ best_actress_win <fct> no, no, no, no, no, no, no, no, no, no,…
-$ best_dir_win     <fct> no, no, no, yes, no, no, no, no, no, no…
-$ top200_box       <fct> no, no, no, no, no, no, no, no, no, no,…
-$ director         <chr> "Michael D. Olmos", "Rob Sitch", "Chris…
-$ actor1           <chr> "Gina Rodriguez", "Sam Neill", "Christo…
-$ actor2           <chr> "Jenni Rivera", "Kevin Harrington", "Ca…
-$ actor3           <chr> "Lou Diamond Phillips", "Patrick Warbur…
-$ actor4           <chr> "Emilio Rivera", "Tom Long", "Eugene Le…
-$ actor5           <chr> "Joseph Julian Soria", "Genevieve Mooy"…
-$ imdb_url         <chr> "http://www.imdb.com/title/tt1869425/",…
-$ rt_url           <chr> "//www.rottentomatoes.com/m/filly_brown…
-```
-
-To include the contents of `www/` in our app-package, we need to use `isnt/` folder, `system.file()`, and the `shiny::addResourcePath()` function. 
-
-## [`addResourcePath()`]{style="font-size: 0.95em;"}
-
-```{r}
-#| label: git_box_pkgApp_07_inst-www
-#| echo: false
-#| results: asis
-#| eval: true
-git_margin_box(
-  contents = "standard",
-  fig_pw = '75%', 
-  branch = "07_inst-www", 
-  repo = 'shinyAppPkg')
-```
-
-The `addResourcePath()` function will add a "*directory of static resources to Shiny's web server*." In `shinyAppPkg`, want to add the `www` directory that includes the `shiny.png` file (currently in our root (`"."`) folder).[^add-resource-path-4]
-
-[^add-resource-path-4]: You can read more about adding external resources in the [documentation for `addResourcePath()`](https://shiny.posit.co/r/reference/shiny/latest/resourcepaths).
-
-If we want to continue keeping external resources in the `www/` folder, we can move `www/` and it's contents into `inst/`:
-
-```{bash}
-#| eval: false 
-#| code-fold: false
-inst/
-  ├── extdata/
-  │   └── movies.fst
-  └── www/
-      └── shiny.png
-
-3 directories, 2 files
-```
-
-
-In `R/movies_ui.R` function, we'll include the `addResourcePath()` at the top of the `tagList()` and reference the image in `img()` using only the subfolder in the path:
-
-
-```{r}
-#| eval: false 
-#| code-fold: false
-movies_ui <- function() {
-  addResourcePath('www', system.file('www', package = 'shinyAppPkg'))
-  tagList(
-    fluidPage(
-      theme = shinythemes::shinytheme("spacelab"),
-      titlePanel(
-        div(
-          img(
-            src = "www/shiny.png",
-            height = 60,
-            width = 55,
-            style = "margin:10px 10px"
-            ), 
-         "Movie Reviews"
-        )
-      ),
-      sidebarLayout(
-        sidebarPanel(
-          mod_var_input_ui("vars")
-        ),
-        mainPanel(
-          mod_scatter_display_ui("plot")
-        )
-      )
-    )
-  )
-} 
-```
-
-After loading, documenting, and installing, the application now includes the image file.
-
-[<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd> / <kbd>D</kbd> / <kbd>B</kbd>]{style="font-style: italic; font-weight: bold; font-size: 1.10em"}
-
-```{r}
-#| eval: false 
-#| code-fold: false
-library(shinyAppPkg)
-movies_app()
-```
-
-
-:::: {.column-body-outset-right}
-
-::: {#fig-07_inst_movies_app_img}
-![`movies_app()` with logo](img/07_inst_movies_app_img.png){#fig-07_inst_movies_app_img width='100%' fig-align='center'}
-
-`inst/www` accessible with `addResourcePath()`
-:::
-
-::::
-
-## Other uses for [`inst/`]{style="font-size: 1.05em;"} 
-
-The `inst/` folder can also be used to store files we're using in alternate versions of our application. This can include alternate images, CSS styling, JS scripts, data files, or even entirely different apps!
-
-```{r}
-#| label: git_box_pkgApp_07_dev-bslib
-#| echo: false
-#| results: asis
-#| eval: true
-git_margin_box(
-  fig_pw = '75%', 
-  branch = "07_dev-bslib", 
-  repo = 'shinyAppPkg')
-```
-
-
-#### Alternate external files
-
-We can store `inst/` alternative external files and configure our UI function to test different layouts. In the example below, I've included an optional UI layout from the [`bslib` package](https://rstudio.github.io/bslib/index.html).
-
-The `bslib` argument in the `movies_ui()` includes an alternate image file (stored in `inst/www/bootstrap.png`):
-
-```{r}
-#| eval: false 
-#| code-fold: show 
-#| code-summary: 'show/hide movies_ui()'
-movies_ui <- function(bslib = FALSE) {
-  addResourcePath("www", system.file("www", package = "shinyAppPkg"))
-  if (isFALSE(bslib)) {
-    tagList(
-      # I've omitted fluidPage() layout code here
-    )
-  } else {
-    tagList(
-      bslib::page_fillable(
-        title = "Movie Reviews (bslib)",
-        theme = bslib::bs_theme(
-          bg = "#101010",
-          fg = "#F6F5F5",
-          primary = "#EE6F57",
-          secondary = "#32E0C4",
-          success = "#FF4B5C",
-          base_font = sass::font_google("Ubuntu"),
-          heading_font = sass::font_google("Ubuntu")
-        ),
-        bslib::layout_sidebar(
-          sidebar = bslib::sidebar(
-            mod_var_input_ui("vars")
-          ),
-          bslib::card(
-            full_screen = TRUE,
-            shiny::div(
-              shiny::img(
-                src = "www/bootstrap.png",
-                height = 40,
-                width = 50,
-                style = "margin:10px 10px"
-              )
-            ),
-            mod_scatter_display_ui("plot")
-          )
-        )
-      )
-    )
-  }
-}
-```
-
-This alternate version of `movies_app()` uses the same modules and utility functions as the previous versions, but when `bslib = TRUE`, the app displays the alternate UI layout:
-
-```{r}
-#| eval: false 
-#| code-fold: false
-shinyAppPkg::movies_app(test = FALSE, bslib = TRUE)
-```
-
-:::: {.column-body-outset-right}
-
-::: {#fig-07_inst_bslib_app}
-![`movies_app()` with logo](img/07_inst_bslib_app.png){#fig-07_inst_bslib_app width='100%' fig-align='center'}
-
-`inst/www/bootstrap.png` image from `movies_ui()`
-:::
-
-::::
-
-
-
-### Development versions
-
-It's not uncommon to be working on multiple 'development' versions of an application in the same package. In these situations, we might want to store an entire applications in the `inst/` folder (like `inst/dev/` below) and launch it with `runApp()`.
-
-
-```{bash}
-#| eval: false 
-#| code-fold: false
-inst/dev/
-  ├── app.R
-  ├── ggp2movies.fst
-  └── imdb.png
-
-1 directory, 3 files
-```
-
-This 'development' application uses a tidy version of the [`ggplot2movies::movies` data](https://cran.r-project.org/web/packages/ggplot2movies/index.html)
-  
-  -   We can create this in the [`data-raw/ggp2movies.R`](https://github.com/mjfrigaard/shinyAppPkg/blob/07_dev-ggp2movies/data-raw/ggp2movies.R) file.[^raw-data-5]
-
-[^raw-data-5]: We covered the `data-raw/` folder in the [Data chapter](https://mjfrigaard.github.io/shinyap/data.html), and you can read more about it [here in R packages, 2ed](https://r-pkgs.org/data.html#sec-data-data-raw.)
-
-In `inst/dev/`, we can place the application's code in an [`app.R` file](https://github.com/mjfrigaard/shinyAppPkg/blob/07_dev-ggp2movies/inst/dev/app.R). 
-
-  -   In `app.R`, we can create a new `mod_variables_ui()` development module with the correct variable names
-  
-```{r}
-#| eval: false 
-#| code-fold: true 
-#| code-summary: 'show/hide mod_variables_ui()'
-mod_variables_ui <- function(id) {
-  addResourcePath(prefix = "dev", 
-    directoryPath = system.file("dev", package = "shinyAppPkg"))
-    ns <- NS(id)
-    tagList(
-      selectInput(
-        inputId = ns("y"),
-        label = "Y-axis:",
-        choices = c(
-          "Year" = "year",
-          "Length" = "length",
-          "Budget" = "budget",
-          "Rating" = "avg_rating",
-          "Votes" = "votes"
-        ),
-        selected = "budget"
-      ),
-      selectInput(
-        inputId = ns("x"),
-        label = "X-axis:",
-        choices = c(
-          "Year" = "year",
-          "Length" = "length",
-          "Budget" = "budget",
-          "Rating" = "avg_rating",
-          "Votes" = "votes"
-        ),
-        selected = "avg_rating"
-      ),
-      selectInput(
-        inputId = ns("z"),
-        label = "Color by:",
-        choices = c(
-          "MPAA" = "mpaa",
-          "Genres" = "genres"
-        ),
-        selected = "mpaa"
-      ),
-      sliderInput(
-        inputId = ns("alpha"),
-        label = "Alpha:",
-        min = 0, max = 1, step = 0.1,
-        value = 0.4
-      ),
-      sliderInput(
-        inputId = ns("size"),
-        label = "Size:",
-        min = 0, max = 5, step = 0.5,
-        value = 2.5
-      ),
-      textInput(
-        inputId = ns("plot_title"),
-        label = "Plot title",
-        placeholder = "Enter plot title"
-      )
-    )
-}
-```
-
-However, by including a call to `library(shinyAppPkg)` at the top of `app.R`, I can pair the `mod_variables_ui()` function with the `mod_var_input_server()` function.[^export-modules-6]
-
-[^export-modules-6]: This requires exporting `mod_var_input_server()` with `@export` in the `R/` folder.
-
-We'll also include the alternate image (`bootstrap.png`) and data file (created with `data-raw/ggp2movies.R`). Finally, we'll launch the development version of the app with a different standalone app function, stored in `R/ggplot2movies_app.R`.
-
-```{r}
-#| label: git_box_07_dev-ggp2movies
-#| echo: false
-#| results: asis
-#| eval: true
-git_margin_box(
-  fig_pw = '75%', 
-  branch = "07_dev-ggp2movies", 
-  repo = 'shinyAppPkg')
-```
-
-To run this development app, I'll create the `ggplot2movies_app()` function below:
-
-```{r}
-#| eval: false 
-#| code-fold: false
-#' Development `ggplot2movies` app standalone function
-#'
-#' Wrapper function for `runApp()`
-#' 
-#' @param test logical, run in `test.mode`?
-#' @param run where to launch app: 
-#'  * `view` = launch in viewer  
-#'  * `browse` = launch in external browser  
-#'  * `win` = launch in window
-#'  * `default` = `getOption(x = 'shiny.launch.browser')`
-#' 
-#' @return shiny app
-#' 
-#' @seealso [mod_var_input_ui()], [mod_var_input_server()], [mod_scatter_display_ui()], [mod_scatter_display_server()]
-#' 
-#'
-#' @export
-#' 
-ggplot2movies_app <- function(test = TRUE, run = "default") {
-  switch(EXPR = run, 
-    view = options(shiny.launch.browser = .rs.invokeShinyPaneViewer),
-    browser = options(shiny.launch.browser = .rs.invokeShinyWindowExternal),
-    win = options(shiny.launch.browser = .rs.invokeShinyWindowViewer),
-    default = getOption(x = 'shiny.launch.browser')
-  )
-  if (test) {
-    runApp(appDir = system.file("dev", package = "shinyAppPkg"), 
-           test.mode = TRUE)
-  } else {
-    runApp(appDir = system.file("dev", package = "shinyAppPkg"), 
-           test.mode = FALSE)
-  }
-}
-```
-
-`ggplot2movies_app()` looks a lot like `movies_app()`, but the `appDir` argument is the location of the development application, which we provide with `system.file()`.
-
-[<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd> / <kbd>D</kbd> / <kbd>B</kbd>]{style="font-style: italic; font-weight: bold; font-size: 1.10em"}
-
-After loading, documenting, and installing `shinyAppPkg`, we can run the development version using `ggplot2movies_app()`: 
-
-:::: {.column-body-outset-right}
-
-::: {#fig-07_inst_ggp2movies_app}
-![`ggplot2movies_app()`](img/07_inst_ggp2movies_app.png){#fig-07_inst_ggp2movies_app width='100%' fig-align='center'}
-
-`inst/dev/` app with `dev_movies_ui()`
-:::
-
-::::
-
-You may have noticed that I've used a different color and theme for the two development examples above. I've found this can be a quick and easy way to differentiate 'development' and 'production' versions of an application. 
 
 ## Recap
 
