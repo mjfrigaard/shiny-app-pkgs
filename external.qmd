@@ -319,7 +319,7 @@ The `inst/` folder can also be used to store files we're using in alternate vers
 #| eval: true
 git_margin_box(
   fig_pw = '75%', 
-  branch = "07_dev-bslib", 
+  branch = "07_inst-bslib", 
   repo = 'shinyAppPkg')
 ```
 
@@ -450,7 +450,7 @@ It's not uncommon to be working on multiple 'development' versions of an applica
 #| eval: true
 git_margin_box(
   fig_pw = '75%', 
-  branch = "07_dev-ggp2movies", 
+  branch = "07_inst-ggp2movies", 
   repo = 'shinyAppPkg')
 ```
 
@@ -468,7 +468,7 @@ inst/dev/
 
 #### [`dev/` data]{style="font-size: 0.95em;"} 
 
-The 'development' application in `shinyAppPkg` uses a tidy version of the [`ggplot2movies::movies` data](https://cran.r-project.org/web/packages/ggplot2movies/index.html), which we created in the [`data-raw/tidy_movies.R`](https://github.com/mjfrigaard/shinyAppPkg/blob/07_dev-ggp2movies/data-raw/tidy_movies.R) file.[^raw-data-5]
+The 'development' application in `shinyAppPkg` uses a tidy version of the [`ggplot2movies::movies` data](https://cran.r-project.org/web/packages/ggplot2movies/index.html), which we created in the [`data-raw/tidy_movies.R`](https://github.com/mjfrigaard/shinyAppPkg/blob/07_inst-ggp2movies/data-raw/tidy_movies.R) file.[^raw-data-5]
 
 ```{r}
 #| eval: false 
@@ -524,17 +524,17 @@ fst::write_fst(x = tidy_movies, path = "inst/dev/tidy_movies.fst")
 
 [^raw-data-5]: We covered the `data-raw/` folder in the [Data chapter](https://mjfrigaard.github.io/shinyap/data.html), and you can read more about it [here in R packages, 2ed](https://r-pkgs.org/data.html#sec-data-data-raw.)
 
-#### [`dev/` modules]{style="font-size: 0.95em;"}
+#### [`dev_*` modules]{style="font-size: 0.95em;"}
 
-In `inst/dev/`, we've placed the application modules in an [`app.R` file](https://github.com/mjfrigaard/shinyAppPkg/blob/07_dev-ggp2movies/inst/dev/app.R):
+In `inst/dev/`, we've placed the application modules in an [`app.R` file](https://github.com/mjfrigaard/shinyAppPkg/blob/07_inst-ggp2movies/inst/dev/app.R):
 
-1. `mod_variables_ui()` contains choices for the names in the `tidy_movies` data:
+1. `dev_mod_vars_ui()` contains choices for the names in the `tidy_movies` data:
   
 ```{r}
 #| eval: false 
 #| code-fold: true 
-#| code-summary: 'show/hide mod_variables_ui()'
-mod_variables_ui <- function(id) {
+#| code-summary: 'show/hide dev_mod_vars_ui()'
+dev_mod_vars_ui <- function(id) {
       ns <- NS(id)
       tagList(
         textInput(
@@ -591,13 +591,13 @@ mod_variables_ui <- function(id) {
   }
 ```
       
-2. The 'development' version of the display module imports the `tidy_movies.fst` data file and includes an option for removing missing values.
+2. The `dev_` versions of the display module imports the `tidy_movies.fst` data file and includes an option for removing missing values.
   
 ```{r}
 #| eval: false 
 #| code-fold: true 
-#| code-summary: 'show/hide mod_scatter_plot'
-mod_scatter_plot_ui <- function(id) {
+#| code-summary: 'show/hide dev_mod_scatter_ui()'
+dev_mod_scatter_ui <- function(id) {
   ns <- NS(id)
   tagList(
     tags$br(),
@@ -621,21 +621,29 @@ mod_scatter_plot_ui <- function(id) {
       plotOutput(outputId = ns("scatterplot"))
       )
     )
-  }
-  mod_scatter_plot_server <- function(id, var_inputs) {
+}
+```
+1. Alternate help text for `ggplot2movies` data  
+2. Check-box to remove missing values  
+
+```{r}
+#| eval: false 
+#| code-fold: true 
+#| code-summary: 'show/hide dev_mod_scatter_server()'
+dev_mod_scatter_server <- function(id, var_inputs) {
     moduleServer(id, function(input, output, session) {
       # load alternate data
       all_data <- fst::read_fst("tidy_movies.fst")
   
       
-      graph_data <- reactive({ # <3> 
-        if (input$missing) { # <3> 
-          graph_data <- tidyr::drop_na(data = all_data)  # <3> 
-        } else {  # <3> 
-          graph_data <- all_data  # <3> 
-        }   # <3> 
-      }) |>  # <4> 
-        bindEvent(input$missing)  # <4> 
+      graph_data <- reactive({ # <1> 
+        if (input$missing) { # <1> 
+          graph_data <- tidyr::drop_na(data = all_data)  # <1> 
+        } else {  # <1> 
+          graph_data <- all_data  # <1> 
+        }   # <1> 
+      }) |>  # <2> 
+        bindEvent(input$missing)  # <2> 
   
       inputs <- reactive({
         plot_title <- tools::toTitleCase(var_inputs()$plot_title)
@@ -649,9 +657,9 @@ mod_scatter_plot_ui <- function(id) {
         )
       })
   
-      observe({ # <5>
+      observe({ # <3>
         output$scatterplot <- renderPlot({
-          plot <- scatter_plot(
+          plot <- shinyAppPkg::scatter_plot(
             df = graph_data(),
             x_var = inputs()$x,
             y_var = inputs()$y,
@@ -671,31 +679,29 @@ mod_scatter_plot_ui <- function(id) {
             ggplot2::theme(legend.position = "bottom")
         })
       }) |> # <5>
-        bindEvent(graph_data(), inputs()) # <5>
+        bindEvent(graph_data(), inputs()) # <3>
     })
   }
 ```
-1. Alternate help text for `ggplot2movies` data  
-2. Check-box to remove missing values     
-3. Build reactive data based on missing checkbox input    
-4. Bind `missing` input to update when UI changes   
-5. Bind plot output to update with variable inputs and 'missing' checkbox output  
+1. Build reactive data based on missing checkbox input    
+2. Bind `missing` input to update when UI changes   
+3. Bind plot output to update with variable inputs and 'missing' checkbox output  
 
-By including a call to `library(shinyAppPkg)` at the top of `app.R`, the `scatter_plot()` function is available to use in the development app module.
+Any of the functions from `shinyAppPkg` can be used in the dev modules with explicit namespacing (i.e., `shinyAppPkg::scatter_plot()`).
 
-#### [`dev/` UI and server]{style="font-size: 0.95em;"} 
+#### [`dev_*` UI and server]{style="font-size: 0.95em;"} 
 
 `app.R` also contains development app UI and server functions. 
 
-In `appUI()`, development modules are paired with package modules (`mod_variables_ui()` with the `mod_var_input_server()`), and we've include an alternate image (`bootstrap.png`).[^export-modules-6]
+In `devUI()`, development modules are paired with package modules (`dev_mod_vars_ui()` and `shinyAppPkg::mod_var_input_server()`), and we've include an alternate image (`bootstrap.png`).[^export-modules-6]
 
 [^export-modules-6]: This requires exporting `mod_var_input_server()` with `@export` in the `R/` folder.
 
 ```{r}
 #| eval: false 
 #| code-fold: true 
-#| code-summary: 'show/hide appUI()'
-appUI <- function() {
+#| code-summary: 'show/hide devUI()'
+devUI <- function() {
     addResourcePath( # <1>
       prefix = "dev", # <1>
       directoryPath = system.file("dev", # <1>
@@ -715,14 +721,14 @@ appUI <- function() {
       ),
       bslib::layout_sidebar(
         sidebar = bslib::sidebar(
-          mod_variables_ui("vars")
+          dev_mod_vars_ui("vars") # <2>
         ),
         bslib::card(
           full_screen = TRUE,
           bslib::card_header(
               tags$div(
                 tags$img(
-                  src = "dev/imdb.png", # <2>
+                  src = "dev/imdb.png", # <3>
                   height = 80,
                   width = 110,
                   style = "margin:10px 10px"
@@ -730,7 +736,7 @@ appUI <- function() {
               )
             ),
           bslib::card_body(
-            mod_scatter_plot_ui("plot")
+            dev_mod_scatter_ui("plot") # <4>
           )
         )
       )
@@ -739,26 +745,29 @@ appUI <- function() {
 }
 ```
 1. Add alternate path to include image file 
-2. Refer to alternate image  
+2. Development variable input module (UI)   
+3. Refer to alternate image   
+4. Development scatter-plot display module (UI)   
+
 
 ```{r}
 #| eval: false 
 #| code-fold: true 
-#| code-summary: 'show/hide appServer()'
-appServer <- function(input, output, session) {
+#| code-summary: 'show/hide devServer()'
+devServer <- function(input, output, session) {
   
-  selected_vars <- mod_var_input_server("vars") # <1>
+  selected_vars <- shinyAppPkg::mod_var_input_server("vars") # <1>
 
-  mod_scatter_plot_server("plot", var_inputs = selected_vars) # <2>
+  dev_mod_scatter_server("plot", var_inputs = selected_vars) # <2>
   
 }
 ```
-1. `mod_var_input()` from `R/` folder  
+1. `mod_var_input_server()` exported from `shinyAppPkg`'s `R/` folder 
 2. Defined in `dev/inst/app.R`
 
-#### [Launching `dev/`]{style="font-size: 0.95em;"} app
+#### [Launching `inst/dev/app.R`]{style="font-size: 0.95em;"} 
 
-Finally, the development app is launched with it's own standalone function (stored in `R/ggplot2movies_app.R`). The `ggplot2movies_app()` function is similar to `movies_app()`, but without the `display_type()` helper, and the `appDir` argument is set to the location of the development files (which we provide with `system.file()`).
+Finally, the development app is launched with it's own standalone function (stored in `R/ggp2_movies_app.R`). The `ggp2_movies_app()` function is similar to `movies_app()`, but `appDir` is set to the location of the development files (which we provide with `system.file()`).
 
 ```{r}
 #| eval: false 
@@ -773,21 +782,30 @@ Finally, the development app is launched with it's own standalone function (stor
 #' 
 #'
 #' @export
-ggp2_movies_app <- function(test = TRUE) {
-      
-      if (test) {
-        
-        shinyAppDir(appDir = system.file("dev", 
-                                         package = "shinyAppPkg"), 
-               options(test.mode = TRUE))
-        
-      } else {
-        
-        shinyAppDir(appDir = system.file("dev", 
-                                         package = "shinyAppPkg"), 
-               options(test.mode = FALSE))
-      }
-    
+ggp2_movies_app <- function(test = TRUE, run = "w") {
+  if (interactive()) {
+    display_type(run = run)
+
+    if (isTRUE(test)) {
+      shinyAppDir(
+        appDir = system.file("dev",
+          package = "shinyAppPkg"
+        ),
+        options(test.mode = TRUE)
+      )
+    } else {
+      shinyAppDir(
+        appDir = system.file("dev",
+          package = "shinyAppPkg"
+        ),
+        options(test.mode = FALSE)
+      )
+    }
+  } else {
+    shinyAppDir(appDir = system.file("dev",
+      package = "shinyAppPkg"
+    ))
+  }
 }
 ```
 
