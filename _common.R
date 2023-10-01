@@ -2,7 +2,7 @@
 options(width = 50L,
   pillar.width = 50L)
 
-co_box <- function(color, size = "1.05", header, contents = "Your text", fold = FALSE, look = "default") {
+co_box <- function(color, size = "1.05", header, hsize = "1.07", contents = "Your text", fold = FALSE, look = "default") {
   
   if (look == "simple") {
     look <- "simple"
@@ -27,7 +27,7 @@ co_box <- function(color, size = "1.05", header, contents = "Your text", fold = 
     b = cat(paste0(
       "\n\n",
       ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "'}", "\n\n",
-      "## [", header, "]{style='font-weight: bold; font-size: 1.20em;'}\n\n",
+      "## [", header, "]{style='font-weight: bold; font-size: ", hsize, "em;'}\n\n",
       "::: {style='font-size: ", size, "em; color: #696969;'}\n\n",
       "\n", glue::glue_collapse(contents), "\n\n",
       "::: \n\n",
@@ -36,7 +36,7 @@ co_box <- function(color, size = "1.05", header, contents = "Your text", fold = 
     g = cat(paste0(
       "\n\n",
       ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "'}", "\n\n",
-      "## [", header, "]{style='font-weight: bold; font-size: 1.20em;'}\n\n",
+      "## [", header, "]{style='font-weight: bold; font-size: ", hsize, "em;'}\n\n",
       "::: {style='font-size: ", size, "em; color: #696969;'}\n\n",
       "\n", glue::glue_collapse(contents), "\n\n",
       "::: \n\n",
@@ -45,7 +45,7 @@ co_box <- function(color, size = "1.05", header, contents = "Your text", fold = 
     y = cat(paste0(
       "\n\n",
       ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "'}", "\n\n",
-      "## [", header, "]{style='font-weight: bold; font-size: 1.20em;'}\n\n",
+      "## [", header, "]{style='font-weight: bold; font-size: ", hsize, "em;'}\n\n",
       "::: {style='font-size: ", size, "em; color: #696969;'}\n\n",
       "\n", glue::glue_collapse(contents), "\n\n",
       "::: \n\n",
@@ -54,7 +54,7 @@ co_box <- function(color, size = "1.05", header, contents = "Your text", fold = 
     o = cat(paste0(
       "\n\n",
       ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "'}", "\n\n",
-      "## [", header, "]{style='font-weight: bold; font-size: 1.20em;'}\n\n",
+      "## [", header, "]{style='font-weight: bold; font-size: ", hsize, "em;'}\n\n",
       "::: {style='font-size: ", size, "em; color: #696969;'}\n\n",
       "\n", glue::glue_collapse(contents), "\n\n",
       "::: \n\n",
@@ -63,7 +63,7 @@ co_box <- function(color, size = "1.05", header, contents = "Your text", fold = 
     r = cat(paste0(
       "\n\n",
       ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "'}", "\n\n",
-      "## [", header, "]{style='font-weight: bold; font-size: 1.20em;'}\n\n",
+      "## [", header, "]{style='font-weight: bold; font-size: ", hsize, "em;'}\n\n",
       "::: {style='font-size: ", size, "em; color: #696969;'}\n\n",
       "\n", glue::glue_collapse(contents), "\n\n",
       "::: \n\n",
@@ -95,4 +95,54 @@ git_margin_box <- function(contents = "standard", fig_pw = '70%', branch = 'main
     )),
     stop("Invalid `type`", call. = FALSE)
   )
+}
+
+dev_key <- function(fun = "L") {
+  if (fun != "all") {
+glue::glue("\n:::: {{layout='[ 20, 60, 20 ]'}}
+
+::: {{#first-column}}
+
+:::
+
+::: {{#second-column}}
+
+::: {{style='font-weight: bold; font-size: 1.25em' layout-valign='bottom'}}
+
+######
+
+<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>{fun}</kbd>
+:::
+
+:::
+
+::: {{#third-column}}
+
+:::
+
+::::")
+  } else {
+glue::glue("\n:::: {{layout='[ 15, 60, 16 ]'}}
+
+::: {{#first-column}}
+
+:::
+
+::: {{#second-column}}
+
+::: {{style='font-weight: bold; font-size: 1.15em' layout-valign='bottom'}}
+
+######
+
+<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd> / <kbd>D</kbd> / <kbd>B</kbd>
+:::
+
+:::
+
+::: {{#third-column}}
+
+:::
+
+::::")
+  }
 }
