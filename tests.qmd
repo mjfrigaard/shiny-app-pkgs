@@ -21,23 +21,9 @@ co_box(
 )
 ```
 
-Testing shiny app-packages poses some unique challenges. Shiny functions are written in the context of its reactive model,[^tests-shiny-reactive] so some standard testing techniques and methods for regular R packages don’t directly apply. Fortunately, the infrastructure for storing and running tests in app-packages is identical to a standard R package.
-
-[^tests-shiny-reactive]: The ['Reactivity - An overview'](https://shiny.posit.co/r/articles/build/reactivity-overview/) article gives an excellent description (and mental module) of reactive programming.
-
-This chapter will cover the differences between user specifications, feature requirements, and functional requirements. I’ll introduce how you can use `testthat`s behavior-driven development (BDD)[^tests-bdd] and a traceability matrix to map each functional requirement to a specific test, ensuring that all user's needs are met (and the app's features implemented correctly).
-
-I'll give examples for three types of testing: unit tests, integration/module tests, and end-to-end or system tests, focusing on *what to test* and *why to test it*, not *how to write tests* (plenty of those resources exist[^tests-intro-unit-tests] [^tests-intro-shinytest2] [^tests-intro-ms-testing]), the only exception is some tricks I've learned for using `testServer()` with module server functions.[^tests-intro-testserver]
+This chapter will cover the differences between user specifications, feature requirements, and functional requirements. I’ll introduce how you can use `testthat`s behavior-driven development (BDD)[^tests-bdd] and a traceability matrix to map each functional requirement to a specific test, ensuring that all user's needs are met (and the app's features are implemented correctly).
 
 [^tests-bdd]: Read more about [behavior-driven development](https://en.wikipedia.org/wiki/Behavior-driven_development)
-
-[^tests-intro-unit-tests]: Unit tests are covered extensively in [R Packages, 2ed](https://r-pkgs.org/testing-basics.html) and the [`testthat` documentation](https://testthat.r-lib.org/index.html)
-
-[^tests-intro-shinytest2]: `shinytest2` has [excellent documentation](https://rstudio.github.io/shinytest2/) (and [videos](https://www.youtube.com/watch?v=Gucwz865aqQ)), and I highly recommend reading through those resources.
-
-[^tests-intro-ms-testing]: Mastering shiny dedicates an entire [Chapter to Testing](https://mastering-shiny.org/scaling-testing.html), which covers [unit tests](https://mastering-shiny.org/scaling-testing.html#basic-structure) and [`testServer()`](https://mastering-shiny.org/scaling-testing.html#testing-reactivity), and also includes some tips for using JavaScript with [`shinytest`](https://mastering-shiny.org/scaling-testing.html#testing-javascript) (not to be confused with [`shinytest2`](https://rstudio.github.io/shinytest2/)) 
-
-[^tests-intro-testserver]: The [`testServer()`](https://shiny.posit.co/r/articles/improve/server-function-testing/) documentation is sparse, so I'll provide a few tips and tricks I've learned for testing module server functions.
 
 The code chunk below will load the necessary testing packages.
 
@@ -52,28 +38,42 @@ library(covr)
 
 (*If you're using `devtools`, you won't have to worry about installing `testthat` and `covr`*)
 
-# User Specifications & Requirements
+## What should I test?
+
 
 When you begin developing a Shiny app-package, you’ll be faced with two questions:
 
-1. What do I test?  
-2. How do I test it?   
+1. What should I test?  
+2. How should I test it?   
 
-Applications *should* have accompanying resources to help address these questions, the most common being a software requirements specification (SRS) document. The SRS typically breaks down an application's intended purpose (i.e., the problem it's designed to solve) into three general areas: user specifications, feature requirements, and functional requirements: 
+This chapter focuses on *what to test* and *why to test it*. I won't be covering *how to write tests*, because plenty of those resources exist.[^tests-intro-unit-tests] [^tests-intro-shinytest2] [^tests-intro-ms-testing] The only exception being some `testServer()` tricks I've learned for testing modules.[^tests-intro-testserver]
+
+[^tests-intro-unit-tests]: Unit tests are covered extensively in [R Packages, 2ed](https://r-pkgs.org/testing-basics.html) and the [`testthat` documentation](https://testthat.r-lib.org/index.html)
+
+[^tests-intro-shinytest2]: `shinytest2` has [excellent documentation](https://rstudio.github.io/shinytest2/) (and [videos](https://www.youtube.com/watch?v=Gucwz865aqQ)), and I highly recommend reading through those resources.
+
+[^tests-intro-ms-testing]: Mastering shiny dedicates an entire [Chapter to Testing](https://mastering-shiny.org/scaling-testing.html), which covers [unit tests](https://mastering-shiny.org/scaling-testing.html#basic-structure) and [`testServer()`](https://mastering-shiny.org/scaling-testing.html#testing-reactivity), and also includes some tips for using JavaScript with [`shinytest`](https://mastering-shiny.org/scaling-testing.html#testing-javascript) (not to be confused with [`shinytest2`](https://rstudio.github.io/shinytest2/)) 
+[^tests-intro-testserver]: The [`testServer()`](https://shiny.posit.co/r/articles/improve/server-function-testing/) documentation is sparse, so I'll provide a few tips and tricks I've learned for testing module server functions.
+
+### Where to look
+
+Applications typically have some accompanying resources to address what *should* be tested, the most common source being a software requirements specification (SRS) document.[^tests-srs] The SRS breaks down an application's intended purpose (i.e., the problem it's designed to solve) into three general areas: user specifications, feature requirements, and functional requirements: 
 
 -   **The user specifications capture the needs and expectations of the end-user.** These are usually non-technical and focused on the "why" and the "what" of the application.
 
--   **The feature requirements list the high-level capabilities of the application.** Features are defined early in the life of a project and become the talking points during discussions with stakeholders to be used for scoping and prioritization. Because their scope can be broad, they may be composed of various functional (and sometimes even non-functional).
+-   **The feature requirements describe the high-level capabilities of the application.** Features are defined early in the life of a project and often become the talking points during discussions between stakeholders and developers. Features can be used for scoping and prioritization, and may be comprised of various functional (and sometimes non-functional) requirements.
 
 -   **Functional requirements are the testable, specific actions, inputs, and outputs.** Functional requirements provide the technical details of how the features will be implemented, and a single feature can give rise to multiple functional requirements.
 
-These guidelines direct the development process, albeit from slightly different perspectives. Understanding the interplay between user specifications, functional requirements, and feature requirements is essential for helping developers know if the application meets the technical standards and satisfies the user’s needs.
+[^tests-srs]: Read more about what goes in the [Software Requirements Specification](https://en.wikipedia.org/wiki/Software_requirements_specification)
+
+These guidelines direct the development process, albeit from slightly different perspectives. Understanding the interplay between user specifications, features, and functional requirements is essential for developers to know if an application meets the technical standards and satisfies the user’s needs.
 
 I'll use `shinyAppPkg` to illustrate a brief example of each in the sections below:
 
-## User Specifications
+### User Specifications
 
-**User Specifications** are what the end-user (in this case, a film analyst) wants to achieve with the application.[^tests-specs-user-specs]
+**User specifications** are what the end-user (in this case, a film analyst) wants to achieve with the application.[^tests-specs-user-specs]
 
 [^tests-specs-user-specs]: User Specifications are sometimes referred to as "user stories," "use cases," or "general requirements"
 
@@ -83,7 +83,7 @@ I'll use `shinyAppPkg` to illustrate a brief example of each in the sections bel
 #| results: asis
 #| eval: true
 co_box(
-  color = "y", fold = FALSE, look = "minimal", 
+  color = "b", fold = FALSE, look = "minimal", 
   size = '1.10', header = "Scatter plot user specification",
   contents = 
 " 
@@ -93,7 +93,7 @@ co_box(
   ")
 ```
 
-## Feature Requirements
+### Feature Requirements
 
 The **feature requirement** translates the end user's expectation into specific language describing an application capability (i.e., display a scatter plot), phrased to satisfy a specific end-user need outlining in the specifications.[^tests-specs-feat]
 
@@ -105,7 +105,7 @@ The **feature requirement** translates the end user's expectation into specific 
 #| results: asis
 #| eval: true
 co_box(
-  color = "o", fold = FALSE, look = "minimal",
+  color = "b", fold = FALSE, look = "minimal",
   size = '1.10', header = "Scatter plot feature requirements",
   contents = 
 " 
@@ -115,9 +115,9 @@ co_box(
   ")
 ```
 
-## Functional Requirements
+### Functional Requirements
 
-The **Functional Requirements** are written for the developer and provide technical details on *how* the feature (i.e., the scatter plot) should behave and *what* it needs to do. These requirements are written for developers and represent where the end-users' expectations come into direct contact with code.[^tests-specs-func]
+**Functional requirements** are written for the developer and provide technical details on *how* the feature (i.e., the scatter plot) should behave and *what* it needs to do (they're where the end-users' expectations come into direct contact with code).[^tests-specs-func]
 
 [^tests-specs-func]: **Functional requirements** are precise, measurable, and testable. 
 
@@ -142,7 +142,7 @@ co_box(
   ")
 ```
 
-## Traceability matrix
+### Traceability matrix
 
 A traceability matrix is a table that ‘traces’ the user specifications to features and functional requirements (and the tests they give rise to) to verify that the application has been developed correctly. Package vignettes are a great place to store a draft of the traceability matrix, and they can be quickly created using `usethis::use_vignette()`:
 
@@ -153,7 +153,7 @@ A traceability matrix is a table that ‘traces’ the user specifications to fe
 #| eval: true
 git_margin_box(
   fig_pw = '75%', 
-  branch = "08_tests-specs", 
+  branch = "10a_tests-specs", 
   repo = 'shinyAppPkg')
 ```
 
@@ -306,13 +306,17 @@ trace_matrix |>
 ```
 
 
-Vignettes are a great place to store this information because it's self-contained and travel with the package whenever the code is updated.[^test-specs-7]
+Vignettes are a great place to store this information because they are self-contained and travel with the package whenever the code is updated.[^test-specs-7]
 
 [^test-specs-7]: Documenting the traceability matrix in vignettes are great for developers, but it's also a good idea use an issue-tracking system with version control, like GitHub Projects or Azure DevOps.
 
-The following section covers setting up tests with `testthat`, the structure of unit tests, and additional elements you should consider using in your app-package.
+The following section covers setting up tests with `testthat` and the structure of unit tests.
 
-# [`testthat`]{style="font-size: 1.05em;"} framework
+## [`testthat`]{style="font-size: 1.05em;"} framework
+
+Testing shiny app-packages poses some unique challenges. Shiny functions are written in the context of its reactive model,[^tests-shiny-reactive] so some standard testing techniques and methods for regular R packages don’t directly apply. Fortunately, the infrastructure for storing and running tests in app-packages is identical to a standard R package.
+
+[^tests-shiny-reactive]: The ['Reactivity - An overview'](https://shiny.posit.co/r/articles/build/reactivity-overview/) article gives an excellent description (and mental module) of reactive programming.
 
 Multiple strategies exist for writing tests. For example, if you've adopted test-driven development (TDD),[^tests-tdd] you'll write tests before developing utility functions, modules, or a standalone app function.
 
@@ -320,7 +324,7 @@ Regardless of the testing strategy you choose, I recommend setting up the testin
 
 [^tests-tdd]: Read more about [Test-driven development](https://en.wikipedia.org/wiki/Test-driven_development) 
 
-## [`use_testthat()`]{style="font-size: 1.05em;"}
+### [`use_testthat()`]{style="font-size: 1.05em;"}
 
 In packages using `devtools`, the testing infrastructure can be built with `usethis::use_testthat()`:
 
@@ -353,7 +357,7 @@ tests/
 ```
 1. Test runner
 
-### [`use_test()`]{style="font-size: 0.95em;"} unit tests
+#### [`use_test()`]{style="font-size: 0.95em;"} unit tests
 
 New tests are created with `usethis::use_test()`.[^test-files-folders]
 
@@ -365,7 +369,7 @@ New tests are created with `usethis::use_test()`.[^test-files-folders]
 usethis::use_test("scatter_plot")
 ```
 
-#### [`test-`]{style="font-size: 0.95em;"} files
+##### [`test-`]{style="font-size: 0.95em;"} files
 
 - [x]   **Test files**: the IDE will automatically create and open the new test file: 
 
@@ -376,7 +380,7 @@ usethis::use_test("scatter_plot")
 • Modify 'tests/testthat/test-scatter_plot.R'
 ```
 
-#### [`test_that()`]{style="font-size: 0.95em;"} tests 
+##### [`test_that()`]{style="font-size: 0.95em;"} tests 
 
 - [x]   **Tests**: Each new test file contains a boilerplate `test_that()` test, with `desc` (the test context) and `code` arguments (supplied in curly brackets). 
 
@@ -388,7 +392,7 @@ test_that(desc = "multiplication works", code = {
 })
 ```
 
-#### [`expect_`]{style="font-size: 0.95em;"}ations 
+##### [`expect_`]{style="font-size: 0.95em;"}ations 
 
 - [x]   **Expectations**: most expectation have two parts: an `observed` object, and an `expected` object. The `observed` object is an artifact of some code you've written, and it's being compared against an `expected` result.
 
@@ -405,7 +409,7 @@ expect_equal( # <1>
 3. What is observed (i.e., the value or object)
 4. What was expected (i.e., the predefined criteria for success) 
 
-#### Running tests
+##### Running tests
 
 - [x]   **Running tests**: Another `devtools` habit to adopt is regularly writing and running tests. If you're using Posit Workbench and have `devtools` installed, you can test your app-package using the **Build** pane or the keyboard shortcut:
 
@@ -433,132 +437,11 @@ test_that("multiplication works", {
 })
 ```
 
-Now that we have our testing framework and the traceability matrix to guide development, I will cover a *slightly* different approach to testing that I’ve found helpful with app-packages (and has excellent support in `testthat`).
-
-# Behavior-driven development
-
-Behavior-driven development (BDD) (or behavior-driven testing) is a methodology that involves collaboration between developers, users, and domain experts to define requirements and write tests using domain-specific language. The BDD approach emphasizes writing human-readable descriptions of the application's behavior, which is then converted into a series of tests.
-
-> "*[BDD] encourages teams to use conversation and concrete examples to formalize a shared understanding of how the application should behave.*" - [BDD, Wikipedia](https://en.wikipedia.org/wiki/Behavior-driven_development#:~:text)
-
-Behavior-driven testing can be performed using a `testthat`'s `describe()` and `it()` functions.[^tests-bdd-describe] Below is an example of how these might look for the **US1** user specification in `shinyAppPkg`:
-
-[^tests-bdd-describe]: Read more about `describe()` and `it()` in the [`testthat` documentation.](https://testthat.r-lib.org/reference/describe.html)
-
-## [`describe()`]{style="font-size: 0.95em;"}
-
-The `testthat::describe()` function follows a BDD format and '*specifies a larger component or function and contains a set of specifications*'
-
-In `describe()`, I'll reference the feature I'm testing (**FE1**): 
-
-```{r}
-#| label: co_box_trace_matrix_specs_features_bdd
-#| echo: false
-#| code-fold: false
-tibble::tibble(
-  `User Specification` = c(
-    "US1: scatter plot data visualization"
-  ),
-  `Feature Requirement` = c(
-    "FE1: interactive scatter plot (two data sources, drop-down variable options)"
-  )
-) |> 
-  gt::gt(auto_align = TRUE) |> 
-  gt::sub_missing(
-  columns = gt::everything(),
-  rows = gt::everything(),
-  missing_text = "-"
-)
-```
-
-```{r}
-#| eval: false 
-#| code-fold: false
-testthat::describe(description = "FE1: interactive scatter plot", code = {
-  
-
-})
-```
-
-## [`it()`]{style="font-size: 0.95em;"}
-
-Inside `describe()`, we can include multiple `it()` blocks which "*functions as a test and is evaluated in its own environment.*" 
-
-In the example below, I use `it()` blocks to test each functional requirement:[^tests-it-blocks]
-
-```{r}
-#| label: co_box_trace_matrix_specs_features_function__bdd
-#| echo: false
-#| code-fold: false
-#| include: true
-trace_matrix <- tibble::tibble(
-  `Feature Requirement` = c(
-    "FE1: interactive scatter plot (two data sources, drop-down variable options)",
-    NA_character_,
-    NA_character_,
-    NA_character_
-  ),
-  `Functional Requirements` = c(
-    "FR1: data source",
-    "FR2: user-input updating",
-    "FR3: color-coded data points",
-    "FR4: plot axis, legend & title"
-  )
-) 
-trace_matrix |> 
-  gt::gt(auto_align = TRUE) |> 
-  gt::sub_missing(
-  columns = gt::everything(),
-  rows = gt::everything(),
-  missing_text = "-"
-)
-```
-
-[^tests-it-blocks]: Each [`it()`](https://testthat.r-lib.org/reference/describe.html) block contains the expectations (or what you would traditionally include in `test_that()`).
-
-```{r}
-#| eval: false 
-#| code-fold: false
-testthat::describe(description = "FE1: interactive scatter plot", code = {
-  
-  testthat::it(description = "FR1: data source", code = {
-    # test code 
-    testthat::expect_equal(object = , expected = )
-  })
-
-  testthat::it(description = "FR2: user-input updating", code = {
-    # test code 
-    testthat::expect_equal(object = , expected = )
-  })
-
-  testthat::it(description = "FR3: color-coded data points", code = {
-    # test code 
-    testthat::expect_equal(object = , expected = )
-  })
-  
-  testthat::it(description = "FR4: plot axis, legend & title", code = {
-    # test code 
-    testthat::expect_equal(object = , expected = )
-  })
-})
-```
-
 Next we're going to cover two additional testing tools (fixtures and helpers) you can include in your test suite to make testing your app-package a little easier.
 
-# Fixtures 
+## Fixtures 
 
 <!-- https://www.tidyverse.org/blog/2020/04/self-cleaning-test-fixtures/ -->
-
-```{r}
-#| label: git_box_08_tests-helpers-fixtures
-#| echo: false
-#| results: asis
-#| eval: true
-git_margin_box(
-  fig_pw = '75%', 
-  branch = "08_tests-helpers-fixtures", 
-  repo = 'shinyAppPkg')
-```
 
 Test fixtures are various resources used to ensure a consistent, well-defined environment. Fixtures can be input data, database connections, R options, environment variables, or anything else needed to create a repeatable infrastructure (even when the test is run on different environments or setups). 
 
@@ -578,7 +461,7 @@ tests/
 
 [^tests-fixtures]: Test fixtures are described in-depth in [R Packages, 2ed](https://r-pkgs.org/testing-advanced.html#test-fixtures) and in the [`testthat` documentation](https://testthat.r-lib.org/articles/test-fixtures.html#test-fixtures)
 
-## Test data
+### Test data
 
 The code used to create test data files should also be stored in `tests/testthat/fixtures/` with a clear naming convention. I've provided the code used to tidy `ggplot2movies::movies` as an example data fixture below:[^tests-fixtures-naming-conv] 
 
@@ -586,7 +469,7 @@ The code used to create test data files should also be stored in `tests/testthat
 
 ```{r}
 #| eval: false 
-#| code-fold: true 
+#| code-fold: show 
 #| code-summary: 'show/hide make-ggp2-movies.R'
 # pkgs <- c('ggplot2movies', 'tidyr', 'dplyr', 'stringr', 'purrr')
 # install.packages(pkgs, quiet = TRUE)
@@ -598,7 +481,7 @@ library(stringr)
 library(purrr)
 
 ggp2movies <- ggplot2movies::movies |>
-  pivot_longer(c(Action:Short),
+  tidyr::pivot_longer(c(Action:Short),
     names_to = "genre_key",
     values_to = "genre_value"
   ) |>
@@ -608,7 +491,7 @@ ggp2movies <- ggplot2movies::movies |>
     year, budget, avg_rating = rating, votes, mpaa
   ) |>
   dplyr::filter(genre_value == TRUE) |>
-  group_by(title) |>
+  dplyr::group_by(title) |>
   dplyr:::mutate(
     genres = paste0(genre_key, collapse = ", ")
   ) |>
@@ -620,17 +503,21 @@ ggp2movies <- ggplot2movies::movies |>
   dplyr::distinct(.keep_all = TRUE) |>
   dplyr::mutate(
     genres = dplyr::na_if(x = genres, ""),
-    genres = factor(genres),
+    genre = dplyr::case_when(
+                stringr::str_detect(genres, ",") ~ 'Multiple genres',
+                TRUE ~ genres),
+    genre = factor(genre),
     mpaa = dplyr::na_if(x = mpaa, y = ""),
     mpaa = factor(mpaa,
       levels = c("G", "PG", "PG-13", "R", "NC-17"),
-      labels = c("G", "PG", "PG-13", "R", "NC-17")
-    )
-  ) |> 
-  tidyr::drop_na()
+      labels = c("G", "PG", "PG-13", "R", "NC-17"))
+    ) |> 
+  dplyr::select(-genres)
 # save to tests/testthat/fixtures/
 saveRDS(object = ggp2movies, file = "tests/testthat/fixtures/ggp2_movies.rds") 
 ```
+
+This file is saved in `tests/testthat/fixtures/` along with the output data.
 
 ```{bash}
 #| eval: false 
@@ -645,8 +532,10 @@ tests/
 ```
 1. The code used to create the test data (`make-ggp2-movies.R`) is stored in the same location as the output it creates (i.e., `ggp2_movies.rds`):
 
+Data files stored in `tests/testthat/fixtures/` can be accessed with `testthat::test_path()`
 
-# Helpers 
+
+## Helpers 
 
 <!-- https://r-pkgs.org/testing-design.html#testthat-helper-files -->
 
@@ -654,7 +543,7 @@ Test helpers are functions code that make creating and running tests easier.
 
 > "*Helper files are a mighty weapon in the battle to eliminate code floating around at the top-level of test files.*" Testthat helper files, [R Packages, 2ed](https://r-pkgs.org/testing-design.html#testthat-helper-files)
 
-## App input helpers 
+### App input helpers 
 
 The `var_inputs()` function below is a test fixture we can use to create inputs for the `scatter_plot()` utility function:
 
@@ -716,34 +605,186 @@ tests/
 
 The next section demonstrates how to use test fixtures and helpers with `testthat`'s [behavior-driven development](https://testthat.r-lib.org/reference/describe.html) functions (`describe()` and `it()`) and the contents of the traceability matrix. 
 
-# Example: testing outputs
 
-If we wanted to confirm the `scatter_plot()` function returns a `ggplot2` object (i.e., with `is.ggplot()`) the `describe()` and`it()` code would look something like this:
+Now that we have our testing framework and the traceability matrix to guide development, I will cover a *slightly* different approach to testing that I’ve found helpful with app-packages (and has excellent support in `testthat`).
+
+## Behavior-driven development
+
+Behavior-driven development (BDD) (or behavior-driven testing) is a methodology that involves collaboration between developers, users, and domain experts to define requirements and write tests using domain-specific language. The BDD approach emphasizes writing human-readable descriptions of the application's behavior, which is then converted into a series of tests.
+
+> "*[BDD] encourages teams to use conversation and concrete examples to formalize a shared understanding of how the application should behave.*" - [BDD, Wikipedia](https://en.wikipedia.org/wiki/Behavior-driven_development#:~:text)
+
+Behavior-driven testing can be performed using a `testthat`'s `describe()` and `it()` functions.[^tests-bdd-describe] Below is an example of how these might look for the **US1** user specification in `shinyAppPkg`:
+
+[^tests-bdd-describe]: Read more about `describe()` and `it()` in the [`testthat` documentation.](https://testthat.r-lib.org/reference/describe.html)
+
+### [`describe()`]{style="font-size: 0.95em;"}
+
+The `testthat::describe()` function follows a BDD format and '*specifies a larger component or function and contains a set of specifications*'
+
+In `describe()`, I'll reference the feature I'm testing (**FE1**): 
+
+```{r}
+#| label: co_box_trace_matrix_specs_features_bdd
+#| echo: false
+#| code-fold: false
+tibble::tibble(
+  `User Specification` = c(
+    "US1: scatter plot data visualization"
+  ),
+  `Feature Requirement` = c(
+    "FE1: interactive scatter plot (two data sources, drop-down variable options)"
+  )
+) |> 
+  gt::gt(auto_align = TRUE) |> 
+  gt::sub_missing(
+  columns = gt::everything(),
+  rows = gt::everything(),
+  missing_text = "-"
+)
+```
 
 ```{r}
 #| eval: false 
 #| code-fold: false
 testthat::describe(description = "FE1: interactive scatter plot", code = {
   
-  testthat::it(description = "FR1: data source", code = {
-    
-      p <- scatter_plot(movies,
-        x_var = var_inputs()$x,
-        y_var = var_inputs()$y,
-        col_var = var_inputs()$z,
-        alpha_var = var_inputs()$alpha,
-        size_var = var_inputs()$size
-      )
-    testthat::expect_true(object = ggplot2::is.ggplot(p))
-    
-  })
-  
+
 })
 ```
 
-This test answers the question, '*does the plot generate without producing an error,*'[^tests-graphs] which is appropriate because this is a test of the data source (`movies`), not necessarily the graph output.
+The describe() functions can also be nested, which allows we me to include the functional requirement per test, also: 
+
+```{r}
+#| eval: false 
+#| code-fold: false
+testthat::describe("FE1: interactive scatter plot", code = { # <1>
+  
+  testthat::describe("FR1: data source", code = { # <2>
+    # <2>
+  }) # <2>
+  
+}) # <1>
+```
+1. Feature description  
+2. Functional requirement
+
+
+### [`it()`]{style="font-size: 0.95em;"}
+
+Inside `describe()`, we can include multiple `it()` blocks which "*functions as a test and is evaluated in its own environment.*" 
+
+In the example below, I use an `it()` block to test the first functional requirement:[^tests-it-blocks]
+
+```{r}
+#| eval: false 
+#| code-fold: false
+testthat::describe("FE1: interactive scatter plot", code = { # <1>
+  
+  testthat::describe("FR1: data source", code = { # <2>
+    
+    testthat::it("T1: data source", code = { # <3>
+      # test code # <3>
+    }) # <3>
+    
+  }) # <2>
+  
+}) # <1>
+```
+1. Feature description   
+2. Functional requirement   
+3. Test code   
+
+```{r}
+#| label: co_box_trace_matrix_specs_features_function__bdd
+#| echo: false
+#| code-fold: false
+#| include: true
+trace_matrix <- tibble::tibble(
+  `Feature Requirement` = c(
+    "FE1: interactive scatter plot (two data sources, drop-down variable options)",
+    NA_character_,
+    NA_character_,
+    NA_character_
+  ),
+  `Functional Requirements` = c(
+    "FR1: data source",
+    "FR2: user-input updating",
+    "FR3: color-coded data points",
+    "FR4: plot axis, legend & title"
+  )
+) 
+trace_matrix |> 
+  gt::gt(auto_align = TRUE) |> 
+  gt::sub_missing(
+  columns = gt::everything(),
+  rows = gt::everything(),
+  missing_text = "-"
+)
+```
+
+[^tests-it-blocks]: Each [`it()`](https://testthat.r-lib.org/reference/describe.html) block contains the expectations (or what you would traditionally include in `test_that()`).
+
+Below is an example of how we might scope all the tests in the traceability matrix: 
+
+```{r}
+#| eval: false 
+#| code-fold: false
+testthat::describe("FE1: interactive scatter plot", code = { # <1>
+
+  testthat::describe("FR1: data source", code = {
+    testthat::it("T1: data source", code = {
+      # test code
+    })
+  })
+
+  testthat::describe("FR2: user-input updating", code = {
+    testthat::it("T2: user-input updating", code = {
+      # test code
+    })
+  })
+
+  testthat::describe("FR3: color-coded data points", code = {
+    testthat::it("T3: color-coded data points", code = {
+      # test code
+    })
+  })
+
+  testthat::describe("FR4: plot axis, legend & title", code = {
+    testthat::it("T4: plot axis, legend & title", code = {
+      # test code
+    })
+  })
+})
+```
+
+
+## Example: unit tests
+
+Below is a test that answers the question, '*does the plot generate without producing an error,*'[^tests-graphs] for `scatter_plot()`. This type of test appropriate because we're wanting to confirm the data source (`movies`) will generate a plot object, not necessarily the specific contents of the graph.
 
 [^tests-graphs]: Snapshot tests would be more appropriate for answering the question, ['*Is the plot visually correct?*'](https://shiny.posit.co/r/articles/improve/server-function-testing/index.html#complex-outputs-plots-htmlwidgets).
+
+```{r}
+#| eval: false 
+#| code-fold: false
+testthat::it("T1: movies data source", code = {
+  
+  p <- scatter_plot(movies, 
+    x_var = var_inputs()$x, 
+    y_var = var_inputs()$y, 
+    col_var = var_inputs()$z, 
+    alpha_var = var_inputs()$alpha, 
+    size_var = var_inputs()$size 
+  )
+  
+  testthat::expect_true(object = ggplot2::is.ggplot(p))
+  
+})
+```
+1. Feature  
+2. Functional requirement  
+3. Test helper  
 
 We can also use a nested `describe()` chunk to load and test a second data source (i.e., the `ggplot2movies::movies` data):[^tests-ggp2_movies-raw-data]
 
@@ -752,47 +793,56 @@ We can also use a nested `describe()` chunk to load and test a second data sourc
 ```{r}
 #| eval: false 
 #| code-fold: false
-testthat::describe(description = "US1: scatter plot data visualization", code = { # <1>
+testthat::describe("FE: interactive scatter plot", code = {  # <1>
   
-  testthat::describe(description = "FR1: data source (movies)", code = { # <2>
+  testthat::describe("FR1: data source (movies)", code = { # <2>
     
-    testthat::it(description = "T1: movies data source", code = { 
-      p <- scatter_plot(movies, # <3>
-        x_var = var_inputs()$x, # <3>
-        y_var = var_inputs()$y, # <3>
-        col_var = var_inputs()$z, # <3>
-        alpha_var = var_inputs()$alpha, # <3>
-        size_var = var_inputs()$size # <3>
+    testthat::it("T1: movies data source", code = { # <3>
+      p <- scatter_plot(movies, # <4>
+        x_var = var_inputs()$x, # <4>
+        y_var = var_inputs()$y, # <4>
+        col_var = var_inputs()$z, # <4>
+        alpha_var = var_inputs()$alpha, # <4>
+        size_var = var_inputs()$size # <4>
       )
-      expect_true(object = ggplot2::is.ggplot(p))
-    })
+      expect_true(object = ggplot2::is.ggplot(p)) # <5>
+    }) # <3>
     
-  })
+  }) # <2>
   
-  testthat::describe(description = "FR1: data source (ggp2_movies)", code = { # <4>
+  testthat::describe("FR1: data source (ggp2_movies)", code = { # <6>
     
-    testthat::it(description = "T2: ggp2_movies.rds data source", code = {
-      ggp2_movies <- readRDS(test_path("fixtures", "ggp2_movies.rds")) # <5>
-      p <- scatter_plot(ggp2_movies, # <6>
-        x_var = ggp2_inputs()$x, # <6>
-        y_var = ggp2_inputs()$y, # <6>
-        col_var = ggp2_inputs()$z, # <6>
-        alpha_var = ggp2_inputs()$alpha, # <6>
-        size_var = ggp2_inputs()$size # <6>
-      )
-      expect_true(object = ggplot2::is.ggplot(p))
-    })
+    testthat::it("T2: ggp2_movies.rds data source", code = { # <7>
+      
+      ggp2_movies <- readRDS(                             # <8>                  
+                      testthat::test_path("fixtures", "ggp2_movies.rds")) # <8>
+      
+      p <- scatter_plot(ggp2_movies, # <9> 
+        x_var = ggp2_inputs()$x, # <9> 
+        y_var = ggp2_inputs()$y, # <9> 
+        col_var = ggp2_inputs()$z, # <9> 
+        alpha_var = ggp2_inputs()$alpha, # <9> 
+        size_var = ggp2_inputs()$size # <9> 
+      ) # <9> 
+      
+      expect_true(object = ggplot2::is.ggplot(p)) # <10> 
+      
+    }) # <7>
     
-  })
+  }) # <6>
   
-})
+}) # <1>
 ```
-1. User specification   
-2. `movies` data component    
-3. Test `movies` data with `var_inputs()` helper   
-4. `ggp2_movies` data component    
-5. Load `ggp2_movies.rds` test fixture with `testthat::test_path()`   
-6. Test `ggp2_movies` data with `ggp2_inputs()` helper   
+1. User specification or feature    
+2. `movies` data component  
+3. `movies` data test   
+4. Test `movies` data with `var_inputs()` helper   
+5. `movies` expectation   
+6. `ggp2_movies` data component  
+7. `ggp2_movies` data test    
+8. Load `ggp2_movies.rds` test fixture with `testthat::test_path()`   
+9. Test `ggp2_movies` data with `ggp2_inputs()` helper  
+10. `ggp2_movies` expectation 
 
 ```{r}
 #| eval: false 
@@ -915,30 +965,15 @@ testthat::describe(description = "scatter_plot() function", code = {
 })
 ```
 
-# Example: snapshot tests
+## Example: snapshot tests
 
-```{r}
-#| label: git_box_08_tests-snapshots
-#| echo: false
-#| results: asis
-#| eval: true
-git_margin_box(
-  fig_pw = '75%', 
-  branch = "08_tests-snapshots", 
-  repo = 'shinyAppPkg')
-```
-
-
-
-If the expected output we're interesting in testing is cumbersome to describe programmatically, we can consider using a snapshot tests. Examples of this include UI elements (which are mostly HTML created by Shiny's UI layout and input/output functions) and data visualizations.[^tests-ui-tests]
-
-Writing tests for graph outputs can be difficult because the "correctness" of a graph is somewhat subjective and requires human judgment.
-
-In cases like this, a snapshot test might be warranted. The [`vdiffr`](https://vdiffr.r-lib.org/) package allows us to perform a 'visual unit test' by saving by capturing the expected output as a snapshot that we can compare with future versions.
+Writing tests for graph outputs can be difficult because the "correctness" of a graph is somewhat subjective and requires human judgment. If the expected output we're interesting in testing is cumbersome to describe programmatically, we can consider using a snapshot tests. Examples of this include UI elements (which are mostly HTML created by Shiny's UI layout and input/output functions) and data visualizations.[^tests-ui-tests]
 
 [^tests-ui-tests]: Mastering Shiny covers [creatng a snapshot file](https://mastering-shiny.org/scaling-testing.html#user-interface-functions) to test UI elements, but also notes this is probably not the best approach.
 
 ### [`vdiffr`]{style="font-size: 1.05em;"}
+
+If we want to create a graph snapshot test, the [`vdiffr`](https://vdiffr.r-lib.org/) package allows us to perform a 'visual unit test' by capturing the expected output as an `.svg` file that we can compare with future versions.
 
 The `expect_doppelganger()` function from `vdiffr` is designed specifically to work with ['graphical plots'](https://vdiffr.r-lib.org/reference/expect_doppelganger.html). 
 
@@ -953,7 +988,7 @@ vdiffr::expect_doppelganger(
 
 ### Test logging
 
-I like verbose test output, so I've created a `test_logger()` helper function that let's me give more context and information for each test:
+I prefer test outputs to be verbose, so I usually create some kind of  `test_logger()` helper function that allows me to give more context and information with each test:
 
 ```{r}
 #| code-fold: false
@@ -1016,9 +1051,9 @@ trace_matrix |>
 ```{r}
 #| eval: false 
 #| code-fold: false
-testthat::describe("FE1: interactive scatter plot", code = { # <1>
+testthat::describe("FR3: color & FR4: axis/legend/title", code = { # <1>
   
-  testthat::it("Has color (FR3) & axis/legend/title (FR4)", code = { # <2>
+  testthat::it("T3: test scatter_plot(), labels & theme", code = { # <2>
 
     test_logger(               # <3>
       start = "T3",            # <3>
@@ -1034,52 +1069,55 @@ testthat::describe("FE1: interactive scatter plot", code = { # <1>
         alpha_var = var_inputs()$alpha, # <4>
         size_var = var_inputs()$size # <4>
       ) + # <4>
-        ggplot2::labs( # <4>
-          title = var_inputs()$plot_title, # <4>
-          x = stringr::str_replace_all( # <4>
-                tools::toTitleCase( # <4>
-                  var_inputs()$x), "_", " "), # <4>
-          y = stringr::str_replace_all( # <4>
-                tools::toTitleCase( # <4>
-                  var_inputs()$y), "_", " ") # <4>
+        ggplot2::labs( # <5>
+          title = var_inputs()$plot_title, # <5>
+          x = stringr::str_replace_all( # <5>
+                tools::toTitleCase( # <5>
+                  var_inputs()$x), "_", " "), # <5>
+          y = stringr::str_replace_all( # <5>
+                tools::toTitleCase( # <5>
+                  var_inputs()$y), "_", " ") # <5>
         ) + # <4>
-        ggplot2::theme_minimal() + # <4>
-        ggplot2::theme(legend.position = "bottom") # <4>
-    ) # <4>
+        ggplot2::theme_minimal() + # <6>
+        ggplot2::theme(legend.position = "bottom") # <6>
+    ) # <6>
     
-    test_logger(               # <5>
-      end = "T3",              # <5>
-      msg = "Tests FR3 & FR4"  # <5>
-    )                          # <5>
+    test_logger(               # <7>
+      end = "T3",              # <7>
+      msg = "Tests FR3 & FR4"  # <7>
+    )                          # <7>
     
   })
   
 })
 ```
 1. Feature description  
-2. Non-technical language for functional requirements  
+2. Non-technical language in test description    
 3. Test logger (`start`)   
 4. Snapshot with `movies` and `var_inputs()`  
-5. Test logger (`end`)   
+5. Graph labels  
+6. Graph theme  
+7. Test logger (`end`)    
 
+In this test, I could've separated each `ggplot2` layer into different `it()` sections, but the test results have the output from `test_logger()` to capture the context of what's being tested. 
 
-The test results have the results from `test_logger()`, and we see warning that the snapshot has been saved in the `tests/testthat/_snaps/` folder: 
+We also see a warning when the snapshot has been saved in the `tests/testthat/_snaps/` folder the first time the test is run:
 
 ```{verbatim}
 #| eval: false 
 #| code-fold: false
 [ FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]
-INFO [2023-09-26 23:16:52] [ START | T1 = Tests FR1]
+INFO [2023-10-02 14:15:22] [ START | T1 = Tests FR1]
 [ FAIL 0 | WARN 0 | SKIP 0 | PASS 1 ]
-INFO [2023-09-26 23:16:52] [ END   | T1 = Tests FR1]
+INFO [2023-10-02 14:15:23] [ END   | T1 = Tests FR1]
 
-INFO [2023-09-26 23:16:52] [ START | T2 = Tests FR1]
+INFO [2023-10-02 14:15:23] [ START | T2 = Tests FR1]
 [ FAIL 0 | WARN 0 | SKIP 0 | PASS 2 ]
-INFO [2023-09-26 23:16:52] [ END   | T2 = Tests FR1]
+INFO [2023-10-02 14:15:23] [ END   | T2 = Tests FR1]
 
-INFO [2023-09-26 23:16:52] [ START | T3 = Tests FR3 & FR4]
-[ FAIL 0 | WARN 1 | SKIP 0 | PASS 3 ]
-INFO [2023-09-26 23:16:52] [ END   | T3 = Tests FR3 & FR4]
+INFO [2023-10-02 14:15:23] [ START | T3 = Tests FR3 & FR4]
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 3 ]
+INFO [2023-10-02 14:15:23] [ END   | T3 = Tests FR3 & FR4]
 
 
 ─ Warning (test-scatter_plot.R:54:5): Has color (FR3) & axis/legend/title (FR4) ─
@@ -1129,14 +1167,70 @@ tibble::tibble(
 )
 ```
 
-# Example: testing modules
+#### Snapshots are brittle
 
+The term "brittle" in the context of testing refers to their susceptibility to fail with small changes. Brittleness can produce false negatives test failures (i.e., due to inconsequential changes in the graph) when comparing a new graph to the baseline image. 
+
+If we compare the output from a custom plotting function like `scatter_plot()` against a graph built with analogous `ggplot2` code, we can see all the potential points of failure a test would have by passing both objects to `diffobj::diffObj()`:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+ggp_graph <- ggplot2::ggplot(mtcars, 
+              ggplot2::aes(x = mpg, y = disp)) + 
+              ggplot2::geom_point(
+                ggplot2::aes(color = cyl), 
+                             alpha = 0.5, 
+                             size = 3)
+  
+app_graph <- scatter_plot(mtcars, 
+                  x_var = "mpg", 
+                  y_var = "disp", 
+                  col_var = "cyl", 
+                  alpha_var = 0.5, 
+                  size_var = 3)
+
+diffobj::diffObj(ggp_graph, app_graph)
+```
+
+
+:::: {.column-page-inset-right}
+
+:::{#fig-08_tests_diffobj_scatter_plot}
+
+![`diffobj::diffObj()` on graph outputs](img/08_tests_diffobj_scatter_plot.png){#fig-08_tests_diffobj_scatter_plot width='100%' align='center'}
+
+Graph objects are difficult to use as test objects 
+:::
+
+::::
+
+The output shows us differences in the `mapping` and plot environment (`plot_env`), which we can assume *would* be different in the test (and the application), so using `testthat::expect_equal()` will fail.
+
+Another option for using snapshots for testing is the `expect_snapshot_file()` function [^tests-10] but `expect_doppelganger()` is probably the better option for comparing graph outputs.
+
+[^tests-10]: Follow the `expect_snapshot_file()` example from the [`testthat` documentation](https://testthat.r-lib.org/reference/expect_snapshot_file.html#ref-examples)
+
+The goal of any shiny app should be to create something that helps drive data-driven decisions. Pragmatically, this means not writing code that isn't addressing a need the user or stakeholder has requested. I've found scoping building a traceability matrix and scoping the tests with the BDD functions forces me ask myself, "*is this function addressing a user need?*," which saves me from developing a feature no one asked for.
+
+```{r}
+#| label: git_box_shinyAppPkg_10c_tests-snapshots
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  fig_pw = '75%', 
+  branch = "10c_tests-snapshots", 
+  repo = 'shinyAppPkg')
+```
+
+## Example: integration tests 
 
 <!--
 
 Integration tests verify that multiple components work together. If
 you find yourself instantiating multiple objects that interact with each
-other in a test, you’re probably writing an integration test. Integration
+other in a test, you're probably writing an integration test. Integration
 tests are often slower to execute and require a more elaborate setup than
 unit tests. Developers run integration tests less frequently, so the feedback
 loop is longer. These tests can flush out problems that are difficult
@@ -1146,50 +1240,73 @@ to identify by testing standalone units individually.
 
 The BDD functions also allow us to combine tests for *reactive interactions* with `testServer()`, which means we can include tests to verify the inputs, outputs, and returned values from module server functions. 
 
-For example, functional requirement #2 (**FR2**) is a user created behavior. 
+To confirm functional requirement #2 (**FR2**) (that user-inputs are updating in the application), we need to test two changes:
 
-To confirm the user-inputs are updating in the application, we need to test three changes:
+1. Values passed to the UI are returned from `mod_var_input_server()`  
+2. Reactive values passed into `mod_scatter_display_server()` are available in for `scatter_plot()` as `inputs()`
 
-1. An initial `NULL` value in `mod_var_input_server()` 
-2. The returned values from the `mod_var_input_server()`  
-3. The final value collected in `mod_scatter_display_server()`
+### [`session$returned()`]{style="font-size: 0.95em;"}
 
-list of graph inputs from `mod_var_input_server()`, we can build the list of inputs, then pass identical values to `session$setInputs()` and confirm the returned object with `session$returned()`:
+Inside `testServer()`, we can create a list of graph inputs for `mod_var_input_server()`, then pass identical values to `session$setInputs()` and confirm the returned object with `session$returned()`:
 
 ```{r}
 #| eval: false 
 #| include: true
 #| code-fold: false
-shiny::testServer(app = mod_var_input_server, expr = {
-  test_vals <- list(
-                  y = "audience_score",
-                  x = "imdb_rating",
-                  z = "genre",
-                  alpha = 0.5,
-                  size = 2,
-                  plot_title = "example title"
-                )
-  session$setInputs(
-                  y = "audience_score",
-                  x = "imdb_rating",
-                  z = "genre",
-                  alpha = 0.5,
-                  size = 2,
-                  plot_title = "example title"
-                )
-  test_logger(start = "returned(var_input)", msg = "var_input structure")
-  testthat::expect_equal(
-    object = session$returned(),
-    expected = test_vals
-  )
+testthat::describe("FR2: user-input updating", code = {
+  testthat::it("T4 & T5: creates shiny object", code = {
+    shiny::testServer(app = mod_var_input_server, expr = {
+      test_logger(
+        start = "T6",
+        msg = "FR2: var_input()"
+      )
+
+      test_vals <- list( # <1>
+        y = "critics_score", # <1>
+        x = "imdb_rating", # <1>
+        z = "critics_rating", # <1>
+        alpha = 0.75, # <1>
+        size = 3, # <1>
+        plot_title = "Example title" # <1>
+      ) # <1>
+
+      session$setInputs( # <2>
+        y = "critics_score", # <2>
+        x = "imdb_rating", # <2>
+        z = "critics_rating", # <2>
+        alpha = 0.75, # <2>
+        size = 3, # <2>
+        plot_title = "Example title" # <2>
+      ) # <2>
+
+      testthat::expect_equal( # <3>
+        object = session$returned(), # <3>
+        expected = test_vals # <3>
+      ) # <3>
+
+      test_logger(
+        end = "T6",
+        msg = "FR2: var_input()"
+      )
+    })
+  })
 })
 ```
+1. Create list of variable values   
+2. Set each input using `setInputs(input = )`  
+3. Confirm returned values from module  
 
-This confirms the structure of the returned object from `mod_var_input_server()`.
+The test above confirms 1) new input values can be passed into the UI, and 2) these values are returned from `mod_var_input_server()`.
+
+Now that we've confirmed `mod_var_input_server()` is returning values, we want to make sure reactive values are read correctly into the `var_inputs` argument in `mod_scatter_display_server()`. 
 
 ### [`args = list()`]{style="font-size: 0.95em;"}
 
-Now that we've confirmed the returned values from `mod_var_input_server()` are in a list, we want to make sure it's read correctly by the `var_inputs` argument in `mod_scatter_display_server()`. I've included the `movies_server()` function below refresh our memory of how this *should* work:[^tests-12]
+In `movies_server()`, when we pass `selected_vars` to the `var_inputs` argument of `mod_scatter_display_server()`, we're not passing the returned values (this is why we don't need the parentheses). We're calling on the method (or function) created by `reactive()`. 
+
+I've included the `movies_server()` function below to refresh our memory of how this *should* work:[^tests-12]
+
+[^tests-12]: `selected_vars` are the reactive plot values returned from `mod_var_input_server()`.
 
 ```{r}
 #| eval: false 
@@ -1203,11 +1320,8 @@ movies_server <- function(input, output, session) {
 }
 ```
 
-[^tests-12]: `selected_vars` are the reactive plot values returned from `mod_var_input_server()` we confirmed `test-mod_var_input_server.R`.
 
-When we pass `selected_vars` to the `var_inputs` argument of `mod_scatter_display_server()`, we're not passing the returned values (this is why we don't need the parentheses). We're calling on the method (or function) created by `reactive()`.
-
-If we pause execution with the debugger,[^tests-13] we can see the difference between calling `selected_vars` and `selected_vars()`:
+We can pause execution with Posit Workbench's debugger, [^tests-13] to see the difference between calling `selected_vars` and `selected_vars()`:
 
 [^tests-13]: We'll cover using `browser()` and the IDE's debugger in a future chapter.
 
@@ -1254,219 +1368,76 @@ $plot_title
 
 :::
 
-This distinction becomes important when we're testing the communication between module server functions. 
+This distinction becomes important when we're testing the communication between module server functions. If we're testing a module server function that collects the reactive values from another module, we need to wrap the values in `reactive()` to simulate the application's environment:
 
 ```{r}
 #| eval: false 
 #| code-fold: false
-test_vals <- list(x = "audience_score",
-                  y = "imdb_rating",
-                  z = "mpaa_rating",
-                  alpha = 0.5,
-                  size = 2,
-                  plot_title = "Test title case")
-shiny::testServer(
-  app = mod_scatter_display_server,
-  args = list(
-    var_inputs = shiny::reactive(test_vals)
-  ), expr = {
-    
-    test_logger(start = "mod_scatter_display_server", msg = "is.reactive(inputs())")
-    
-    expect_true(object = is.reactive(inputs))
-    
-    test_logger(end = "mod_scatter_display_server", msg = "is.reactive(inputs())")
-    
-  }
-)
-```
+testthat::it("T7 & T8: plot outputs", code = {
+  shiny::testServer( 
+    app = mod_scatter_display_server, # <1>
+    args = list(
+      var_inputs = shiny::reactive(var_inputs()) # <2>
+    ), expr = {
+      test_logger(start = "T7", msg = "FR2: is.reactive(inputs)")
+      testthat::expect_true(object = is.reactive(inputs)) # <3>
+      test_logger(end = "T7", msg = "FR2: is.reactive(inputs)")
 
+      test_logger(start = "T8", msg = "FR2: inputs()")
+      testthat::expect_equal(
+        object = inputs(), # <4>
+        expected = list( # <4>
+          x = "imdb_rating", # <4>
+          y = "audience_score", # <4>
+          z = "mpaa_rating", # <4>
+          alpha = 0.5, # <4>
+          size = 2, # <4>
+          plot_title = "Enter Plot Title" # <4>
+        )
+      )
+      test_logger(end = "T8", msg = "FR2: inputs()")
+    }
+  )
+})
+```
+1. Scatter-plot display module  
+2. Reactive variable input values  
+3. Test if `inputs` it's reactive  
+4. Test if `inputs()` and values are equal inside the module  
+
+
+I've included the example above because it's not included on the `testServer()` [documentation](https://shiny.posit.co/r/articles/improve/server-function-testing/), but I've found this method is great when you want to confirm two modules are communicating (i.e., returning and collecting outputs). System test with `shinytest2` are a better option if you're trying to capture a specific execution path (i.e., user story) in the application. 
+
+## Example: system tests
+
+System (or end-to-end) tests verify the whole application (or system) and are run to simulate real user interactions in a pre-production environment. Approaches to system testing vary, but in general, you'll want to run system tests before a release, which means the app's functional requirements are tested and released in lockstep.
+
+### [`shinytest2`]{style="font-size: 1.05em;"}
+
+[`shinytest2`](https://rstudio.github.io/shinytest2/index.html) requires a few steps to get up and running, most notably the [`chromote` package](https://rstudio.github.io/chromote/).[^shinytest2-start] 
+
+[^shinytest2-start]: A great place to start is the [Getting Started](https://rstudio.github.io/shinytest2/articles/shinytest2.html) vignette. 
 
 <!--
 
-# Testing app specifications
+> Manual Testing: Initially, you may have to manually interact with the Shiny app to ensure it behaves as expected.
 
-The `testthat` BDD functions work well in shiny app-packages because testing will often span multiple layers of code: 
+> Automated Browser Testing: Use tools like shinytest to automate browser-based testing for the Shiny application. shinytest captures the state of the application and allows you to compare it to expected states.
 
-  -   **Utility Functions**: handle things like database connections, data processing, visualizations, statistical analysis, etc.
+> User Scenarios: Script typical user interaction scenarios to ensure that the whole system, including front-end and back-end, work seamlessly.
 
-  -   **App UI/module UI functions**: control the design and layout of the application.
-
-  -   **App server/module server functions**: contains the back-end logic and controls how the app behaves in response to user input.
+-->
 
 
-For example, the user specifications will usually include functions for both business logic and shiny UI/server functions, but we want to separate the verification for these features in separate tests. We can use the contents of our traceability matrix to outline the `describe()` and `it()` sections of our tests.
-
-```{r}
-#| eval: false 
-#| code-fold: false
-#| include: false
-testthat::describe("scatter_plot() works", code = {
-  testthat::it(description = "is.ggplot", code = {
-    test_logger(start = "scatter_plot()", msg = "movies is.ggplot")
-    # testthat::test_that(desc = "scatter_plot() works", code = {
-      p <- scatter_plot(movies,
-        x_var = inputs()$x,
-        y_var = inputs()$y,
-        col_var = inputs()$z,
-        alpha_var = inputs()$alpha,
-        size_var = inputs()$size)
-        expect_true(object = ggplot2::is.ggplot(p))
-    test_logger(end = "scatter_plot()", msg = "movies is.ggplot")
-  })
-  testthat::it(description = "snapshot of scatter_plot()", code = {
-    ggp2_movies <- readRDS(test_path("fixtures", "ggp2_movies.rds"))
-    test_logger(start = "scatter_plot()", msg = "ggp2_movies scatter_plot() snapshot")
-    vdiffr::expect_doppelganger(
-      title = "scatter_plot()",
-      fig = scatter_plot(ggp2_movies,
-        x_var = ggp2_inputs()$x,
-        y_var = ggp2_inputs()$y,
-        col_var = ggp2_inputs()$z,
-        alpha_var = ggp2_inputs()$alpha,
-        size_var = ggp2_inputs()$size
-        )
-      )
-    test_logger(end = "scatter_plot()", msg = "ggp2_movies scatter_plot() snapshot")
-  })
-  
-  testthat::it(description = "snapshot of scatter_plot() and labels", code = {
-    ggp2_movies <- readRDS(test_path("fixtures", "ggp2_movies.rds"))
-    test_logger(start = "scatter_plot()", msg = "ggp2_movies scatter_plot() + labs")
-    vdiffr::expect_doppelganger(
-      title = "scatter_plot() + labels",
-      fig = scatter_plot(ggp2_movies,
-        x_var = ggp2_inputs()$x,
-        y_var = ggp2_inputs()$y,
-        col_var = ggp2_inputs()$z,
-        alpha_var = ggp2_inputs()$alpha,
-        size_var = ggp2_inputs()$size
-      ) + 
-        ggplot2::labs(
-          title = ggp2_inputs()$plot_title,
-          x = stringr::str_replace_all(tools::toTitleCase(ggp2_inputs()$x), "_", " "),
-          y = stringr::str_replace_all(tools::toTitleCase(ggp2_inputs()$y), "_", " ")
-        )
-      )
-    test_logger(end = "scatter_plot()", msg = "ggp2_movies scatter_plot() + labs")
-  }) 
-  
-  testthat::it(description = "snapshot of scatter_plot() and theme", code = {
-   ggp2_movies <- readRDS(test_path("fixtures", "ggp2_movies.rds"))
-   test_logger(start = "scatter_plot()", msg = "ggp2_movies scatter_plot() + theme")
-    vdiffr::expect_doppelganger(
-      title = "scatter_plot() + theme",
-      fig = scatter_plot(ggp2_movies,
-        x_var = ggp2_inputs()$x,
-        y_var = ggp2_inputs()$y,
-        col_var = ggp2_inputs()$z,
-        alpha_var = ggp2_inputs()$alpha,
-        size_var = ggp2_inputs()$size
-      ) + 
-        ggplot2::labs(
-          title = ggp2_inputs()$plot_title,
-          x = stringr::str_replace_all(tools::toTitleCase(ggp2_inputs()$x), "_", " "),
-          y = stringr::str_replace_all(tools::toTitleCase(ggp2_inputs()$y), "_", " ")
-        ) +
-        ggplot2::theme_minimal() +
-        ggplot2::theme(legend.position = "bottom")
-      )
-    test_logger(end = "scatter_plot()", msg = "ggp2_movies scatter_plot() + theme")
-  }) 
-})
-
-```
 
 
-`expect_doppelganger()` can be dropped in `test_that()` like any other expectation. 
-
-Below is an example test comparing a graph outputs from `ggplot2` against the custom `scatter_plot()` utility function in `shinyAppPkg`. Notice I've loaded the `ggp2_movies.rds` data[^tests-test_path] and included the `test_logger()` helper with `start` and `end` messages (before and after the test code).
-
-[^tests-test_path]: Accessing test files is made easier with `testtthat::test_path()`
-
-```{r}
-#| eval: false 
-#| code-fold: false
-ggp2_movies <- readRDS(test_path("fixtures", "ggp2_movies.rds")) # <1>
-test_logger(start = "scatter_plot()", msg = "ggplot2movies::movies snapshot") # <2>
-vdiffr::expect_doppelganger(
-  title = "scatter_plot() graph",
-  fig = scatter_plot(ggp2_movies,
-    x_var = ggp2_inputs()$x, # <3>
-    y_var = ggp2_inputs()$y, # <3>
-    col_var = ggp2_inputs()$z, # <3>
-    alpha_var = ggp2_inputs()$alpha, # <3>
-    size_var = ggp2_inputs()$size # <3>
-  ) + 
-    ggplot2::labs(
-      title = ggp2_inputs()$plot_title, # <3>
-      x = stringr::str_replace_all(tools::toTitleCase(ggp2_inputs()$x), "_", " "), # <3>
-      y = stringr::str_replace_all(tools::toTitleCase(ggp2_inputs()$y), "_", " ") # <3>
-    ) +
-    ggplot2::theme_minimal() +
-    ggplot2::theme(legend.position = "bottom")
-  )
-test_logger(end = "scatter_plot()", msg = "ggplot2movies::movies snapshot") # <4>
-```
-1. Load test data from `tests/testthat/fixtures`  
-2. Call `test_logger()` at beginning of test  
-3. Create inputs using `ggp2_inputs()` function in `tests/testthat/helper.R`
-4. Call `test_logger()` at end of test  
-
-When we initially run the test it passes, but with a warning that tells us the baseline snapshot was saved in `tests/testthat/_snaps/`:
-
-```{verbatim}
-#| eval: false 
-#| code-fold: false
-[ FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]
-i [ START | 2023-09-23 14:06:20 | scatter_plot() = movies is.ggplot]
-[ FAIL 0 | WARN 0 | SKIP 0 | PASS 1 ]
-i [ END   | 2023-09-23 14:06:20 | scatter_plot() = movies is.ggplot]
-
-i [ START | 2023-09-23 14:06:20 | scatter_plot() = ggplot2movies::movies snapshot]
-[ FAIL 0 | WARN 1 | SKIP 0 | PASS 2 ]
-i [ END   | 2023-09-23 14:06:20 | scatter_plot() = ggplot2movies::movies snapshot]
-
-
-── Warning (test-scatter_plot.R:27:5): snapshot ────────────────────────────────
-Adding new file snapshot: 'tests/testthat/_snaps/scatter-plot-graph.svg'
-```
-
-After the initial test run, if we view the `tests/` folder, we can see the new `tests/testthat/_snaps` is created:
-
-```{bash}
-#| eval: false 
-#| code-fold: false
-tests/
-  ├── testthat/
-  │   ├── _snaps/
-  │   │   └── scatter_plot/
-  │   │       └── scatter-plot-graph.svg
-  │   └── test-scatter_plot.R
-  └── testthat.R
-
-```
-
-The `scatter-plot-graph.svg` file is our baseline comparison object, which is then used in future tests.
+<!--
 
 #### [`withr`]{style="font-size: 1.05em;"}
 
 The date/time output from `test_logger()` doesn't provide the level of precision we want to monitor our unit tests (they're supposed to be fast). The R option to change this setting is `options(digits.secs)`, but we don't want to include this options in our test file (we just need it whenever we use `test_logger()`).[^tests-message2]
 
 We can add `withr::local_options()` inside `test_logger()` to make sure this option only applies to the test environment it's called from. Subsequent tests will pass without a warning and provide a more precise date/time message:
-
-```{verbatim}
-#| eval: false 
-#| code-fold: false
-[ FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]
-i [ START | 2023-09-23 14:13:03.9792 | scatter_plot() = movies is.ggplot]
-[ FAIL 0 | WARN 0 | SKIP 0 | PASS 1 ]
-i [ END   | 2023-09-23 14:13:04.0036 | scatter_plot() = movies is.ggplot]
-
-i [ START | 2023-09-23 14:13:04.0212 | scatter_plot() = ggplot2movies::movies snapshot]
-[ FAIL 0 | WARN 0 | SKIP 0 | PASS 2 ]
-i [ END   | 2023-09-23 14:13:04.2443 | scatter_plot() = ggplot2movies::movies snapshot]
-```
 
 [^tests-message2]: This example is similar to the `message2()` function on the [`testthat` website](https://testthat.r-lib.org/articles/test-fixtures.html#test-fixtures), but calls `withr` *inside* the helper function.
 
@@ -1484,226 +1455,35 @@ Sys.time()
 [1] "2023-09-23 14:16:30 PDT"
 ```
 
+-->
 
-
-#### Snapshots are brittle
-
-The term "brittle" in the context of testing refers to their susceptibility to changes (meaningful or not) that can produce false negatives (i.e., a test fails due to inconsequential changes in the graph) when comparing a new graph to the baseline image. 
-
-If we compare the output from a custom plotting function like `scatter_plot()` against a graph built with analogous `ggplot2` code, we can see all the potential points of failure a test would have by passing both objects to `diffobj::diffObj()`:
+## Test coverage 
 
 ```{r}
 #| eval: false 
 #| code-fold: false
-ggp_graph <- ggplot2::ggplot(mtcars, 
-              ggplot2::aes(x = mpg, y = disp)) + 
-              ggplot2::geom_point(
-                ggplot2::aes(color = cyl), 
-                             alpha = 0.5, 
-                             size = 3)
-  
-app_graph <- scatter_plot(mtcars, 
-                  x_var = "mpg", 
-                  y_var = "disp", 
-                  col_var = "cyl", 
-                  alpha_var = 0.5, 
-                  size_var = 3)
-
-diffobj::diffObj(ggp_graph, app_graph)
-```
-
-
-:::: {.column-page-inset-right}
-
-:::{#fig-08_tests_diffobj_scatter_plot}
-
-![`diffobj::diffObj()` on graph outputs](img/08_tests_diffobj_scatter_plot.png){#fig-08_tests_diffobj_scatter_plot width='100%' align='center'}
-
-Graph objects are difficult to use as test objects 
-:::
-
-::::
-
-The output shows us differences in the `mapping` and plot environment (`plot_env`), which we can assume *would* be different in the test (and the application), so using `testthat::expect_equal()` will fail.
-
-Another option for using snapshots for testing is the `expect_snapshot_file()` function [^tests-10] but `expect_doppelganger()` is probably the better option for comparing graph outputs.
-
-[^tests-10]: Follow the `expect_snapshot_file()` example from the [`testthat` documentation](https://testthat.r-lib.org/reference/expect_snapshot_file.html#ref-examples)
-
-
-
-
-```{r}
-#| eval: false 
 #| include: false
-# shiny::is.reactive(inputs()) ----------------------------------------------
-shiny::testServer(
-  app = mod_scatter_display_server,
-  args = list(
-    var_inputs =
-      shiny::reactive(
-        list(
-          x = "audience_score",
-          y = "imdb_rating",
-          z = "mpaa_rating",
-          alpha = 0.5,
-          size = 2,
-          plot_title = "Test title"
-        )
-      )
-  ), expr = {
-    test_logger(start = "mod_scatter_display_server", msg = "is.reactive(inputs())")
-    expect_true(
-      object = is.reactive(inputs)
-    )
-    test_logger(end = "mod_scatter_display_server", msg = "is.reactive(inputs())")
-  }
-)
+library(dplyr)
+library(tidyr)
+library(tibble)
 
-# is.list(inputs()) ----------------------------------------------
-shiny::testServer(
-  app = mod_scatter_display_server,
-  args = list(
-    var_inputs =
-      shiny::reactive(
-        list(
-          x = "audience_score",
-          y = "imdb_rating",
-          z = "mpaa_rating",
-          alpha = 0.5,
-          size = 2,
-          plot_title = "test title case"
-        )
-      )
-  ), expr = {
-    test_logger(start = "mod_scatter_display_server", msg = "is.list(inputs())")
-    expect_equal(
-      object = inputs(),
-      expected = list(
-        x = "audience_score",
-        y = "imdb_rating",
-        z = "mpaa_rating",
-        alpha = 0.5,
-        size = 2,
-        plot_title = "Test Title Case"
-      )
-    )
-    test_logger(end = "mod_scatter_display_server", msg = "is.list(inputs())")
-  }
-)
 
-# ggplot2::is.ggplot2() ---------------------------------------------------
+pkg_tests <- testthat::test_package(package = "shinyAppPkg", 
+  reporter = SilentReporter$new()) |> 
+  tibble::as_tibble() |> 
+  select(file, test, passed, failed, warning, error)
 
-shiny::testServer(
-  app = mod_scatter_display_server,
-  args = list(
-    var_inputs =
-      shiny::reactive(
-        list(
-          x = "audience_score",
-          y = "imdb_rating",
-          z = "mpaa_rating",
-          alpha = 0.5,
-          size = 2,
-          plot_title = "Test title"
-        )
-      )
-  ), expr = {
-    test_logger(start = "mod_scatter_display_server", msg = "ggplot2::is.ggplot(plot)")
-    plot <- scatter_plot(
-      df = movies,
-      x_var = inputs()$x,
-      y_var = inputs()$y,
-      col_var = inputs()$z,
-      alpha_var = inputs()$alpha,
-      size_var = inputs()$size
-    ) +
-      ggplot2::labs(
-        title = inputs()$plot_title,
-        x = stringr::str_replace_all(tools::toTitleCase(inputs()$x), "_", " "),
-        y = stringr::str_replace_all(tools::toTitleCase(inputs()$y), "_", " ")
-      ) +
-      ggplot2::theme_minimal() +
-      ggplot2::theme(legend.position = "bottom")
-    ggplot2::is.ggplot(plot)
-    test_logger(end = "mod_scatter_display_server", msg = "ggplot2::is.ggplot(plot)")
-  }
-)
+glimpse(pkg_tests)
 
-# print(plot) ---------------------------------------------------
-# shiny::testServer(
-#   app = mod_scatter_display_server,
-#   args = list(
-#     var_inputs =
-#       shiny::reactive(
-#         list(
-#           x = "audience_score",
-#           y = "imdb_rating",
-#           z = "mpaa_rating",
-#           alpha = 0.5,
-#           size = 2,
-#           plot_title = "Test title"
-#         )
-#       )
-#   ), expr = {
-#     test_logger(start = "mod_scatter_display_server", msg = "print(plot)")
-#     plot <- scatter_plot(
-#       # data ----------------------------------------------------
-#       df = movies,
-#       x_var = inputs()$x,
-#       y_var = inputs()$y,
-#       col_var = inputs()$z,
-#       alpha_var = inputs()$alpha,
-#       size_var = inputs()$size
-#     ) +
-#       ggplot2::labs(
-#         title = inputs()$plot_title,
-#         x = stringr::str_replace_all(tools::toTitleCase(inputs()$x), "_", " "),
-#         y = stringr::str_replace_all(tools::toTitleCase(inputs()$y), "_", " ")
-#       ) +
-#       ggplot2::theme_minimal() +
-#       ggplot2::theme(legend.position = "bottom")
-#     print(plot)
-#     test_logger(end = "mod_scatter_display_server", msg = "print(plot)")
-#   }
-# )
-# 💅 Your tests are beautiful 💅
+pkg_tests |> count(test)
 ```
 
--->
 
-<!--
-> Data Flow: Test how well the different units work together by simulating a complete data flow.
+### [`covr`]{style="font-size: 1.05em;"}
 
-> Database Interactions: If your package interacts with a database, write tests to ensure that read/write operations are working as expected.
+### [`covrpage`]{style="font-size: 1.05em;"}
 
-> API Calls: If your package makes API calls, use package like httptest to mock API responses and test the integration.
--->
-
-
-
-
-
-# System/end-to-end tests
-
-<!--
-> Manual Testing: Initially, you may have to manually interact with the Shiny app to ensure it behaves as expected.
-
-> Automated Browser Testing: Use tools like shinytest to automate browser-based testing for the Shiny application. shinytest captures the state of the application and allows you to compare it to expected states.
-
-> User Scenarios: Script typical user interaction scenarios to ensure that the whole system, including front-end and back-end, work seamlessly.
--->
-
-
-## [`shinytest2`]{style="font-size: 1.05em;"}
-
-# Test coverage 
-
-## [`covr`]{style="font-size: 1.05em;"}
-
-## [`covrpage`]{style="font-size: 1.05em;"}
-
-# Continuous Integration (CI)
+## Continuous Integration (CI)
 
 <!--
 
@@ -1718,7 +1498,7 @@ Testing an R package with a Shiny application can be challenging due to the vari
 -->
 
 
-# Comparisons
+## Comparisons
 
 Comparisons are the backbone of testing. Exploring the mechanics of how tests perform these comparisons (i.e., the underlying package(s)) can save you from surprising results. 
 
@@ -1735,7 +1515,7 @@ library(diffobj)
 library(tibble)
 ```
 
-## [`waldo`]{style="font-size: 1.05em;"}
+### [`waldo`]{style="font-size: 1.05em;"}
 
 If you'd like a preview of a comparison before writing a formal test, you can pass the your `observed` and `expected` objects to `waldo::compare()`[^waldo-compare-args] 
 
@@ -1806,7 +1586,7 @@ compare(
 
 `compare()` displays the differences in classes, names, and any individual value differences. 
 
-## [`diffobj`]{style="font-size: 1.05em;"}
+### [`diffobj`]{style="font-size: 1.05em;"}
 
 If you're using Posit Workbench, the [`diffobj` package](https://github.com/brodieG/diffobj) has a colorful display for making comparisons in the IDE. 
 

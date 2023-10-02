@@ -8,6 +8,19 @@ source("_common.R")
 ```
 
 ```{r}
+#| label: co_box_dev
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "o", look = "minimal",
+  header = "Caution",
+  contents = "This section is still being developed--it's contents are subject to change.",
+  fold = FALSE
+)
+```
+
+```{r}
 #| label: co_box_tldr
 #| echo: false
 #| results: asis
@@ -16,7 +29,7 @@ co_box(
   color = "b", look = 'minimal',
   header = "TLDR: I've seen this before...",
   contents = "[R Packages, 2ed](https://r-pkgs.org/whole-game.html) has a similar opening chapter that takes the reader through the 'whole game' of package development using a minimal 'toy' package. I've returned to this chapter frequently while developing packages, so this is an attempt to provide a similar resource for developing shiny app packages.",
-  fold = TRUE
+  fold = FALSE
 )
 ```
 
@@ -86,12 +99,60 @@ RoxygenNote: 7.2.3
 
 ## [`use_data()`]{style='font-size: 1.05em;'}
 
-To include the `stones` data in `monthAppPkg`, we load it into the Global Environment and pass it to `usethis::use_data()`:
+To include the `stones` data in `monthAppPkg`, we create a script in `data-raw/` with `usethis::use_data_raw("stones")`, then move the `birthstones.csv` file into `data-raw/`, load it into the Global Environment and pass it to `usethis::use_data()`
+
 
 ```{r}
 #| eval: false
 #| code-fold: false
-use_data(stones)
+usethis::use_data_raw("stones")
+```
+
+```{verbatim}
+✔ Setting active project to '/path/to/monthAppPkg'
+✔ Creating 'data-raw/'
+✔ Adding '^data-raw$' to '.Rbuildignore'
+✔ Writing 'data-raw/stones.R'
+• Modify 'data-raw/stones.R'
+• Finish the data preparation script in 'data-raw/stones.R'
+• Use `usethis::use_data()` to add prepared data to package
+```
+
+Move `birthstones.csv` to `data-raw/birthstones.csv`:
+
+```{r}
+#| eval: false
+#| code-fold: false
+fs::file_move(path = "birthstones.csv", new_path = "data-raw/birthstones.csv")
+```
+
+Contents of `data-raw/stones.R`:
+
+```{r}
+#| eval: false
+#| code-fold: false
+## code to prepare `stones` dataset goes here
+library(vroom)
+stones <- vroom::vroom("data-raw/birthstones.csv")
+usethis::use_data(stones, overwrite = TRUE)
+```
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+Rows: 12 Columns: 2                                                                                                                                
+── Column specification ──────────────────────────────────────────────────
+Delimiter: ","
+chr (2): month, stone
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+```
+
+```{r}
+#| eval: false
+#| code-fold: false
+usethis::use_data(stones)
 ```
 
 ```{verbatim}
