@@ -1,4 +1,4 @@
-# Tests 
+# Tests {#sec-tests}
 
 ```{r}
 #| eval: true 
@@ -50,7 +50,7 @@ Testing shiny applications poses some unique challenges. Shiny functions are wri
 1. What should I test?  
 2. How should I test it?   
 
-We're going to focus on *what* to test and *why* to test it. I won’t go into depth on *how* to write tests, because plenty of those resources exist.[^tests-intro-unit-tests] [^tests-intro-shinytest2] [^tests-intro-ms-testing] The only exception is some `testServer()` tricks I've learned for testing modules.[^tests-intro-testserver]
+We're going to focus on *what* to test. I'll give examples but won't go into depth on *how* to write tests because plenty of those resources exist.[^tests-intro-unit-tests] [^tests-intro-shinytest2] [^tests-intro-ms-testing] The tests in this chapter illustrate the connections between the user's needs, the code below `R/`, tests, and test coverage. The only exception is some `testServer()` tricks I've learned for testing modules.[^tests-intro-testserver]
 
 [^tests-intro-unit-tests]: Unit tests are covered extensively in [R Packages, 2ed](https://r-pkgs.org/testing-basics.html) and the [`testthat` documentation](https://testthat.r-lib.org/index.html)
 
@@ -73,7 +73,7 @@ Applications typically have some accompanying resources to address what *should*
 
 [^tests-srs]: Read more about what goes in the [Software Requirements Specification](https://en.wikipedia.org/wiki/Software_requirements_specification)
 
-These guidelines direct the development process, albeit from slightly different perspectives. Understanding the interplay between user specifications, features, and functional requirements is essential for developers to know how the technical standards are satisfying the user's needs. 
+These guidelines direct the development process, albeit from slightly different perspectives. Understanding the interplay between user specifications, features, and functional requirements is essential for developers to know how the technical standards satisfy the user's needs.
 
 The traceability matrix is a tool to ensure the tests cover all the functionalities (i.e., the code) and address the user specifications *and* that every user need corresponds to a functionality that's been tested.
 
@@ -117,11 +117,11 @@ Adding our first vignette to the `vignettes/` folder does the following:
 - [x]   Adds `inst/doc` to `.gitignore` and `*.html`, `*.R` to `vignettes/.gitignore`[^test-specs-inst-docs]
 
 
-[^test-specs-suggests]: We briefly covered the `Suggests` field in [Dependencies](https://mjfrigaard.github.io/shinyap/dependencies.html), but in this case it specifically applies to "*packages that are not necessarily needed. This includes packages used only in examples, tests or vignettes...*" - [Writing R Extensions, Package Dependencies](https://cran.r-project.org/doc/manuals/R-exts.html#Package-Dependencies)
+[^test-specs-suggests]: We briefly covered the `Suggests` field in [Dependencies](dependencies.qmd), but in this case it specifically applies to "*packages that are not necessarily needed. This includes packages used only in examples, tests or vignettes...*" - [Writing R Extensions, Package Dependencies](https://cran.r-project.org/doc/manuals/R-exts.html#Package-Dependencies)
 
-[^test-specs-vignette-builder]: The [documentation](https://cran.r-project.org/doc/manuals/R-exts.html#The-DESCRIPTION-file) on `VignetteBuilder` gives a great description of why `knitr` and `rmarkdown` below in `Suggests`, "*Note that if, for example, a vignette has engine `knitr::rmarkdown`, then `knitr` provides the engine but both `knitr` and `rmarkdown` are needed for using it, so both these packages need to be in the `VignetteBuilder` field and at least suggested (as `rmarkdown` is only suggested by `knitr`, and hence not available automatically along with it).*"
+[^test-specs-vignette-builder]: The [documentation](https://cran.r-project.org/doc/manuals/R-exts.html#The-DESCRIPTION-file) on `VignetteBuilder` gives a great example of why `knitr` and `rmarkdown` belong in `Suggests` and not `Imports`.
 
-[^test-specs-inst-docs]: We covered the `inst/` folder in the [External Files chapter](https://mjfrigaard.github.io/shinyap/), and you might recall that `doc/` was one of the folders we shouldn't create inside `inst/`.
+[^test-specs-inst-docs]: We covered the `inst/` folder in the [External files](external.qmd) chapter, and you might recall that `doc/` was one of the folders we shouldn't create inside `inst/`.
 
 ### User Specifications
 
@@ -219,7 +219,7 @@ tibble::tibble(
 
 ### Functional Requirements
 
-**Functional requirements** are written for the developer and provide technical details on *how* the feature (i.e., the scatter plot) should behave and *what* it needs to do (they're where the end-users' expectations come into direct contact with code).[^tests-specs-func]
+**Functional requirements** are written for the developer and provide technical details on *how* the feature (i.e., the scatter plot) should behave and *what* it needs to do (they're where the end-user's expectations come into direct contact with code).[^tests-specs-func]
 
 [^tests-specs-func]: **Functional requirements** are precise, measurable, and testable. 
 
@@ -317,17 +317,17 @@ The following section covers setting up tests with `testthat` and the structure 
 
 ## [`testthat`]{style="font-size: 1.05em;"} framework
 
-The `testthat` package has been around for over a decade, and thus has undergone various changes that require us to specify the edition we're intending to use (currently it's the third).[^tests-testthat-edition]
+The `testthat` package has been around for over a decade and thus has undergone various changes that require us to specify the edition we intend to use (currently, it's the third).[^tests-testthat-edition]
 
 [^tests-testthat-edition]: Read more about changes to the third edition to `testthat` in [R Packages, 2ed](https://r-pkgs.org/testing-basics.html#introducing-testthat)
 
-In the following sections I'll introduce methods that align our tests with current best practices or principles,[^tests-testthat-best-practices] but know that multiple strategies exist for writing tests. For example, if you've adopted test-driven development (TDD),[^tests-tdd] you'll write tests before developing utility functions, modules, or a standalone app function.
+In the following sections, I'll introduce methods that align our tests with current best practices or principles,[^tests-testthat-best-practices] but know that multiple strategies exist for writing tests. For example, if you've adopted test-driven development (TDD),[^tests-tdd] you'll write tests before developing utility functions, modules, or a standalone app function.
+
+Regardless of your testing strategy, the infrastructure for storing and running tests in app-packages is identical to a standard R package.
 
 [^tests-testthat-best-practices]: Most of these are described in the [High-level principles for testing](https://r-pkgs.org/testing-design.html#sec-testing-design-principles) section of [R Packages, 2ed](https://r-pkgs.org/).
 
 [^tests-tdd]: Read more about [Test-driven development](https://en.wikipedia.org/wiki/Test-driven_development) 
-
-Regardless of the testing strategy you're using, the infrastructure for storing and running tests in app-packages is identical to a standard R package. 
 
 ### [Setup with `use_testthat()`]{style="font-size: 0.95em;"}
 
@@ -805,7 +805,15 @@ trace_matrix |>
 
 > "*Eliminating (or at least minimizing) top-level code outside of `test_that()` will have the beneficial effect of making your tests more hermetic. This is basically the testing analogue of the general programming advice that it's wise to avoid unstructured sharing of state.*"
 
-## Example: unit tests
+## BDD tests 
+
+Behavior-driven development (or behavior-driven testing) fills the void between non-technical stakeholders and developers by encouraging natural, descriptive language (often full sentences) to define and communicate the application requirements. 
+
+In the sections below, I'll provide several examples using `testthat`'s BDD functions. The beauty of the BDD functions is their flexibility, and I'm certain there are multiple ways to achieve the same result I'm attempting to demonstrate here. 
+
+Hopefully each section provides 
+
+### Example: unit tests
 
 Below is a test that answers the question, '*does the plot generate without producing an error,*'[^tests-graphs] for `scatter_plot()`. This type of test appropriate because we're wanting to confirm the data source (`movies`) will generate a plot object, not necessarily the specific contents of the graph.
 
@@ -893,7 +901,7 @@ testthat::describe("FE1: interactive scatter plot (two data sources, drop-down v
 9. Test `ggp2_movies` data with `ggp2_inputs()` helper  
 10. `ggp2_movies` expectation  
 
-The goal of any shiny app should be to create something that helps drive data-driven decisions. Pragmatically, this means not writing code that isn't addressing a need the user or stakeholder has requested. I've found building the traceability matrix and scoping the tests with the BDD functions forces me ask myself, "*does this test address a user need?*" (which saves me from developing a feature no one asked for).
+
 
 ```{r}
 #| label: git_box_10b_tests-helpers-fixtures
@@ -906,13 +914,13 @@ git_margin_box(
   repo = 'shinyAppPkg')
 ```
 
-## Example: snapshot tests
+### Example: snapshot tests
 
 Writing tests for graph outputs can be difficult because the "correctness" of a graph is somewhat subjective and requires human judgment. If the expected output we're interesting in testing is cumbersome to describe programmatically, we can consider using a snapshot tests. Examples of this include UI elements (which are mostly HTML created by Shiny's UI layout and input/output functions) and data visualizations.[^tests-ui-tests]
 
 [^tests-ui-tests]: Mastering Shiny covers [creatng a snapshot file](https://mastering-shiny.org/scaling-testing.html#user-interface-functions) to test UI elements, but also notes this is probably not the best approach.
 
-### [`vdiffr`]{style="font-size: 1.05em;"}
+#### [`vdiffr`]{style="font-size: 1.05em;"}
 
 If we want to create a graph snapshot test, the [`vdiffr`](https://vdiffr.r-lib.org/) package allows us to perform a 'visual unit test' by capturing the expected output as an `.svg` file that we can compare with future versions.
 
@@ -927,7 +935,7 @@ vdiffr::expect_doppelganger(
   )
 ```
 
-### More helpers: logging
+#### More helpers: logging
 
 I prefer test outputs to be verbose, so I usually create some kind of  `test_logger()` helper function that allows me to give more context and information with each test:
 
@@ -1205,7 +1213,7 @@ Another option for using snapshots for testing is the `expect_snapshot_file()` f
 
 [^tests-10]: Follow the `expect_snapshot_file()` example from the [`testthat` documentation](https://testthat.r-lib.org/reference/expect_snapshot_file.html#ref-examples)
 
-## Example: integration tests 
+### Example: integration tests 
 
 <!--
 
@@ -1224,7 +1232,7 @@ I like to use the BDD functions with `testServer()` to test *reactive interactio
 1. Values passed to the UI are returned from `mod_var_input_server()`  
 2. Reactive values passed into `mod_scatter_display_server()` are available as the reactive object `inputs()`
 
-### [`session$returned()`]{style="font-size: 0.95em;"}
+#### [`session$returned()`]{style="font-size: 0.95em;"}
 
 Inside `testServer()`, we can create a list of graph inputs for `mod_var_input_server()`, then pass identical values to `session$setInputs()`, and confirm the returned object with `session$returned()`:
 
@@ -1283,7 +1291,7 @@ testthat::describe("US1: scatter plot data visualization", code = {
 
 The test above confirms 1) new input values can be passed into the UI, and 2) these values are returned from `mod_var_input_server()`.
 
-### [`args = list()`]{style="font-size: 0.95em;"}
+#### [`args = list()`]{style="font-size: 0.95em;"}
 
 Now that we've confirmed `mod_var_input_server()` is returning values, we want to make sure reactive values are read correctly by `mod_scatter_display_server()`. 
 
@@ -1395,16 +1403,30 @@ If we're testing a module function that collects the reactive values, we need to
   })
 ```
 1. Reactive variable input values  
-2. Test if `inputs()` and values are equal inside the module   
+2. Test if `inputs()` and values are equal inside the module
+
+
+```{r}
+#| label: git_box_shinyAppPkg_10d_tests-modules
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  fig_pw = '75%', 
+  branch = "10d_tests-modules", 
+  repo = 'shinyAppPkg')
+```
 
 I've included the example above because it's not included on the `testServer()` [documentation](https://shiny.posit.co/r/articles/improve/server-function-testing/), and I've found this method works well if you want to confirm two modules are communicating (i.e., returning and collecting outputs). System test with `shinytest2` are a better option if you're trying to capture a more comprehensive execution path (i.e., user story) in the application. 
 
 
-## Example: system tests
+### Example: system tests
 
-System (or end-to-end) tests verify the whole application (or system) and are run to simulate real user interactions in a pre-production environment. Approaches to system testing vary, but in general, you'll want to run system tests before a release, which means the app's functional requirements are tested and released in lockstep.
+System (or end-to-end) tests verify the whole application (or system) and are run to simulate real user interactions in a 'pre-production' environment.[^tests-prod] Approaches to system testing vary, but in general, you'll want to run system tests before a release, which means the app's functional requirements are tested and released in lockstep.
 
-### Test files
+[^tests-prod]: System tests should strive to replicate the production environment *conditions*, even if it's not possible to perfectly replicate.
+
+#### Test files
 
 Up to this point, I've been storing the tests in test files named for each functional requirement: 
 
@@ -1512,7 +1534,7 @@ gt::gt(auto_align = TRUE) |>
 )
 ```
 
-### [`shinytest2`]{style="font-size: 1.05em;"}
+#### [`shinytest2`]{style="font-size: 1.05em;"}
 
 [`shinytest2`](https://rstudio.github.io/shinytest2/index.html) requires a few steps to get up and running, most notably the [`chromote` package](https://rstudio.github.io/chromote/).[^shinytest2-start] 
 
@@ -1584,6 +1606,10 @@ pkg_tests |> count(test)
 ### [`covrpage`]{style="font-size: 1.05em;"}
 
 ## Continuous Integration (CI)
+
+## Recap 
+
+The goal of any shiny app should be to create something that helps drive data-driven decisions. Pragmatically, this means not writing code that isn't addressing a need the user or stakeholder has requested. I've found building the traceability matrix and scoping the tests with the BDD functions forces me ask myself, "*does this test address a user need?*" (which saves me from developing a feature no one asked for).
 
 <!--
 
