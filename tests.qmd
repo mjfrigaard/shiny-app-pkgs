@@ -38,23 +38,35 @@ co_box(
   color = "b", look = "minimal",
   header = "TLDR", fold = TRUE,
   contents = "
-**Tests:** 
   
-- **Application Requirements**: ...\n
-    - User Specifications: ...`\n
-    - Feature Requirements...\n
-    - Functional Requirements...\n
-    - Traceability Matrix...\n
+##### Application Requirements
   
-- **`use_test()`/`use_testthat()`**: ...\n
+- **User Specifications**: Describe what the end-users expect the application to accomplish`\n
+- **Feature Requirements**: User-focused descriptions of the high-level capabilities or characteristics of an application, and often represent a bundle of smaller functionalities\n
+- **Functional Requirements**: The precise, measurable, and testable 'functions' an application should perform\n
+- **Traceability Matrix**: Maps the user specifications to the functional requirements and tests, ensuring that all needs are met and functions are tested\n
   
-- **Behavior-driven development**:...\n
-    - `describe()`: ...`\n
-    - `it()`...\n
+##### Test suite
   
-- **Test coverage**:...\n
+- `use_testthat()`: creates testing infrastructure in your app-package\n
   
-- **CI**:...\n
+- `use_test()`: create new test file (with `test-` prefix)\n
+  
+- **Fixtures**: ...\n
+  
+- **Helpers**: ...\n
+  
+- `test_active_file()`: runs tests in the current open file\n
+  
+##### Behavior-driven development
+  
+- `describe()`: ...`\n
+
+- `it()`:...\n
+  
+#### Test coverage
+  
+- `covr`:
     
 **Workflow:**...\n
   
@@ -536,42 +548,56 @@ I'll create helpers for components or values that aren't large enough to justify
 
 ### App input helpers 
 
-For example, the `var_inputs()` function below creates inputs for the `scatter_plot()` utility function:
+For example, the `make_var_inputs()` function below creates inputs for the `scatter_plot()` utility function:
+
+```{r}
+#| eval: true 
+#| code-fold: false 
+make_var_inputs <- function() {
+  glue::glue_collapse("list(y = 'audience_score', 
+     x = 'imdb_rating',
+     z = 'mpaa_rating',
+     alpha = 0.5,
+     size = 2,
+     plot_title = 'Enter plot title'
+    )")
+}
+```
+
+`glue::glue_collapse()` is your friend when you need to repeated use code in your tests.
 
 ```{r}
 #| eval: true 
 #| code-fold: false 
 #| collapse: true
-var_inputs <- function() {
-  list(
-    y = "audience_score",
-    x = "imdb_rating",
-    z = "mpaa_rating",
-    alpha = 0.5,
-    size = 2,
-    plot_title = "Enter plot title"
-  )
-}
-var_inputs()$x
+#| comment: ""
+make_var_inputs()
 ```
+
 
 We can also create a helper for the tidy `ggplot2movies::movies` data:
 
 ```{r}
 #| eval: true 
 #| code-fold: false 
-#| collapse: true
-ggp2_inputs <- function() {
-    list(
-      x = "avg_rating",
-      y = "length",
-      z = "mpaa",
-      alpha = 0.75,
-      size = 3,
-      plot_title = "Enter plot title"
-    )
+make_ggp2_inputs <- function() {
+glue::glue_collapse("list(x = 'avg_rating',
+     y = 'length',
+     z = 'mpaa',
+     alpha = 0.75,
+     size = 3,
+     plot_title = 'Enter plot title'
+     )"
+  )
 }
-ggp2_inputs()$x
+```
+
+```{r}
+#| eval: true 
+#| code-fold: false 
+#| collapse: true
+#| comment: ""
+make_ggp2_inputs()
 ```
 
 
@@ -1454,14 +1480,7 @@ testthat::describe("FR2: user-input updating (outputs)", code = {
 
 I've included the example above because it's not included on the `testServer()` [documentation](https://shiny.posit.co/r/articles/improve/server-function-testing/), and I've found this method works well if you want to confirm two modules are communicating (i.e., returning and collecting outputs). System test with `shinytest2` are a better option if we're trying to capture a more comprehensive execution path (i.e., user story) in the application. 
 
-
-### Example: system tests
-
-System (or end-to-end) tests simulate real user interactions in a 'pre-production' environment to verify the whole application (or system) works.[^tests-prod] Approaches to system testing vary, but in general, we'll want to run system tests before a release, which means all of the app's functional requirements are tested and released in lockstep.
-
-[^tests-prod]: System tests should strive to replicate the production *conditions*, even when/if it's not possible to perfectly replicate the environment.
-
-#### Test files
+### Example: test coverage 
 
 Up to this point, I've been storing the tests in test files named for each functional requirement: 
 
@@ -1504,7 +1523,17 @@ pkg_tests <- testthat::test_local("../",
 Package vignette with with traceability matrix and test results 
 :::
 
-Placing the functional requirement as a prefix in the file name (**FR**) with a corresponding test number in each call to `testthat::it()` will make it easier to link the tests back to the original specification that generated them. 
+Placing the functional requirement as a prefix in the file name (**FR**) with a corresponding test number in each call to `testthat::it()` will make it easier to link the tests back to the original specification that generated them.
+
+#### [`covr`]{style="font-size: 1.05em;"}
+
+#### [`covrpage`]{style="font-size: 1.05em;"}
+
+### Example: system tests
+
+System (or end-to-end) tests simulate real user interactions in a 'pre-production' environment to verify the whole application (or system) works.[^tests-prod] Approaches to system testing vary, but in general, we'll want to run system tests before a release, which means all of the app's functional requirements are tested and released in lockstep.
+
+[^tests-prod]: System tests should strive to replicate the production *conditions*, even when/if it's not possible to perfectly replicate the environment.
 
 #### [`shinytest2`]{style="font-size: 1.05em;"}
 
@@ -1638,32 +1667,6 @@ Sys.time()
 ```
 
 -->
-
-## Test coverage 
-
-```{r}
-#| eval: false 
-#| code-fold: false
-#| include: false
-library(dplyr)
-library(tidyr)
-library(tibble)
-
-
-pkg_tests <- testthat::test_package(package = "shinyAppPkg", 
-  reporter = SilentReporter$new()) |> 
-  tibble::as_tibble() |> 
-  select(file, test, passed, failed, warning, error)
-
-glimpse(pkg_tests)
-
-pkg_tests |> count(test)
-```
-
-
-### [`covr`]{style="font-size: 1.05em;"}
-
-### [`covrpage`]{style="font-size: 1.05em;"}
 
 ## Recap 
 
