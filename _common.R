@@ -28,7 +28,7 @@ co_box <- function(color, size = "1.05", header, hsize = "1.07", contents = "You
       "\n\n",
       ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "'}", "\n\n",
       "## [", header, "]{style='font-weight: bold; font-size: ", hsize, "em;'}\n\n",
-      "::: {style='font-size: ", size, "em; color: #696969;'}\n\n",
+      "::: {style='font-size: ", size, "em; color: #282b2d;'}\n\n",
       "\n", glue::glue_collapse(contents), "\n\n",
       "::: \n\n",
       "::::", "\n"
@@ -37,7 +37,7 @@ co_box <- function(color, size = "1.05", header, hsize = "1.07", contents = "You
       "\n\n",
       ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "'}", "\n\n",
       "## [", header, "]{style='font-weight: bold; font-size: ", hsize, "em;'}\n\n",
-      "::: {style='font-size: ", size, "em; color: #696969;'}\n\n",
+      "::: {style='font-size: ", size, "em; color: #282b2d;'}\n\n",
       "\n", glue::glue_collapse(contents), "\n\n",
       "::: \n\n",
       "::::", "\n"
@@ -46,7 +46,7 @@ co_box <- function(color, size = "1.05", header, hsize = "1.07", contents = "You
       "\n\n",
       ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "'}", "\n\n",
       "## [", header, "]{style='font-weight: bold; font-size: ", hsize, "em;'}\n\n",
-      "::: {style='font-size: ", size, "em; color: #696969;'}\n\n",
+      "::: {style='font-size: ", size, "em; color: #282b2d;'}\n\n",
       "\n", glue::glue_collapse(contents), "\n\n",
       "::: \n\n",
       "::::", "\n"
@@ -55,7 +55,7 @@ co_box <- function(color, size = "1.05", header, hsize = "1.07", contents = "You
       "\n\n",
       ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "'}", "\n\n",
       "## [", header, "]{style='font-weight: bold; font-size: ", hsize, "em;'}\n\n",
-      "::: {style='font-size: ", size, "em; color: #696969;'}\n\n",
+      "::: {style='font-size: ", size, "em; color: #282b2d;'}\n\n",
       "\n", glue::glue_collapse(contents), "\n\n",
       "::: \n\n",
       "::::", "\n"
@@ -64,7 +64,7 @@ co_box <- function(color, size = "1.05", header, hsize = "1.07", contents = "You
       "\n\n",
       ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "'}", "\n\n",
       "## [", header, "]{style='font-weight: bold; font-size: ", hsize, "em;'}\n\n",
-      "::: {style='font-size: ", size, "em; color: #696969;'}\n\n",
+      "::: {style='font-size: ", size, "em; color: #282b2d;'}\n\n",
       "\n", glue::glue_collapse(contents), "\n\n",
       "::: \n\n",
       "::::", "\n"
@@ -97,8 +97,77 @@ git_margin_box <- function(contents = "standard", fig_pw = '70%', branch = 'main
   )
 }
 
-dev_key <- function(fun = "L") {
-  if (fun != "all") {
+hot_key <- function(fun = "L") {
+  if (fun == "all") {
+glue::glue("\n:::: {{layout='[ 15, 33, 16 ]'}}
+
+::: {{#first-column}}
+
+:::
+
+::: {{#second-column}}
+
+::: {{style='font-weight: bold; font-size: 1.15em' layout-valign='bottom'}}
+
+######
+
+<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd> / <kbd>D</kbd> / <kbd>B</kbd>
+:::
+
+:::
+
+::: {{#third-column}}
+
+:::
+
+::::")
+  } else if (fun == 'tf') {
+glue::glue("\n:::: {{layout='[ 30, 40, 30 ]'}}
+
+::: {{#first-column}}
+
+:::
+
+::: {{#second-column}}
+
+::: {{style='font-weight: bold; font-size: 1.15em' layout-valign='bottom'}}
+
+######
+
+<kbd>Ctrl/Cmd</kbd> + <kbd>T</kbd>
+:::
+
+:::
+
+::: {{#third-column}}
+
+:::
+
+::::")
+  } else if (fun == 'cf') {
+glue::glue("\n:::: {{layout='[ 25, 50, 25 ]'}}
+
+::: {{#first-column}}
+
+:::
+
+::: {{#second-column}}
+
+::: {{style='font-weight: bold; font-size: 1.15em' layout-valign='bottom'}}
+
+######
+
+<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd>
+:::
+
+:::
+
+::: {{#third-column}}
+
+:::
+
+::::")
+  } else {
 glue::glue("\n:::: {{layout='[ 20, 60, 20 ]'}}
 
 ::: {{#first-column}}
@@ -112,29 +181,6 @@ glue::glue("\n:::: {{layout='[ 20, 60, 20 ]'}}
 ######
 
 <kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>{fun}</kbd>
-:::
-
-:::
-
-::: {{#third-column}}
-
-:::
-
-::::")
-  } else {
-glue::glue("\n:::: {{layout='[ 15, 60, 16 ]'}}
-
-::: {{#first-column}}
-
-:::
-
-::: {{#second-column}}
-
-::: {{style='font-weight: bold; font-size: 1.15em' layout-valign='bottom'}}
-
-######
-
-<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd> / <kbd>D</kbd> / <kbd>B</kbd>
 :::
 
 :::
