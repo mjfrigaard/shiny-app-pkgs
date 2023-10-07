@@ -449,7 +449,12 @@ test_that("multiplication works", {
 })
 ```
 
-The next section demonstrates using fixtures and helpers to write tests with `testthat`'s `describe()` and `it()` functions and the contents of the traceability matrix. 
+The next section covers two important principles to keep in mind while writing tests for you app-package: 
+
+1. Make sure to clean up any 'leftover' states between test executions  
+2. Keep test scope logic defined to a single test (or all tests)
+
+We'll introduce tools to ensure tests follow these principles--fixtures, helpers, and mocks--and introduce `testthat`'s `describe()` and `it()` functions.
 
 [^tests-self-sufficient]: For more on this topic, consult the [Self-sufficient tests](https://r-pkgs.org/testing-design.html#self-sufficient-tests) section in [R Packages, 2ed](https://r-pkgs.org/)
 
@@ -459,11 +464,9 @@ Behavior-driven development (BDD) (or behavior-driven testing) emphasizes writin
 
 > "*[BDD] encourages teams to use conversation and concrete examples to formalize a shared understanding of how the application should behave.*" - Behavior-driven development, Wikipedia[^tests-bdd-read-more]
 
-If we've captured the user's needs and expectations in our traceability matrix, we can apply behavior-driven development using `testthat`'s `describe()` and `it()` functions.
+We can apply BDD is easier by combining the contents of our traceability matrix with `testthat`'s `describe()` and `it()` functions.
 
 [^tests-bdd-read-more]: Read more about [behavior-driven development](https://en.wikipedia.org/wiki/Behavior-driven_development)
-
-Below is an example of how these might look for the traceability matrix we created above.
 
 ### [`describe()`]{style="font-size: 0.95em;"} a feature
 
@@ -499,7 +502,6 @@ testthat::describe("US1: scatter plot data visualization", # <1>
 1. User specification     
 2. Feature requirement   
 
-
 ### Confirm [`it()`]{style="font-size: 0.95em;"} with a test
 
 Inside `describe()`, we can include multiple `it()` blocks which "*functions as a test and is evaluated in its own environment.*" 
@@ -523,7 +525,13 @@ In the example below, I use an `it()` block to test the first functional require
 2. Test scope  
 3. Test code  
 
-[^tests-it-blocks]: Each [`it()`](https://testthat.r-lib.org/reference/describe.html) block contains the expectations (or what you would traditionally include in `test_that()`).
+[^tests-it-blocks]: Each [`it()`](https://testthat.r-lib.org/reference/describe.html) block contains the expectations (or what you would traditionally include in `test_that()`).[^tests-bdd-describe] 
+
+[^tests-bdd-describe]: Read more about `describe()` and `it()` in the [`testthat` documentation.](https://testthat.r-lib.org/reference/describe.html)
+
+Preceding each `it()` call with `describe()` has the added benefit of removing any code that exists outside of our tests:
+
+> "*Eliminating (or at least minimizing) top-level code outside of `test_that()` will have the beneficial effect of making your tests more hermetic. This is basically the testing analogue of the general programming advice that it's wise to avoid unstructured sharing of state.*"
 
 If we've created a traceability matrix, nothing is stopping us from using `describe()` and `it()` to scope all the functional requirements: 
 
@@ -621,21 +629,17 @@ trace_matrix |>
 
 `testthat`'s BDD functions provide context and reduce the need to place any code outside of our tests (or in this case, outside of `it()`):
 
-> "*Eliminating (or at least minimizing) top-level code outside of `test_that()` will have the beneficial effect of making your tests more hermetic. This is basically the testing analogue of the general programming advice that it's wise to avoid unstructured sharing of state.*"
-
-Behavior-driven development (or behavior-driven testing) fills the void between non-technical stakeholders and developers by encouraging natural, descriptive language (often complete sentences) to define and communicate the application requirements.[^tests-bdd-describe] 
-
-[^tests-bdd-describe]: Read more about `describe()` and `it()` in the [`testthat` documentation.](https://testthat.r-lib.org/reference/describe.html)
-
 In the following sections we're going to cover various tools to improve the tests in your app-package. The overarching goal of these tools is to remove any additional code executed *outside* of your tests (i.e., placed above the call to `test_that()`).[^tests-self-sufficient]
 
 ## Fixtures 
 
 <!-- https://www.tidyverse.org/blog/2020/04/self-cleaning-test-fixtures/ -->
 
-Test fixtures are various resources used to ensure a consistent, well-defined test environment. Fixtures can be input data, database connections, R options, environment variables, or anything else needed to create repeatable test conditions (even when the test is run in different environments).
+Test fixtures are resources (data, file paths, functions, etc.) used to create repeatable test conditions (even when the test is run in different environments).
 
-A good test fixture is also self-sufficient--it's used and then destroyed after the test has been run to make sure any changes made during the test don't persist or interfere with other tests.
+Good test fixtures provide a consistent, well-defined test environment, and then are removed/destroyed when the test is run. This ensures any changes made during the test don't persist or interfere with future tests.[^tests-self-cleaning]
+
+[^tests-self-cleaning]: For a concrete example, see [this article](https://www.tidyverse.org/blog/2020/04/self-cleaning-test-fixtures/) on self-cleaning tests.
 
 In R packages, test fixtures are stored in the `tests/testthat/fixtures/` folder:
 
@@ -749,7 +753,13 @@ devtools:::test_coverage_active_file()
 
 ![Test coverage on active file](img/10_tests_coverage_scatter_plot.png){width='100%' fig-align='center'}
 
-It's gratifying to see 100% test coverage, but in this case it's misleading. We want to include a second data source (per the feature description). We can do this by adding a nested `describe()` function: The feature (**FE1**) scope adds more context to the functional requirement (**FR1**), which includes a second test (**T2**) for the tidy `ggplot2movies::movies` data source:[^tests-ggp2_movies-raw-data]
+It's gratifying to see 100% test coverage, but in this case it's misleading. The feature (**FE1**) states we need to include a second data source (per the traceability matrix).
+
+Fortunately, including a second data source only requires adding a nested `describe()` function: 
+
+1. The feature (**FE1**) scope adds more context to the functional requirement (**FR1**)   
+
+2. A second test (**T2**) is added for the tidy `ggplot2movies::movies` data source:[^tests-ggp2_movies-raw-data]
 
 [^tests-ggp2_movies-raw-data]: If the data in `tests/testthat/fixtures/` are going to be used repeatedly, it might also make sense to store it in `inst/extdata/` or `data-raw/`.
 
@@ -834,7 +844,7 @@ Test fixtures are described in-depth in [R Packages, 2ed](https://r-pkgs.org/tes
 
 > "*Helper files are a mighty weapon in the battle to eliminate code floating around at the top-level of test files.*" Testthat helper files, [R Packages, 2ed](https://r-pkgs.org/testing-design.html#testthat-helper-files)
 
-Helper functions are stored in `tests/testthat/helper.R`, which is automatically loaded with `devtools::load_all()`:
+Test helpers reduce repeated/duplicated test code. In general, objects or values that aren't large enough to justify storing as static test fixtures can be created with helper functions. Helper functions are stored in `tests/testthat/helper.R`, which is automatically loaded with `devtools::load_all()`:
 
 ```{bash}
 #| eval: false 
@@ -852,13 +862,15 @@ tests/
 2. Helper functions  
 3. Test file  
 
-Test helpers are functions or code that make creating and running tests easier **when the tests fail.** The article, ['Why Good Developers Write Bad Unit Tests'](https://mtlynch.io/good-developers-bad-tests/), provides great advice on complexity vs. clarity when writing unit tests,
+Test helpers should only be created if they make testing easier **when the tests fail.** The article, ['Why Good Developers Write Bad Unit Tests'](https://mtlynch.io/good-developers-bad-tests/), provides great advice on complexity vs. clarity when writing unit tests,
   
 > *'think about what will make the problem obvious when a test fails. Refactoring may reduce duplication, but it also increases complexity and potentially obscures information when things break.'*
   
 R programmers resist copy + paste programming, and in most cases this makes sense. After all, R *is* a functional programming language, so it's tempting to bundle any repeated code into a function and store it in the `tests/testthat/helper.R` file. 
 
-However, when we're writing tests, it's more important that tests are easy to read and understand **when they fail**. For example, consider the inputs passed to the `scatter_plot()` function in the previous test:
+However, when we're writing tests, it's more important that tests are easy to read and understand **when they fail**. 
+
+For example, consider the inputs passed to the `scatter_plot()` function in the previous test:
 
 ```{r}
 #| eval: false 
@@ -927,14 +939,19 @@ co_box(
   hsize = "1.15",
   header = "Violating the DRY principle",
   contents = "
-
+If you have repeated code in your tests, consider the following questions below before creating a helper function: 
   
+1. Does the code help explain what behavior is being tested? 
+  
+2. Would a helper make it harder to debug the test when it fails?  
+  
+It’s more important that test code is obvious than DRY, because it’s more likely you’ll be dealing with this test when it fails (and you don’t remember why all the top-level code is there).
   
 "
 )
 ```
 
-If I need objects or values that aren't large enough to justify storing as static test fixtures, I'll create a helper function that makes it easier to generate the duplicated code. For example, the `make_var_inputs()` function below creates inputs for the `scatter_plot()` utility function:
+In contrast, the `make_var_inputs()` function below creates inputs for the `scatter_plot()` utility function:
 
 ```{r}
 #| eval: false 
@@ -950,7 +967,7 @@ make_var_inputs <- function() {
 }
 ```
 
-When I call `make_var_inputs()` in the **Console**, it returns the list of values I can paste into the test:
+I can call `make_var_inputs()` in the **Console** and it will return the list of values to paste into each test:
 
 ```{r}
 #| eval: false 
@@ -965,7 +982,9 @@ list(y = 'audience_score',
     )
 ```
 
-`glue::glue_collapse()` is your friend if you want to repeat code in your tests. `make_ggp2_inputs()` will create a list of inputs for testing `scatter_plot()` with the tidy `ggplot2movies::movies` data:
+This reduces the amount of typing required while developing tests, but doesn't obscure the source of the values in the test.
+
+`glue::glue_collapse()` is your friend when you want to quickly reproduce code for your tests. `make_ggp2_inputs()` creates the list of inputs for testing the tidy `ggplot2movies::movies` data:
 
 ```{r}
 #| eval: true 
@@ -1009,9 +1028,9 @@ test_logger <- function(start = NULL, end = NULL, msg) {
 }
 ```
 
-`test_logger()` can be used to 'log' the `start` and `end` of each test, and it includes a message argument (`msg`) I use to match the test context.[^tests-logger]
+`test_logger()` can be used to 'log' the `start` and `end` of each test, and it includes a message argument (`msg`) I'll use to reference the test `description` argument in each `it()` call.[^tests-logger]
 
-We'll use `test_logger()` enough to justify placing it in [`R/testthat.R`](https://github.com/mjfrigaard/shinyAppPkg/blob/10c_tests-helpers/R/testthat.R) (which also ensures it's documented and it's dependencies become part of `shinyAppPkg`).[^tests-r-files]
+I tend to use functions like `test_logger()` enough to justify placing them in a testing utility file ([`R/testthat.R`](https://github.com/mjfrigaard/shinyAppPkg/blob/10c_tests-helpers/R/testthat.R)) below `R/`. Including testing functions in the `R/` folder also ensures it's documented and it's dependencies become part of your app-package).[^tests-r-files]
 
 [^tests-logger]: If you like verbose logging outputs, check out the [`logger` package](https://daroczig.github.io/logger/) 
 
@@ -1477,7 +1496,9 @@ testthat::describe("FR2: user-input updating", code = { # <1>
 
 I've included the example above because it's not included on the `testServer()` [documentation](https://shiny.posit.co/r/articles/improve/server-function-testing/), and I've found this method works well if you want to confirm two modules are communicating (i.e., returning and collecting outputs). System test with `shinytest2` are a better option if we're trying to capture a more comprehensive execution path (i.e., user story) in the application. 
 
-When we check the code coverage, we can see the test above comfirms the `var_inputs` argument transfers the reactive values in `mod_scatter_display_server()`, but doesn't execute the call to `scatter_plot()`:
+#### Module test coverage 
+
+When we check the code coverage for the test above, we can see it confirms `var_inputs` is communicating the reactive values to `inputs()` in  `mod_scatter_display_server()`, but this test doesn't execute the call to `scatter_plot()`:
 
 ```{r}
 #| label: hot_key_cf_02
@@ -1495,43 +1516,52 @@ devtools:::test_coverage_active_file()
 
 ![](img/10_tests_code_coverage_module_01.png){width="85%" fig-aligh='center'}
 
+### Testing [`output$`]{style="font-size: 0.95em;"}s
 
+To confirm the plot is being created properly in `mod_scatter_display_server()`, we can't use the `ggplot2::is.ggplot()` function because the plot is being rendered by `renderPlot()`. However, we can verify the structure of the `output$scatterplot` object using any of the following expectations:
 
-We can test this portion of the function by using `setInputs()` with the graph values: 
+```{r}
+#| eval: false 
+#| code-fold: false
+testthat::expect_true(
+  object = is.list(output$scatterplot))
+
+testthat::expect_equal(
+  object = names(output$scatterplot),
+  expected = c("src", "width", "height", "alt", "coordmap"))
+
+testthat::expect_equal(
+  object = output$scatterplot[["alt"]],
+  expected = "Plot object")
+```
+
+It's also possible to build the graph *inside* the test using the same code from the module server function, then confirm it with `ggplot2::is.ggplot()`:
 
 ```{r}
 #| eval: false 
 #| code-fold: false 
-session$setInputs(x = "imdb_rating",               # <1>
-                  y = "audience_score",
-                  z = "mpaa_rating",
-                  alpha = 0.5,
-                  size = 2,
-                  plot_title = "Enter Plot Title")    # <1>
-
-plot <- scatter_plot(movies, # <2>
-  x_var = inputs()$x,
-  y_var = inputs()$y,
-  col_var = inputs()$z,
-  alpha_var = inputs()$alpha,
-  size_var = inputs()$size) +
-ggplot2::labs(
-  title = inputs()$plot_title,
-  x = stringr::str_replace_all(
-          tools::toTitleCase(inputs()$x), "_", " "),
-  y = stringr::str_replace_all(
-          tools::toTitleCase(inputs()$y), "_", " ")) +
-ggplot2::theme_minimal() +
-ggplot2::theme(legend.position = "bottom") # <2>
-
-testthat::expect_true(ggplot2::is.ggplot(plot)) # <3>
+    plot <- scatter_plot(movies, # <1>
+      x_var = inputs()$x,
+      y_var = inputs()$y,
+      col_var = inputs()$z,
+      alpha_var = inputs()$alpha,
+      size_var = inputs()$size) +
+    ggplot2::labs(
+      title = inputs()$plot_title,
+      x = stringr::str_replace_all(
+              tools::toTitleCase(inputs()$x), "_", " "),
+      y = stringr::str_replace_all(
+              tools::toTitleCase(inputs()$y), "_", " ")) +
+    ggplot2::theme_minimal() +
+    ggplot2::theme(legend.position = "bottom") # <1>
+    
+    testthat::expect_true(ggplot2::is.ggplot(plot)) # <2>
 ```
-1. Set module inputs  
-2. Build graph (same code from module function)   
-3. Confirm `ggplot2` object is built  
+1. Build graph (same code from module function)   
+2. Confirm `ggplot2` object is built  
 
 
-This will test the code to use build the graph in `mod_scatter_display_server()`:
+This executes the code used build the graph in `mod_scatter_display_server()`:
 
 ![](img/10_tests_code_coverage_module_02.png){width="85%" fig-aligh='center'}
 
@@ -1551,8 +1581,9 @@ git_margin_box(
   repo = 'shinyAppPkg')
 ```
 
-## System tests
 
+
+## Test files 
 
 Up to this point, I've been storing the tests in test files named for each function: 
 
@@ -1598,11 +1629,14 @@ Package vignette with with traceability matrix and test results
 
 Placing the test number in each call to `testthat::it()` will make it easier to link the tests back to the original functional requirements, features and specifications.
 
-### [`shinytest2`]{style="font-size: 1.05em;"}
+## System tests
 
 System (or end-to-end) tests simulate real user interactions in a 'pre-production' environment to verify the whole application (or system) works.[^tests-prod] Approaches to system testing vary, but in general, we'll want to run system tests before a release, which means all of the app's functional requirements are tested and released in lockstep.
 
 [^tests-prod]: System tests should strive to replicate the production *conditions*, even when/if it's not possible to perfectly replicate the environment.
+
+### [`shinytest2`]{style="font-size: 1.05em;"}
+
 
 [`shinytest2`](https://rstudio.github.io/shinytest2/index.html) requires a few steps to get up and running, most notably the [`chromote` package](https://rstudio.github.io/chromote/).[^shinytest2-start] 
 
@@ -1736,6 +1770,8 @@ Sys.time()
 -->
 
 ## Recap 
+
+Behavior-driven development (or behavior-driven testing) fills the void between non-technical stakeholders and developers by encouraging natural, descriptive language (often complete sentences) to define and communicate the application requirements.
 
 The goal of any shiny app should be to create something that helps drive data-driven decisions. Pragmatically, this means not writing code that isn't addressing a need the user or stakeholder has requested. I've found building the traceability matrix and scoping the tests with the BDD functions forces me ask myself, "*does this test address a user need?*" (which saves me from developing a feature no one asked for).
 
