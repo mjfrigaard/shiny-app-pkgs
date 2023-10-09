@@ -2,7 +2,7 @@
 options(width = 50L,
   pillar.width = 50L)
 
-co_box <- function(color, size = "1.05", header, hsize = "1.07", contents = "Your text", fold = FALSE, look = "default") {
+co_box <- function(color, header, contents = "Your text", size = "1.05", hsize = "1.10", fold = FALSE, look = "default") {
   
   if (look == "simple") {
     look <- "simple"
