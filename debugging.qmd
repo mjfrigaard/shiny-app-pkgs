@@ -21,7 +21,7 @@ co_box(
 )
 ```
 
-Debugging code is an essential skill for R programmers, and it’s not restricted to fixing errors or bugs. When used as an exploration tool, the debugger allows us to ‘step into’ complex functions, see their inner workings and break down how the code executes in sequence.
+Debugging is an essential skill for R programmers, and it’s not restricted to fixing errors or broken code. When used as an exploration tool, the debugger allows us to ‘step into’ complex functions, see their inner workings and break down how the code executes in sequence.
 
 ## Strategies 
 
@@ -34,7 +34,7 @@ These two methods cover 90% of my debugging needs while developing shiny apps (a
 
 [^debug-other-resources]: For an introduction to the IDE's debugging tools, see this [Posit article](https://support.posit.co/hc/en-us/articles/205612627-Debugging-with-the-RStudio-IDE). Debugging is also covered in [Advanced R, 2ed](https://adv-r.hadley.nz/debugging.html) and [Mastering Shiny.](https://mastering-shiny.org/action-workflow.html#debugging)
 
-## Shiny debugging   
+## Debugging & Shiny 
 
 The contents of a Shiny app-package can quickly become complex and intertwined (utility functions, modules, UI and server functions, data, etc.). During regular development, Posit Workbench's interactive  debugger lets us inspect variables and expressions *at runtime* and execute code line-by-line. In Shiny functions, we can track the execution of reactive expressions and observers, which allows us to unravel reactivity-related issues that are often difficult to diagnose.
 
@@ -89,7 +89,7 @@ devtools::load_all(".")
 
 :::
 
-## Debugging shiny functions
+## Debugging app functions
 
 ```{r}
 #| label: git_box_spec_topic-debugging-01
@@ -226,7 +226,7 @@ Because `browser()` was called inside `observe()`, the execution will pause, and
 :::
 
 
-### Module communication
+### Verify module communication
 
 ```{r}
 #| eval: false 
@@ -423,6 +423,8 @@ hot_key(fun = "L")
 movies_app(test = FALSE, run = 'p')
 ```
 
+### Verify module communication 
+
 Inside the module, we want to confirm `var_inputs()` is being created correctly from the `selected_var` object in `movies_server()`. 
 
 ::: {layout="[35, 65]" layout-valign="top"}
@@ -457,6 +459,7 @@ $plot_title
 
 :::
 
+### Verify variable inputs 
 
 Inside the scatter plot display module, the `var_inputs` argument is used to create a reactive `input()` object for the graph created by `scatter_plot()`:
 
@@ -521,7 +524,130 @@ $plot_title
 
 :::
 
-These two steps have shown us 1) the modules are communicating properly, and 2) the scatter plot display module contains the list of reactive values needed to render the graph. This means the error is likely isolated in the `scatter_plot()` function.[^debug-part-2-solution]
+These two steps have shown us 1) the modules are communicating properly, and 2) the scatter plot display module contains the list of reactive values needed to render the graph.
+
+### Verify graph 
+
+If we want to debug the scatter plot output, we need to move our `observe(browser())` functions inside the call to `renderPlot()`:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+output$scatterplot <- renderPlot({
+  observe({ # <1>
+    browser() # <2>
+
+    
+  }) # <1>
+})
+```
+1. Observe scope   
+2. Call to `browser()`   
+
+Load the package and run the application again:
+
+```{r}
+#| label: hot_key_render_plot
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key(fun = "L")
+```
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+ℹ Loading shinyAppPkg
+```
+
+```{r}
+#| eval: false 
+#| code-fold: false
+movies_app(test = FALSE, run = 'p')
+```
+
+Inside `renderPlot()`, we can progress to the creation of the `plot` object:
+
+::: {layout="[35, 65]" layout-valign="top"}
+
+```{r}
+#| eval: false 
+#| code-fold: false 
+Browse[1]> n
+```
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+debug at shinyAppPkg/R/mod_scatter_display.R#68: 
+  plot <- scatter_plot(
+    df = movies, 
+    x_var = inputs()$x, 
+    y_var = inputs()$y, 
+    col_var = inputs()$col, 
+    alpha_var = inputs()$alpha, 
+    size_var = inputs()$size)
+```
+
+:::
+
+:::{#fig-debug_render_plot_01}
+
+![Debugger location in `renderPlot()`](img/debug_render_plot_01.png){#fig-debug_render_plot_01 width='100%' align='center'}
+
+Inside `renderPlot()`, we can step inside the `scatter_plot()` utility function
+:::
+
+From here we can step inside the `scatter_plot()` function to identify the source of the error:
+
+:::{#fig-debug_render_plot_02}
+
+![Step into `scatter_plot()`](img/debug_render_plot_02.png){#fig-debug_render_plot_02 width='100%' align='center'}
+
+Use `s` in the debugger console to 'step into' `scatter_plot()`
+:::
+
+Note the changes in the debugger console when we 'step into' `scatter_plot()`:
+
+::: {layout="[35, 65]" layout-valign="top"}
+
+```{r}
+#| eval: false 
+#| code-fold: false 
+Browse[2]> s
+```
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+debugging in: 
+  scatter_plot(df = movies, 
+    x_var = inputs()$x, 
+    y_var = inputs()$y, 
+    col_var = inputs()$col, 
+    alpha_var = inputs()$alpha, 
+    size_var = inputs()$size)
+debug at /shinyAppPkg/R/scatter_plot.R#30: # <1> 
+{   
+    ggplot2::ggplot(data = df, 
+      ggplot2::aes(x = .data[[x_var]], 
+                   y = .data[[y_var]], 
+                   color = .data[[col_var]])) + 
+      ggplot2::geom_point(alpha = alpha_var, 
+                          size = size_var)
+}
+```
+1. Location of debugger in utility function  
+
+```{r}
+#| eval: false 
+#| code-fold: false 
+Browse[3]>
+```
+
+:::
+
+After some examination, we can identify the source of the error.[^debug-part-2-solution]
 
 [^debug-part-2-solution]: In this case, the issue was an incorrect `inputId` passed to [`scatter_plot()`](https://github.com/mjfrigaard/shinyAppPkg/blob/aece45419e5abe1a6f83347655d2d9748b27f8ec/R/mod_scatter_display.R#L72C32-L72C32) 
 
@@ -539,7 +665,7 @@ co_box(
   look = 'default',
   contents = "
   
-If a module or standalone app function is producing a bug (i.e., failing to render an output, producing an error in the **Console**, etc.), I start by placing a call to `browser()` (wrapped in `shiny::observe()`) at the top of the function:
+If a module or standalone app function is producing a bug (i.e., failing to render an output, producing an error in the **Console**, etc.), I start by placing a call to `browser()` (wrapped in `shiny::observe()`) at the top-level UI/server functions, then procced 'down' into the modules.
   
   "
 )
@@ -696,7 +822,7 @@ Browse[2]> str(graph_data())
 ```{bash}
 #| eval: false
 #| code-fold: false
-'data.frame':	1608 obs. of  8 variables: # <1>
+'data.frame':	1608 obs. of  8 variables: 
  $ title     : chr  "'Til There Was You" ...
  $ length    : int  113 97 98 98 102 120 ...
  $ year      : int  1997 1999 2002 2004 ...
@@ -706,7 +832,6 @@ Browse[2]> str(graph_data())
  $ mpaa      : Factor w/ 5 levels "G","PG" ...
  $ genre     : Factor w/ 8 levels "Action"...
 ```
-1. Missing values removed    
 
 :::
 
@@ -823,7 +948,7 @@ One of the best tried and tested methods of debugging is simply adding a `cat()`
 
 We can do something similar in shiny applications by combining `verbatimTextOutput()`, `renderPrint()`, and `reactiveValuesToList()`: 
 
-In `mod_var_input`: 
+In [`mod_var_input`](https://github.com/mjfrigaard/shinyAppPkg/blob/spec_topic-debugging-04/R/mod_var_input.R): 
 
 -   Place a `verbatimTextOutput()` in the ui function. 
 
@@ -846,13 +971,14 @@ In `mod_var_input`:
     lobstr::tree( # <2> 
       reactiveValuesToList( # <1> 
         x = input,
-        all.names = TRUE
+        all.names = TRUE # <3> 
       ) # <1> 
     ) # <2> 
   })
 ```
 1. Collect reactive values in module  
-2. Print these values to the UI  
+2. Print these values to the UI   
+3. Include all reactive objects    
 
 Load the package and run the app:
 
@@ -890,7 +1016,7 @@ Now we can see the reactive values from our module in the application UI!
 
 We can also use this 'print' method to explore reactive values at various locations in our application. For example, if we wanted to print the reactive values for multiple modules in an app, we can use these methods in the top level `movies_ui()` and `movies_server()` functions.
 
-In the `bslib` portion of `movies_ui()`: 
+In the `bslib` portion of [`movies_ui()`](https://github.com/mjfrigaard/shinyAppPkg/blob/spec_topic-debugging-04/R/movies_ui.R): 
 
 -   Add `verbatimTextOutput()` with an optional label  
 
@@ -902,7 +1028,7 @@ In the `bslib` portion of `movies_ui()`:
     )
     ```
 
-In `movies_server()`:
+In [`movies_server()`](https://github.com/mjfrigaard/shinyAppPkg/blob/spec_topic-debugging-04/R/movies_server.R):
 
 -   Collect all the `inputId`s with `reactiveValuesToList()` and print with `print()` or `lobstr::ast()`
 
@@ -938,7 +1064,7 @@ hot_key(fun = "L")
 ```{r}
 #| eval: false 
 #| code-fold: false
-movies_app(test = FALSE, run = 'p')
+movies_app(test = FALSE, run = 'p', bslib = TRUE)
 ```
 
 
@@ -959,4 +1085,9 @@ The output in the UI will update with changes to the `inputId`s
 :::
 
 
+## More debugging methods
+
+Shiny's documentation has a list of methods for debugging shiny applications. Knowing how to read call stacks (or stacktraces)...
+
+## Recap 
 
