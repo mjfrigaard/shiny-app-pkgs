@@ -1,0 +1,321 @@
+# App specifications {#sec-tests-specs}
+
+```{r}
+#| eval: true 
+#| echo: false 
+#| include: false
+source("_common.R")
+library(testthat)
+library(withr)
+library(logger)
+```
+
+```{r}
+#| label: co_box_dev
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "o", look = "minimal",
+  header = "Caution",
+  contents = "This section is still being developed--it's contents are subject to change.",
+  fold = FALSE
+)
+```
+
+This chapter covers an alternative approach to developing tests in your app-package. I'll introduce how to combine `testthat`'s behavior-driven development (BDD) functions and a traceability matrix to  ensure the user's needs are met (and the app's features are implemented correctly).
+
+
+This chapter covers an alternative approach to developing tests in your app-package. I'll introduce how to combine `testthat`'s behavior-driven development (BDD) functions and a traceability matrix to  ensure the user's needs are met (and the app's features are implemented correctly).
+
+```{r}
+#| label: co_box_tldr
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b", look = "minimal",
+  header = "TLDR", fold = TRUE,
+  contents = "
+  
+##### Application Requirements
+  
+- **User Specifications**: Describe what the end-users expect the application to accomplish`\n
+- **Feature Requirements**: User-focused descriptions of the high-level capabilities or characteristics of an application, and often represent a bundle of smaller functionalities\n
+- **Functional Requirements**: The precise, measurable, and testable 'functions' an application should perform\n
+- **Traceability Matrix**: Maps the user specifications to the functional requirements and tests, ensuring that all needs are met and functions are tested\n
+  
+##### Test suite
+  
+- `use_testthat()`: creates testing infrastructure in your app-package\n
+  
+- `use_test()`: create new test file (with `test-` prefix)\n
+  
+- **Fixtures**: ...\n
+  
+- **Helpers**: ...\n
+  
+- `test_active_file()`: runs tests in the current open file\n
+  
+##### Behavior-driven development
+  
+- `describe()`: ...`\n
+
+- `it()`:...\n
+  
+#### Test coverage
+  
+- `covr`:
+    
+**Workflow:**...\n
+  
+  "
+)
+```
+
+The code chunk below will load the necessary packages for testing.
+
+```{r}
+#| eval: false
+#| code-fold: false
+install.packages(c("testthat", "shinytest2", "covr"))
+library(testthat)
+library(shinytest2)
+library(covr)
+```
+
+(*If you're using `devtools`, you won't have to worry about installing `testthat` and `covr`*)
+
+## Testing app-packages
+
+Testing shiny applications poses some unique challenges. Shiny functions are written in the context of its reactive model,[^tests-shiny-reactive] so some standard testing techniques and methods for regular R packages don't directly apply. Fortunately, every developer looking to test their code is faced with the same two questions:
+
+[^tests-shiny-reactive]: The ['Reactivity - An overview'](https://shiny.posit.co/r/articles/build/reactivity-overview/) article gives an excellent description (and mental module) of reactive programming.
+
+1. What should I test?  
+2. How should I test it?   
+
+We're going to focus on *what* to test. I'll give examples but won't go into depth on *how* to write tests because plenty of those resources exist.[^tests-intro-unit-tests] [^tests-intro-shinytest2] [^tests-intro-ms-testing] The tests in this chapter illustrate the connections between the user's needs, the code below `R/`, tests, and test coverage.[^testing-introduce-bdd] The only exception is some `testServer()` tricks I've learned for testing modules.[^tests-intro-testserver]
+
+[^testing-introduce-bdd]: The BDD functions aren't covered in [R Packages, 2ed](https://r-pkgs.org/testing-basics.html) or the [Testing chapter](https://mastering-shiny.org/scaling-testing.html) of Mastering Shiny, but I've found them to be particularly useful for building app-packages.
+
+[^tests-intro-unit-tests]: Unit tests are covered extensively in [R Packages, 2ed](https://r-pkgs.org/testing-basics.html) and the [`testthat` documentation](https://testthat.r-lib.org/index.html)
+
+[^tests-intro-shinytest2]: `shinytest2` has [excellent documentation](https://rstudio.github.io/shinytest2/) (and [videos](https://www.youtube.com/watch?v=Gucwz865aqQ)), and I highly recommend reading through those resources.
+
+[^tests-intro-ms-testing]: Mastering shiny dedicates an entire [Chapter to Testing](https://mastering-shiny.org/scaling-testing.html), which covers [unit tests](https://mastering-shiny.org/scaling-testing.html#basic-structure) and [`testServer()`](https://mastering-shiny.org/scaling-testing.html#testing-reactivity), and also includes some tips for using JavaScript with [`shinytest`](https://mastering-shiny.org/scaling-testing.html#testing-javascript) (not to be confused with [`shinytest2`](https://rstudio.github.io/shinytest2/)) 
+[^tests-intro-testserver]: The [`testServer()`](https://shiny.posit.co/r/articles/improve/server-function-testing/) documentation is sparse, so I'll provide a few tips and tricks I've learned for testing module server functions.
+
+### Where to look
+
+Applications typically have some accompanying resources to address what *should* be tested, the most common source being a software requirements specification (SRS) document.[^tests-srs] The SRS breaks down an application's intended purpose (i.e., the problem it's designed to solve) into three general areas: user specifications, feature requirements, and functional requirements: 
+
+-   **The user specifications capture the needs and expectations of the end-user.** These are usually non-technical and focused on the "why" and the "what" of the application.
+
+-   **The feature requirements describe the high-level capabilities of the application.** Features are defined early in the life of a project and often become the talking points during discussions between stakeholders and developers. Features can be used for scoping and prioritization and may comprise various functional (and sometimes non-functional) requirements.
+
+-   **Functional requirements are the testable, specific actions, inputs, and outputs.** Functional requirements provide the technical details of how the features will be implemented, and a single feature can give rise to multiple functional requirements.
+
+-   A **traceability matrix** is a table that ‘traces’ the user specifications to features and functional requirements (and the tests they give rise to) to verify that the application has been developed correctly. 
+
+[^tests-srs]: Read more about what goes in the [Software Requirements Specification](https://en.wikipedia.org/wiki/Software_requirements_specification)
+
+These guidelines direct the development process, albeit from slightly different perspectives. However, understanding the relationship between user specifications, features, and functional requirements helps us build applications that satisfy the technical standards while addressing the user's needs.
+
+The traceability matrix is a tool to ensure the tests cover all the functionalities and address the user specifications, *and* that every user need corresponds to a functionality that's been tested. 
+
+I'll use `shinyAppPkg` to illustrate a brief example in the sections below. 
+
+## User Specifications
+
+**User specifications** are what the end-user (in this case, a film analyst) wants to achieve with the application. The language used for these descriptions is non-technical but should provide a basis for deriving the more technical (but still high-level) feature requirements. [^tests-specs-user-specs]
+
+[^tests-specs-user-specs]: User Specifications are sometimes referred to as "user stories," "use cases," or "general requirements"
+
+```{r}
+#| label: co_box_user_specs
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b", fold = FALSE, look = "minimal", 
+  size = '1.10', header = "Scatter plot user specification",
+  contents = 
+" 
+
+**US1**: '*As an film analyst, I want to view an interactive scatter plot in a dashboard that consolidates movie reviews from multiple sources so that I can compare and analyze trends and outliers in movie ratings quickly.*'
+  
+  ")
+```
+
+## Feature Requirements
+
+**Feature requirements** (or just **features**) translate the user's expectations into language that describes the tasks a film analyst should be able to accomplish with the application (i.e., explore data with a scatter plot). However, features are still phrased to satisfy the user needs outlined in the specifications.
+
+```{r}
+#| label: co_box_feat_reqs
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b", fold = FALSE, look = "minimal",
+  size = '1.10', header = "Scatter plot feature requirements",
+  contents = 
+" 
+
+**FE1**: '*Given that movie reviews are available on multiple websites, when the user selects a rating metric from the application display, the interactive scatter plot should allow for comparisons from at least two data sources (i.e., IMDb, Rotten Tomatoes), and include options for selecting other variables of interest (i.e., audience scores, runtime, etc.).*'
+  
+  ")
+```
+
+## Functional Requirements
+
+**Functional requirements** are written for the developer and provide technical details on the feature (i.e., the scatter plot) and how the application should behave. A single feature will often give rise to multiple functional requirements (these are where the end-user's expectations come into direct contact with code).[^tests-specs-feat]
+
+[^tests-specs-feat]: 'Feature requirements' and 'functional requirements' are sometimes used interchangeably, but they refer to different aspects of the application. **Feature requirements** are high-level capabilities an application *should* have, and often contain a collection of smaller functionalities (broken down into the specific **functional requirements**).
+
+```{r}
+#| label: co_box_fun_reqs
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b", fold = FALSE, look = "minimal",
+  size = '1.10', header = "Scatter plot functional requirements",
+  contents = 
+" 
+  - **FR1**: The system will display movie reviews from IMDb and Rotten Tomatoes collected from their respective APIs.
+
+  - **FR2**: The scatter plot will be displayed on the dashboard and updated with new user inputs.
+
+  - **FR3**: Each data point on the scatter plot will represent a movie and be color-coded based on the following categories: MPAA ratings, genre, title type, critics rating, and audience rating.
+  
+  - **FR4**: The scatter plot will have labeled axes, a legend to differentiate between data sources, and a customizable title.
+  
+  ")
+```
+
+
+Documenting an application's requirements will follow this general pattern:
+
+1. Understand the user's needs.  
+
+2. Capture that need in a feature.  
+
+3. Translate the feature into functions the application will require
+
+If you've documented these three elements, you'll have a clearer picture of what tests to write.
+
+## Traceability Matrix
+
+After translating the user needs into functional requirements, we can quickly identify what needs to be tested by building a look-up table (i.e., a matrix). I like to store early drafts of the application requirements in a vignettes:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+usethis::use_vignette("test-specs")
+```
+
+Adding our first vignette to the `vignettes/` folder does the following:
+
+- [x]   Adds the `knitr` and `rmarkdown` packages to the `Suggests` field in `DESCRIPTION`[^test-specs-suggests]
+
+    ```bash
+    Suggests: 
+        knitr,
+        rmarkdown
+    ```
+
+- [x]   Adds `knitr` to the `VignetteBuilder` field[^test-specs-vignette-builder]
+
+    ```bash
+    VignetteBuilder: knitr
+    ```
+
+- [x]   Adds `inst/doc` to `.gitignore` and `*.html`, `*.R` to `vignettes/.gitignore`
+
+[^test-specs-suggests]: We briefly covered the `Suggests` field in [Dependencies](dependencies.qmd), but in this case it specifically applies to "*packages that are not necessarily needed. This includes packages used only in examples, tests or vignettes...*" - [Writing R Extensions, Package Dependencies](https://cran.r-project.org/doc/manuals/R-exts.html#Package-Dependencies)
+
+[^test-specs-vignette-builder]: The [documentation](https://cran.r-project.org/doc/manuals/R-exts.html#The-DESCRIPTION-file) on `VignetteBuilder` gives a great example of why `knitr` and `rmarkdown` belong in `Suggests` and not `Imports`.
+
+The first column in the traceability matrix contains the user specifications, which we can 'trace' over to the functional requirements and their relevant  tests.[^tests-visual-markdown]
+
+[^tests-visual-markdown]: When building tables in vignettes, I highly recommend using the [Visual Markdown mode](https://rstudio.github.io/visual-markdown-editing/).
+
+```{r}
+#| label: co_box_trace_matrix_tests
+#| echo: false
+#| code-fold: false
+#| include: true
+trace_matrix <- tibble::tibble(
+  `User Specification` = c(
+    "US1: scatter plot data visualization",
+    NA_character_,
+    NA_character_,
+    NA_character_
+  ),
+  `Feature Requirement` = c(
+    "FE1: interactive scatter plot (two data sources, drop-down variable options)",
+    NA_character_,
+    NA_character_,
+    NA_character_
+  ),
+  `Functional Requirements` = c(
+    "FR1: data source",
+    "FR2: user-input updating",
+    "FR3: color-coded data points",
+    "FR4: plot axis, legend & title"
+  ),
+  Test = c(
+  "?", "?", "?", "?"
+  ),
+) 
+trace_matrix |> 
+  gt::gt(auto_align = TRUE) |> 
+  gt::sub_missing(
+  columns = gt::everything(),
+  rows = gt::everything(),
+  missing_text = "-"
+)
+```
+
+Building a traceability matrix ensures:  
+
+1. All user specifications have accompanying application features. 
+
+2. Each feature has been broken down into precise, measurable, and testable functional requirements.
+
+3. Tests have been written for each functional requirement.
+
+## Recap 
+
+
+Documenting the traceability matrix in vignettes are great for developers, but it's also a good idea use an issue-tracking system with version control, like GitHub Projects or Azure DevOps.
+
+The following section covers the `testthat` infrastructure and basic unit tests.
+
+```{r}
+#| label: co_box_app_recap
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b",
+  header = "Recap: testing your app-package",
+  contents = "
+
+**Testing shiny app-packages**
+  
+  - Scoping tests: ... user specifications, feature requirements, and functional requierments.
+  
+    - **User specifications**:  
+  
+    - **Feature requirements**:
+  
+    - **Functional requierments**:
+  
+  ", 
+  fold = FALSE
+)
+```
+

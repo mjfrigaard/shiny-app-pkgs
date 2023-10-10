@@ -1,0 +1,288 @@
+# Testing modules {#sec-tests-mods}
+
+```{r}
+#| eval: true 
+#| echo: false 
+#| include: false
+source("_common.R")
+```
+
+```{r}
+#| label: co_box_dev
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "o", look = "minimal",
+  header = "Caution",
+  contents = "This section is still being developed--it's contents are subject to change.",
+  fold = FALSE
+)
+```
+
+## Integration tests 
+
+Integration tests verify that functions and components work together, and often involves instantiating multiple objects to interact with each other in a single test. 
+
+I like using the BDD functions with `testServer()` to test *reactive interactions* between modules. For example, to confirm functional requirement #2 (**FR2**) (that user-inputs are updating in the application), we need to test two changes:
+
+1. Values passed to the UI are returned from `mod_var_input_server()`  
+2. Reactive values passed into `mod_scatter_display_server()` are available as the reactive object `inputs()`
+
+### [`session$returned()`]{style="font-size: 0.95em;"}
+
+Inside `testServer()`, we can create a list of graph inputs for `mod_var_input_server()`, then pass identical values to `session$setInputs()`, and confirm the returned object with `session$returned()`:
+
+```{r}
+#| eval: false 
+#| include: true
+#| code-fold: false
+testthat::describe("FR2: user-input updating (inputs)", code = { # <1>
+  
+  testthat::it("T5: inputs change", code = {                     # <2>
+    
+    shiny::testServer(app = mod_var_input_server, expr = {       # <3>
+      
+      test_logger(start = "T5", msg = "FR2: returned()")
+      
+      # create list of output vals
+      test_vals <- list(y = "critics_score",                     # <4>
+                        x = "imdb_rating",
+                        z = "critics_rating",
+                        alpha = 0.75,
+                        size = 3,
+                        plot_title = "Example title")            # <4>
+
+      # change inputs
+      session$setInputs(y = "critics_score",                     # <5>
+                        x = "imdb_rating",
+                        z = "critics_rating",
+                        alpha = 0.75,
+                        size = 3,
+                        plot_title = "Example title")            # <5>
+
+      testthat::expect_equal(
+        object = session$returned(),        # <6>
+        expected = test_vals                # <6>
+      )
+
+      test_logger(end = "T5", msg = "FR2: returned()")
+      
+    }) # <3>
+  })
+})
+```
+1. Functional requirement description (**FR2**)   
+2. Test scope (**T5**) for inputs  
+3. Call to `testServer()`   
+4. Create output values for comparison  
+5. Set each input using `setInputs(input = )`  
+6. Confirm returned values against `test_vals`     
+
+The test above confirms 1) new input values can be passed into the UI, and 2) these values are returned from `mod_var_input_server()`.
+
+### [`args = list()`]{style="font-size: 0.95em;"}
+
+Now that we've confirmed `mod_var_input_server()` is returning values, we want to make sure reactive values are read correctly by `mod_scatter_display_server()`. 
+
+In `movies_server()`, when we pass `selected_vars` to the `var_inputs` argument, we're not passing the returned values (this is why we don't need the parentheses). We're calling on the method (or function) created by the call to `reactive()` (inside `mod_var_input_server()`).
+
+I've included the `movies_server()` function below to refresh our memory of how this *should* work:[^tests-12]
+
+[^tests-12]: `selected_vars` are the reactive plot values returned from `mod_var_input_server()`.
+
+```{r}
+#| eval: false 
+#| code-fold: false
+movies_server <- function(input, output, session) {
+
+      selected_vars <- mod_var_input_server("vars") # <1>
+
+      mod_scatter_display_server("plot", var_inputs = selected_vars)
+      
+}
+```
+1. Calls `return(reactive(list(...)))`  
+
+
+We can pause execution with Posit Workbench's debugger, [^tests-13] to see the difference between calling `selected_vars` and `selected_vars()`:
+
+[^tests-13]: We'll cover using `browser()` and the IDE's debugger in a future chapter.
+
+::: {layout="[49, -2, 49]"}
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+Browse[1]> selected_vars
+reactive({
+    list(
+      y = input$y, 
+      x = input$x, 
+      z = input$z, 
+      alpha = input$alpha, 
+      size = input$size, 
+      plot_title = input$plot_title
+      )
+})
+```
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+Browse[1]> selected_vars()
+$y
+[1] "audience_score"
+
+$x
+[1] "imdb_rating"
+
+$z
+[1] "mpaa_rating"
+
+$alpha
+[1] 0.5
+
+$size
+[1] 2
+
+$plot_title
+[1] ""
+```
+
+:::
+
+If we're testing a module function that collects the reactive values, we need to wrap those values in `reactive()` in the `args()` argument:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+testthat::describe("FR2: user-input updating", code = { # <1>
+  testthat::it(description = "T6: plot outputs", code = {  # <2>
+    shiny::testServer(
+      app = mod_scatter_display_server,
+      args = list(var_inputs = 
+          shiny::reactive( # <3>
+                    list(
+                      y = "audience_score",
+                      x = "imdb_rating",
+                      z = "mpaa_rating",
+                      alpha = 0.5,
+                      size = 2,
+                      plot_title = "Enter plot title"
+                    )
+            ) # <3>
+        ),
+      expr = {
+        test_logger(start = "T6", msg = "FR2: inputs()")
+        
+        testthat::expect_equal(                      # <4>
+          object = inputs(),
+          expected = list(x = "imdb_rating",
+                          y = "audience_score",
+                          z = "mpaa_rating",
+                          alpha = 0.5,
+                          size = 2,
+                          plot_title = "Enter Plot Title")
+        ) # <4>
+        
+        test_logger(end = "T6", msg = "FR2: inputs()")
+    })
+  }) # <2>
+}) # <1>
+```
+1. Functional requirement description (**FR1**)   
+2. Test scope    
+3. List of reactive variable inputs  
+4. Compare `inputs()` to initial values  
+
+
+
+I've included the example above because it's not included on the `testServer()` [documentation](https://shiny.posit.co/r/articles/improve/server-function-testing/), and I've found this method works well if you want to confirm two modules are communicating (i.e., returning and collecting outputs). System test with `shinytest2` are a better option if we're trying to capture a more comprehensive execution path (i.e., user story) in the application. 
+
+#### Module test coverage 
+
+When we check the code coverage for the test above, we can see it confirms `var_inputs` is communicating the reactive values to `inputs()` in  `mod_scatter_display_server()`, but this test doesn't execute the call to `scatter_plot()`:
+
+```{r}
+#| label: hot_key_cf_02
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key(fun = 'cf')
+```
+
+```{r}
+#| eval: false 
+#| code-fold: false
+devtools:::test_coverage_active_file()
+```
+
+![](img/11_tests_code_coverage_module_01.png){width="85%" fig-aligh='center'}
+
+### Testing [`output$`]{style="font-size: 0.95em;"}s
+
+To confirm the plot is being created properly in `mod_scatter_display_server()`, we can't use the `ggplot2::is.ggplot()` function because the plot is being rendered by `renderPlot()`. However, we can verify the structure of the `output$scatterplot` object using any of the following expectations:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+testthat::expect_true(
+  object = is.list(output$scatterplot))
+
+testthat::expect_equal(
+  object = names(output$scatterplot),
+  expected = c("src", "width", "height", "alt", "coordmap"))
+
+testthat::expect_equal(
+  object = output$scatterplot[["alt"]],
+  expected = "Plot object")
+```
+
+It's also possible to build the graph *inside* the test using the same code from the module server function, then confirm it with `ggplot2::is.ggplot()`:
+
+```{r}
+#| eval: false 
+#| code-fold: false 
+    plot <- scatter_plot(movies, # <1>
+      x_var = inputs()$x,
+      y_var = inputs()$y,
+      col_var = inputs()$z,
+      alpha_var = inputs()$alpha,
+      size_var = inputs()$size) +
+    ggplot2::labs(
+      title = inputs()$plot_title,
+      x = stringr::str_replace_all(
+              tools::toTitleCase(inputs()$x), "_", " "),
+      y = stringr::str_replace_all(
+              tools::toTitleCase(inputs()$y), "_", " ")) +
+    ggplot2::theme_minimal() +
+    ggplot2::theme(legend.position = "bottom") # <1>
+    
+    testthat::expect_true(ggplot2::is.ggplot(plot)) # <2>
+```
+1. Build graph (same code from module function)   
+2. Confirm `ggplot2` object is built  
+
+
+This executes the code used build the graph in `mod_scatter_display_server()`:
+
+![](img/11_tests_code_coverage_module_02.png){width="85%" fig-aligh='center'}
+
+If we're still skeptical this test is confirming the plot is being built correctly, we can pass `plot` to `print()` in the test and the plot will appear in the **Plots** pane. 
+
+
+![Passing `plot` to `print()` will send the graph to the **Plots** pane](img/11_tests_print_plot_module.png){width="85%" fig-aligh='center'}
+
+```{r}
+#| label: git_box_shinyAppPkg_10d_tests-modules
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  fig_pw = '65%',
+  branch = "10d_tests-modules", 
+  repo = 'shinyAppPkg')
+```
+
+

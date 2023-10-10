@@ -1,0 +1,265 @@
+# System tests {#sec-tests-system}
+
+```{r}
+#| eval: true 
+#| echo: false 
+#| include: false
+source("_common.R")
+library(testthat)
+library(gt)
+```
+
+```{r}
+#| label: co_box_dev
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "o", look = "minimal",
+  header = "Caution",
+  contents = "This section is still being developed--it's contents are subject to change.",
+  fold = FALSE
+)
+```
+
+## Test files 
+
+Up to this point, I've been storing the tests in test files named for each function: 
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+tests
+└── testthat/
+    ├── test-mod_scatter_display.R
+    ├── test-mod_var_input.R
+    └── test-scatter_plot.R
+```
+
+This is the recommendations in [R Packages, 2ed](https://r-pkgs.org/code.html#sec-code-organising), and gives us the ability to programmatically compare test results with the traceability matrix. For example, we can add the following code to the [`test-specs` vignette](https://github.com/mjfrigaard/shinyAppPkg/blob/10e_tests-system/vignettes/test-specs.Rmd) and capture our test results in a `tibble` display:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+pkg_tests <- testthat::test_local("../", 
+  reporter = testthat::SilentReporter$new()) |> 
+  tibble::as_tibble() |> 
+  tidyr::pivot_longer(cols = c(passed, skipped, 
+                               warning, error, failed), 
+                    names_to = 'status', 
+                    values_to = "value") |> 
+  dplyr::filter(value > 0) |> 
+  dplyr::select(
+    `Test File` = file,
+    Test = test,
+    `Test Status` = status)
+```
+
+:::{#fig-11_tests_trace_matrix_pkg_tests}
+
+![Traceability matrix & `testthat::test_local()` output](img/11_tests_trace_matrix_pkg_tests.png){#fig-11_tests_trace_matrix_pkg_tests width='100%' align='center'}
+
+Package vignette with with traceability matrix and test results 
+:::
+
+Placing the test number in each call to `testthat::it()` will make it easier to link the tests back to the original functional requirements, features and specifications.
+
+## System tests
+
+System (or end-to-end) tests simulate real user interactions in a 'pre-production' environment to verify the whole application (or system) works.[^tests-prod] Approaches to system testing vary, but in general, we'll want to run system tests before a release, which means all of the app's functional requirements are tested and released in lockstep.
+
+[^tests-prod]: System tests should strive to replicate the production *conditions*, even when/if it's not possible to perfectly replicate the environment.
+
+### [`shinytest2`]{style="font-size: 1.05em;"}
+
+
+[`shinytest2`](https://rstudio.github.io/shinytest2/index.html) requires a few steps to get up and running, most notably the [`chromote` package](https://rstudio.github.io/chromote/).[^shinytest2-start] 
+
+[^shinytest2-start]: A great place to start is the [Getting Started](https://rstudio.github.io/shinytest2/articles/shinytest2.html) vignette. 
+
+```{r}
+#| label: co_box_chromote
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g", fold = TRUE, look = "minimal",
+  size = '1.10', header = "Chromium access",
+  contents = 
+" 
+If you're working in an environment without access to the Chromium headless browser,
+  
+  ")
+```
+
+After installing the `shinytest2` dependencies, you'll want to verify you can create a new session with: 
+
+```{r}
+#| eval: false 
+#| code-fold: false
+library(chromote)
+b <- ChromoteSession$new()
+b$view()
+```
+
+:::{#fig-11_chromote_new_verify}
+
+![Chromium headless browser](img/11_chromote_new_verify.png){#fig-11_chromote_new_verify width='100%' align='center'}
+
+A new `Chromote` session
+:::
+
+
+```{r}
+#| eval: false 
+#| code-fold: false
+shinytest2::use_shinytest2()
+```
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+! Runner already found: tests/testthat.R
+✔ Adding 'shinytest2::load_app_env()' to 'tests/testthat/setup-shinytest2.R'
+```
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+✔ Adding '*_.new.png' to '.gitignore'
+```
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+✔ Adding '_\\.new\\.png$' to '.Rbuildignore'
+```
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+✔ Setting active project to '/path/to/shinyAppPkg'
+```
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+✔ Adding 'shinytest2' to Suggests field in DESCRIPTION
+```
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+• In your package code, use `rlang::is_installed("shinytest2")` or
+  `rlang::check_installed("shinytest2")` to test if shinytest2 is installed
+• Then directly refer to functions with `shinytest2::fun()`
+```
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+✔ Setting active project to '<no active project>'
+```
+
+
+
+
+
+<!--
+
+> Manual Testing: Initially, you may have to manually interact with the Shiny app to ensure it behaves as expected.
+
+> Automated Browser Testing: Use tools like shinytest to automate browser-based testing for the Shiny application. shinytest captures the state of the application and allows you to compare it to expected states.
+
+> User Scenarios: Script typical user interaction scenarios to ensure that the whole system, including front-end and back-end, work seamlessly.
+
+-->
+
+
+
+
+<!--
+
+#### [`withr`]{style="font-size: 1.05em;"}
+
+The date/time output from `test_logger()` doesn't provide the level of precision we want to monitor our unit tests (they're supposed to be fast). The R option to change this setting is `options(digits.secs)`, but we don't want to include this options in our test file (we just need it whenever we use `test_logger()`).[^tests-message2]
+
+We can add `withr::local_options()` inside `test_logger()` to make sure this option only applies to the test environment it's called from. Subsequent tests will pass without a warning and provide a more precise date/time message:
+
+[^tests-message2]: This example is similar to the `message2()` function on the [`testthat` website](https://testthat.r-lib.org/articles/test-fixtures.html#test-fixtures), but calls `withr` *inside* the helper function.
+
+Back in the **Console**, I can see the output from `Sys.time()` doesn't include the `test_logger()` option:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+Sys.time()
+```
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+[1] "2023-09-23 14:16:30 PDT"
+```
+
+-->
+
+## Recap 
+
+Behavior-driven development (or behavior-driven testing) fills the void between non-technical stakeholders and developers by encouraging natural, descriptive language (often complete sentences) to define and communicate the application requirements.
+
+The goal of any shiny application should be to create something that helps drive data-driven decisions. I've found building a traceability matrix and using `testthat` to scope tests forces me ask myself, "*do the tests address all of the user's needs?*" (which saves me from developing a feature no one asked for).
+
+```{r}
+#| label: co_box_app_recap
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b",
+  header = "Recap: testing your app-package",
+  contents = "
+
+**Testing shiny app-packages**
+  
+  - Scoping tests: ... user specifications, feature requirements, and functional requierments.
+  
+    - **User specifications**:  
+  
+    - **Feature requirements**:
+  
+    - **Functional requierments**:
+  
+  - Unit tests: set up the unit testing infrastructure with `usethis::use_testthat()` 
+  
+    - Test files: create new test files with `usethis::use_test()`
+  
+    - **BDD functions**: use `describe()` add context for feature or specifications and `it()` blocks for test code.
+  
+  - Fixtures:  
+  
+  - Helpers: 
+  
+  - Mocks: 
+  
+  - Module tests: `testServer()` ...
+  
+  - System tests: `shinytest2` ...
+  
+  ", 
+  fold = FALSE
+)
+```
+
+<!--
+
+> Consider setting up a CI pipeline using services like GitHub Actions, GitLab CI, or Travis CI to automate the running of these tests.
+
+> By implementing these various levels of tests, you can build confidence that your R package and Shiny app are robust, reliable, and ready for deployment.
+
+-->
+
+<!--
+Testing an R package with a Shiny application can be challenging due to the various components and layers of interactivity. Here's a general strategy to approach this:
+-->
+
