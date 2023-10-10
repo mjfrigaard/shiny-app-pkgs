@@ -1,0 +1,756 @@
+# Testing tools {#sec-tests-tools}
+
+```{r}
+#| eval: true 
+#| echo: false 
+#| include: false
+source("_common.R")
+```
+
+```{r}
+#| label: co_box_dev
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "o", look = "minimal",
+  header = "Caution",
+  contents = "This section is still being developed--it's contents are subject to change.",
+  fold = FALSE
+)
+```
+
+This chapter introduces files, folders and methods we can include to our app-package test suite. These topics are described in-depth in [R Packages, 2ed](https://r-pkgs.org/testing-design.html#sec-testing-design-principles), and the [`testthat` documentation.](https://testthat.r-lib.org/articles/third-edition.html) (but within the context of a standard R package). The sections below contain examples of each tool implemented in an app-package.
+
+## Testing best practices  
+
+Recent updates to the `testthat` package emphasize limiting any code that exists outside of our tests:
+
+> "*Eliminating (or at least minimizing) top-level code outside of `test_that()` will have the beneficial effect of making your tests more hermetic. This is basically the testing analogue of the general programming advice that it's wise to avoid unstructured sharing of state.*" - [Self-sufficient tests, R Packages, 2ed](https://r-pkgs.org/testing-design.html#self-sufficient-tests)
+
+Examples of code that could potentially exist outside a test are: functions called to load, create, or manipulate data; setting options; creating folders or files; connecting to databases; etc. We can include each of these behaviors in our tests while adhering to the advice above by properly using test fixtures, helpers, and mocks.
+
+### Test-driven vs. behavior-driven tests
+
+If we were following test-driven development, we'd write our tests *before* developing any code. Without any code, all the tests would fail, and we have write the code to get each test to pass. This practice forces developers to think about interface design, integration, and the expected behavior before writing any code.
+
+However, we're going to use the BDD functions to ensure our application meets the technical specifications while remaining user-centric:
+
+> "*[BDD] encourages teams to use conversation and concrete examples to formalize a shared understanding of how the application should behave.*" - Behavior-driven development, Wikipedia[^tests-bdd-read-more]
+
+[^tests-bdd-read-more]: Read more about [behavior-driven development](https://en.wikipedia.org/wiki/Behavior-driven_development)
+
+## Test fixtures 
+
+<!-- https://www.tidyverse.org/blog/2020/04/self-cleaning-test-fixtures/ -->
+
+The two principles to keep in mind while developing test fixtures, helpers, and mocks in an app-package are:
+
+1. Keep test scope logic defined to a single test (or all tests)
+
+2. Explicitly setup and tear down anything created during a test (and reset test state between each test run)
+
+Test fixtures can be anything used to create repeatable test conditions (data, file paths, functions, etc.). Good test fixtures provide a consistent, well-defined test environment, and then are removed/destroyed when the test is executed. This ensures any changes made during the test don't persist or interfere with future tests.[^tests-self-cleaning]
+
+[^tests-self-cleaning]: For a concrete example, see [this article](https://www.tidyverse.org/blog/2020/04/self-cleaning-test-fixtures/) on self-cleaning tests.
+
+In R packages, test fixtures are stored in the `tests/testthat/fixtures/` folder:
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+tests/
+├── testthat/
+│   └── fixtures/                                          # <1>
+└── testthat.R
+```
+1. The name '`fixtures`' isn't required (you can name this folder anything)
+
+### Test data
+
+Large static data files are an example of a test fixture.[^tests-fixtures-static] Any code used to create test data should be stored with the output file (using a clear naming convention).
+
+[^tests-fixtures-static]: Creating a tidied version of `ggplot2movies::movies` would be costly to re-create with every test, so it's advised to store it as an [static test fixture.](https://r-pkgs.org/testing-advanced.html#sec-testing-advanced-concrete-fixture)
+
+For example, I've stored the code used to create a ['tidy' version](https://github.com/mjfrigaard/shinyAppPkg/blob/10b_tests-helpers-fixtures/tests/testthat/fixtures/make-ggp2_movies.R) of  the `ggplot2movies::movies` data along with the output dataset in `tests/testthat/fixtures/`:
+
+```{bash}
+#| eval: false 
+#| code-fold: false 
+tests
+├── testthat
+│   ├── fixtures
+│   │   ├── make_tidy_ggp2_movies.R # <1>
+│   │   └── tidy_ggp2_movies.rds # <2>
+│   └── test-<name>.R
+└── testthat.R
+
+3 directories, 4 files
+```
+1. The code used to create the test data (`make-make_tidy_ggp2_movies.R`) 
+2. The test data file (i.e., `tidy_ggp2_movies.rds`):
+
+Data files stored in `tests/testthat/fixtures/` can be accessed with `testthat::test_path()` inside each test. 
+
+### Example: test fixture
+
+Below is a test that answers the question, '*does the plot generate without producing an error,*' for `scatter_plot()`. This type of test appropriate because we want to confirm the data source (`movies`) will generate a plot object when passed to the `scatter_plot()` utility function, not necessarily the specific contents of the graph.[^tests-graphs]
+
+[^tests-graphs]: Snapshot tests would be more appropriate for answering the question, ['*is the plot visually correct?*'](https://shiny.posit.co/r/articles/improve/server-function-testing/index.html#complex-outputs-plots-htmlwidgets).
+
+```{r}
+#| eval: false 
+#| code-fold: false
+testthat::describe("FR1: confirm data source in graphing function", # <1>
+  code = { 
+  
+  testthat::it("T1 movies data source", code = { # <2>
+    # inputs
+    scatter_inputs <- list(                # <3>
+      y = "audience_score",
+      x = "imdb_rating",
+      z = "mpaa_rating",
+      alpha = 0.5,
+      size = 2,
+      plot_title = "Enter plot title"
+    )                                  # <3>
+    app_graph <- scatter_plot(movies,  # <4>
+      x_var = scatter_inputs$x,
+      y_var = scatter_inputs$y,
+      col_var = scatter_inputs$z,
+      alpha_var = scatter_inputs$alpha,
+      size_var = scatter_inputs$size
+    ) # <4>
+    expect_true(ggplot2::is.ggplot(app_graph)) # <5> 
+  }) # <2>
+
+}) # <1>
+```
+1. Functional requirement     
+2. Test code     
+3. Test inputs    
+4. Create observed object  
+5. Expectation  
+
+#### Developing tests  
+
+While developing, using keyboard shortcuts makes it easier to iterate between building fixtures, writing and running tests, and checking code coverage. 
+
+```{r}
+#| label: hot_key_tf_01
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key(fun = 'tf')
+```
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+devtools:::test_active_file()
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 1 ]
+```
+
+```{r}
+#| label: hot_key_cf_01
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key(fun = 'cf')
+```
+
+```{r}
+#| eval: false 
+#| code-fold: false
+devtools:::test_coverage_active_file()
+```
+
+![Test coverage on active file](img/11_tests_coverage_scatter_plot.png){width='100%' fig-align='center'}
+
+It's gratifying to see 100% test coverage, but in this case it's misleading. The feature (**FE1**) states we need to include a second data source (per the traceability matrix).
+
+Fortunately, including a second data source only requires adding a nested `describe()` function: 
+
+1. The feature (**FE1**) scope adds more context to the functional requirement (**FR1**)   
+
+2. A second test (**T2**) is added for the tidy `ggplot2movies::movies` data source:[^tests-ggp2_movies-raw-data]
+
+[^tests-ggp2_movies-raw-data]: If the data in `tests/testthat/fixtures/` are going to be used repeatedly, it might also make sense to store it in `inst/extdata/` or `data-raw/`.
+
+```{r}
+#| eval: false 
+#| code-fold: false
+testthat::describe("FE1: interactive scatter plot (two data sources, drop-down variable options)",                                    # <1> 
+  code = {                                             # <1> 
+    
+    testthat::describe("FR1: data source", code = {    # <2> 
+      
+      testthat::it("T1 movies data source", code = {   # <3> 
+        scatter_inputs <- list(                        # <4> 
+          y = "audience_score",
+          x = "imdb_rating",
+          z = "mpaa_rating",
+          alpha = 0.5,
+          size = 2,
+          plot_title = "Enter plot title")             # <4> 
+        app_graph <- scatter_plot(movies,              # <5> 
+          x_var = scatter_inputs$x,
+          y_var = scatter_inputs$y,
+          col_var = scatter_inputs$z,
+          alpha_var = scatter_inputs$alpha,
+          size_var = scatter_inputs$size)              # <5> 
+        expect_true(ggplot2::is.ggplot(app_graph))     # <6> 
+      })                                               # <3> 
+
+      testthat::it("T2 tidy movies data source", code = {   # <7>   
+        ggp2_scatter_inputs <- list(                        # <8> 
+          x = "avg_rating",
+          y = "length",
+          z = "mpaa",
+          alpha = 0.75,
+          size = 3,
+          plot_title = "Enter plot title"
+        )                                                       # <8> 
+        tidy_ggp2_movies <- readRDS(test_path("fixtures",       # <9>
+                                      "tidy_ggp2_movies.rds"))  # <9>
+        app_graph <- scatter_plot(tidy_ggp2_movies,             # <10>
+          x_var = ggp2_scatter_inputs$x,
+          y_var = ggp2_scatter_inputs$y,
+          col_var = ggp2_scatter_inputs$z,
+          alpha_var = ggp2_scatter_inputs$alpha,
+          size_var = ggp2_scatter_inputs$size)                 # <10>
+        expect_true(object = ggplot2::is.ggplot(app_graph))    # <11>
+        
+      })                                                       # <7>   
+      
+    }) # <2> 
+  }) # <1> 
+```
+1. Feature scope       
+2. Functional requirement scope  
+3. `movies` data test   
+4. `movies` inputs  
+5. `movies` observed plot object  
+6. `movies` expectation   
+7. `tidy_ggp2_movies` data test 
+8. `tidy_ggp2_movies` data inputs    
+9. Load test data fixture   
+10. `tidy_ggp2_movies` observed plot object  
+11. `tidy_ggp2_movies` expectation   
+
+```{r}
+#| label: git_box_10b_tests-fixtures
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  fig_pw = '65%', 
+  branch = "10b_tests-fixtures", 
+  repo = 'shinyAppPkg')
+```
+
+Test fixtures are described in-depth in [R Packages, 2ed](https://r-pkgs.org/testing-advanced.html#test-fixtures) and in the [`testthat` documentation](https://testthat.r-lib.org/articles/test-fixtures.html#test-fixtures).
+
+
+## Test helpers 
+
+<!-- https://r-pkgs.org/testing-design.html#testthat-helper-files -->
+
+> "*Helper files are a mighty weapon in the battle to eliminate code floating around at the top-level of test files.*" Testthat helper files, [R Packages, 2ed](https://r-pkgs.org/testing-design.html#testthat-helper-files)
+
+Test helpers reduce repeated/duplicated test code. In general, objects or values that aren't large enough to justify storing as static test fixtures can be created with helper functions. Helper functions are stored in `tests/testthat/helper.R`, which is automatically loaded with `devtools::load_all()`:
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+tests/
+  ├── testthat/
+  │   ├── fixtures/                                         # <1>
+  │   │   ├── make-ggp2-movies.R
+  │   │   └── ggp2_movies.rds
+  │   ├── helper.R                                          # <2>
+  │   └── test-<name>.R                                     # <3>
+  └── testthat.R
+```
+1. Test fixture scripts and `.rds` files  
+2. Helper functions  
+3. Test file  
+
+Test helpers should only be created if they make testing easier **when the tests fail.** The article, ['Why Good Developers Write Bad Unit Tests'](https://mtlynch.io/good-developers-bad-tests/), provides great advice on complexity vs. clarity when writing unit tests,
+  
+> *'think about what will make the problem obvious when a test fails. Refactoring may reduce duplication, but it also increases complexity and potentially obscures information when things break.'*
+  
+R programmers resist copy + paste programming, and in most cases this makes sense. After all, R *is* a functional programming language, so it's tempting to bundle any repeated code into a function and store it in the `tests/testthat/helper.R` file. 
+
+However, when we're writing tests, it's more important that tests are easy to read and understand **when they fail**. 
+
+For example, consider the inputs passed to the `scatter_plot()` function in the previous test:
+
+```{r}
+#| eval: false 
+#| code-fold: false 
+scatter_inputs <- list(
+  y = "audience_score",
+  x = "imdb_rating",
+  z = "mpaa_rating",
+  alpha = 0.5,
+  size = 2,
+  plot_title = "Enter plot title")
+```
+
+We could write a `var_inputs()` function that stores these values in a list:
+
+```{r}
+#| eval: true 
+#| code-fold: false 
+#| collapse: true
+var_inputs <- function() {
+  list(y = 'audience_score', 
+     x = 'imdb_rating',
+     z = 'mpaa_rating',
+     alpha = 0.5,
+     size = 2,
+     plot_title = 'Enter plot title'
+    )
+}
+var_inputs()
+```
+
+In our tests, this would allow us to use `var_inputs()` with the same 'reactive syntax' we use with `scatter_plot()` in the module server function: 
+
+```{r}
+#| eval: false 
+#| code-fold: false 
+#| collapse: true
+testthat::it("T1 movies data source", code = {
+  
+app_graph <- scatter_plot(
+  movies,
+  x_var = var_inputs()$x, # <1>
+  y_var = var_inputs()$y,
+  col_var = var_inputs()$z,
+  alpha_var = var_inputs()$alpha,
+  size_var = var_inputs()$size) # <1>
+
+testthat::expect_true(ggplot2::is.ggplot(app_graph))
+})
+## Test passed
+```
+1. This is how we refer to the inputs in `mod_scatter_display_server()` 
+
+While this removes duplicated code, it also makes it less clear for the reader where `var_inputs()` was created (without opening the `helper.R` file).
+
+```{r}
+#| label: co_box_dry
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "r", 
+  fold = FALSE,
+  look = 'simple',
+  size = "1.05", 
+  hsize = "1.15",
+  header = "Violating the DRY principle",
+  contents = "
+If you have repeated code in your tests, consider the following questions below before creating a helper function: 
+  
+1. Does the code help explain what behavior is being tested? 
+  
+2. Would a helper make it harder to debug the test when it fails?  
+  
+It’s more important that test code is obvious than DRY, because it’s more likely you’ll be dealing with this test when it fails (and you're not likely to remember why all the top-level code is there).
+  
+"
+)
+```
+
+In contrast, the `make_var_inputs()` function below creates inputs for the `scatter_plot()` utility function:
+
+```{r}
+#| eval: false 
+#| code-fold: false 
+make_var_inputs <- function() {
+  glue::glue_collapse("list(y = 'audience_score', 
+     x = 'imdb_rating',
+     z = 'mpaa_rating',
+     alpha = 0.5,
+     size = 2,
+     plot_title = 'Enter plot title'
+    )")
+}
+```
+
+I can call `make_var_inputs()` in the **Console** and it will return the list of values to paste into each test:
+
+```{r}
+#| eval: false 
+#| code-fold: false 
+make_var_inputs()
+list(y = 'audience_score', 
+     x = 'imdb_rating',
+     z = 'mpaa_rating',
+     alpha = 0.5,
+     size = 2,
+     plot_title = 'Enter plot title'
+    )
+```
+
+This reduces the amount of typing required while developing tests, but doesn't obscure the source of the values in the test.
+
+`glue::glue_collapse()` is your friend when you want to quickly reproduce code for your tests. `make_ggp2_inputs()` creates the list of inputs for testing the tidy `ggplot2movies::movies` data:
+
+```{r}
+#| eval: true 
+#| code-fold: false 
+make_ggp2_inputs <- function() {
+glue::glue_collapse("list(x = 'avg_rating',
+     y = 'length',
+     z = 'mpaa',
+     alpha = 0.75,
+     size = 3,
+     plot_title = 'Enter plot title'
+     )"
+  )
+}
+```
+
+#### Logging
+
+I prefer test outputs to be verbose, so I usually create a `test_logger()` helper function that allows me to give more context and information with each test:
+
+```{r}
+#| code-fold: false
+#| eval: true
+# test logger helper
+test_logger <- function(start = NULL, end = NULL, msg) {
+  if (is.null(start) & is.null(end)) {
+    cat("\n")
+    logger::log_info("{msg}")
+  } else if (!is.null(start) & is.null(end)) {
+    cat("\n")
+    logger::log_info("\n[ START {start} = {msg}]")
+  } else if (is.null(start) & !is.null(end)) {
+    cat("\n")
+    logger::log_info("\n[ END {end} = {msg}]")
+  } else {
+    cat("\n")
+    logger::log_info("\n[ START {start} = {msg}]")
+    cat("\n")
+    logger::log_info("\n[ END {end} = {msg}]")
+  }
+}
+```
+
+`test_logger()` can be used to 'log' the `start` and `end` of each test, and it includes a message argument (`msg`) I'll use to reference the test `description` argument in each `it()` call.[^tests-logger]
+
+I tend to use functions like `test_logger()` enough to justify placing them in a testing utility file ([`R/testthat.R`](https://github.com/mjfrigaard/shinyAppPkg/blob/10c_tests-helpers/R/testthat.R)) below `R/`. Including testing functions in the `R/` folder also ensures it's documented and it's dependencies become part of your app-package).[^tests-r-files]
+
+[^tests-logger]: If you like verbose logging outputs, check out the [`logger` package](https://daroczig.github.io/logger/) 
+
+[^tests-r-files]: Placing common files for testing below `R/` is covered in [R Packages, 2ed](https://r-pkgs.org/testing-design.html#hiding-in-plain-sight-files-below-r)
+
+#### Example: snapshots
+
+Writing tests for graph outputs can be difficult because the "correctness" of a graph is somewhat subjective and requires human judgment. If the expected output we're interesting in testing is cumbersome to describe programmatically, we can consider using a snapshot tests. Examples of this include UI elements (which are mostly HTML created by Shiny's UI layout and input/output functions) and data visualizations.[^tests-ui-tests]
+
+[^tests-ui-tests]: Mastering Shiny covers [creatng a snapshot file](https://mastering-shiny.org/scaling-testing.html#user-interface-functions) to test UI elements, but also notes this is probably not the best approach.
+
+If we want to create a graph snapshot test, the [`vdiffr`](https://vdiffr.r-lib.org/) package allows us to perform a 'visual unit test' by capturing the expected output as an `.svg` file that we can compare with future versions.
+
+The `expect_doppelganger()` function from `vdiffr` is designed specifically to work with ['graphical plots'](https://vdiffr.r-lib.org/reference/expect_doppelganger.html). 
+
+```{r}
+#| eval: false 
+#| code-fold: false
+vdiffr::expect_doppelganger(
+      title = "name of graph", 
+      fig = # ...code to create graph...
+  )
+```
+
+Another option for using snapshots for testing is the `expect_snapshot_file()` function [^tests-10] but `expect_doppelganger()` is probably the better option for comparing graph outputs.
+
+[^tests-10]: Follow the `expect_snapshot_file()` example from the [`testthat` documentation](https://testthat.r-lib.org/reference/expect_snapshot_file.html#ref-examples)
+
+In this test, I'll use `describe()` to combine two features from the traceability matrix (**FE3** and **FE4**), followed by two `it()` statements (with each functional requirement the snapshot will capture).
+
+```{r}
+#| label: co_box_trace_matrix_feat_funct_snaps
+#| echo: false
+#| code-fold: false
+#| include: true
+trace_matrix <- tibble::tibble(
+  `Feature Requirement` = c(
+    "FE1: interactive scatter plot (two data sources, drop-down variable options)",
+    NA_character_
+  ),
+  `Functional Requirements` = c(
+    "FR3: color-coded data points",
+    "FR4: plot axis, legend & title"
+  )
+) 
+trace_matrix |> 
+  gt::gt(auto_align = TRUE) |> 
+  gt::sub_missing(
+  columns = gt::everything(),
+  rows = gt::everything(),
+  missing_text = "-"
+)
+```
+
+Combining functional requirements in the same test file is helpful if we're trying to keep a 1:1 between the `test/testthat/` file names and file names in `R/`.[^tests-test-files-r-folder]
+
+[^tests-test-files-r-folder]: matching files names between `R/` and `tests/testthat/` keeps our code organized and ensures the `devtools::test_coverage_active_file()` function [works.](https://testthat.r-lib.org/articles/special-files.html)
+
+
+```{r}
+#| eval: false 
+#| code-fold: false
+testthat::describe("FR3: color-coded data points & FR4: plot axis, legend & title", # <1>
+  code = { 
+  
+  testthat::it("T3: color-coded data points", code = { # <2>
+
+    test_logger(start = "T3", msg = "Tests FR3 (color)") # <3>
+    
+    scatter_inputs <- list(y = 'audience_score', # <4>
+                       x = 'imdb_rating',
+                       z = 'mpaa_rating',
+                       alpha = 0.5,
+                       size = 2,
+                       plot_title = 'Enter plot title') # <4>
+    
+    vdiffr::expect_doppelganger( # <5>
+      title = "FR3: color-coded data points", 
+      fig = scatter_plot(movies, 
+        x_var = scatter_inputs$x, 
+        y_var = scatter_inputs$y, 
+        col_var = scatter_inputs$z, 
+        alpha_var = scatter_inputs$alpha, 
+        size_var = scatter_inputs$size 
+      )) # <5>
+        
+    test_logger(end = "T3", msg = "Tests FR3 (color)")          # <6>
+    
+  }) # <2>
+    
+  testthat::it("T4: plot axis, legend & title", code = { # <7>
+
+    test_logger(start = "T4", msg = "Tests FR4 (legend/theme)") # <8>
+                  
+    scatter_inputs <- list(y = 'audience_score', # <9>
+                       x = 'imdb_rating',
+                       z = 'mpaa_rating',
+                       alpha = 0.5,
+                       size = 2,
+                       plot_title = 'Enter plot title') # <9>
+    
+    vdiffr::expect_doppelganger( # <10>
+      title = "FR4: plot axis, legend & title", 
+      fig = scatter_plot(movies, 
+        x_var = scatter_inputs$x, 
+        y_var = scatter_inputs$y, 
+        col_var = scatter_inputs$z, 
+        alpha_var = scatter_inputs$alpha, 
+        size_var = scatter_inputs$size 
+      ) + 
+        ggplot2::labs( 
+          title = variable$plot_title, 
+          x = stringr::str_replace_all( 
+                tools::toTitleCase( 
+                  scatter_inputs$x), "_", " "), 
+          y = stringr::str_replace_all( 
+                tools::toTitleCase( 
+                  scatter_inputs$y), "_", " ") 
+        ) + 
+        ggplot2::theme_minimal() + 
+        ggplot2::theme(legend.position = "bottom") 
+    ) # <10>
+    
+    test_logger(end = "T4", msg = "Tests FR4 (legend/theme)")      # <11>
+    
+  }) # <7>
+  
+  
+}) # <1>
+```
+1. Feature(s) scope    
+2. Test scope (**T3**)    
+3. Log start (**T3**)   
+4. `movies` variable inputs  
+5. Snapshot with for colored points   
+6. Log end (**T3**)   
+7. Test scope (**T4**)    
+8. Log start (**T4**)   
+9. `movies` variable inputs 
+10. Snapshot for labels and theme  
+11. Log end (**T4**)   
+
+
+
+In this test, I've separated the `ggplot2` layers into different `it()` sections, and the test results return the output from `test_logger()` for more context of what's being tested:
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+INFO [2023-10-06 11:41:21] [ START T3 = Tests FR3 (color)]
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 3 ]
+INFO [2023-10-06 11:41:21] [ END T3 = Tests FR3 (color)]
+
+INFO [2023-10-06 11:41:21] [ START T4 = Tests FR4 (legend/theme)]
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 4 ]
+INFO [2023-10-06 11:41:21] [ END T4 = Tests FR4 (legend/theme)]
+```
+
+We also see a warning when the snapshot has been saved in the `tests/testthat/_snaps/` folder the first time the test is run:
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+── Warning (test-scatter_plot.R:19:5): T3: color-coded data points ──
+Adding new file snapshot:
+'tests/testthat/_snaps/fr3-color-coded-data-points.svg'
+
+── Warning (test-scatter_plot.R:51:5): T4: plot axis, legend & title ──
+Adding new file snapshot:
+'tests/testthat/_snaps/fr4-plot-axis-legend-title.svg'
+[ FAIL 0 | WARN 2 | SKIP 0 | PASS 2 ]
+```
+
+```{r}
+#| label: co_box_expect_doppelganger
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g", fold = TRUE, 
+  size = "1.05",
+  header = "Reviewing snapshots",
+  contents = "
+Placing the functional requirement in the `title` argument of `expect_doppelganger()` gives us a clear idea of what the snapshot file *should* contain.
+"
+)
+```
+
+On subsequent runs, this warning will disappear (as long as there are no changes to the `.svg` files).
+
+We should also update the traceability matrix with the tests we've used to verify the functional requirements:
+
+```{r}
+#| label: co_box_trace_matrix_add_t1_and_t2
+#| echo: false
+#| code-fold: false
+tibble::tibble(
+  `User Specification` = c(
+    "US1: scatter plot data visualization",
+    NA_character_,
+    NA_character_,
+    NA_character_
+  ),
+  `Feature Requirement` = c(
+    "FE1: interactive scatter plot (two data sources, drop-down variable options)",
+    NA_character_,
+    NA_character_,
+    NA_character_
+  ),
+  `Functional Requirements` = c(
+    "FR1: data source",
+    "FR2: user-input updating",
+    "FR3: color-coded data points",
+    "FR4: plot axis and legend"
+  ),
+  Tests = c(
+    "T1 & T2",
+    NA_character_,
+    "T3",
+    "T4"
+  )
+) |> 
+  gt::gt(auto_align = TRUE) |> 
+  gt::sub_missing(
+  columns = gt::everything(),
+  rows = gt::everything(),
+  missing_text = "-"
+)
+```
+
+#### Advice on snapshots 
+
+Snapshots are brittle. The term "brittle" in the context of testing refers to a susceptibility to fail with small changes. Brittleness can produce false negatives test failures (i.e., due to inconsequential changes in the graph) when comparing a new graph to the baseline image. 
+
+Below is the output from `diffobj::diffObj()` comparing our custom plotting function (`scatter_plot()`) against a graph built with analogous `ggplot2` code:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+ggp_graph <- ggplot2::ggplot(mtcars, 
+              ggplot2::aes(x = mpg, y = disp)) + 
+              ggplot2::geom_point(
+                ggplot2::aes(color = cyl), 
+                             alpha = 0.5, 
+                             size = 3)
+  
+app_graph <- scatter_plot(mtcars, 
+                  x_var = "mpg", 
+                  y_var = "disp", 
+                  col_var = "cyl", 
+                  alpha_var = 0.5, 
+                  size_var = 3)
+
+diffobj::diffObj(ggp_graph, app_graph)
+```
+
+
+:::: {.column-page-inset-right}
+
+:::{#fig-11_tests_diffobj_scatter_plot}
+
+![`diffobj::diffObj()` on graph outputs](img/11_tests_diffobj_scatter_plot.png){#fig-11_tests_diffobj_scatter_plot width='100%' align='center'}
+
+Graph objects are difficult to use as test objects 
+:::
+
+::::
+
+The output shows us all the potential points of failure when comparing complex objects like graphs (despite the actual outputs appearing identical), so it's best to limit the number of 'visual unit tests' unless they're absolutely necessary. 
+
+```{r}
+#| label: git_box_10c_tests-helpers
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  fig_pw = '65%', 
+  branch = "10c_tests-helpers", 
+  repo = 'shinyAppPkg')
+```
+
+## Test mocks 
+
+### Example: 
+
+## Recap
+
+```{r}
+#| label: co_box_app_recap
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b",
+  header = "Recap: test suite",
+  contents = "
+
+**Shiny app-packages test suite**
+  
+- Fixtures:  
+
+- Helpers: 
+
+- Mocks: 
+  
+  ", 
+  fold = FALSE
+)
+```
