@@ -18,7 +18,7 @@ library(logger)
 co_box(
   color = "o", look = "minimal",
   header = "Caution",
-  contents = "This section is still being developed--it's contents are subject to change.",
+  contents = "This chapter is under review.",
   fold = FALSE
 )
 ```
@@ -78,11 +78,15 @@ library(covr)
 
 ### Where to look
 
-Applications typically have some accompanying resources to address what *should* be tested, the most common source being a software requirements specification (SRS) document.[^tests-srs] The SRS breaks down an application's intended purpose (i.e., the problem it's designed to solve) into three general areas: user specifications, feature requirements, and functional requirements: 
+The traditional application development process looks something like the figure below:
+
+![An oversimplified application development process](img/tests_standard_flow.png){width='80%'}
+
+Most applications have accompanying resources to address what *should* be tested, the most common source being a software requirements specification (SRS) document.[^tests-srs] The SRS is a development document that breaks down an application's intended purpose (i.e., the problem it's designed to solve) into three general areas: user specifications, features, and functional requirements: 
 
 -   **The user specifications capture the needs and expectations of the end-user.** These are usually non-technical and focused on the "why" and the "what" of the application.
 
--   **The feature requirements describe the high-level capabilities of the application.** Features are defined early in the life of a project and often become the talking points during discussions between stakeholders and developers. Features can be used for scoping and prioritization and may comprise various functional (and sometimes non-functional) requirements.
+-   **The features describe the high-level capabilities of the application.** Features are defined early in the life of a project and often become the talking points during discussions between stakeholders and developers. Features can be used for scoping and prioritization and may comprise various functional (and sometimes non-functional) requirements.
 
 -   **Functional requirements are the testable, specific actions, inputs, and outputs.** Functional requirements provide the technical details of how the features will be implemented, and a single feature can give rise to multiple functional requirements.
 
@@ -109,7 +113,7 @@ git_margin_box(
   repo = 'shinyAppPkg')
 ```
 
-**User specifications** are what the end-user (in this case, a film analyst) wants to achieve with the application. The language used for these descriptions is non-technical but should provide a basis for deriving the more technical (but still high-level) feature requirements. [^tests-specs-user-specs]
+**User specifications** are what the end-user (in this case, a film analyst) wants to achieve with the application. The language used for these descriptions is non-technical but should provide a basis for deriving the more technical (but still high-level) features. [^tests-specs-user-specs]
 
 [^tests-specs-user-specs]: User Specifications are sometimes referred to as "user stories," "use cases," or "general requirements"
 
@@ -121,17 +125,22 @@ git_margin_box(
 co_box(
   color = "b", fold = FALSE, look = "minimal", 
   size = '1.10', header = "Scatter plot user specification",
-  contents = 
-" 
-
-**US1**: '*As an film analyst, I want to view an interactive scatter plot in a dashboard that consolidates movie reviews from multiple sources so that I can compare and analyze trends and outliers in movie ratings quickly.*'
+  contents = "
+  
+**US1**: Shiny App Scatter Plot Data Visualization for Movie Review Explorer:\n
+  
+  - The application should source movie review data from platforms like IMDB or Rotten Tomatoes and should encompass both continuous variables (e.g., audience and critic reviews) and categorical variables (e.g., MPAA ratings).\n
+  
+  - Users should have dropdown menus for selecting continuous variables for x and y axes, and a separate dropdown to choose a categorical variable (to color the points in the scatter plot).\n
+  
+  - The application should also have sliders or similar controls for users to adjust the size and opacity of the points (allowing them to handle overlapping points more effectively). Finally, users should have the option to enter text and provide a custom title for the scatter plot.\n
   
   ")
 ```
 
-## Feature Requirements
+## Features
 
-**Feature requirements** (or just **features**) translate the user's expectations into language that describes the tasks a film analyst should be able to accomplish with the application (i.e., explore data with a scatter plot). However, features are still phrased to satisfy the user needs outlined in the specifications.
+**Features** (or **feature requirements**) translate the user's expectations into language that describes the tasks a film analyst should be able to accomplish with the application (i.e., explore data with a scatter plot). However, features are still phrased to satisfy the user needs outlined in the specifications.
 
 ```{r}
 #| label: co_box_feat_reqs
@@ -140,12 +149,15 @@ co_box(
 #| eval: true
 co_box(
   color = "b", fold = FALSE, look = "minimal",
-  size = '1.10', header = "Scatter plot feature requirements",
+  size = '1.10', header = "Scatter plot features",
   contents = 
 " 
-
-**FE1**: '*Given that movie reviews are available on multiple websites, when the user selects a rating metric from the application display, the interactive scatter plot should allow for comparisons from at least two data sources (i.e., IMDb, Rotten Tomatoes), and include options for selecting other variables of interest (i.e., audience scores, runtime, etc.).*'
+**Movie review app Scatter plot data visualization features:** 
   
+**F1.1**: The movie review data should contain continuous variables (e.g., critic and audience ratings) and categorical variables (e.g., mpaa, genres) from IMDB and Rotten Tomatoes.\n
+**F1.2**: The UI should display dropdown menus for selecting continuous variables on both the x-axis and y-axis, and a dropdown menu categorical variable for point coloration.\n
+**F1.3**: Incorporate sliders or similar controls for adjusting point size and point opacity.\n\n
+**F1.4**: Provide input field for users to enter an optional scatter plot title.\n
   ")
 ```
 
@@ -153,7 +165,7 @@ co_box(
 
 **Functional requirements** are written for the developer, providing technical details on the feature (i.e., the scatter plot) and how the application should behave. A single feature will often give rise to multiple functional requirements (these are where the end-users' expectations come into direct contact with code)[^tests-specs-feat]
 
-[^tests-specs-feat]: 'Feature requirements' and 'functional requirements' are sometimes used interchangeably, but they refer to different aspects of the application. **Feature requirements** are high-level capabilities an application *should* have, and often contain a collection of smaller functionalities (broken down into the specific **functional requirements**).
+[^tests-specs-feat]: 'Features' and 'functional requirements' are sometimes used interchangeably, but they refer to different aspects of the application. **Features** are high-level capabilities an application *should* have, and often contain a collection of smaller functionalities (broken down into the specific **functional requirements**).
 
 ```{r}
 #| label: co_box_fun_reqs
@@ -165,13 +177,23 @@ co_box(
   size = '1.10', header = "Scatter plot functional requirements",
   contents = 
 " 
-  - **FR1**: The system will display movie reviews from IMDb and Rotten Tomatoes collected from their respective APIs.
-
-  - **FR2**: The scatter plot will be displayed on the dashboard and updated with new user inputs.
-
-  - **FR3**: Each data point on the scatter plot will represent a movie and be color-coded based on the following categories: MPAA ratings, genre, title type, critics rating, and audience rating.
+  - **FR 1.1**: The app data should be from IMDB and Rotten Tomatoes (accessed from appropriate APIs) containing both continuous and categorical variables stored in a tabular format.\n
   
-  - **FR4**: The scatter plot will have labeled axes, a legend to differentiate between data sources, and a customizable title.
+  - **FR 1.2**: The app should display dropdown menus listing available continuous variables for x-axis and y-axis selection.\n
+  
+  - **FR 1.3**: Upon user selection of x-axis and y-axis variables, the app should update the scatter plot to reflect the user's choices.\n
+  
+  - **FR 1.4**: The app should present a dropdown menu listing available categorical variables for point coloration.\n
+  
+  - **FR 1.5**: The app should dynamically change the color of points in the scatter plot based on the user's categorical variable selection.\n
+  
+  - **FR 1.6**: The app should provide a slider control that allows users to adjust the size of the points, ranging from a pre-defined minimum to a maximum size.\n
+  
+  - **FR 1.7**: The app should offer an opacity control, letting users adjust the transparency of points from fully opaque to fully transparent.\n
+  
+  - **FR 1.8**: The app should display an input field where users can type in a custom title for the scatter plot.
+  
+  - **FR 1.9**: Upon user entry or modification in the title input field, the app should update the scatter plot's title in real-time.
   
   ")
 ```
@@ -223,42 +245,7 @@ The first column in the traceability matrix contains the user specifications, wh
 
 [^tests-visual-markdown]: When building tables in vignettes, I highly recommend using the [Visual Markdown mode](https://rstudio.github.io/visual-markdown-editing/).
 
-```{r}
-#| label: co_box_trace_matrix_tests
-#| echo: false
-#| code-fold: false
-#| include: true
-trace_matrix <- tibble::tibble(
-  `User Specification` = c(
-    "US1: scatter plot data visualization",
-    NA_character_,
-    NA_character_,
-    NA_character_
-  ),
-  `Feature Requirement` = c(
-    "FE1: interactive scatter plot (two data sources, drop-down variable options)",
-    NA_character_,
-    NA_character_,
-    NA_character_
-  ),
-  `Functional Requirements` = c(
-    "FR1: data source",
-    "FR2: user-input updating",
-    "FR3: color-coded data points",
-    "FR4: plot axis, legend & title"
-  ),
-  Test = c(
-  "?", "?", "?", "?"
-  ),
-) 
-trace_matrix |> 
-  gt::gt(auto_align = TRUE) |> 
-  gt::sub_missing(
-  columns = gt::everything(),
-  rows = gt::everything(),
-  missing_text = "-"
-)
-```
+{{< include _trace_matrix.qmd >}}
 
 Building a traceability matrix ensures:  
 
@@ -290,7 +277,7 @@ co_box(
   
     - User specifications: descriptions of what a user expects the application to do (i.e., the user 'wish list' of features they want in the application).
   
-    - Feature requirements: detailed list of the main capabilities and functions the application needs to offer to users.
+    - Features: detailed list of the main capabilities and functions the application needs to offer to users.
   
     - Functional requierments: testable, specific step-by-step instructions for ensuring the application does what it's supposed to do.
   
