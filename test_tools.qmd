@@ -115,7 +115,7 @@ For example, I've stored the code used to create a ['tidy' version](https://gith
 tests
 ├── testthat
 │   ├── fixtures
-│   │   ├── make_tidy_ggp2_movies.R # <1>
+│   │   ├── make-tidy_ggp2_movies # <1>
 │   │   └── tidy_ggp2_movies.rds # <2>
 │   └── test-<name>.R
 └── testthat.R
@@ -167,9 +167,9 @@ testthat::describe( # <1>
           plot_title = "Enter plot title"
         )              # <3>
         
-    ggp2_movies <- readRDS(test_path("fixtures", # <4>
-                            "tidy_ggp2_movies.rds")) # <4>
-    app_graph <- scatter_plot(ggp2_movies,  # <5>
+    tidy_ggp2_movies <- readRDS(test_path("fixtures", # <4>
+                                "tidy_ggp2_movies.rds")) # <4>
+    app_graph <- scatter_plot(tidy_ggp2_movies,  # <5>
       x_var = ggp2_scatter_inputs$x,
       y_var = ggp2_scatter_inputs$y,
       col_var = ggp2_scatter_inputs$z,
@@ -235,7 +235,7 @@ git_margin_box(
   repo = 'shinyAppPkg')
 ```
 
-If the data in `tests/testthat/fixtures/` are going to be used repeatedly, it might also make sense to store it in `inst/extdata/` or `data-raw/`. Test fixtures are described in-depth in [R Packages, 2ed](https://r-pkgs.org/testing-advanced.html#test-fixtures) and in the [`testthat` documentation](https://testthat.r-lib.org/articles/test-fixtures.html#test-fixtures).
+If the data `tidy_ggp2_movies.rds` in `tests/testthat/fixtures/` are going to be used repeatedly, it might also make sense to store it in `inst/extdata/` or `data-raw/`. Test fixtures are described in-depth in [R Packages, 2ed](https://r-pkgs.org/testing-advanced.html#test-fixtures) and in the [`testthat` documentation](https://testthat.r-lib.org/articles/test-fixtures.html#test-fixtures).
 
 ## Test helpers
 
@@ -251,8 +251,8 @@ Test helpers reduce repeated/duplicated test code. In general, objects or values
 tests/
   ├── testthat/
   │   ├── fixtures/                                         # <1>
-  │   │   ├── make-ggp2-movies.R
-  │   │   └── ggp2_movies.rds
+  │   │   ├── make-tidy_ggp2_movies.R
+  │   │   └── tidy_ggp2_movies.rds
   │   ├── helper.R                                          # <2>
   │   └── test-<name>.R                                     # <3>
   └── testthat.R
@@ -270,45 +270,51 @@ R programmers resist copy + paste programming, and in most cases this makes sens
 
 However, when we're writing tests, it's more important that tests are easy to read and understand **when they fail**.
 
-For example, consider the inputs passed to the `scatter_plot()` function in the previous test:
+For example, consider the `tidy_ggp2_movies` inputs passed to the `scatter_plot()` function in the previous test:
 
 ```{r}
 #| eval: false 
 #| code-fold: false 
-scatter_inputs <- list(
-  y = "audience_score",
-  x = "imdb_rating",
-  z = "mpaa_rating",
-  alpha = 0.5,
-  size = 2,
-  plot_title = "Enter plot title")
+ggp2_scatter_inputs <- list(  
+        x = "avg_rating",
+        y = "length",
+        z = "mpaa",
+        alpha = 0.75,
+        size = 3,
+        plot_title = "Enter plot title"
+)            
 ```
 
-We could write a `var_inputs()` function that stores these values in a list:
+We could write a `var_inputs()` function that stores these values in a list. In our tests, this would allow us to use `var_inputs()` with the same 'reactive syntax' we use with `scatter_plot()` in the module server function:
 
 ```{r}
 #| eval: true 
 #| code-fold: false 
 #| collapse: true
 var_inputs <- function() {
-  list(y = 'audience_score', 
-     x = 'imdb_rating',
-     z = 'mpaa_rating',
-     alpha = 0.5,
-     size = 2,
-     plot_title = 'Enter plot title'
+   list( x = "avg_rating",
+        y = "length",
+        z = "mpaa",
+        alpha = 0.75,
+        size = 3,
+        plot_title = "Enter plot title"
     )
 }
 var_inputs()
 ```
 
-In our tests, this would allow us to use `var_inputs()` with the same 'reactive syntax' we use with `scatter_plot()` in the module server function:
+While this removes duplicated code, it also makes it less clear for the reader what `var_inputs()` contains and where it was created (without opening the `helper.R` file).
 
 ```{r}
 #| eval: false 
 #| code-fold: false 
 #| collapse: true
-testthat::it("T1 movies data source", code = {
+testthat::it(
+  "Scenario: Create scatter plot
+    Given I have launched the movie review exploration app,
+    When I view the scatter plot,
+    Then I should see points representing values for a default
+         set of continuous and categorical columns.", code = {
   
 app_graph <- scatter_plot(
   movies,
@@ -320,12 +326,9 @@ app_graph <- scatter_plot(
 
 testthat::expect_true(ggplot2::is.ggplot(app_graph))
 })
-## Test passed
 ```
-
 1.  This is how we refer to the inputs in `mod_scatter_display_server()`
 
-While this removes duplicated code, it also makes it less clear for the reader where `var_inputs()` was created (without opening the `helper.R` file).
 
 ```{r}
 #| label: co_box_dry
@@ -352,28 +355,29 @@ It’s more important that test code is obvious than DRY, because it’s more li
 )
 ```
 
-In contrast, the `make_var_inputs()` function below creates inputs for the `scatter_plot()` utility function:
+In contrast, the `make_ggp2_inputs()` function below creates inputs for the `scatter_plot()` utility function:
 
 ```{r}
 #| eval: false 
 #| code-fold: false 
-make_var_inputs <- function() {
-  glue::glue_collapse("list(y = 'audience_score', 
-     x = 'imdb_rating',
-     z = 'mpaa_rating',
-     alpha = 0.5,
-     size = 2,
+make_ggp2_inputs <- function() {
+  glue::glue_collapse("list(x = 'avg_rating',
+     y = 'length',
+     z = 'mpaa',
+     alpha = 0.75,
+     size = 3,
      plot_title = 'Enter plot title'
-    )")
+     )"
+  )
 }
 ```
 
-I can call `make_var_inputs()` in the **Console** and it will return the list of values to paste into each test:
+I can call `make_ggp2_inputs()` in the **Console** and it will return the list of values to paste into each test:
 
 ```{r}
 #| eval: false 
 #| code-fold: false 
-make_var_inputs()
+make_ggp2_inputs()
 list(y = 'audience_score', 
      x = 'imdb_rating',
      z = 'mpaa_rating',
@@ -383,22 +387,21 @@ list(y = 'audience_score',
     )
 ```
 
-This reduces the amount of typing required while developing tests, but doesn't obscure the source of the values in the test.
+This reduces the number of keystrokes per test, but doesn't obscure the source of the values in the test.
 
-`glue::glue_collapse()` is your friend when you want to quickly reproduce code for your tests. `make_ggp2_inputs()` creates the list of inputs for testing the tidy `ggplot2movies::movies` data:
+`glue::glue_collapse()` is your friend when you want to quickly reproduce code for your tests. `make_var_inputs()` creates the list of inputs for testing the original `movies` data:
 
 ```{r}
 #| eval: true 
 #| code-fold: false 
-make_ggp2_inputs <- function() {
-glue::glue_collapse("list(x = 'avg_rating',
-     y = 'length',
-     z = 'mpaa',
-     alpha = 0.75,
-     size = 3,
+make_var_inputs <- function() {
+  glue::glue_collapse("list(y = 'audience_score', 
+     x = 'imdb_rating',
+     z = 'mpaa_rating',
+     alpha = 0.5,
+     size = 2,
      plot_title = 'Enter plot title'
-     )"
-  )
+    )")
 }
 ```
 
@@ -429,19 +432,19 @@ test_logger <- function(start = NULL, end = NULL, msg) {
 }
 ```
 
-`test_logger()` can be used to 'log' the `start` and `end` of each test, and it includes a message argument (`msg`) I'll use to reference the test `description` argument in each `it()` call.[^test_tools-9]
+`test_logger()` can be used to 'log' the `start` and `end` of each test, and it includes a message argument (`msg`) I'll use to reference the test `description` argument in each `it()` call.[^test_tools-logging]
 
-[^test_tools-9]: If you like verbose logging outputs, check out the [`logger` package](https://daroczig.github.io/logger/)
+[^test_tools-logging]: If you like verbose logging outputs, check out the [`logger` package](https://daroczig.github.io/logger/)
 
-I tend to use functions like `test_logger()` enough to justify placing them in a testing utility file ([`R/testthat.R`](https://github.com/mjfrigaard/shinyAppPkg/blob/10c_tests-helpers/R/testthat.R)) below `R/`. Including testing functions in the `R/` folder also ensures it's documented and it's dependencies become part of your app-package).[^test_tools-10]
+I tend to use functions like `test_logger()` enough to justify placing them in a testing utility file ([`R/testthat.R`](https://github.com/mjfrigaard/shinyAppPkg/blob/10c_tests-helpers/R/testthat.R)) below `R/`. Including testing functions in the `R/` folder also ensures they're documented and any dependencies become part of your app-package).[^test_tools-helpers-r-dir]
 
-[^test_tools-10]: Placing common files for testing below `R/` is covered in [R Packages, 2ed](https://r-pkgs.org/testing-design.html#hiding-in-plain-sight-files-below-r)
+[^test_tools-helpers-r-dir]: Placing common files for testing below `R/` is covered in [R Packages, 2ed](https://r-pkgs.org/testing-design.html#hiding-in-plain-sight-files-below-r)
 
 #### Example: snapshots
 
-Writing tests for graph outputs can be difficult because the "correctness" of a graph is somewhat subjective and requires human judgment. If the expected output we're interesting in testing is cumbersome to describe programmatically, we can consider using a snapshot tests. Examples of this include UI elements (which are mostly HTML created by Shiny's UI layout and input/output functions) and data visualizations.[^test_tools-11]
+Writing tests for graph outputs can be difficult because the "correctness" of a graph is somewhat subjective and requires human judgment. If the expected output we're interesting in testing is cumbersome to describe programmatically, we can consider using a snapshot tests. Examples of this include UI elements (which are mostly HTML created by Shiny's UI layout and input/output functions) and data visualizations.[^test_tools-snapshot-advice]
 
-[^test_tools-11]: Mastering Shiny covers [creatng a snapshot file](https://mastering-shiny.org/scaling-testing.html#user-interface-functions) to test UI elements, but also notes this is probably not the best approach.
+[^test_tools-snapshot-advice]: Mastering Shiny covers [creatng a snapshot file](https://mastering-shiny.org/scaling-testing.html#user-interface-functions) to test UI elements, but also notes this is probably not the best approach.
 
 If we want to create a graph snapshot test, the [`vdiffr`](https://vdiffr.r-lib.org/) package allows us to perform a 'visual unit test' by capturing the expected output as an `.svg` file that we can compare with future versions.
 
@@ -460,7 +463,7 @@ Another option for using snapshots for testing is the `expect_snapshot_file()` f
 
 [^test_tools-12]: Follow the `expect_snapshot_file()` example from the [`testthat` documentation](https://testthat.r-lib.org/reference/expect_snapshot_file.html#ref-examples)
 
-In this test, I'll use `describe()` to combine two features from the traceability matrix (**FE3** and **FE4**), followed by two `it()` statements (with each functional requirement the snapshot will capture).
+In this test, I'll list feature **F1.2** from the traceability matrix in a top-level `describe()` block, then nest each scenario for the functional requirement in `it()` statements (with each snapshot the test will capture).
 
 ```{r}
 #| label: co_box_trace_matrix_feat_funct_snaps
@@ -468,13 +471,17 @@ In this test, I'll use `describe()` to combine two features from the traceabilit
 #| code-fold: false
 #| include: true
 trace_matrix <- tibble::tibble(
-  `Feature Requirement` = c(
-    "FE1: interactive scatter plot (two data sources, drop-down variable options)",
+  `Features` = c(
+    "F1.2: Dropdown menus (continuous x & y axes, categorical point coloration)",
+    NA_character_,
+    NA_character_,
     NA_character_
   ),
-  `Functional Requirements` = c(
-    "FR3: color-coded data points",
-    "FR4: plot axis, legend & title"
+  `Requirements` = c(
+    "FR 1.2: The app should display dropdown menus listing available continuous variables for x-axis and y-axis selection.",
+    "FR 1.3: Upon user selection of x-axis and y-axis variables, the app should update the scatter plot to reflect the user’s choices.",
+    "FR 1.4: The app should present a dropdown menu listing available categorical variables for point coloration.",
+    "FR 1.5: The app should dynamically change the color of points in the scatter plot based on the user’s categorical variable selection."
   )
 ) 
 trace_matrix |> 
@@ -493,47 +500,32 @@ Combining functional requirements in the same test file is helpful if we're tryi
 ```{r}
 #| eval: false 
 #| code-fold: false
-testthat::describe("FR3: color-coded data points & FR4: plot axis, legend & title", # <1>
+testthat::describe( # <1>
+  "F1.2: Dropdown menus (continuous x & y axes, categorical point coloration)", # <1>
   code = { 
-  
-  testthat::it("T3: color-coded data points", code = { # <2>
-
-    test_logger(start = "T3", msg = "Tests FR3 (color)") # <3>
     
-    scatter_inputs <- list(y = 'audience_score', # <4>
-                       x = 'imdb_rating',
+testthat::it(# <2>
+  "
+  Scenario: Scatter plot initial x, y, color values 
+    When I launched the Scatter Plot Data Visualization
+    And I have a dataset of movie reviews from IMDB and Rotten Tomatoes
+    Then the scatter plot should show 'IMDB Rating' on the x-axis
+    And the scatter plot should show 'Audience Score' on the y-axis
+    And the points on the scatter plot should be colored by 'MPAA Rating' 
+  ", code = { # <2>
+
+    test_logger(start = "T2", msg = "Tests initial x/y/z variables") # <3>
+                  
+    scatter_inputs <- list(
+                       x = 'imdb_rating', # <4>
+                       y = 'audience_score',
                        z = 'mpaa_rating',
                        alpha = 0.5,
                        size = 2,
                        plot_title = 'Enter plot title') # <4>
     
     vdiffr::expect_doppelganger( # <5>
-      title = "FR3: color-coded data points", 
-      fig = scatter_plot(movies, 
-        x_var = scatter_inputs$x, 
-        y_var = scatter_inputs$y, 
-        col_var = scatter_inputs$z, 
-        alpha_var = scatter_inputs$alpha, 
-        size_var = scatter_inputs$size 
-      )) # <5>
-        
-    test_logger(end = "T3", msg = "Tests FR3 (color)")          # <6>
-    
-  }) # <2>
-    
-  testthat::it("T4: plot axis, legend & title", code = { # <7>
-
-    test_logger(start = "T4", msg = "Tests FR4 (legend/theme)") # <8>
-                  
-    scatter_inputs <- list(y = 'audience_score', # <9>
-                       x = 'imdb_rating',
-                       z = 'mpaa_rating',
-                       alpha = 0.5,
-                       size = 2,
-                       plot_title = 'Enter plot title') # <9>
-    
-    vdiffr::expect_doppelganger( # <10>
-      title = "FR4: plot axis, legend & title", 
+      title = "FR12-FR14: initial x y z axes",
       fig = scatter_plot(movies, 
         x_var = scatter_inputs$x, 
         y_var = scatter_inputs$y, 
@@ -552,40 +544,77 @@ testthat::describe("FR3: color-coded data points & FR4: plot axis, legend & titl
         ) + 
         ggplot2::theme_minimal() + 
         ggplot2::theme(legend.position = "bottom") 
-    ) # <10>
+    ) # <5>
     
-    test_logger(end = "T4", msg = "Tests FR4 (legend/theme)")      # <11>
+    test_logger(end = "T2", msg = "Tests initial x/y/z variables")  # <6>
+    
+  }) # <2>
+  
+  testthat::it(# <7>
+    " 
+  Scenario: Select x, y, color values for plotting
+    When I launched the Scatter Plot Data Visualization
+    And I select the variable 'Critics Score' for the x-axis
+    And I select the variable 'Runtime' for the y-axis
+    And I select the variable 'Title Type' for the color 
+    Then the scatter plot should show 'Critics Score' on the x-axis
+    And the scatter plot should show 'Runtime' on the y-axis
+    And the points on the scatter plot should be colored by 'Title Type' 
+  ", code = { # <7>
+
+    test_logger(start = "T3", msg = "Tests update x/y/z variables") # <8>
+    
+    scatter_inputs <- list( # <9>
+                       x = 'audience_score',
+                       y = 'imdb_rating', 
+                       z = 'critics_rating',
+                       alpha = 0.5,
+                       size = 2,
+                       plot_title = 'Enter plot title'
+      ) # <9>
+    
+    vdiffr::expect_doppelganger( # <10>
+      title = "FR 1.3-1.4: update x, y, color", 
+      fig = scatter_plot(movies, 
+        x_var = scatter_inputs$x, 
+        y_var = scatter_inputs$y, 
+        col_var = scatter_inputs$z, 
+        alpha_var = scatter_inputs$alpha, 
+        size_var = scatter_inputs$size 
+      )) # <10>
+        
+    test_logger(end = "T3", msg = "Tests update x/y/z variables")  # <11>
     
   }) # <7>
-  
   
 }) # <1>
 ```
 
 1.  Feature(s) scope\
-2.  Test scope (**T3**)\
-3.  Log start (**T3**)\
-4.  `movies` variable inputs\
-5.  Snapshot with for colored points\
-6.  Log end (**T3**)\
-7.  Test scope (**T4**)\
-8.  Log start (**T4**)\
-9.  `movies` variable inputs
-10. Snapshot for labels and theme\
-11. Log end (**T4**)
+2.  Test scope (**T2**)\
+3.  Log start (**T2**)\
+4.  Initial `movies` variable inputs for `x`, `y`, and `z` from UI\
+5.  Snapshot with initial values\
+6.  Log end (**T2**)\
+7.  Test scope (**T3**)\
+8.  Log start (**T3**)\
+9.  Updated `movies` variable inputs for `x`, `y`, and `z`\
+10. Snapshot with updated values\
+11. Log end (**T3**)
 
-In this test, I've separated the `ggplot2` layers into different `it()` sections, and the test results return the output from `test_logger()` for more context of what's being tested:
+In this test, I've separated the scenarios into different `it()` sections, and the test results return the output from `test_logger()` for more context of what's being tested:
 
 ```{verbatim}
 #| eval: false 
 #| code-fold: false
-INFO [2023-10-06 11:41:21] [ START T3 = Tests FR3 (color)]
-[ FAIL 0 | WARN 0 | SKIP 0 | PASS 3 ]
-INFO [2023-10-06 11:41:21] [ END T3 = Tests FR3 (color)]
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]
+INFO [2023-10-12 07:24:39] [ START T2 = Tests initial x/y/z variables]
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 1 ]
+INFO [2023-10-12 07:24:40] [ END T2 = Tests initial x/y/z variables]
 
-INFO [2023-10-06 11:41:21] [ START T4 = Tests FR4 (legend/theme)]
-[ FAIL 0 | WARN 0 | SKIP 0 | PASS 4 ]
-INFO [2023-10-06 11:41:21] [ END T4 = Tests FR4 (legend/theme)]
+INFO [2023-10-12 07:24:40] [ START T3 = Tests update x/y/z variables]
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 2 ]
+INFO [2023-10-12 07:24:40] [ END T3 = Tests update x/y/z variables]
 ```
 
 We also see a warning when the snapshot has been saved in the `tests/testthat/_snaps/` folder the first time the test is run:
@@ -593,13 +622,25 @@ We also see a warning when the snapshot has been saved in the `tests/testthat/_s
 ```{verbatim}
 #| eval: false 
 #| code-fold: false
-── Warning (test-scatter_plot.R:19:5): T3: color-coded data points ──
-Adding new file snapshot:
-'tests/testthat/_snaps/fr3-color-coded-data-points.svg'
+── Warning (test-scatter_plot.R:26:5): 
+  Scenario: Scatter plot initial x, y, color values 
+    When I launched the Scatter Plot Data Visualization
+    And I have a dataset of movie reviews from IMDB and Rotten Tomatoes
+    Then the scatter plot should show 'IMDB Rating' on the x-axis
+    And the scatter plot should show 'Audience Score' on the y-axis
+    And the points on the scatter plot should be colored by 'MPAA Rating' 
+Adding new file snapshot: 'tests/testthat/_snaps/fr12-fr14-initial-x-y-z-axes.svg'
 
-── Warning (test-scatter_plot.R:51:5): T4: plot axis, legend & title ──
-Adding new file snapshot:
-'tests/testthat/_snaps/fr4-plot-axis-legend-title.svg'
+── Warning (test-scatter_plot.R:75:5):  
+  Scenario: Select x, y, color values for plotting
+    When I launched the Scatter Plot Data Visualization
+    And I select the variable 'Audience Score' for the x-axis
+    And I select the variable 'IMDB Rating' for the y-axis
+    And I select the variable 'Critics Rating' for the color 
+    Then the scatter plot should show 'Audience Score' on the x-axis
+    And the scatter plot should show 'IMDB Rating' on the y-axis
+    And the points on the scatter plot should be colored by 'Critics Rating' 
+Adding new file snapshot: 'tests/testthat/_snaps/fr14-fr15-update-x-y-color.svg'
 [ FAIL 0 | WARN 2 | SKIP 0 | PASS 2 ]
 ```
 
@@ -618,38 +659,30 @@ Placing the functional requirement in the `title` argument of `expect_doppelgang
 )
 ```
 
-On subsequent runs, this warning will disappear (as long as there are no changes to the `.svg` files).
-
-We should also update the traceability matrix with the tests we've used to verify the functional requirements:
+On subsequent runs, this warning will disappear (as long as there are no changes to the `.svg` files). We should also update the traceability matrix with the tests we've used to verify the functional requirements:
 
 ```{r}
 #| label: co_box_trace_matrix_add_t1_and_t2
 #| echo: false
 #| code-fold: false
 tibble::tibble(
-  `User Specification` = c(
-    "US1: scatter plot data visualization",
+  `Features` = c(
+    "F1.2: Dropdown menus (continuous x & y axes, categorical point coloration)",
     NA_character_,
     NA_character_,
     NA_character_
   ),
-  `Feature Requirement` = c(
-    "FE1: interactive scatter plot (two data sources, drop-down variable options)",
-    NA_character_,
-    NA_character_,
-    NA_character_
-  ),
-  `Functional Requirements` = c(
-    "FR1: data source",
-    "FR2: user-input updating",
-    "FR3: color-coded data points",
-    "FR4: plot axis and legend"
+  `Requirements` = c(
+    "FR 1.2: The app should display dropdown menus listing available continuous variables for x-axis and y-axis selection.",
+    "FR 1.3: Upon user selection of x-axis and y-axis variables, the app should update the scatter plot to reflect the user’s choices.",
+    "FR 1.4: The app should present a dropdown menu listing available categorical variables for point coloration.",
+    "FR 1.5: The app should dynamically change the color of points in the scatter plot based on the user’s categorical variable selection."
   ),
   Tests = c(
-    "T1 & T2",
-    NA_character_,
+    "T2",
     "T3",
-    "T4"
+    "T2",
+    "T3"
   )
 ) |> 
   gt::gt(auto_align = TRUE) |> 
@@ -711,7 +744,14 @@ git_margin_box(
 
 Test code may rely on external systems, behavior, functions, or objects. To ensure that unit tests remain fast and focused solely on the functional requirement being tests, it's important to minimize these external dependencies.
 
-Within the `testthat` context, mocks can be employed to substitute dependencies by emulating the behavior that the external dependency provides.
+Within the `testthat` context, mocks can be employed to substitute dependencies by emulating the behavior that the external dependency provides. In BDD terms, mocks are creating the `Given` conditions:
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+
+```
+
 
 Instead of real-time computations, mocks return predefined responses to given inputs.
 
