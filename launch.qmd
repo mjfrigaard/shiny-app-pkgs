@@ -20,7 +20,7 @@ co_box(
 )
 ```
 
-In the previous chapter, we moved `movies` into `data/` folder to ensure it's part of the `shinyAppPkg` namespace. However, we will still want a way to lunch our app during development (and a process for deploying the application into a production environment).
+In the previous chapter, we moved `movies` into `data/` folder to ensure it's part of the `moviesApp` namespace. However, we will still want a way to lunch our app during development (and a process for deploying the application into a production environment).
 
 ```{r}
 #| label: co_box_tldr
@@ -52,7 +52,7 @@ This chapter will cover what belongs in the `app.R` file, the differences betwee
 
 ## [`app.R`]{style="font-size: 0.95em"}
 
-In the current branch of `shinyAppPkg`, the `app.R` file loads our package and runs the standalone app function:
+In the current branch of `moviesApp`, the `app.R` file loads our package and runs the standalone app function:
 
 ```{r}
 #| label: co_box_launch
@@ -78,7 +78,7 @@ git_margin_box(
   contents = "alt",
   fig_pw = '75%', 
   branch = "06b_pkg-imports", 
-  repo = 'shinyAppPkg')
+  repo = 'moviesApp')
 ```
 
 ```{r}
@@ -89,7 +89,7 @@ git_margin_box(
 # install.packages(pkgs, quiet = TRUE) # <1> 
 
 # packages ------------------------------------ # <2> 
-library(shinyAppPkg) # <2> 
+library(moviesApp) # <2> 
 
 # movies_app ------------------------------------ # <3> 
 movies_app() # <3> 
@@ -122,7 +122,7 @@ The application is launched (with the `loadSupport()` warning)
 
 ## [`app.R`]{style="font-size: 0.95em"} ([`05_roxygen2`]{style="font-size: 0.95em"} branch)
 
-Let's jump back to the `05_roxygen2` branch of `shinyAppPkg`. This is the first version of `shinyAppPkg` with `movies_app()` in the `R/` folder (i.e., in `R/movies_app.R`).
+Let's jump back to the `05_roxygen2` branch of `moviesApp`. This is the first version of `moviesApp` with `movies_app()` in the `R/` folder (i.e., in `R/movies_app.R`).
 
 ```{r}
 #| label: git_margin_box_shinyAppPkg_05_roxygen2
@@ -133,7 +133,7 @@ git_margin_box(
   contents = "alt",
   fig_pw = '75%', 
   branch = "05_roxygen2", 
-  repo = 'shinyAppPkg')
+  repo = 'moviesApp')
 ```
 
 ```{bash}
@@ -172,7 +172,7 @@ However, calling `runApp()` from the **Console** will launch the app.
 
 ### Calling [`runApp()`]{style="font-size: 0.95em"}
 
-This behavior might be surprising to you--`runApp()` can launch the application in `shinyAppPkg`, even without the standalone app function exported from the package namespace (but it still produces the `loadSupport()` warning).
+This behavior might be surprising to you--`runApp()` can launch the application in `moviesApp`, even without the standalone app function exported from the package namespace (but it still produces the `loadSupport()` warning).
 
 :::{#fig-06_app_roxygen2_runApp_console}
 
@@ -185,7 +185,7 @@ Calling `runApp()` in the **Console** of `05_roxygen2` branch
 
 ### [`loadSupport()`]{style="font-size: 0.95em"}--feature or bug?
 
-The warning in the **Console** is telling us `loadSupport()`[^load-support-shiny-chap] has detected that `shinyAppPkg` is a package, but it's still sourcing the `R/` subdirectory.
+The warning in the **Console** is telling us `loadSupport()`[^load-support-shiny-chap] has detected that `moviesApp` is a package, but it's still sourcing the `R/` subdirectory.
 
 [^load-support-shiny-chap]: If you recall, we covered the  [`loadSupport()`](https://shiny.posit.co/r/reference/shiny/1.5.0/loadsupport) function in [Chapter 1](https://mjfrigaard.github.io/shinyap/shiny.html#r).
 
@@ -283,7 +283,7 @@ List of 5
  $ onStart         : NULL
  $ options         : list()
  $ appOptions      :List of 2
-  ..$ appDir       : chr "/path/to/shinyAppPkg" # <1>
+  ..$ appDir       : chr "/path/to/moviesApp" # <1>
   ..$ bookmarkStore: NULL
  - attr(*, "class")= chr "shiny.appobj" # <2>
 ```
@@ -333,7 +333,7 @@ app$appOptions$appDir
 ```{bash}
 #| eval: false 
 #| code-fold: false
-[1] "path/to/shinyAppPkg"
+[1] "path/to/moviesApp"
 ```
 
 This path can be passed to the `appDir` argument (along with any shiny `options`).
@@ -379,7 +379,7 @@ The reason we're able to call `runApp()` in the **Console** to launch both appli
 
 Can launch an app from a directory (i.e., from `ui.R`/`server.R`, or a `app.R`):
 
-#### [In `shinyAppPkg`]{style="font-size: 0.85em"}
+#### [In `moviesApp`]{style="font-size: 0.85em"}
 
 ```{r}
 #| eval: false 
@@ -395,7 +395,7 @@ Works with a path to an `.R` file that creates a `shiny.appobj`:[^launch-run-app
 ```{r}
 #| eval: false 
 #| code-fold: false
-runApp(appDir = "path/to/shinyAppPkg")
+runApp(appDir = "path/to/moviesApp")
 ```
 
 Can also use a `shiny.appobj` directly:
@@ -663,7 +663,7 @@ This is useful in a non-interactive settings if we want to re-direct the error o
 if (!interactive()) {
    sink(stderr(), type = "output")
    tryCatch(expr = {
-      library(shinyAppPkg)
+      library(moviesApp)
    }, error = function(e) {
       pkgload::load_all()
    })
@@ -672,11 +672,11 @@ if (!interactive()) {
 }
 ```
 
-In this case, if `library(shinyAppPkg)` throws an error, the function specified after `error =` is executed (i.e., `pkgload::load_all()`).[^launch-pkgload-load_all]
+In this case, if `library(moviesApp)` throws an error, the function specified after `error =` is executed (i.e., `pkgload::load_all()`).[^launch-pkgload-load_all]
 
 [^launch-pkgload-load_all]: `pkgload` is part of the [conscious uncoupling](https://www.tidyverse.org/blog/2018/10/devtools-2-0-0/) of the `devtools` package we learned about back in [Chapter 3](https://mjfrigaard.github.io/shinyap/dependencies.html).
 
-Written this way, in a non-interactive R session, `app.R` will re-direct the error output and attempt to load and attach `shinyAppPkg`, and if this fails, `app.R` will attempt to load all the files in the `R/` folder. 
+Written this way, in a non-interactive R session, `app.R` will re-direct the error output and attempt to load and attach `moviesApp`, and if this fails, `app.R` will attempt to load all the files in the `R/` folder. 
 
 ### [`pkgload`]{style="font-size: 0.95em"}
 
@@ -703,7 +703,7 @@ If the session ***is*** interactive (i.e., `!interactive() == FALSE`), we want `
 if (!interactive()) {
    sink(stderr(), type = "output")
    tryCatch(expr = {
-      library(shinyAppPkg)
+      library(moviesApp)
    }, error = function(e) {
       pkgload::load_all()
    })
@@ -712,7 +712,7 @@ if (!interactive()) {
 }
 ```
 
-[^launch-calling-load_all]: `pkgload::load_all()` is the function that's actually called when we run `devtools::load_all()` (or use [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd>]{style="font-weight: bold; font-size: 0.75em"}), and this is somewhat analogous to running `library(shinyAppPkg)`
+[^launch-calling-load_all]: `pkgload::load_all()` is the function that's actually called when we run `devtools::load_all()` (or use [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd>]{style="font-weight: bold; font-size: 0.75em"}), and this is somewhat analogous to running `library(moviesApp)`
 
 ### [`withr`]{style="font-size: 0.95em"}
 
@@ -759,7 +759,7 @@ withr::with_options(new = list(shiny.autoload.r = FALSE), code = {
     tryCatch(
       expr = {
         # load package ----
-        library(shinyAppPkg)
+        library(moviesApp)
       },
       error = function(e) {
         # load R/ folder ----
@@ -783,7 +783,7 @@ withr::with_options(new = list(shiny.autoload.r = FALSE), code = {
 })
 ```
 
-Now that we've updated the `app.R` account for the app-package structure, we should load, document, and install `shinyAppPkg` and run it's contents: 
+Now that we've updated the `app.R` account for the app-package structure, we should load, document, and install `moviesApp` and run it's contents: 
 
 ```{r}
 #| label: dev_key_all_01
@@ -806,7 +806,7 @@ git_margin_box(
   contents = "standard",
   fig_pw = '75%', 
   branch = "08_launch-app", 
-  repo = 'shinyAppPkg')
+  repo = 'moviesApp')
 ```
 
 
@@ -932,4 +932,4 @@ co_box(
 )
 ```
 
-In the following chapter, we're going to cover how to ensure `movies.Data` becomes part of the `shinyAppPkg` namespace.
+In the following chapter, we're going to cover how to ensure `movies.Data` becomes part of the `moviesApp` namespace.
