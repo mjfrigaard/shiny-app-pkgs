@@ -1,5 +1,10 @@
 # Test tools {#sec-tests-tools}
 
+<!---
+https://www.freecodecamp.org/news/clean-coding-for-beginners/
+
+-->
+
 ```{r}
 #| eval: true 
 #| echo: false 
@@ -107,7 +112,7 @@ Large static data files are an example of a test fixture.[^test_tools-6] Any cod
 
 [^test_tools-6]: Creating a tidied version of `ggplot2movies::movies` would be costly to re-create with every test, so it's advised to store it as an [static test fixture.](https://r-pkgs.org/testing-advanced.html#sec-testing-advanced-concrete-fixture)
 
-For example, I've stored the code used to create a ['tidy' version](https://github.com/mjfrigaard/shinyAppPkg/blob/10b_tests-helpers-fixtures/tests/testthat/fixtures/make-ggp2_movies.R) of the `ggplot2movies::movies` data along with the output dataset in `tests/testthat/fixtures/`:
+For example, I've stored the code used to create a ['tidy' version](https://github.com/mjfrigaard/moviesApp/blob/10b_tests-helpers-fixtures/tests/testthat/fixtures/make-ggp2_movies.R) of the `ggplot2movies::movies` data along with the output dataset in `tests/testthat/fixtures/`:
 
 ```{bash}
 #| eval: false 
@@ -159,7 +164,7 @@ testthat::describe( # <1>
           code = { # <2>
         
         ggp2_scatter_inputs <- list(  # <3>
-          x = "avg_rating",
+          x = "rating",
           y = "length",
           z = "mpaa",
           alpha = 0.75,
@@ -232,7 +237,7 @@ devtools:::test_coverage_active_file()
 git_margin_box(
   fig_pw = '65%', 
   branch = "10b_tests-fixtures", 
-  repo = 'shinyAppPkg')
+  repo = 'moviesApp')
 ```
 
 If the data `tidy_ggp2_movies.rds` in `tests/testthat/fixtures/` are going to be used repeatedly, it might also make sense to store it in `inst/extdata/` or `data-raw/`. Test fixtures are described in-depth in [R Packages, 2ed](https://r-pkgs.org/testing-advanced.html#test-fixtures) and in the [`testthat` documentation](https://testthat.r-lib.org/articles/test-fixtures.html#test-fixtures).
@@ -276,7 +281,7 @@ For example, consider the `tidy_ggp2_movies` inputs passed to the `scatter_plot(
 #| eval: false 
 #| code-fold: false 
 ggp2_scatter_inputs <- list(  
-        x = "avg_rating",
+        x = "rating",
         y = "length",
         z = "mpaa",
         alpha = 0.75,
@@ -292,7 +297,7 @@ We could write a `var_inputs()` function that stores these values in a list. In 
 #| code-fold: false 
 #| collapse: true
 var_inputs <- function() {
-   list( x = "avg_rating",
+   list( x = "rating",
         y = "length",
         z = "mpaa",
         alpha = 0.75,
@@ -315,19 +320,23 @@ testthat::it(
     When I view the scatter plot,
     Then I should see points representing values for a default
          set of continuous and categorical columns.", code = {
+           
+    tidy_ggp2_movies <- readRDS(test_path("fixtures", # <1>
+                                "tidy_ggp2_movies.rds")) # <1>
   
 app_graph <- scatter_plot(
-  movies,
-  x_var = var_inputs()$x, # <1>
+  tidy_ggp2_movies,
+  x_var = var_inputs()$x, # <2>
   y_var = var_inputs()$y,
   col_var = var_inputs()$z,
   alpha_var = var_inputs()$alpha,
-  size_var = var_inputs()$size) # <1>
+  size_var = var_inputs()$size) # <2>
 
 testthat::expect_true(ggplot2::is.ggplot(app_graph))
 })
 ```
-1.  This is how we refer to the inputs in `mod_scatter_display_server()`
+1. Load test fixture  
+2. This is how we refer to the inputs in `mod_scatter_display_server()`
 
 
 ```{r}
@@ -361,7 +370,7 @@ In contrast, the `make_ggp2_inputs()` function below creates inputs for the `sca
 #| eval: false 
 #| code-fold: false 
 make_ggp2_inputs <- function() {
-  glue::glue_collapse("list(x = 'avg_rating',
+  glue::glue_collapse("list(x = 'rating',
      y = 'length',
      z = 'mpaa',
      alpha = 0.75,
@@ -436,7 +445,7 @@ test_logger <- function(start = NULL, end = NULL, msg) {
 
 [^test_tools-logging]: If you like verbose logging outputs, check out the [`logger` package](https://daroczig.github.io/logger/)
 
-I tend to use functions like `test_logger()` enough to justify placing them in a testing utility file ([`R/testthat.R`](https://github.com/mjfrigaard/shinyAppPkg/blob/10c_tests-helpers/R/testthat.R)) below `R/`. Including testing functions in the `R/` folder also ensures they're documented and any dependencies become part of your app-package).[^test_tools-helpers-r-dir]
+I tend to use functions like `test_logger()` enough to justify placing them in a testing utility file ([`R/testthat.R`](https://github.com/mjfrigaard/moviesApp/blob/10c_tests-helpers/R/testthat.R)) below `R/`. Including testing functions in the `R/` folder also ensures they're documented and any dependencies become part of your app-package).[^test_tools-helpers-r-dir]
 
 [^test_tools-helpers-r-dir]: Placing common files for testing below `R/` is covered in [R Packages, 2ed](https://r-pkgs.org/testing-design.html#hiding-in-plain-sight-files-below-r)
 
@@ -737,7 +746,7 @@ The output shows us all the potential points of failure when comparing complex o
 git_margin_box(
   fig_pw = '65%', 
   branch = "10c_tests-helpers", 
-  repo = 'shinyAppPkg')
+  repo = 'moviesApp')
 ```
 
 ## Test mocks
@@ -751,6 +760,9 @@ Within the `testthat` context, mocks can be employed to substitute dependencies 
 #| code-fold: false
 
 ```
+
+Assume I've converted the data manipulation steps for creating a tidy `ggplot2movies` dataset into two functions (one using `base` R, the other using `tidyverse` functions). 
+
 
 
 Instead of real-time computations, mocks return predefined responses to given inputs.
