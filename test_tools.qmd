@@ -10,6 +10,7 @@ https://www.freecodecamp.org/news/clean-coding-for-beginners/
 #| echo: false 
 #| include: false
 source("_common.R")
+library(rlang)
 ```
 
 ```{r}
@@ -752,31 +753,193 @@ git_margin_box(
 
 Test code may rely on external systems, behavior, functions, or objects. To ensure that our unit tests remain fast and focused solely on the functional requirement being tested, it's important to minimize these external dependencies.
 
-Within the `testthat` context, mocks can be employed to substitute dependencies by emulating the behavior that the external dependency provides (in BDD terms, mocks are creating the `Given` conditions).
+Test mocking functions are a relatively new addition to `testthat` [^tests-mocking-testthat-3e]. The mocking functions can be used to substitute functions by emulating their behavior within the test scope (in BDD terms, mocks are creating the `Given` conditions).
+
+[^tests-mocking-testthat-3e]: Read more about mocking in the updates to [`testthat`](https://www.tidyverse.org/blog/2023/10/testthat-3-2-0/#mocking)
+
+### Example: mocking add-on functions
+
+Instead of real-time computations, mocks return predefined responses to given inputs. Consider the `check_installed()` function below:[^tests-pkg-dev-wrkshp]
+
+[^tests-pkg-dev-wrkshp]: This example comes from the package development masterclass [workshop at `posit::conf(2023)`](https://github.com/posit-conf-2023/pkg-dev-masterclass/tree/main).
+
+
+```{r}
+#| eval: true 
+#| code-fold: false
+check_installed <- function(package) {
+  if (is_installed(package)) {
+    return(invisible())
+  } else {
+    stop("Please install '{package}' before continuing")
+  }
+}
+```
+
+Below is a feature  description for `check_installed()` and two scenarios for each expected behavior:
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+Feature: Checking if an R package is installed
+
+  Scenario: Checking an installed package
+    Given the R package 'base' is installed
+    When I call the `check_installed()` function with 'base'
+    Then the function should return without any error
+
+  Scenario: Checking an uninstalled package
+    Given the R package 'foo' is not installed
+    When I call the `check_installed()` function with 'foo'
+    Then the function should raise an error with the message
+      `Please install 'nonexistent_package' before continuing`
+```
+
+The `check_installed()` shouldn't be confused with [`rlang::check_installed()`](https://rlang.r-lib.org/reference/is_installed.html), which checks if a package is installed, and if it isn't, prompts the user install the package using [`pak::pkg_install()`](https://pak.r-lib.org/reference/pkg_install.html). 
+
+Lets review how `is_installed()` behaves with installed and missing packages: 
+
+```{r}
+#| code-fold: false
+#| collapse: true
+rlang::is_installed('foo')
+rlang::is_installed('base')
+```
+
+The version of `check_installed()` in `moviesApp` will check if a package is installed and return `invisible()` if it is (which, when assigned to an object, evaluates to `NULL`):
+
+```{r}
+#| code-fold: false
+#| collapse: true
+#| error: true
+check_installed('base')
+```
+
+```{r}
+#| code-fold: false
+#| collapse: true
+#| error: true
+x <- check_installed('base')
+x
+```
+
+If the package is not installed, `check_installed()` prints an error message:
+
+```{r}
+#| code-fold: false
+#| collapse: true
+#| error: true
+check_installed('foo')
+```
+
+To use mocking with `is_installed()`, we'll use the following syntax: 
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+local_mocked_bindings(
+  {local function} = function(...) {value}
+)
+```
+
+In this case, `{local function}` is `is_installed()` from `rlang`, and we want to test the two possible `{value}`s (`TRUE`/`FALSE`). 
+
+In the first test, we'll use `expect_error()` to confirm that the error message is returned for an uninstalled package by using `local_mocked_bindings()` and setting the `is_installed()` value to `FALSE`:
+
+```{r}
+#| eval: false
+#| code-fold: false
+describe("Feature: Checking if an R package is installed", {
+  
+  test_that(
+    "Scenario: Checking an uninstalled package
+        Given the R package 'foo' is not installed
+        When I call the `check_installed()` function with 'foo'
+        Then the function should raise an error with the message
+        `Please install 'nonexistent_package' before continuing`", {
+          
+    test_logger(start = "mock is_installed", msg = "FALSE") # <1>
+    local_mocked_bindings(is_installed = function(package) FALSE) # <2>
+    expect_error(object = check_installed("foo")) # <3>
+    test_logger(end = "mock is_installed", msg = "FALSE") # <1>
+    
+  })
+  
+})
+```
+1. Log test `start` and `end`
+2. Set `{value}` to `FALSE`   
+3. Pass a package we know **is not installed**   
+
+
+To test installed packages, we'll confirm `check_installed('foo')` with `expect_invisible()`: 
+
+```{r}
+#| eval: false
+#| code-fold: false
+describe("Feature: Checking if an R package is installed", {
+  
+  test_that(
+    "Scenario: Checking an installed package
+        Given the R package 'base' is installed
+        When I call the `check_installed()` function with 'base'
+        Then the function should return without any error", {
+          
+    test_logger(start = "mock is_installed", msg = "TRUE") # <1>
+    local_mocked_bindings(is_installed = function(package) TRUE) # <2>
+    expect_invisible(check_installed("base")) # <3>
+    test_logger(end = "mock is_installed", msg = "TRUE") # <1>
+    
+  })
+})
+```
+1. Log test `start` and `end`
+2. Set `{value}` to `TRUE`   
+3. Pass a package we know **is installed**   
+
+The output from the tests above is provided below: 
 
 ```{verbatim}
 #| eval: false 
 #| code-fold: false
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]
+INFO [2023-10-08 22:59:43] [ START mock is_installed = FALSE]
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 1 ]
+INFO [2023-10-08 22:59:43] [ END mock is_installed = FALSE]
 
+INFO [2023-10-08 22:59:43] [ START mock is_installed = TRUE]
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 2 ]
+INFO [2023-10-08 22:59:43] [ END mock is_installed = TRUE]
 ```
 
-Instead of real-time computations, mocks return predefined responses to given inputs.
+#### Notes on mocking
+
+The `roxygen2` documentation for `check_installed()` uses the `@importFrom` tag to import `is_installed` and add it to the `moviesApp` namespace (using explicit namespacing along won't work):
 
 ```{r}
-
+#| eval: false 
+#| code-fold: false
+#' Check if package is installed
+#' 
+#' @description
+#' An example function for demonstrating how to use `testthat`'s
+#' mocking functions.
+#' 
+#' @param package string, name of package
+#'
+#' @return invisible 
+#'
+#' @importFrom rlang is_installed # <1>
+#'
+#' @export
+#'
+#' @examples
+#' check_installed("foo")
+#' check_installed("base")
 ```
+1. Fortunately we already included rlang in our `DESCRIPTION` file for `.data` in `scatter_plot()`
 
-
-By mocking functions, developers can craft unit tests in `testthat` that rigorously evaluate a single, specific behavior.
-
-### Example: mocking functions
-
-Assume I've converted the data manipulation steps for creating a tidy `ggplot2movies::movies` dataset into two functions (one using `base` R, the other using `tidyverse` functions).
-
-```{r}
-
-```
-
+Using `testthat`'s mocking functions allow us to craft unit tests that evaluate a single, specific behavior. Read more about mocking functions on the [`testthat` webite](https://testthat.r-lib.org/reference/local_mocked_bindings.html).
 
 ## Recap
 
@@ -792,11 +955,11 @@ co_box(
 
 **Shiny app-packages test suite**
   
-- Fixtures:  
+- **Fixtures**: Fixtures prepare the test environment and the initial state. The `tidy_ggp2_movies.rds` data is a test fixture, and it creates the `tidy_ggp2_movies` data within the test scope. 
 
-- Helpers: 
+- **Helpers**: If find yourself writing small, reusable pieces of code to perform specific tasks inside your tests, consider converting them into a function in `tests/testthat/helper.R`.
 
-- Mocks: 
+- **Mocks**: Mocking allows us to isolate a function we're testing from external dependencies by simulating behaviors inside the test. We used `local_mocked_bindings()` from `testthat` to mock the bahavior of `rlang::is_installed()`.
   
   ", 
   fold = FALSE
