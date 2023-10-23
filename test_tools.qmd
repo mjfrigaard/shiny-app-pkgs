@@ -123,7 +123,7 @@ tests
 │   ├── fixtures
 │   │   ├── make-tidy_ggp2_movies # <1>
 │   │   └── tidy_ggp2_movies.rds # <2>
-│   └── test-<name>.R
+│   └── test-scatter_plot.R
 └── testthat.R
 
 3 directories, 4 files
@@ -144,27 +144,28 @@ Below is a test that answers the question, '*does the plot generate without prod
 #| eval: false 
 #| code-fold: false
 testthat::describe( # <1>
-    "Feature: Scatter plot data visualization
-  
-       As a film data analyst
-       I want to explore movie review data from IMDB.com
-       So that I can analyze relationships between movie reivew metrics
-  
-     Background:
-       Given I have data with IMDB movie reviews
-       And the data contains continuous variables like 'rating'
-       And the data contains categorical variables like 'mpaa'", 
-       code = { # <1>
+  "Feature: Scatter plot data visualization
+
+     As a film data analyst
+     I want to explore movie review data from IMDB.com
+     So that I can analyze relationships between movie reivew metrics
+
+   Background:
+     Given I have data with IMDB movie reviews
+     And the data contains continuous variables like 'rating'
+     And the data contains categorical variables like 'mpaa'", 
+     code = { # <1>
       
-      testthat::it( # <2>
-        "Scenario: Create scatter plot
-           Given I have launched the movie review exploration app,
-           When I view the scatter plot,
-           Then I should see points representing values for a default
-                set of continuous and categorical columns.", 
-          code = { # <2>
+    testthat::it( # <2>
+      "Scenario: Scatter plot initial x, y, color values 
+         When I launched the Scatter Plot Data Visualization
+         And I have a dataset of movie reviews from IMDB 
+         Then the scatter plot should show 'Rating' on the x-axis
+         And the scatter plot should show 'Length' on the y-axis
+         And the points on the scatter plot should be colored by 'MPAA' rating", 
+        code = { # <2>
         
-        ggp2_scatter_inputs <- list(  # <3>
+    ggp2_scatter_inputs <- list(  # <3>
           x = "rating",
           y = "length",
           z = "mpaa",
@@ -183,16 +184,16 @@ testthat::describe( # <1>
       size_var = ggp2_scatter_inputs$size
     ) # <5>
     expect_true(ggplot2::is.ggplot(app_graph)) # <6> 
-  }) # <2>
+  }) 
 
 }) # <1>
 ```
 
-1.  Functional requirement\
-2.  Test code\
-3.  Test inputs\
-4.  Test fixture\
-5.  Create observed object\
+1.  Feature   
+2.  Scenario   
+3.  Test inputs   
+4.  Test fixture  
+5.  Create observed object  
 6.  Expectation
 
 #### Test development 
@@ -256,11 +257,11 @@ Test helpers reduce repeated/duplicated test code. In general, objects or values
 #| code-fold: false
 tests/
   ├── testthat/
-  │   ├── fixtures/                                         # <1>
-  │   │   ├── make-tidy_ggp2_movies.R
-  │   │   └── tidy_ggp2_movies.rds
-  │   ├── helper.R                                          # <2>
-  │   └── test-<name>.R                                     # <3>
+  │   ├── fixtures/                                 # <1>
+  │   │   ├── make-tidy_ggp2_movies.R               # <1>
+  │   │   └── tidy_ggp2_movies.rds                  # <1>
+  │   ├── helper.R                                  # <2>
+  │   └── test-scatter_plot.R                       # <3>
   └── testthat.R
 ```
 
@@ -276,7 +277,7 @@ R programmers resist copy + paste programming, and in most cases this makes sens
 
 However, when we're writing tests, it's more important that tests are easy to read and understand **when they fail**.
 
-For example, consider the `tidy_ggp2_movies` inputs passed to the `scatter_plot()` function in the previous test:
+For example, consider the `ggp2_scatter_inputs` inputs passed to the `scatter_plot()` function in the previous test:
 
 ```{r}
 #| eval: false 
@@ -298,13 +299,12 @@ We could write a `var_inputs()` function that stores these values in a list. In 
 #| code-fold: false 
 #| collapse: true
 var_inputs <- function() {
-   list( x = "rating",
+   list(x = "rating",
         y = "length",
         z = "mpaa",
         alpha = 0.75,
         size = 3,
-        plot_title = "Enter plot title"
-    )
+        plot_title = "Enter plot title")
 }
 var_inputs()
 ```
@@ -316,11 +316,13 @@ While this removes duplicated code, it also makes it less clear for the reader w
 #| code-fold: false 
 #| collapse: true
 testthat::it(
-  "Scenario: Create scatter plot
-    Given I have launched the movie review exploration app,
-    When I view the scatter plot,
-    Then I should see points representing values for a default
-         set of continuous and categorical columns.", code = {
+  "Scenario: Scatter plot initial x, y, color values 
+     When I launched the Scatter Plot Data Visualization
+     And I have a dataset of movie reviews from IMDB 
+     Then the scatter plot should show 'Rating' on the x-axis
+     And the scatter plot should show 'Length' on the y-axis
+     And the points on the scatter plot should be colored by 'MPAA' rating", 
+  code = {
            
     tidy_ggp2_movies <- readRDS(test_path("fixtures", # <1>
                                 "tidy_ggp2_movies.rds")) # <1>
@@ -511,7 +513,7 @@ Combining functional requirements in the same test file is helpful if we're tryi
 #| eval: false 
 #| code-fold: false
 testthat::describe( # <1>
-  "F1.2: Dropdown menus (continuous x & y axes, categorical point coloration)", # <1>
+  "F1.3/1.5: Dropdown menus (continuous x & y axes, categorical point coloration)", # <1>
   code = { 
     
 testthat::it(# <2>
@@ -523,7 +525,7 @@ testthat::it(# <2>
     And the points on the scatter plot should be colored by 'MPAA Rating' 
   ", code = { # <2>
 
-    test_logger(start = "T2", msg = "Tests F1.2 initial x/y/z variables") # <3>
+    test_logger(start = "T2", msg = "Tests FR1.3/1.5 initial x/y/z") # <3>
                   
     scatter_inputs <- list(
                        x = 'imdb_rating', # <4>
@@ -555,7 +557,7 @@ testthat::it(# <2>
         ggplot2::theme(legend.position = "bottom") 
     ) # <5>
     
-    test_logger(end = "T2", msg = "Tests F1.2 initial x/y/z variables")  # <6>
+    test_logger(end = "T2", msg = "Tests FR1.3/1.5 initial x/y/z")  # <6>
     
   }) # <2>
   
@@ -571,7 +573,7 @@ testthat::it(# <2>
     And the points on the scatter plot should be colored by 'Title Type' 
   ", code = { # <7>
 
-    test_logger(start = "T3", msg = "Tests FR1.4 & FR1.5 update x/y/z") # <8>
+    test_logger(start = "T3", msg = "Tests FR1.3/1.5 update x/y/z") # <8>
     
     scatter_inputs <- list( # <9>
                        x = 'audience_score',
@@ -592,7 +594,7 @@ testthat::it(# <2>
         size_var = scatter_inputs$size 
       )) # <10>
         
-    test_logger(end = "T3", msg = "Tests FR1.4 & FR1.5 update x/y/z")  # <11>
+    test_logger(end = "T3", msg = "Tests FR1.3/1.5 update x/y/z")  # <11>
     
   }) # <7>
   
@@ -617,13 +619,13 @@ In this test, I've separated the scenarios into different `it()` sections, and t
 #| eval: false 
 #| code-fold: false
 [ FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]
-INFO [2023-10-12 07:24:39] [ START T2 = Tests F1.2 initial x/y/z variables]
+INFO [2023-10-12 07:24:39] [ START T2 = Tests FR1.3/1.5 initial x/y/z]
 [ FAIL 0 | WARN 0 | SKIP 0 | PASS 1 ]
-INFO [2023-10-12 07:24:40] [ END T2 = Tests F1.2 initial x/y/z variables]
+INFO [2023-10-12 07:24:40] [ END T2 = Tests FR1.3/1.5 initial x/y/z]
 
-INFO [2023-10-12 07:24:40] [ START T3 = Tests FR1.4 & FR1.5 update x/y/z]
+INFO [2023-10-12 07:24:40] [ START T3 = Tests FR1.3/1.5 update x/y/z]
 [ FAIL 0 | WARN 0 | SKIP 0 | PASS 2 ]
-INFO [2023-10-12 07:24:40] [ END T3 = Tests FR1.4 & FR1.5 update x/y/z]
+INFO [2023-10-12 07:24:40] [ END T3 = Tests FR1.3/1.5 update x/y/z]
 ```
 
 We also see a warning when the snapshot has been saved in the `tests/testthat/_snaps/` folder the first time the test is run:
@@ -648,7 +650,7 @@ Adding new file snapshot: 'tests/testthat/_snaps/fr12-fr14-initial-x-y-z-axes.sv
     And I select the variable 'Critics Rating' for the color 
     Then the scatter plot should show 'Audience Score' on the x-axis
     And the scatter plot should show 'IMDB Rating' on the y-axis
-    And the points on the scatter plot should be colored by 'Critics Rating' 
+    And the points on the scatter plot should be colored by 'Critics Rating'
 Adding new file snapshot: 'tests/testthat/_snaps/fr14-fr15-update-x-y-color.svg'
 [ FAIL 0 | WARN 2 | SKIP 0 | PASS 2 ]
 ```
@@ -914,7 +916,7 @@ INFO [2023-10-08 22:59:43] [ END mock is_installed = TRUE]
 
 #### Notes on mocking
 
-The `roxygen2` documentation for `check_installed()` uses the `@importFrom` tag to import `is_installed` and add it to the `moviesApp` namespace (using explicit namespacing along won't work):
+The `roxygen2` documentation for `check_installed()` uses the `@importFrom` tag to import `is_installed` and add it to the `moviesApp` namespace (using explicit namespacing alone won't work):
 
 ```{r}
 #| eval: false 
