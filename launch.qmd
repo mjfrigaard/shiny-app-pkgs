@@ -20,7 +20,9 @@ co_box(
 )
 ```
 
-In the previous chapter, we moved `movies` into `data/` folder to ensure it's part of the `moviesApp` namespace. However, we will still want a way to lunch our app during development (and a process for deploying the application into a production environment).
+During development, we either launch apps using the **Run App** button at the top of the `app.R` file, or by calling the standalone app function in the **Console**. This chapter covers some additional functions you might want to include in the `app.R` file, the differences between shiny's `shinyApp()`, `runApp()`, and `shinyAppDir()` functions, and other options for launching an app (or apps) in your app-package.
+
+<!--
 
 ```{r}
 #| label: co_box_tldr
@@ -47,8 +49,7 @@ co_box(
 )
 ```
 
-
-This chapter will cover what belongs in the `app.R` file, the differences between shiny's `shinyApp()`, `runApp()`, and `shinyAppDir()` functions, and other options for launching an app (or apps) in your app-package.
+-->
 
 ## [`app.R`]{style="font-size: 0.95em"}
 
@@ -77,7 +78,7 @@ I'll be using the term 'launch' to differentiate successfully running an applica
 git_margin_box(
   contents = "alt",
   fig_pw = '75%', 
-  branch = "06b_pkg-imports", 
+  branch = "08b_pkg-imports", 
   repo = 'moviesApp')
 ```
 
@@ -104,35 +105,35 @@ movies_app() # <3>
 
 As we can see in the image below, the **Run App** icon is available in the **Source** pane:
 
-:::{#fig-05_app_main_runApp_icon}
+:::{#fig-launch_run_app_from_imports}
 
-![`app.R` in `main` branch](img/08_launch_pkg_imports_runApp_icon.png){#fig-05_app_main_runApp_icon width=100%}
+![`app.R` in `main` branch](images/launch_run_app_from_imports.png){#fig-launch_run_app_from_imports width=100%}
 
 **Run App** icon in `app.R` of `main` branch
 :::
 
 If we load the code in `R/` with `load_all()`, then click on **Run App**, we see this calls `runApp()` in the **Console**, but this also produces a warning: 
 
-::: {#fig-06_app_pkg_imports_runApp_console}
+::: {#fig-launch_loadsupport_error}
 
-![Calling `runApp()` in `main`](img/08_launch_pkg_imports_runApp_console.png){#fig-06_app_pkg_imports_runApp_console width=100%}
+![Calling `runApp()` in `main`](images/launch_loadsupport_error.png){#fig-launch_loadsupport_error width=100%}
 
 The application is launched (with the `loadSupport()` warning)
 :::
 
-## [`app.R`]{style="font-size: 0.95em"} ([`05_roxygen2`]{style="font-size: 0.95em"} branch)
+## [`app.R`]{style="font-size: 0.95em"} ([`07_roxygen2`]{style="font-size: 0.95em"} branch)
 
-Let's jump back to the `05_roxygen2` branch of `moviesApp`. This is the first version of `moviesApp` with `movies_app()` in the `R/` folder (i.e., in `R/movies_app.R`).
+Let's jump back to the `07_roxygen2` branch of `moviesApp`. This is the first version of `moviesApp` with `movies_app()` in the `R/` folder (i.e., in `R/movies_app.R`).
 
 ```{r}
-#| label: git_margin_box_shinyAppPkg_05_roxygen2
+#| label: git_margin_box_shinyAppPkg_07_roxygen2
 #| echo: false
 #| results: asis
 #| eval: true
 git_margin_box(
   contents = "alt",
   fig_pw = '75%', 
-  branch = "05_roxygen2", 
+  branch = "07_roxygen2", 
   repo = 'moviesApp')
 ```
 
@@ -153,14 +154,14 @@ R/
 
 By moving the call to `shinyApp()` into the `R/` folder, we no longer have the **Run App** icon in the `app.R` file:
 
-:::{#fig-08_launch_roxygen_no_runApp_icon}
+:::{#fig-launch_no_run_app_button}
 
-![`app.R` in `05_roxygen2` branch](img/08_launch_roxygen_no_runApp_icon.png){#fig-08_launch_roxygen_no_runApp_icon width=100%}
+![`app.R` in `07_roxygen2` branch](images/launch_no_run_app_button.png){#fig-launch_no_run_app_button width=100%}
 
-No **Run App** icon in `app.R` of `05_roxygen2` branch
+No **Run App** icon in `app.R` of `07_roxygen2` branch
 :::
 
-In the `05_roxygen2` branch, the `movies_app()` function hasn't been exported, so we should expect the following error when we run the contents of `app.R`:
+In the `07_roxygen2` branch, the `movies_app()` function hasn't been exported, so we should expect the following error when we run the contents of `app.R`:
 
 ```{verbatim}
 #| eval: false
@@ -174,20 +175,16 @@ However, calling `runApp()` from the **Console** will launch the app.
 
 This behavior might be surprising to you--`runApp()` can launch the application in `moviesApp`, even without the standalone app function exported from the package namespace (but it still produces the `loadSupport()` warning).
 
-:::{#fig-06_app_roxygen2_runApp_console}
+:::{#fig-launch_loadsupport_error_run_app}
 
-![`runApp()` with `05_roxygen2` branch](img/08_app_roxygen2_runApp_console.png){#fig-06_app_roxygen2_runApp_console width=100%}
+![`runApp()` with `07_roxygen2` branch](images/launch_loadsupport_error_run_app.png){#fig-launch_loadsupport_error_run_app width=100%}
 
-Calling `runApp()` in the **Console** of `05_roxygen2` branch
+Calling `runApp()` in the **Console** of `07_roxygen2` branch
 :::
 
 
 
 ### [`loadSupport()`]{style="font-size: 0.95em"}--feature or bug?
-
-The warning in the **Console** is telling us `loadSupport()`[^load-support-shiny-chap] has detected that `moviesApp` is a package, but it's still sourcing the `R/` subdirectory.
-
-[^load-support-shiny-chap]: If you recall, we covered the  [`loadSupport()`](https://shiny.posit.co/r/reference/shiny/1.5.0/loadsupport) function in [Chapter 1](https://mjfrigaard.github.io/shinyap/shiny.html#r).
 
 :::: {.callout-important collapse="true" title="Warning in loadSupport"}
 
@@ -213,6 +210,10 @@ Warning in loadSupport(appDir, renv = sharedEnv, globalrenv = NULL):
 
 ::::
 
+The warning in the **Console** is telling us `loadSupport()`[^load-support-shiny-chap] has detected that `moviesApp` is a package, but it's still sourcing the `R/` subdirectory.
+
+[^load-support-shiny-chap]: If you recall, we covered the  [`loadSupport()`](https://shiny.posit.co/r/reference/shiny/1.5.0/loadsupport) function in [Chapter 1](https://mjfrigaard.github.io/shinyap/shiny.html#r).
+
 The examples above demonstrate the differences between calling `shinyApp()` and `runApp()`, and the tensions between having a standalone app function in an R package vs. having an `app.R` file in a Shiny project.
 
 In the following sections, we'll compare `shinyApp()`, `shinyAppDir()`, and `runApp()` to determine which one to use in `R/movies_app.R` and the `app.R` file.   
@@ -223,7 +224,7 @@ In the following sections, we'll compare `shinyApp()`, `shinyAppDir()`, and `run
 
 [`shinyApp()`]{style="font-style: italic; font-size: 1.25em"}, [`shinyAppDir()`]{style="font-style: italic; font-size: 1.25em"}, or [`runApp()`]{style="font-style: italic; font-size: 1.25em"}
 
-During development, the Posit Workbench IDE provides the **Run App** icon for launching the application. 
+During development, the IDE provides the **Run App** icon for launching the application. 
 
 ![The **Run App** icon in the **Source** pane calls `runApp()`)](img/Run_App.png){width='40%'}
 
@@ -439,50 +440,43 @@ if (interactive()) {
 
 You have probably seen control flow like this in `shiny` help file examples (like `flowLayout()` below):
 
-:::{#fig-08_flowLayout_examples}
+:::{#fig-launch_if_interactive_examples}
 
-![`if (interactive())` in `flowLayout()` example](img/08_flowLayout_examples.png){#fig-08_flowLayout_examples width=100%}
+![`if (interactive())` in `flowLayout()` example](images/launch_if_interactive_examples.png){#fig-launch_if_interactive_examples width=100%}
 
 Running examples 'interactively' let's us see the app demo beneath the code
 :::
 
 `if (interactive())` allows us to distinguish between launching the app from a Posit Workbench session (i.e., during development) and deploying the application (i.e., publishing the application on Posit Connect).
 
-### [`test.mode`]{style="font-size: 0.95em"}
+### [`options`]{style="font-size: 0.95em"}
 
-One of the shiny options to consider including is the ability to control the application's behavior with `test.mode`:
+An `options` argument can be passed to `shinyApp()` or `shinyAppDir()`. For example, one of the Shiny options we could include in our standalone app function is `test.mode`:
 
 > '*Should the application be launched in test mode? This is only used for recording or running automated tests. Defaults to the `shiny.testmode` option, or `FALSE` if the option is not set.*'
 
-The `test.mode` argument lets us [export values from our application]((https://shiny.posit.co/r/reference/shiny/1.0.2/exporttestvalues)) when we're running tests (which we'll cover in-depth in the testing chapter). 
+`test.mode` lets us [export values from our application]((https://shiny.posit.co/r/reference/shiny/1.0.2/exporttestvalues)) when we're running tests (which we'll cover in-depth in the [Tests](@sec-tests) section). 
 
-We'll make `test` an logical argument (defaulting to `FALSE`) in our updated  `movies_app()` function.
+We'll make `options` an argument (defaulting to an empty `list()`) in our updated  `movies_app()` function.
 
 ```{r}
 #| eval: false 
 #| code-fold: false
-if (test) {
-  shinyApp(                           # <1>
-    ui = movies_ui,                   # <2>
-    server = movies_server,           # <2>
-    options = list(test.mode = TRUE)  # <3>
-  )
-} else {
-  shinyApp(                           # <1>
-    ui = movies_ui,
-    server = movies_server, 
-    options = list(test.mode = FALSE)
-  )
+movies_app <- function(options = list()) {
+    shinyApp(
+      ui = movies_ui(), # <1>
+      server = movies_server, # <1>
+      options = options #  <2>
+      )
 }
 ```
-1. We don't need to explicitly namespace shiny functions (i.e., with `shiny::`) because we're using `#' @import shiny` in the `R/movies_app.R` file       
-2. Build the shiny app object with `movies_ui` and `movies_server`   
-3. Include option for `test.mode`    
+1. Build the shiny app object with `movies_ui` and `movies_server`   
+2. Include `options` list   
 
 
 ### [`shinyViewerType`]{style="font-size: 0.95em"}
 
-I've written `display_type()` helper function to control where the Shiny app is displayed. The `run` argument in `display_type()` takes the following options: 
+I've written `display_type()` helper function to control where the Shiny app is launched. The `run` argument in `display_type()` takes the following options: 
 
 -   `"p"` = **Viewer Pane**  
 -   `"w"` = **IDE Window**   
@@ -519,23 +513,6 @@ display_type <- function(run = "w") {
 The `roxygen2` documentation for `display_type()` is below: 
 
 ```{r}
-#| label: co_box_cli
-#| echo: false
-#| results: asis
-#| eval: true
-co_box(
-  color = "o", look = 'minimal',
-  header = "Dependency watch!",
-  contents = "
-The `cli` package is imported as part the `devtools`/`usethis` workflow, otherwise we'd want to add it the `Imports` field of the `DESCRIPTION` with `usethis::use_package('cli')`.
-  ",
-  fold = TRUE
-)
-```
-
-
-
-```{r}
 #| eval: false 
 #| code-fold: true 
 #| code-summary: 'show/hide roxygen2 for R/display_type.R'
@@ -552,7 +529,20 @@ The `cli` package is imported as part the `devtools`/`usethis` workflow, otherwi
 #'
 ```
 
-
+```{r}
+#| label: co_box_cli
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "o", look = 'minimal',
+  header = "New dependency!",
+  contents = "
+The `cli` package is imported as part the `devtools`/`usethis` workflow, otherwise we'd want to add it the `Imports` field of the `DESCRIPTION` with `usethis::use_package('cli')`.
+  ",
+  fold = TRUE
+)
+```
 
 ## Updated [`movies_app()`]{style="font-size: 0.95em"}
 
@@ -561,40 +551,20 @@ In `movies_app()`, I'll add the `interactive()` check, `display_type()`, and `te
 ```{r}
 #| eval: false 
 #| code-fold: false
-movies_app <- function(test = FALSE, run = "w") {
-  
-  if (interactive()) { # <1> 
-      
-      # App launched from interactive session
-      display_type(run = run) # <2> 
-      
-      if (isTRUE(test)) { 
-        shinyApp(  # <3> 
-          ui = movies_ui,  # <3> 
-          server = movies_server,  # <3> 
-          options = list(test.mode = TRUE)  # <3> 
-        )  # <3> 
-      } else {  
-        shinyApp( # <4> 
-          ui = movies_ui, # <4> 
-          server = movies_server,  # <4> 
-          options = list(test.mode = FALSE) # <4> 
-        ) # <4> 
-      }
-    
-  } else {
-    
-    # App deployed 
-    shinyApp(ui = movies_ui(),
-             server = movies_server)
-    
+movies_app <- function(options = list(), run = "w") {
+  if (interactive()) { # <1>
+    display_type(run = run) # <2>
   }
+    shinyApp( # <3>
+      ui = movies_ui(),
+      server = movies_server,
+      options = options
+    ) # <3>
 }
 ```
 1. Check if interactive (Workbench) launch  
 2. Set `shinyViewerType` option with `display_type()`     
-3. Launch app in test mode    
-4. Launch app   
+3. Launch app     
 
 After loading, documenting, and installing the package, I can test my new standalone app function: 
 
@@ -606,29 +576,29 @@ After loading, documenting, and installing the package, I can test my new standa
 hot_key("all")
 ```
 
-:::{#fig-08_launch_movies_app_updated}
+:::{#fig-launch_movies_app_fun}
 
-![updated `movies_app()` function](img/08_launch_movies_app_updated.png){#fig-08_launch_movies_app_updated width=100%}
+![updated `movies_app()` function](images/launch_movies_app_fun.png){#fig-launch_movies_app_fun width=100%}
 
-`movies_app()` launches the application without the `loadSupport()` warning.
+The updated `movies_app()` function launches the application in the window (without the `loadSupport()` warning)
 :::
 
 Now we can see `movies_app()` is launching the application without the `loadSupport()` warning. We can also adjust the `test` and `run` arguments to see make sure these are implemented correctly:
 
-:::{#fig-08_launch_movies_app_updated_options}
+:::{#fig-launch_movies_app_updates}
 
-![`test` and `run` arguments in `movies_app()`](img/08_launch_movies_app_updated_options.png){#fig-08_launch_movies_app_updated_options width=100%}
+![`test` and `run` arguments in `movies_app()`](images/launch_movies_app_updates.png){#fig-launch_movies_app_updates width=100%}
 
-Testing the options in `movies_app()`
+Launching `movies_app()` in Viewer **p**ane and `test.mode`
 :::
 
 
 
 ## Updated [`app.R`]{style="font-size: 0.95em"}
 
-Below are a few options to consider including in your `app.R` file. There are multiple ways to launch an application from this file, so of these options are required (but you might find them helpful!).
+Your `app.R` file should contain any options or settings that you'll use during development. There are multiple ways to launch an application from `app.R`, and I encourage you to explore the options below to find a method that works for your workflow/environment.  
 
-### [`if (!interactive())`]{style="font-size: 0.95em"}
+### Non-interactive behaviors
 
 ######
 
@@ -687,7 +657,7 @@ Written this way, in a non-interactive R session, `app.R` will re-direct the err
 #| eval: true
 co_box(
   color = "o", look = 'minimal',
-  header = "Dependency watch!",
+  header = "New dependency!",
   contents = "
 The `pkgload` package is imported as part the `devtools`/`usethis` workflow, otherwise we'd want to add it the `Imports` field of the `DESCRIPTION` with `usethis::use_package('pkgload')`.
   ",
@@ -733,9 +703,6 @@ The `withr` package is imported as part the `devtools`/`usethis` workflow, other
 ```
 
 
-
-
-
 The [`withr` package](https://withr.r-lib.org/) is designed to '*run code with safely and temporarily modified global state*', and it comes in handy when launching shiny apps. For example, I want to turn off the `loadSupport()` behavior when launching the app from `app.R`.[^launch-r-folder]
 
 [^launch-r-folder]: You can read more about the `shiny.autoload.r` option and `loadSupport()` in [this article](https://shiny.posit.co/r/articles/build/app-formats/index.html#the-r-directory)
@@ -750,38 +717,29 @@ I want to place the `withr::with_options()` at the top of `app.R` and pass conte
 ```{r}
 #| eval: false 
 #| code-fold: false
-# reset loadSupport()
-options(shiny.autoload.r = NULL)
-# set option to turn off loadSupport() ----
-withr::with_options(new = list(shiny.autoload.r = FALSE), code = {
-  if (!interactive()) {
+withr::with_options(new = list(shiny.autoload.r = FALSE), code = { # <1> 
+  if (!interactive()) { # <2> 
     sink(stderr(), type = "output")
     tryCatch(
       expr = {
-        # load package ----
         library(moviesApp)
       },
       error = function(e) {
-        # load R/ folder ----
         pkgload::load_all()
       }
-    )
-    # create shiny object ----
-    shiny::shinyApp(
-      ui = movies_ui,
-      server = movies_server
-    )
-  } else {
-    # load R/ folder ----
+    ) # <2>
+  } else { # <3> 
     pkgload::load_all()
-    # create shiny object ----
-    shiny::shinyApp(
-      ui = movies_ui,
-      server = movies_server
-    )
-  }
+  } # <3> 
+    moviesApp::movies_app( # <4>
+      options = list(test.mode = TRUE), run = 'p')
 })
+
 ```
+1. Turn off `loadSupport()`  
+2. Define non-interactive behaviors  
+3. Define interactive behaviors  
+4. Launch app (with options)  
 
 Now that we've updated the `app.R` account for the app-package structure, we should load, document, and install `moviesApp` and run it's contents: 
 
@@ -798,21 +756,21 @@ hot_key("all")
 When we send the contents of `app.R` to the **Console**, the `loadSupport()` options are applied before running the app:
 
 ```{r}
-#| label: git_box_08_launch-app
+#| label: git_box_10_launch-app
 #| echo: false
 #| results: asis
 #| eval: true
 git_margin_box(
   contents = "standard",
   fig_pw = '75%', 
-  branch = "08_launch-app", 
+  branch = "10_launch-app", 
   repo = 'moviesApp')
 ```
 
 
-:::{#fig-08_launch_run_app_dot_r}
+:::{#fig-launch_app_dot_r}
 
-![Sending `app.R` to **Console**](img/08_launch_run_app_dot_r.png){#fig-08_launch_run_app_dot_r width=100%}
+![Sending `app.R` to **Console**](images/launch_app_dot_r.png){#fig-launch_app_dot_r width=100%}
 
 The application is launched without the `loadSupport()` warning
 :::
@@ -849,9 +807,9 @@ Send app.R to **Console** and click **Publish**
 
 Make sure all the files in the package are selected, then click **Publish**
 
-:::{#fig-08_launch_publish_app}
+:::{#fig-launch_publilsh_window}
 
-![Publishing apps to `shinyapps.io`](img/08_launch_publish_app.png){#fig-08_launch_publish_app width=100%}
+![Publishing apps to `shinyapps.io`](images/launch_publilsh_window.png){#fig-launch_publilsh_window width=100%}
 
 Publish the entire package to `shinyapps.io`
 :::
@@ -887,7 +845,7 @@ Waiting for task: 1340526445
 Deployment completed: https://yourusername.shinyapps.io/shinyap-run-app/
 ```
 
-You can view a deployed version of this application [here.](https://mjfrigaard.shinyapps.io/shinyap-08_launch-app/)
+You can view a deployed version of this application [here.](https://mjfrigaard.shinyapps.io/shinyap-10_launch-app/)
 
 ## Recap
 
