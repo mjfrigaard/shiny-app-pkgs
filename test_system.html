@@ -359,8 +359,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">Contents</h2>
    
   <ul>
-  <li><a href="#test-files" id="toc-test-files" class="nav-link active" data-scroll-target="#test-files">Test files</a></li>
-  <li><a href="#system-tests" id="toc-system-tests" class="nav-link" data-scroll-target="#system-tests">System tests</a>
+  <li><a href="#system-tests" id="toc-system-tests" class="nav-link active" data-scroll-target="#system-tests">System tests</a>
   <ul>
   <li><a href="#shinytest2" id="toc-shinytest2" class="nav-link" data-scroll-target="#shinytest2"><span style="font-size: 1.05em;"><code>shinytest2</code></span></a></li>
   </ul></li>
@@ -407,48 +406,61 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <p>This chapter covers setting up system tests with <code>shinytest2</code> and <code>testthat</code>, and what should be included in system tests.</p>
-<section id="test-files" class="level2">
-<h2 class="anchored" data-anchor-id="test-files">Test files</h2>
-<p>Up to this point, I’ve been storing the tests in test files named for each function:</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">tests</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">└──</span> testthat/</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="ex">├──</span> test-mod_scatter_display.R</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="ex">├──</span> test-mod_var_input.R</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="ex">└──</span> test-scatter_plot.R</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<p>This is the recommendations in <a href="https://r-pkgs.org/code.html#sec-code-organising">R Packages, 2ed</a>, and gives us the ability to programmatically compare test results with the traceability matrix. For example, we can add the following code to the <a href="https://github.com/mjfrigaard/moviesApp/blob/10e_tests-system/vignettes/test-specs.Rmd"><code>test-specs</code> vignette</a> and capture our test results in a <code>tibble</code> display:</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>pkg_tests <span class="ot">&lt;-</span> testthat<span class="sc">::</span><span class="fu">test_local</span>(<span class="st">"../"</span>, </span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">reporter =</span> testthat<span class="sc">::</span>SilentReporter<span class="sc">$</span><span class="fu">new</span>()) <span class="sc">|&gt;</span> </span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  tibble<span class="sc">::</span><span class="fu">as_tibble</span>() <span class="sc">|&gt;</span> </span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  tidyr<span class="sc">::</span><span class="fu">pivot_longer</span>(<span class="at">cols =</span> <span class="fu">c</span>(passed, skipped, </span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>                               warning, error, failed), </span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>                    <span class="at">names_to =</span> <span class="st">'status'</span>, </span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>                    <span class="at">values_to =</span> <span class="st">"value"</span>) <span class="sc">|&gt;</span> </span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(value <span class="sc">&gt;</span> <span class="dv">0</span>) <span class="sc">|&gt;</span> </span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">Test File</span><span class="st">`</span> <span class="ot">=</span> file,</span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">Test =</span> test,</span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">Test Status</span><span class="st">`</span> <span class="ot">=</span> status)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<div id="fig-11_tests_trace_matrix_pkg_tests" class="quarto-figure quarto-figure-center anchored">
-<figure class="figure">
-<div id="fig-11_tests_trace_matrix_pkg_tests" class="quarto-figure quarto-figure-center anchored">
-<figure class="figure">
-<p><img src="img/11_tests_trace_matrix_pkg_tests.png" class="img-fluid figure-img" style="width:100.0%" data-align="center" data-ref-parent="fig-11_tests_trace_matrix_pkg_tests"></p>
-<figcaption class="figure-caption">(a) Traceability matrix &amp; <code>testthat::test_local()</code> output</figcaption>
-</figure>
-</div>
-<figcaption class="figure-caption">Figure&nbsp;14.1: Package vignette with with traceability matrix and test results</figcaption>
-</figure>
-</div>
-<p>Placing the test number in each call to <code>testthat::it()</code> will make it easier to link the tests back to the original functional requirements, features and specifications.</p>
-</section>
+<!--
+
+## Test files 
+
+Up to this point, I've been storing the tests in test files named for each function: 
+
+
+::: {.cell}
+
+```{.bash .cell-code  code-fold="false"}
+tests
+└── testthat/
+    ├── test-mod_scatter_display.R
+    ├── test-mod_var_input.R
+    └── test-scatter_plot.R
+```
+:::
+
+
+This is the recommendations in [R Packages, 2ed](https://r-pkgs.org/code.html#sec-code-organising), and gives us the ability to programmatically compare test results with the traceability matrix. For example, we can add the following code to the [`test-specs` vignette](https://github.com/mjfrigaard/moviesApp/blob/10e_tests-system/vignettes/test-specs.Rmd) and capture our test results in a `tibble` display:
+
+
+::: {.cell}
+
+```{.r .cell-code  code-fold="false"}
+pkg_tests <- testthat::test_local("../", 
+  reporter = testthat::SilentReporter$new()) |> 
+  tibble::as_tibble() |> 
+  tidyr::pivot_longer(cols = c(passed, skipped, 
+                               warning, error, failed), 
+                    names_to = 'status', 
+                    values_to = "value") |> 
+  dplyr::filter(value > 0) |> 
+  dplyr::select(
+    `Test File` = file,
+    Test = test,
+    `Test Status` = status)
+```
+:::
+
+
+:::{#fig-11_tests_trace_matrix_pkg_tests}
+
+![Traceability matrix & `testthat::test_local()` output](img/11_tests_trace_matrix_pkg_tests.png){#fig-11_tests_trace_matrix_pkg_tests width='100%' align='center'}
+
+Package vignette with with traceability matrix and test results 
+:::
+
+Placing the test number in each call to `testthat::it()` will make it easier to link the tests back to the original functional requirements, features and specifications.
+
+-->
 <section id="system-tests" class="level2">
 <h2 class="anchored" data-anchor-id="system-tests">System tests</h2>
 <blockquote class="blockquote">
-<p>“<em>Failure to allow enough time for system test, in particular, is peculiarly disastrous. Since the delay comes at the end of the schedule, no one is aware of schedule trouble until almost the delivery date. Bad news, late and without warning, is unsettling to customers and to managers.</em>”</p>
+<p>“<em>Failure to allow enough time for system test, in particular, is peculiarly disastrous. Since the delay comes at the end of the schedule, no one is aware of schedule trouble until almost the delivery date. Bad news, late and without warning, is unsettling to customers and to managers.</em>” - <a href="https://www.goodreads.com/en/book/show/13629">‘The Mythical Man-Month’, Frederick P. Brooks Jr.</a></p>
 </blockquote>
 <p>System (or end-to-end) tests simulate real user interactions in a ‘pre-production’ environment to verify the whole application (or system) works.<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> Approaches to system testing vary, but in general, we’ll want to run system tests before a release, which means all of the app’s functional requirements are tested and released in lockstep.</p>
 <section id="shinytest2" class="level3">
@@ -474,9 +486,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>After installing the <code>shinytest2</code> dependencies, you’ll want to verify you can create a new session with:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(chromote)</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>b <span class="ot">&lt;-</span> ChromoteSession<span class="sc">$</span><span class="fu">new</span>()</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>b<span class="sc">$</span><span class="fu">view</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(chromote)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>b <span class="ot">&lt;-</span> ChromoteSession<span class="sc">$</span><span class="fu">new</span>()</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>b<span class="sc">$</span><span class="fu">view</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div id="fig-11_chromote_new_verify" class="quarto-figure quarto-figure-center anchored">
 <figure class="figure">
@@ -486,22 +498,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <figcaption class="figure-caption">(a) Chromium headless browser</figcaption>
 </figure>
 </div>
-<figcaption class="figure-caption">Figure&nbsp;14.2: A new <code>Chromote</code> session</figcaption>
+<figcaption class="figure-caption">Figure&nbsp;14.1: A new <code>Chromote</code> session</figcaption>
 </figure>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>shinytest2<span class="sc">::</span><span class="fu">use_shinytest2</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>shinytest2<span class="sc">::</span><span class="fu">use_shinytest2</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="sourceCode" id="cb5"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>! Runner already found: tests/testthat.R</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>✔ Adding 'shinytest2::load_app_env()' to 'tests/testthat/setup-shinytest2.R'</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="sourceCode" id="cb6"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>✔ Adding '*_.new.png' to '.gitignore'</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="sourceCode" id="cb7"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>✔ Adding '_\\.new\\.png$' to '.Rbuildignore'</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="sourceCode" id="cb8"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>✔ Setting active project to '/path/to/moviesApp'</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="sourceCode" id="cb9"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>✔ Adding 'shinytest2' to Suggests field in DESCRIPTION</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="sourceCode" id="cb10"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>• In your package code, use `rlang::is_installed("shinytest2")` or</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  `rlang::check_installed("shinytest2")` to test if shinytest2 is installed</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>• Then directly refer to functions with `shinytest2::fun()`</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="sourceCode" id="cb11"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>✔ Setting active project to '&lt;no active project&gt;'</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>! Runner already found: tests/testthat.R</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>✔ Adding 'shinytest2::load_app_env()' to 'tests/testthat/setup-shinytest2.R'</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>✔ Adding '*_.new.png' to '.gitignore'</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>✔ Adding '_\\.new\\.png$' to '.Rbuildignore'</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>✔ Setting active project to '/path/to/moviesApp'</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>✔ Adding 'shinytest2' to Suggests field in DESCRIPTION</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>• In your package code, use `rlang::is_installed("shinytest2")` or</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  `rlang::check_installed("shinytest2")` to test if shinytest2 is installed</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>• Then directly refer to functions with `shinytest2::fun()`</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>✔ Setting active project to '&lt;no active project&gt;'</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <!--
 
 > Manual Testing: Initially, you may have to manually interact with the Shiny app to ensure it behaves as expected.

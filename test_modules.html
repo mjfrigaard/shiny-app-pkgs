@@ -415,80 +415,107 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="testserver" class="level2 page-columns page-full">
 <h2 class="anchored" data-anchor-id="testserver"><span style="font-size: 0.95em;"><code>testServer()</code></span></h2>
-<p>I like using the BDD functions with <code>testServer()</code> to test <em>reactive interactions</em> between modules. For example, to confirm functional requirement #2 (<strong>FR2</strong>) (that user-inputs are updating in the application), we need to test two changes:</p>
+<p>We can combine the BDD functions with <code>testServer()</code> to test <em>reactive interactions</em> between modules. For example, to confirm that the drop-down feature requirement (<strong>F1.2</strong>) is working (i.e., that user-inputs are updating in the application), we need to test two changes:</p>
 <ol type="1">
 <li>Values passed to the UI are returned from <code>mod_var_input_server()</code><br>
 </li>
-<li>Reactive values passed into <code>mod_scatter_display_server()</code> are available as the reactive object <code>inputs()</code></li>
+<li>The reactive values returned from <code>mod_var_input_server()</code> are passed into <code>mod_scatter_display_server()</code> and available as the reactive object <code>inputs()</code></li>
 </ol>
+<p>Example scenarios for these changes are provided below:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>Feature 1.2: Dropdown menus (continuous x &amp; y axes, categorical point colors)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  Scenario: Scatter plot initial x, y, color values </span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    When I launched the Scatter Plot Data Visualization</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    And I have a dataset of movie reviews from IMDB and Rotten Tomatoes</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    Then the scatter plot should show 'IMDB Rating' on the x-axis</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    And the scatter plot should show 'Audience Score' on the y-axis</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    And the points on the scatter plot should be colored by 'MPAA Rating'</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  Scenario: Change x, y, color values for plotting</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    When I launched the Scatter Plot Data Visualization</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    And I choose the variable 'IMDB Rating' for the x-axis</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    And I choose the variable 'Audience Score' for the y-axis</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    And I choose the variable 'MPAA Raing' for the color</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    Then the scatter plot should show 'IMDB Rating' on the x-axis</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    And the scatter plot should show 'Audience Score' on the y-axis</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    And the points on the scatter plot should be colored by 'MPAA Raing'</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <section id="sessionreturned" class="level3">
 <h3 class="anchored" data-anchor-id="sessionreturned"><span style="font-size: 0.95em;"><code>session$returned()</code></span></h3>
 <p>Inside <code>testServer()</code>, we can create a list of graph inputs for <code>mod_var_input_server()</code>, then pass identical values to <code>session$setInputs()</code>, and confirm the returned object with <code>session$returned()</code>:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="annotated-cell-1"><pre class="sourceCode r code-annotation-code code-with-copy code-annotated"><code class="sourceCode r"><button class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="1">1</button><span id="annotated-cell-1-1" class="code-annotation-target"><a href="#annotated-cell-1-1" aria-hidden="true" tabindex="-1"></a>testthat<span class="sc">::</span><span class="fu">describe</span>(<span class="st">"FR2: user-input updating (inputs)"</span>, <span class="at">code =</span> {</span>
-<span id="annotated-cell-1-2"><a href="#annotated-cell-1-2" aria-hidden="true" tabindex="-1"></a>  </span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="2">2</button><span id="annotated-cell-1-3" class="code-annotation-target"><a href="#annotated-cell-1-3" aria-hidden="true" tabindex="-1"></a>  testthat<span class="sc">::</span><span class="fu">it</span>(<span class="st">"T5: inputs change"</span>, <span class="at">code =</span> {</span>
-<span id="annotated-cell-1-4"><a href="#annotated-cell-1-4" aria-hidden="true" tabindex="-1"></a>    </span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="3">3</button><span id="annotated-cell-1-5" class="code-annotation-target"><a href="#annotated-cell-1-5" aria-hidden="true" tabindex="-1"></a>    shiny<span class="sc">::</span><span class="fu">testServer</span>(<span class="at">app =</span> mod_var_input_server, <span class="at">expr =</span> {</span>
-<span id="annotated-cell-1-6"><a href="#annotated-cell-1-6" aria-hidden="true" tabindex="-1"></a>      </span>
-<span id="annotated-cell-1-7"><a href="#annotated-cell-1-7" aria-hidden="true" tabindex="-1"></a>      <span class="fu">test_logger</span>(<span class="at">start =</span> <span class="st">"T5"</span>, <span class="at">msg =</span> <span class="st">"FR2: returned()"</span>)</span>
-<span id="annotated-cell-1-8"><a href="#annotated-cell-1-8" aria-hidden="true" tabindex="-1"></a>      </span>
-<span id="annotated-cell-1-9"><a href="#annotated-cell-1-9" aria-hidden="true" tabindex="-1"></a>      <span class="co"># create list of output vals</span></span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="4">4</button><span id="annotated-cell-1-10" class="code-annotation-target"><a href="#annotated-cell-1-10" aria-hidden="true" tabindex="-1"></a>      test_vals <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">y =</span> <span class="st">"critics_score"</span>,</span>
-<span id="annotated-cell-1-11"><a href="#annotated-cell-1-11" aria-hidden="true" tabindex="-1"></a>                        <span class="at">x =</span> <span class="st">"imdb_rating"</span>,</span>
-<span id="annotated-cell-1-12"><a href="#annotated-cell-1-12" aria-hidden="true" tabindex="-1"></a>                        <span class="at">z =</span> <span class="st">"critics_rating"</span>,</span>
-<span id="annotated-cell-1-13"><a href="#annotated-cell-1-13" aria-hidden="true" tabindex="-1"></a>                        <span class="at">alpha =</span> <span class="fl">0.75</span>,</span>
-<span id="annotated-cell-1-14"><a href="#annotated-cell-1-14" aria-hidden="true" tabindex="-1"></a>                        <span class="at">size =</span> <span class="dv">3</span>,</span>
-<span id="annotated-cell-1-15"><a href="#annotated-cell-1-15" aria-hidden="true" tabindex="-1"></a>                        <span class="at">plot_title =</span> <span class="st">"Example title"</span>)</span>
-<span id="annotated-cell-1-16"><a href="#annotated-cell-1-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="annotated-cell-1-17"><a href="#annotated-cell-1-17" aria-hidden="true" tabindex="-1"></a>      <span class="co"># change inputs</span></span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="5">5</button><span id="annotated-cell-1-18" class="code-annotation-target"><a href="#annotated-cell-1-18" aria-hidden="true" tabindex="-1"></a>      session<span class="sc">$</span><span class="fu">setInputs</span>(<span class="at">y =</span> <span class="st">"critics_score"</span>,</span>
-<span id="annotated-cell-1-19"><a href="#annotated-cell-1-19" aria-hidden="true" tabindex="-1"></a>                        <span class="at">x =</span> <span class="st">"imdb_rating"</span>,</span>
-<span id="annotated-cell-1-20"><a href="#annotated-cell-1-20" aria-hidden="true" tabindex="-1"></a>                        <span class="at">z =</span> <span class="st">"critics_rating"</span>,</span>
-<span id="annotated-cell-1-21"><a href="#annotated-cell-1-21" aria-hidden="true" tabindex="-1"></a>                        <span class="at">alpha =</span> <span class="fl">0.75</span>,</span>
-<span id="annotated-cell-1-22"><a href="#annotated-cell-1-22" aria-hidden="true" tabindex="-1"></a>                        <span class="at">size =</span> <span class="dv">3</span>,</span>
-<span id="annotated-cell-1-23"><a href="#annotated-cell-1-23" aria-hidden="true" tabindex="-1"></a>                        <span class="at">plot_title =</span> <span class="st">"Example title"</span>)</span>
-<span id="annotated-cell-1-24"><a href="#annotated-cell-1-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="annotated-cell-1-25"><a href="#annotated-cell-1-25" aria-hidden="true" tabindex="-1"></a>      testthat<span class="sc">::</span><span class="fu">expect_equal</span>(</span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="6">6</button><span id="annotated-cell-1-26" class="code-annotation-target"><a href="#annotated-cell-1-26" aria-hidden="true" tabindex="-1"></a>        <span class="at">object =</span> session<span class="sc">$</span><span class="fu">returned</span>(),</span>
-<span id="annotated-cell-1-27"><a href="#annotated-cell-1-27" aria-hidden="true" tabindex="-1"></a>        <span class="at">expected =</span> test_vals</span>
-<span id="annotated-cell-1-28"><a href="#annotated-cell-1-28" aria-hidden="true" tabindex="-1"></a>      )</span>
-<span id="annotated-cell-1-29"><a href="#annotated-cell-1-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="annotated-cell-1-30"><a href="#annotated-cell-1-30" aria-hidden="true" tabindex="-1"></a>      <span class="fu">test_logger</span>(<span class="at">end =</span> <span class="st">"T5"</span>, <span class="at">msg =</span> <span class="st">"FR2: returned()"</span>)</span>
-<span id="annotated-cell-1-31"><a href="#annotated-cell-1-31" aria-hidden="true" tabindex="-1"></a>      </span>
-<span id="annotated-cell-1-32"><a href="#annotated-cell-1-32" aria-hidden="true" tabindex="-1"></a>    })</span>
-<span id="annotated-cell-1-33"><a href="#annotated-cell-1-33" aria-hidden="true" tabindex="-1"></a>  })</span>
-<span id="annotated-cell-1-34"><a href="#annotated-cell-1-34" aria-hidden="true" tabindex="-1"></a>})</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="annotated-cell-2"><pre class="sourceCode r code-annotation-code code-with-copy code-annotated"><code class="sourceCode r"><span id="annotated-cell-2-1"><a href="#annotated-cell-2-1" aria-hidden="true" tabindex="-1"></a>testthat<span class="sc">::</span><span class="fu">describe</span>(</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-2" data-target-annotation="1">1</button><span id="annotated-cell-2-2" class="code-annotation-target"><a href="#annotated-cell-2-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"F1.2: Dropdown menus (continuous x &amp; y axes, categorical point coloration)"</span>,</span>
+<span id="annotated-cell-2-3"><a href="#annotated-cell-2-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">code =</span> { </span>
+<span id="annotated-cell-2-4"><a href="#annotated-cell-2-4" aria-hidden="true" tabindex="-1"></a>  </span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-2" data-target-annotation="2">2</button><span id="annotated-cell-2-5" class="code-annotation-target"><a href="#annotated-cell-2-5" aria-hidden="true" tabindex="-1"></a>  testthat<span class="sc">::</span><span class="fu">it</span>(</span>
+<span id="annotated-cell-2-6"><a href="#annotated-cell-2-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Scenario: Scatter plot initial x, y, color values </span></span>
+<span id="annotated-cell-2-7"><a href="#annotated-cell-2-7" aria-hidden="true" tabindex="-1"></a><span class="st">      When I launched the Scatter Plot Data Visualization</span></span>
+<span id="annotated-cell-2-8"><a href="#annotated-cell-2-8" aria-hidden="true" tabindex="-1"></a><span class="st">      And I have a dataset of movie reviews from IMDB and Rotten Tomatoes</span></span>
+<span id="annotated-cell-2-9"><a href="#annotated-cell-2-9" aria-hidden="true" tabindex="-1"></a><span class="st">      Then the scatter plot should show 'IMDB Rating' on the x-axis</span></span>
+<span id="annotated-cell-2-10"><a href="#annotated-cell-2-10" aria-hidden="true" tabindex="-1"></a><span class="st">      And the scatter plot should show 'Audience Score' on the y-axis</span></span>
+<span id="annotated-cell-2-11"><a href="#annotated-cell-2-11" aria-hidden="true" tabindex="-1"></a><span class="st">      And the points on the scatter plot should be colored by 'MPAA Rating'"</span>,</span>
+<span id="annotated-cell-2-12"><a href="#annotated-cell-2-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">code =</span> {                     </span>
+<span id="annotated-cell-2-13"><a href="#annotated-cell-2-13" aria-hidden="true" tabindex="-1"></a>    </span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-2" data-target-annotation="3">3</button><span id="annotated-cell-2-14" class="code-annotation-target"><a href="#annotated-cell-2-14" aria-hidden="true" tabindex="-1"></a>    shiny<span class="sc">::</span><span class="fu">testServer</span>(<span class="at">app =</span> mod_var_input_server, <span class="at">expr =</span> {</span>
+<span id="annotated-cell-2-15"><a href="#annotated-cell-2-15" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="annotated-cell-2-16"><a href="#annotated-cell-2-16" aria-hidden="true" tabindex="-1"></a>      <span class="fu">test_logger</span>(<span class="at">start =</span> <span class="st">"T5"</span>, <span class="at">msg =</span> <span class="st">"F1.2: returned()"</span>)</span>
+<span id="annotated-cell-2-17"><a href="#annotated-cell-2-17" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="annotated-cell-2-18"><a href="#annotated-cell-2-18" aria-hidden="true" tabindex="-1"></a>      <span class="co"># create list of output vals</span></span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-2" data-target-annotation="4">4</button><span id="annotated-cell-2-19" class="code-annotation-target"><a href="#annotated-cell-2-19" aria-hidden="true" tabindex="-1"></a>      test_vals <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">y =</span> <span class="st">"imdb_rating"</span>,</span>
+<span id="annotated-cell-2-20"><a href="#annotated-cell-2-20" aria-hidden="true" tabindex="-1"></a>                        <span class="at">x =</span> <span class="st">"audience_score"</span>,</span>
+<span id="annotated-cell-2-21"><a href="#annotated-cell-2-21" aria-hidden="true" tabindex="-1"></a>                        <span class="at">z =</span> <span class="st">"mpaa_rating"</span>,</span>
+<span id="annotated-cell-2-22"><a href="#annotated-cell-2-22" aria-hidden="true" tabindex="-1"></a>                        <span class="at">alpha =</span> <span class="fl">0.75</span>,</span>
+<span id="annotated-cell-2-23"><a href="#annotated-cell-2-23" aria-hidden="true" tabindex="-1"></a>                        <span class="at">size =</span> <span class="dv">3</span>,</span>
+<span id="annotated-cell-2-24"><a href="#annotated-cell-2-24" aria-hidden="true" tabindex="-1"></a>                        <span class="at">plot_title =</span> <span class="st">"Example title"</span>)</span>
+<span id="annotated-cell-2-25"><a href="#annotated-cell-2-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-2-26"><a href="#annotated-cell-2-26" aria-hidden="true" tabindex="-1"></a>      <span class="co"># change inputs</span></span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-2" data-target-annotation="5">5</button><span id="annotated-cell-2-27" class="code-annotation-target"><a href="#annotated-cell-2-27" aria-hidden="true" tabindex="-1"></a>      session<span class="sc">$</span><span class="fu">setInputs</span>(<span class="at">y =</span> <span class="st">"imdb_rating"</span>,</span>
+<span id="annotated-cell-2-28"><a href="#annotated-cell-2-28" aria-hidden="true" tabindex="-1"></a>                        <span class="at">x =</span> <span class="st">"audience_score"</span>,</span>
+<span id="annotated-cell-2-29"><a href="#annotated-cell-2-29" aria-hidden="true" tabindex="-1"></a>                        <span class="at">z =</span> <span class="st">"mpaa_rating"</span>,</span>
+<span id="annotated-cell-2-30"><a href="#annotated-cell-2-30" aria-hidden="true" tabindex="-1"></a>                        <span class="at">alpha =</span> <span class="fl">0.75</span>,</span>
+<span id="annotated-cell-2-31"><a href="#annotated-cell-2-31" aria-hidden="true" tabindex="-1"></a>                        <span class="at">size =</span> <span class="dv">3</span>,</span>
+<span id="annotated-cell-2-32"><a href="#annotated-cell-2-32" aria-hidden="true" tabindex="-1"></a>                        <span class="at">plot_title =</span> <span class="st">"Example title"</span>)</span>
+<span id="annotated-cell-2-33"><a href="#annotated-cell-2-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-2-34"><a href="#annotated-cell-2-34" aria-hidden="true" tabindex="-1"></a>      testthat<span class="sc">::</span><span class="fu">expect_equal</span>(</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-2" data-target-annotation="6">6</button><span id="annotated-cell-2-35" class="code-annotation-target"><a href="#annotated-cell-2-35" aria-hidden="true" tabindex="-1"></a>        <span class="at">object =</span> session<span class="sc">$</span><span class="fu">returned</span>(),</span>
+<span id="annotated-cell-2-36"><a href="#annotated-cell-2-36" aria-hidden="true" tabindex="-1"></a>        <span class="at">expected =</span> test_vals</span>
+<span id="annotated-cell-2-37"><a href="#annotated-cell-2-37" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="annotated-cell-2-38"><a href="#annotated-cell-2-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-2-39"><a href="#annotated-cell-2-39" aria-hidden="true" tabindex="-1"></a>      <span class="fu">test_logger</span>(<span class="at">end =</span> <span class="st">"T5"</span>, <span class="at">msg =</span> <span class="st">"F1.2: returned()"</span>)</span>
+<span id="annotated-cell-2-40"><a href="#annotated-cell-2-40" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="annotated-cell-2-41"><a href="#annotated-cell-2-41" aria-hidden="true" tabindex="-1"></a>    })</span>
+<span id="annotated-cell-2-42"><a href="#annotated-cell-2-42" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="annotated-cell-2-43"><a href="#annotated-cell-2-43" aria-hidden="true" tabindex="-1"></a>})</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-annotation">
 <dl class="code-annotation-container-hidden code-annotation-container-grid">
-<dt data-target-cell="annotated-cell-1" data-target-annotation="1">1</dt>
+<dt data-target-cell="annotated-cell-2" data-target-annotation="1">1</dt>
 <dd>
-<span data-code-cell="annotated-cell-1" data-code-annotation="1" data-code-lines="1">Functional requirement description (<strong>FR2</strong>)<br>
+<span data-code-lines="2,43" data-code-cell="annotated-cell-2" data-code-annotation="1">Feature description (<strong>F1.2</strong>)<br>
 </span>
 </dd>
-<dt data-target-cell="annotated-cell-1" data-target-annotation="2">2</dt>
+<dt data-target-cell="annotated-cell-2" data-target-annotation="2">2</dt>
 <dd>
-<span data-code-cell="annotated-cell-1" data-code-annotation="2" data-code-lines="3">Test scope (<strong>T5</strong>) for inputs<br>
+<span data-code-lines="5,11,42" data-code-cell="annotated-cell-2" data-code-annotation="2">Test scope for inputs<br>
 </span>
 </dd>
-<dt data-target-cell="annotated-cell-1" data-target-annotation="3">3</dt>
+<dt data-target-cell="annotated-cell-2" data-target-annotation="3">3</dt>
 <dd>
-<span data-code-cell="annotated-cell-1" data-code-annotation="3" data-code-lines="5,32">Call to <code>testServer()</code><br>
+<span data-code-lines="14,41" data-code-cell="annotated-cell-2" data-code-annotation="3">Call to <code>testServer()</code><br>
 </span>
 </dd>
-<dt data-target-cell="annotated-cell-1" data-target-annotation="4">4</dt>
+<dt data-target-cell="annotated-cell-2" data-target-annotation="4">4</dt>
 <dd>
-<span data-code-cell="annotated-cell-1" data-code-annotation="4" data-code-lines="10,15">Create output values for comparison<br>
+<span data-code-lines="19,24" data-code-cell="annotated-cell-2" data-code-annotation="4">Create output values for comparison<br>
 </span>
 </dd>
-<dt data-target-cell="annotated-cell-1" data-target-annotation="5">5</dt>
+<dt data-target-cell="annotated-cell-2" data-target-annotation="5">5</dt>
 <dd>
-<span data-code-cell="annotated-cell-1" data-code-annotation="5" data-code-lines="18,23">Set each input using <code>setInputs(input = )</code><br>
+<span data-code-lines="27,32" data-code-cell="annotated-cell-2" data-code-annotation="5">Set each input using <code>setInputs(input = )</code><br>
 </span>
 </dd>
-<dt data-target-cell="annotated-cell-1" data-target-annotation="6">6</dt>
+<dt data-target-cell="annotated-cell-2" data-target-annotation="6">6</dt>
 <dd>
-<span data-code-cell="annotated-cell-1" data-code-annotation="6" data-code-lines="26,27">Confirm returned values against <code>test_vals</code></span>
+<span data-code-lines="35,36" data-code-cell="annotated-cell-2" data-code-annotation="6">Confirm returned values against <code>test_vals</code></span>
 </dd>
 </dl>
 </div>
@@ -501,118 +528,127 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>In <code>movies_server()</code>, when we pass <code>selected_vars</code> to the <code>var_inputs</code> argument, we’re not passing the returned values (this is why we don’t need the parentheses). We’re calling on the method (or function) created by the call to <code>reactive()</code> (inside <code>mod_var_input_server()</code>).</p>
 <p>I’ve included the <code>movies_server()</code> function below to refresh our memory of how this <em>should</em> work:<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a></p>
 <div class="cell">
-<div class="sourceCode cell-code" id="annotated-cell-2"><pre class="sourceCode r code-annotation-code code-with-copy code-annotated"><code class="sourceCode r"><span id="annotated-cell-2-1"><a href="#annotated-cell-2-1" aria-hidden="true" tabindex="-1"></a>movies_server <span class="ot">&lt;-</span> <span class="cf">function</span>(input, output, session) {</span>
-<span id="annotated-cell-2-2"><a href="#annotated-cell-2-2" aria-hidden="true" tabindex="-1"></a></span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-2" data-target-annotation="1">1</button><span id="annotated-cell-2-3" class="code-annotation-target"><a href="#annotated-cell-2-3" aria-hidden="true" tabindex="-1"></a>      selected_vars <span class="ot">&lt;-</span> <span class="fu">mod_var_input_server</span>(<span class="st">"vars"</span>)</span>
-<span id="annotated-cell-2-4"><a href="#annotated-cell-2-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="annotated-cell-2-5"><a href="#annotated-cell-2-5" aria-hidden="true" tabindex="-1"></a>      <span class="fu">mod_scatter_display_server</span>(<span class="st">"plot"</span>, <span class="at">var_inputs =</span> selected_vars)</span>
-<span id="annotated-cell-2-6"><a href="#annotated-cell-2-6" aria-hidden="true" tabindex="-1"></a>      </span>
-<span id="annotated-cell-2-7"><a href="#annotated-cell-2-7" aria-hidden="true" tabindex="-1"></a>}</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="annotated-cell-3"><pre class="sourceCode r code-annotation-code code-with-copy code-annotated"><code class="sourceCode r"><span id="annotated-cell-3-1"><a href="#annotated-cell-3-1" aria-hidden="true" tabindex="-1"></a>movies_server <span class="ot">&lt;-</span> <span class="cf">function</span>(input, output, session) {</span>
+<span id="annotated-cell-3-2"><a href="#annotated-cell-3-2" aria-hidden="true" tabindex="-1"></a></span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-3" data-target-annotation="1">1</button><span id="annotated-cell-3-3" class="code-annotation-target"><a href="#annotated-cell-3-3" aria-hidden="true" tabindex="-1"></a>      selected_vars <span class="ot">&lt;-</span> <span class="fu">mod_var_input_server</span>(<span class="st">"vars"</span>)</span>
+<span id="annotated-cell-3-4"><a href="#annotated-cell-3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-3-5"><a href="#annotated-cell-3-5" aria-hidden="true" tabindex="-1"></a>      <span class="fu">mod_scatter_display_server</span>(<span class="st">"plot"</span>, <span class="at">var_inputs =</span> selected_vars)</span>
+<span id="annotated-cell-3-6"><a href="#annotated-cell-3-6" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="annotated-cell-3-7"><a href="#annotated-cell-3-7" aria-hidden="true" tabindex="-1"></a>}</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-annotation">
 <dl class="code-annotation-container-hidden code-annotation-container-grid">
-<dt data-target-cell="annotated-cell-2" data-target-annotation="1">1</dt>
+<dt data-target-cell="annotated-cell-3" data-target-annotation="1">1</dt>
 <dd>
-<span data-code-cell="annotated-cell-2" data-code-annotation="1" data-code-lines="3">Calls <code>return(reactive(list(...)))</code></span>
+<span data-code-lines="3" data-code-cell="annotated-cell-3" data-code-annotation="1">Calls <code>return(reactive(list(...)))</code></span>
 </dd>
 </dl>
 </div>
 </div>
-<p>We can pause execution with Posit Workbench’s debugger, <a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a> to see the difference between calling <code>selected_vars</code> and <code>selected_vars()</code>:</p>
+<p>When we pause execution with Posit Workbench’s debugger we can see the difference between calling <code>selected_vars</code> and <code>selected_vars()</code>:<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a></p>
 <div class="quarto-layout-panel">
 <div class="quarto-layout-row quarto-layout-valign-top">
 <div class="quarto-layout-cell" style="flex-basis: 49.0%;justify-content: center;">
-<div class="sourceCode" id="cb1"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>Browse[1]&gt; selected_vars</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>reactive({</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    list(</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>      y = input$y, </span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>      x = input$x, </span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>      z = input$z, </span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>      alpha = input$alpha, </span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>      size = input$size, </span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>      plot_title = input$plot_title</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>      )</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>Browse[1]&gt; selected_vars</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>reactive({</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    list(</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>      y = input$y, </span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>      x = input$x, </span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>      z = input$z, </span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>      alpha = input$alpha, </span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>      size = input$size, </span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>      plot_title = input$plot_title</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="quarto-figure-spacer quarto-layout-cell" style="flex-basis: 2.0%;justify-content: center;">
 <p>&nbsp;</p>
 </div>
 <div class="quarto-layout-cell" style="flex-basis: 49.0%;justify-content: center;">
-<div class="sourceCode" id="cb2"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>Browse[1]&gt; selected_vars()</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>$y</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>[1] "audience_score"</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>$x</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>[1] "imdb_rating"</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>$z</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>[1] "mpaa_rating"</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>$alpha</span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>[1] 0.5</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>$size</span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>[1] 2</span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>$plot_title</span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>[1] ""</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>Browse[1]&gt; selected_vars()</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>$y</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>[1] "audience_score"</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>$x</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>[1] "imdb_rating"</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>$z</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>[1] "mpaa_rating"</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>$alpha</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>[1] 0.5</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>$size</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>[1] 2</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>$plot_title</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>[1] ""</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </div>
 </div>
 <p>If we’re testing a module function that collects the reactive values, we need to wrap those values in <code>reactive()</code> in the <code>args()</code> argument:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="annotated-cell-3"><pre class="sourceCode r code-annotation-code code-with-copy code-annotated"><code class="sourceCode r"><button class="code-annotation-anchor" data-target-cell="annotated-cell-3" data-target-annotation="1">1</button><span id="annotated-cell-3-1" class="code-annotation-target"><a href="#annotated-cell-3-1" aria-hidden="true" tabindex="-1"></a>testthat<span class="sc">::</span><span class="fu">describe</span>(<span class="st">"FR2: user-input updating"</span>, <span class="at">code =</span> {</span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-3" data-target-annotation="2">2</button><span id="annotated-cell-3-2" class="code-annotation-target"><a href="#annotated-cell-3-2" aria-hidden="true" tabindex="-1"></a>  testthat<span class="sc">::</span><span class="fu">it</span>(<span class="at">description =</span> <span class="st">"T6: plot outputs"</span>, <span class="at">code =</span> {</span>
-<span id="annotated-cell-3-3"><a href="#annotated-cell-3-3" aria-hidden="true" tabindex="-1"></a>    shiny<span class="sc">::</span><span class="fu">testServer</span>(</span>
-<span id="annotated-cell-3-4"><a href="#annotated-cell-3-4" aria-hidden="true" tabindex="-1"></a>      <span class="at">app =</span> mod_scatter_display_server,</span>
-<span id="annotated-cell-3-5"><a href="#annotated-cell-3-5" aria-hidden="true" tabindex="-1"></a>      <span class="at">args =</span> <span class="fu">list</span>(<span class="at">var_inputs =</span> </span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-3" data-target-annotation="3">3</button><span id="annotated-cell-3-6" class="code-annotation-target"><a href="#annotated-cell-3-6" aria-hidden="true" tabindex="-1"></a>          shiny<span class="sc">::</span><span class="fu">reactive</span>(</span>
-<span id="annotated-cell-3-7"><a href="#annotated-cell-3-7" aria-hidden="true" tabindex="-1"></a>                    <span class="fu">list</span>(</span>
-<span id="annotated-cell-3-8"><a href="#annotated-cell-3-8" aria-hidden="true" tabindex="-1"></a>                      <span class="at">y =</span> <span class="st">"audience_score"</span>,</span>
-<span id="annotated-cell-3-9"><a href="#annotated-cell-3-9" aria-hidden="true" tabindex="-1"></a>                      <span class="at">x =</span> <span class="st">"imdb_rating"</span>,</span>
-<span id="annotated-cell-3-10"><a href="#annotated-cell-3-10" aria-hidden="true" tabindex="-1"></a>                      <span class="at">z =</span> <span class="st">"mpaa_rating"</span>,</span>
-<span id="annotated-cell-3-11"><a href="#annotated-cell-3-11" aria-hidden="true" tabindex="-1"></a>                      <span class="at">alpha =</span> <span class="fl">0.5</span>,</span>
-<span id="annotated-cell-3-12"><a href="#annotated-cell-3-12" aria-hidden="true" tabindex="-1"></a>                      <span class="at">size =</span> <span class="dv">2</span>,</span>
-<span id="annotated-cell-3-13"><a href="#annotated-cell-3-13" aria-hidden="true" tabindex="-1"></a>                      <span class="at">plot_title =</span> <span class="st">"Enter plot title"</span></span>
-<span id="annotated-cell-3-14"><a href="#annotated-cell-3-14" aria-hidden="true" tabindex="-1"></a>                    )</span>
-<span id="annotated-cell-3-15"><a href="#annotated-cell-3-15" aria-hidden="true" tabindex="-1"></a>            )</span>
-<span id="annotated-cell-3-16"><a href="#annotated-cell-3-16" aria-hidden="true" tabindex="-1"></a>        ),</span>
-<span id="annotated-cell-3-17"><a href="#annotated-cell-3-17" aria-hidden="true" tabindex="-1"></a>      <span class="at">expr =</span> {</span>
-<span id="annotated-cell-3-18"><a href="#annotated-cell-3-18" aria-hidden="true" tabindex="-1"></a>        <span class="fu">test_logger</span>(<span class="at">start =</span> <span class="st">"T6"</span>, <span class="at">msg =</span> <span class="st">"FR2: inputs()"</span>)</span>
-<span id="annotated-cell-3-19"><a href="#annotated-cell-3-19" aria-hidden="true" tabindex="-1"></a>        </span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-3" data-target-annotation="4">4</button><span id="annotated-cell-3-20" class="code-annotation-target"><a href="#annotated-cell-3-20" aria-hidden="true" tabindex="-1"></a>        testthat<span class="sc">::</span><span class="fu">expect_equal</span>(</span>
-<span id="annotated-cell-3-21"><a href="#annotated-cell-3-21" aria-hidden="true" tabindex="-1"></a>          <span class="at">object =</span> <span class="fu">inputs</span>(),</span>
-<span id="annotated-cell-3-22"><a href="#annotated-cell-3-22" aria-hidden="true" tabindex="-1"></a>          <span class="at">expected =</span> <span class="fu">list</span>(<span class="at">x =</span> <span class="st">"imdb_rating"</span>,</span>
-<span id="annotated-cell-3-23"><a href="#annotated-cell-3-23" aria-hidden="true" tabindex="-1"></a>                          <span class="at">y =</span> <span class="st">"audience_score"</span>,</span>
-<span id="annotated-cell-3-24"><a href="#annotated-cell-3-24" aria-hidden="true" tabindex="-1"></a>                          <span class="at">z =</span> <span class="st">"mpaa_rating"</span>,</span>
-<span id="annotated-cell-3-25"><a href="#annotated-cell-3-25" aria-hidden="true" tabindex="-1"></a>                          <span class="at">alpha =</span> <span class="fl">0.5</span>,</span>
-<span id="annotated-cell-3-26"><a href="#annotated-cell-3-26" aria-hidden="true" tabindex="-1"></a>                          <span class="at">size =</span> <span class="dv">2</span>,</span>
-<span id="annotated-cell-3-27"><a href="#annotated-cell-3-27" aria-hidden="true" tabindex="-1"></a>                          <span class="at">plot_title =</span> <span class="st">"Enter Plot Title"</span>)</span>
-<span id="annotated-cell-3-28"><a href="#annotated-cell-3-28" aria-hidden="true" tabindex="-1"></a>        )</span>
-<span id="annotated-cell-3-29"><a href="#annotated-cell-3-29" aria-hidden="true" tabindex="-1"></a>        </span>
-<span id="annotated-cell-3-30"><a href="#annotated-cell-3-30" aria-hidden="true" tabindex="-1"></a>        <span class="fu">test_logger</span>(<span class="at">end =</span> <span class="st">"T6"</span>, <span class="at">msg =</span> <span class="st">"FR2: inputs()"</span>)</span>
-<span id="annotated-cell-3-31"><a href="#annotated-cell-3-31" aria-hidden="true" tabindex="-1"></a>    })</span>
-<span id="annotated-cell-3-32"><a href="#annotated-cell-3-32" aria-hidden="true" tabindex="-1"></a>  })</span>
-<span id="annotated-cell-3-33"><a href="#annotated-cell-3-33" aria-hidden="true" tabindex="-1"></a>})</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="annotated-cell-4"><pre class="sourceCode r code-annotation-code code-with-copy code-annotated"><code class="sourceCode r"><span id="annotated-cell-4-1"><a href="#annotated-cell-4-1" aria-hidden="true" tabindex="-1"></a>testthat<span class="sc">::</span><span class="fu">describe</span>(</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-4" data-target-annotation="1">1</button><span id="annotated-cell-4-2" class="code-annotation-target"><a href="#annotated-cell-4-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"F1.2: Dropdown menus (continuous x &amp; y axes, categorical point coloration)"</span>,</span>
+<span id="annotated-cell-4-3"><a href="#annotated-cell-4-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">code =</span> {</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-4" data-target-annotation="2">2</button><span id="annotated-cell-4-4" class="code-annotation-target"><a href="#annotated-cell-4-4" aria-hidden="true" tabindex="-1"></a>    testthat<span class="sc">::</span><span class="fu">it</span>(</span>
+<span id="annotated-cell-4-5"><a href="#annotated-cell-4-5" aria-hidden="true" tabindex="-1"></a>      <span class="st">"Scenario: Scatter plot initial x, y, color values</span></span>
+<span id="annotated-cell-4-6"><a href="#annotated-cell-4-6" aria-hidden="true" tabindex="-1"></a><span class="st">          When I launched the Scatter Plot Data Visualization</span></span>
+<span id="annotated-cell-4-7"><a href="#annotated-cell-4-7" aria-hidden="true" tabindex="-1"></a><span class="st">          And I have a dataset of movie reviews from IMDB and Rotten Tomatoes</span></span>
+<span id="annotated-cell-4-8"><a href="#annotated-cell-4-8" aria-hidden="true" tabindex="-1"></a><span class="st">          Then the scatter plot should show 'IMDB Rating' on the x-axis</span></span>
+<span id="annotated-cell-4-9"><a href="#annotated-cell-4-9" aria-hidden="true" tabindex="-1"></a><span class="st">          And the scatter plot should show 'Audience Score' on the y-axis</span></span>
+<span id="annotated-cell-4-10"><a href="#annotated-cell-4-10" aria-hidden="true" tabindex="-1"></a><span class="st">          And the points on the scatter plot should be colored by 'MPAA Rating'"</span>, </span>
+<span id="annotated-cell-4-11"><a href="#annotated-cell-4-11" aria-hidden="true" tabindex="-1"></a>      <span class="at">code =</span> {</span>
+<span id="annotated-cell-4-12"><a href="#annotated-cell-4-12" aria-hidden="true" tabindex="-1"></a>        shiny<span class="sc">::</span><span class="fu">testServer</span>(</span>
+<span id="annotated-cell-4-13"><a href="#annotated-cell-4-13" aria-hidden="true" tabindex="-1"></a>          <span class="at">app =</span> mod_scatter_display_server,</span>
+<span id="annotated-cell-4-14"><a href="#annotated-cell-4-14" aria-hidden="true" tabindex="-1"></a>          <span class="at">args =</span> <span class="fu">list</span>(</span>
+<span id="annotated-cell-4-15"><a href="#annotated-cell-4-15" aria-hidden="true" tabindex="-1"></a>            <span class="at">var_inputs =</span></span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-4" data-target-annotation="3">3</button><span id="annotated-cell-4-16" class="code-annotation-target"><a href="#annotated-cell-4-16" aria-hidden="true" tabindex="-1"></a>              shiny<span class="sc">::</span><span class="fu">reactive</span>(</span>
+<span id="annotated-cell-4-17"><a href="#annotated-cell-4-17" aria-hidden="true" tabindex="-1"></a>                <span class="fu">list</span>( </span>
+<span id="annotated-cell-4-18"><a href="#annotated-cell-4-18" aria-hidden="true" tabindex="-1"></a>                    <span class="at">x =</span> <span class="st">"critics_score"</span>,</span>
+<span id="annotated-cell-4-19"><a href="#annotated-cell-4-19" aria-hidden="true" tabindex="-1"></a>                    <span class="at">y =</span> <span class="st">"imdb_rating"</span>,</span>
+<span id="annotated-cell-4-20"><a href="#annotated-cell-4-20" aria-hidden="true" tabindex="-1"></a>                    <span class="at">z =</span> <span class="st">"mpaa_rating"</span>,</span>
+<span id="annotated-cell-4-21"><a href="#annotated-cell-4-21" aria-hidden="true" tabindex="-1"></a>                    <span class="at">alpha =</span> <span class="fl">0.5</span>,</span>
+<span id="annotated-cell-4-22"><a href="#annotated-cell-4-22" aria-hidden="true" tabindex="-1"></a>                    <span class="at">size =</span> <span class="dv">2</span>,</span>
+<span id="annotated-cell-4-23"><a href="#annotated-cell-4-23" aria-hidden="true" tabindex="-1"></a>                    <span class="at">plot_title =</span> <span class="st">"Enter Plot Title"</span></span>
+<span id="annotated-cell-4-24"><a href="#annotated-cell-4-24" aria-hidden="true" tabindex="-1"></a>                  )</span>
+<span id="annotated-cell-4-25"><a href="#annotated-cell-4-25" aria-hidden="true" tabindex="-1"></a>                )</span>
+<span id="annotated-cell-4-26"><a href="#annotated-cell-4-26" aria-hidden="true" tabindex="-1"></a>          ),</span>
+<span id="annotated-cell-4-27"><a href="#annotated-cell-4-27" aria-hidden="true" tabindex="-1"></a>          <span class="at">expr =</span> {</span>
+<span id="annotated-cell-4-28"><a href="#annotated-cell-4-28" aria-hidden="true" tabindex="-1"></a>            <span class="fu">test_logger</span>(<span class="at">start =</span> <span class="st">"T6"</span>, <span class="at">msg =</span> <span class="st">"F1.2: initial values"</span>)</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-4" data-target-annotation="4">4</button><span id="annotated-cell-4-29" class="code-annotation-target"><a href="#annotated-cell-4-29" aria-hidden="true" tabindex="-1"></a>            testthat<span class="sc">::</span><span class="fu">expect_equal</span>(</span>
+<span id="annotated-cell-4-30"><a href="#annotated-cell-4-30" aria-hidden="true" tabindex="-1"></a>              <span class="at">object =</span> <span class="fu">inputs</span>(),</span>
+<span id="annotated-cell-4-31"><a href="#annotated-cell-4-31" aria-hidden="true" tabindex="-1"></a>              <span class="at">expected =</span> <span class="fu">list</span>(</span>
+<span id="annotated-cell-4-32"><a href="#annotated-cell-4-32" aria-hidden="true" tabindex="-1"></a>                <span class="at">x =</span> <span class="st">"critics_score"</span>,</span>
+<span id="annotated-cell-4-33"><a href="#annotated-cell-4-33" aria-hidden="true" tabindex="-1"></a>                <span class="at">y =</span> <span class="st">"imdb_rating"</span>,</span>
+<span id="annotated-cell-4-34"><a href="#annotated-cell-4-34" aria-hidden="true" tabindex="-1"></a>                <span class="at">z =</span> <span class="st">"mpaa_rating"</span>,</span>
+<span id="annotated-cell-4-35"><a href="#annotated-cell-4-35" aria-hidden="true" tabindex="-1"></a>                <span class="at">alpha =</span> <span class="fl">0.5</span>,</span>
+<span id="annotated-cell-4-36"><a href="#annotated-cell-4-36" aria-hidden="true" tabindex="-1"></a>                <span class="at">size =</span> <span class="dv">2</span>,</span>
+<span id="annotated-cell-4-37"><a href="#annotated-cell-4-37" aria-hidden="true" tabindex="-1"></a>                <span class="at">plot_title =</span> <span class="st">"Enter Plot Title"</span></span>
+<span id="annotated-cell-4-38"><a href="#annotated-cell-4-38" aria-hidden="true" tabindex="-1"></a>              )</span>
+<span id="annotated-cell-4-39"><a href="#annotated-cell-4-39" aria-hidden="true" tabindex="-1"></a>            )</span>
+<span id="annotated-cell-4-40"><a href="#annotated-cell-4-40" aria-hidden="true" tabindex="-1"></a>            <span class="fu">test_logger</span>(<span class="at">end =</span> <span class="st">"T5"</span>, <span class="at">msg =</span> <span class="st">"F1.2: initial values"</span>)</span>
+<span id="annotated-cell-4-41"><a href="#annotated-cell-4-41" aria-hidden="true" tabindex="-1"></a>        })</span>
+<span id="annotated-cell-4-42"><a href="#annotated-cell-4-42" aria-hidden="true" tabindex="-1"></a>    })</span>
+<span id="annotated-cell-4-43"><a href="#annotated-cell-4-43" aria-hidden="true" tabindex="-1"></a>})</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-annotation">
 <dl class="code-annotation-container-hidden code-annotation-container-grid">
-<dt data-target-cell="annotated-cell-3" data-target-annotation="1">1</dt>
+<dt data-target-cell="annotated-cell-4" data-target-annotation="1">1</dt>
 <dd>
-<span data-code-cell="annotated-cell-3" data-code-annotation="1" data-code-lines="1,33">Functional requirement description (<strong>FR1</strong>)<br>
+<span data-code-lines="2,43" data-code-cell="annotated-cell-4" data-code-annotation="1">Feature requirement description</span>
+</dd>
+<dt data-target-cell="annotated-cell-4" data-target-annotation="2">2</dt>
+<dd>
+<span data-code-lines="4,42" data-code-cell="annotated-cell-4" data-code-annotation="2">Scenario test scope<br>
 </span>
 </dd>
-<dt data-target-cell="annotated-cell-3" data-target-annotation="2">2</dt>
+<dt data-target-cell="annotated-cell-4" data-target-annotation="3">3</dt>
 <dd>
-<span data-code-cell="annotated-cell-3" data-code-annotation="2" data-code-lines="2,32">Test scope<br>
+<span data-code-lines="16,25" data-code-cell="annotated-cell-4" data-code-annotation="3">List of reactive variable inputs<br>
 </span>
 </dd>
-<dt data-target-cell="annotated-cell-3" data-target-annotation="3">3</dt>
+<dt data-target-cell="annotated-cell-4" data-target-annotation="4">4</dt>
 <dd>
-<span data-code-cell="annotated-cell-3" data-code-annotation="3" data-code-lines="6,15">List of reactive variable inputs<br>
-</span>
-</dd>
-<dt data-target-cell="annotated-cell-3" data-target-annotation="4">4</dt>
-<dd>
-<span data-code-cell="annotated-cell-3" data-code-annotation="4" data-code-lines="20,28">Compare <code>inputs()</code> to initial values</span>
+<span data-code-lines="29,39" data-code-cell="annotated-cell-4" data-code-annotation="4">Compare <code>inputs()</code> to initial values</span>
 </dd>
 </dl>
 </div>
@@ -639,7 +675,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">:::</span><span class="fu">test_coverage_active_file</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">:::</span><span class="fu">test_coverage_active_file</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
@@ -651,45 +687,45 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="testing-outputs">Testing <span style="font-size: 0.95em;"><code>output$</code></span>s</h3>
 <p>To confirm the plot is being created properly in <code>mod_scatter_display_server()</code>, we can’t use the <code>ggplot2::is.ggplot()</code> function because the plot is being rendered by <code>renderPlot()</code>. However, we can verify the structure of the <code>output$scatterplot</code> object using any of the following expectations:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>testthat<span class="sc">::</span><span class="fu">expect_true</span>(</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">object =</span> <span class="fu">is.list</span>(output<span class="sc">$</span>scatterplot))</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>testthat<span class="sc">::</span><span class="fu">expect_equal</span>(</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">object =</span> <span class="fu">names</span>(output<span class="sc">$</span>scatterplot),</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">expected =</span> <span class="fu">c</span>(<span class="st">"src"</span>, <span class="st">"width"</span>, <span class="st">"height"</span>, <span class="st">"alt"</span>, <span class="st">"coordmap"</span>))</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>testthat<span class="sc">::</span><span class="fu">expect_equal</span>(</span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">object =</span> output<span class="sc">$</span>scatterplot[[<span class="st">"alt"</span>]],</span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">expected =</span> <span class="st">"Plot object"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>testthat<span class="sc">::</span><span class="fu">expect_true</span>(</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">object =</span> <span class="fu">is.list</span>(output<span class="sc">$</span>scatterplot))</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>testthat<span class="sc">::</span><span class="fu">expect_equal</span>(</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">object =</span> <span class="fu">names</span>(output<span class="sc">$</span>scatterplot),</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">expected =</span> <span class="fu">c</span>(<span class="st">"src"</span>, <span class="st">"width"</span>, <span class="st">"height"</span>, <span class="st">"alt"</span>, <span class="st">"coordmap"</span>))</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>testthat<span class="sc">::</span><span class="fu">expect_equal</span>(</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">object =</span> output<span class="sc">$</span>scatterplot[[<span class="st">"alt"</span>]],</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">expected =</span> <span class="st">"Plot object"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>It’s also possible to build the graph <em>inside</em> the test using the same code from the module server function, then confirm it with <code>ggplot2::is.ggplot()</code>:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="annotated-cell-6"><pre class="sourceCode r code-annotation-code code-with-copy code-annotated"><code class="sourceCode r"><button class="code-annotation-anchor" data-target-cell="annotated-cell-6" data-target-annotation="1">1</button><span id="annotated-cell-6-1" class="code-annotation-target"><a href="#annotated-cell-6-1" aria-hidden="true" tabindex="-1"></a>    plot <span class="ot">&lt;-</span> <span class="fu">scatter_plot</span>(movies,</span>
-<span id="annotated-cell-6-2"><a href="#annotated-cell-6-2" aria-hidden="true" tabindex="-1"></a>      <span class="at">x_var =</span> <span class="fu">inputs</span>()<span class="sc">$</span>x,</span>
-<span id="annotated-cell-6-3"><a href="#annotated-cell-6-3" aria-hidden="true" tabindex="-1"></a>      <span class="at">y_var =</span> <span class="fu">inputs</span>()<span class="sc">$</span>y,</span>
-<span id="annotated-cell-6-4"><a href="#annotated-cell-6-4" aria-hidden="true" tabindex="-1"></a>      <span class="at">col_var =</span> <span class="fu">inputs</span>()<span class="sc">$</span>z,</span>
-<span id="annotated-cell-6-5"><a href="#annotated-cell-6-5" aria-hidden="true" tabindex="-1"></a>      <span class="at">alpha_var =</span> <span class="fu">inputs</span>()<span class="sc">$</span>alpha,</span>
-<span id="annotated-cell-6-6"><a href="#annotated-cell-6-6" aria-hidden="true" tabindex="-1"></a>      <span class="at">size_var =</span> <span class="fu">inputs</span>()<span class="sc">$</span>size) <span class="sc">+</span></span>
-<span id="annotated-cell-6-7"><a href="#annotated-cell-6-7" aria-hidden="true" tabindex="-1"></a>    ggplot2<span class="sc">::</span><span class="fu">labs</span>(</span>
-<span id="annotated-cell-6-8"><a href="#annotated-cell-6-8" aria-hidden="true" tabindex="-1"></a>      <span class="at">title =</span> <span class="fu">inputs</span>()<span class="sc">$</span>plot_title,</span>
-<span id="annotated-cell-6-9"><a href="#annotated-cell-6-9" aria-hidden="true" tabindex="-1"></a>      <span class="at">x =</span> stringr<span class="sc">::</span><span class="fu">str_replace_all</span>(</span>
-<span id="annotated-cell-6-10"><a href="#annotated-cell-6-10" aria-hidden="true" tabindex="-1"></a>              tools<span class="sc">::</span><span class="fu">toTitleCase</span>(<span class="fu">inputs</span>()<span class="sc">$</span>x), <span class="st">"_"</span>, <span class="st">" "</span>),</span>
-<span id="annotated-cell-6-11"><a href="#annotated-cell-6-11" aria-hidden="true" tabindex="-1"></a>      <span class="at">y =</span> stringr<span class="sc">::</span><span class="fu">str_replace_all</span>(</span>
-<span id="annotated-cell-6-12"><a href="#annotated-cell-6-12" aria-hidden="true" tabindex="-1"></a>              tools<span class="sc">::</span><span class="fu">toTitleCase</span>(<span class="fu">inputs</span>()<span class="sc">$</span>y), <span class="st">"_"</span>, <span class="st">" "</span>)) <span class="sc">+</span></span>
-<span id="annotated-cell-6-13"><a href="#annotated-cell-6-13" aria-hidden="true" tabindex="-1"></a>    ggplot2<span class="sc">::</span><span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
-<span id="annotated-cell-6-14"><a href="#annotated-cell-6-14" aria-hidden="true" tabindex="-1"></a>    ggplot2<span class="sc">::</span><span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"bottom"</span>)</span>
-<span id="annotated-cell-6-15"><a href="#annotated-cell-6-15" aria-hidden="true" tabindex="-1"></a>    </span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-6" data-target-annotation="2">2</button><span id="annotated-cell-6-16" class="code-annotation-target"><a href="#annotated-cell-6-16" aria-hidden="true" tabindex="-1"></a>    testthat<span class="sc">::</span><span class="fu">expect_true</span>(ggplot2<span class="sc">::</span><span class="fu">is.ggplot</span>(plot))</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="annotated-cell-7"><pre class="sourceCode r code-annotation-code code-with-copy code-annotated"><code class="sourceCode r"><button class="code-annotation-anchor" data-target-cell="annotated-cell-7" data-target-annotation="1">1</button><span id="annotated-cell-7-1" class="code-annotation-target"><a href="#annotated-cell-7-1" aria-hidden="true" tabindex="-1"></a>    plot <span class="ot">&lt;-</span> <span class="fu">scatter_plot</span>(movies,</span>
+<span id="annotated-cell-7-2"><a href="#annotated-cell-7-2" aria-hidden="true" tabindex="-1"></a>      <span class="at">x_var =</span> <span class="fu">inputs</span>()<span class="sc">$</span>x,</span>
+<span id="annotated-cell-7-3"><a href="#annotated-cell-7-3" aria-hidden="true" tabindex="-1"></a>      <span class="at">y_var =</span> <span class="fu">inputs</span>()<span class="sc">$</span>y,</span>
+<span id="annotated-cell-7-4"><a href="#annotated-cell-7-4" aria-hidden="true" tabindex="-1"></a>      <span class="at">col_var =</span> <span class="fu">inputs</span>()<span class="sc">$</span>z,</span>
+<span id="annotated-cell-7-5"><a href="#annotated-cell-7-5" aria-hidden="true" tabindex="-1"></a>      <span class="at">alpha_var =</span> <span class="fu">inputs</span>()<span class="sc">$</span>alpha,</span>
+<span id="annotated-cell-7-6"><a href="#annotated-cell-7-6" aria-hidden="true" tabindex="-1"></a>      <span class="at">size_var =</span> <span class="fu">inputs</span>()<span class="sc">$</span>size) <span class="sc">+</span></span>
+<span id="annotated-cell-7-7"><a href="#annotated-cell-7-7" aria-hidden="true" tabindex="-1"></a>    ggplot2<span class="sc">::</span><span class="fu">labs</span>(</span>
+<span id="annotated-cell-7-8"><a href="#annotated-cell-7-8" aria-hidden="true" tabindex="-1"></a>      <span class="at">title =</span> <span class="fu">inputs</span>()<span class="sc">$</span>plot_title,</span>
+<span id="annotated-cell-7-9"><a href="#annotated-cell-7-9" aria-hidden="true" tabindex="-1"></a>      <span class="at">x =</span> stringr<span class="sc">::</span><span class="fu">str_replace_all</span>(</span>
+<span id="annotated-cell-7-10"><a href="#annotated-cell-7-10" aria-hidden="true" tabindex="-1"></a>              tools<span class="sc">::</span><span class="fu">toTitleCase</span>(<span class="fu">inputs</span>()<span class="sc">$</span>x), <span class="st">"_"</span>, <span class="st">" "</span>),</span>
+<span id="annotated-cell-7-11"><a href="#annotated-cell-7-11" aria-hidden="true" tabindex="-1"></a>      <span class="at">y =</span> stringr<span class="sc">::</span><span class="fu">str_replace_all</span>(</span>
+<span id="annotated-cell-7-12"><a href="#annotated-cell-7-12" aria-hidden="true" tabindex="-1"></a>              tools<span class="sc">::</span><span class="fu">toTitleCase</span>(<span class="fu">inputs</span>()<span class="sc">$</span>y), <span class="st">"_"</span>, <span class="st">" "</span>)) <span class="sc">+</span></span>
+<span id="annotated-cell-7-13"><a href="#annotated-cell-7-13" aria-hidden="true" tabindex="-1"></a>    ggplot2<span class="sc">::</span><span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="annotated-cell-7-14"><a href="#annotated-cell-7-14" aria-hidden="true" tabindex="-1"></a>    ggplot2<span class="sc">::</span><span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"bottom"</span>)</span>
+<span id="annotated-cell-7-15"><a href="#annotated-cell-7-15" aria-hidden="true" tabindex="-1"></a>    </span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-7" data-target-annotation="2">2</button><span id="annotated-cell-7-16" class="code-annotation-target"><a href="#annotated-cell-7-16" aria-hidden="true" tabindex="-1"></a>    testthat<span class="sc">::</span><span class="fu">expect_true</span>(ggplot2<span class="sc">::</span><span class="fu">is.ggplot</span>(plot))</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-annotation">
 <dl class="code-annotation-container-hidden code-annotation-container-grid">
-<dt data-target-cell="annotated-cell-6" data-target-annotation="1">1</dt>
+<dt data-target-cell="annotated-cell-7" data-target-annotation="1">1</dt>
 <dd>
-<span data-code-cell="annotated-cell-6" data-code-annotation="1" data-code-lines="1,14">Build graph (same code from module function)<br>
+<span data-code-lines="1,14" data-code-cell="annotated-cell-7" data-code-annotation="1">Build graph (same code from module function)<br>
 </span>
 </dd>
-<dt data-target-cell="annotated-cell-6" data-target-annotation="2">2</dt>
+<dt data-target-cell="annotated-cell-7" data-target-annotation="2">2</dt>
 <dd>
-<span data-code-cell="annotated-cell-6" data-code-annotation="2" data-code-lines="16">Confirm <code>ggplot2</code> object is built</span>
+<span data-code-lines="16" data-code-cell="annotated-cell-7" data-code-annotation="2">Confirm <code>ggplot2</code> object is built</span>
 </dd>
 </dl>
 </div>
@@ -723,7 +759,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <hr>
 <ol>
 <li id="fn1"><p><code>selected_vars</code> are the reactive plot values returned from <code>mod_var_input_server()</code>.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2"><p>We’ll cover using <code>browser()</code> and the IDE’s debugger in a future chapter.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p>We’ll cover using <code>browser()</code> and the IDE’s debugger in a <a href="@special_topics.qmd">future chapter</a>.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 
