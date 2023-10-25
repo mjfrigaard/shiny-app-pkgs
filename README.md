@@ -2,7 +2,7 @@
 
 <a href="https://github.com/mjfrigaard/shinyap">
 <!-- Please provide path to your logo here -->
-<img src="images/shinyap_logo.png" alt="Logo" width="100" height="100"/>
+<img src="images/shinyap_logo.png" alt="Logo" width="100%" height="100%"/>
 </a>
 
 </h1>
