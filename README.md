@@ -13,7 +13,7 @@ editor:
 
 </h1>
 
-::: {align="center"}
+<p align="center">
 Shiny App-Packages <br /> <a href="#about"><strong>Explore the screenshots
 »</strong></a> <br /> <br />
 <a href="https://github.com/mjfrigaard/shinyap/issues/new?assignees=&labels=bug&template=01_BUG_REPORT.md&title=bug%3A+">Report
@@ -22,9 +22,9 @@ a Bug</a> ·
 a Feature</a> .
 <a href="https://github.com/mjfrigaard/shinyap/issues/new?assignees=&labels=question&template=04_SUPPORT_QUESTION.md&title=support%3A+">Ask
 a Question</a>
-:::
+</p>
 
-::: {align="center"}
+<p align="center">
 <br />
 
 [![Project
@@ -34,7 +34,7 @@ license](https://img.shields.io/github/license/mjfrigaard/shinyap.svg?style=flat
 welcome](https://img.shields.io/badge/PRs-welcome-ff69b4.svg?style=flat-square)](https://github.com/mjfrigaard/shinyap/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 [![code with love by
 mjfrigaard](https://img.shields.io/badge/%3C%2F%3E%20with%20%E2%99%A5%20by-mjfrigaard-ff1414.svg?style=flat-square)](https://github.com/mjfrigaard)
-:::
+</p>
 
 <details open="open">
 
@@ -72,7 +72,7 @@ mjfrigaard](https://img.shields.io/badge/%3C%2F%3E%20with%20%E2%99%A5%20by-mjfri
 
 <br>
 
-> **\[?\]** Please provide your screenshots here.
+# > **\[?\]** Please provide your screenshots here.
 
 |                               Home Page                                |                               Login Page                                |
 |:----------------------------------:|:----------------------------------:|
@@ -82,23 +82,31 @@ mjfrigaard](https://img.shields.io/badge/%3C%2F%3E%20with%20%E2%99%A5%20by-mjfri
 
 ### Built With {#built-with}
 
+<!--
 > **\[?\]** Please provide the technologies that are used in the
 > project.
+-->
 
 ## Getting Started {#getting-started}
 
 ### Prerequisites {#prerequisites}
 
+<!--
 > **\[?\]** What are the project requirements/dependencies?
+-->
 
 ### Installation {#installation}
 
+<!--
 > **\[?\]** Describe how to install and get started with the project.
+-->
 
 ## Usage {#usage}
 
+<!--
 > **\[?\]** How does one go about using it? Provide various use cases
 > and code examples here.
+-->
 
 ## Roadmap {#roadmap}
 
@@ -117,8 +125,10 @@ of proposed features (and known issues).
 
 ## Support {#support}
 
+<!--
 > **\[?\]** Provide additional ways to contact the project
 > maintainer/maintainers.
+-->
 
 Reach out to the maintainer at one of the following places:
 
@@ -176,7 +186,9 @@ See [LICENSE](LICENSE) for more information.
 
 ## Acknowledgements {#acknowledgements}
 
+<!--
 > **\[?\]** If your work was funded by any organization or institution,
 > acknowledge their support here. In addition, if your work relies on
 > other software libraries, or was inspired by looking at other work, it
 > is appropriate to acknowledge this intellectual debt too.
+-->
