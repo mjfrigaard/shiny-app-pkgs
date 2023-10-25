@@ -20,10 +20,7 @@ co_box(
 )
 ```
 
-In the previous chapter we included an external dataset in the `inst/extdata/` folder. In this chapter, we'll cover the special role the `inst/` folder plays in R packages, and how we can leverage it's functionality in our app-package for multiple purposes.  
-
-In this chapter we'll also cover how to add external resources (i.e., files previously stored and served from the `www/` folder) to your app-package, and how to use `inst/` to store and run multiple applications.
-
+In this chapter we'll cover how to add external resources (i.e., files previously stored and served from the `www/` folder) to your app-package, and how to store and run multiple applications.
 
 ```{r}
 #| label: co_box_tldr
@@ -50,47 +47,53 @@ co_box(
 )
 ```
 
-## What happened to our icon/image?
+## What happened to our icon image?
 
-When we launch our app using the standalone app function (`movies_app()`), we see the following: 
-
-:::: {.column-body-outset-right}
-
-::: {#fig-10_inst_movies_app_data_no_img}
-![`movies_app()` without logo](img/10_inst_movies_app_data_no_img.png){#fig-10_inst_movies_app_data_no_img width='100%' fig-align='center'}
-
-The `shiny.png` in `www` is not accessible when we launch the app
-:::
-
-::::
-
-The `shiny.png` logo in `www/` is not being loaded into the UI when the application is launched. This is a common problem developers encounter when converting shiny app into app-packages.[^external-common-problem] In the sections below, I'll cover where the contents of `www/` belong in an R package (and how to add them to your application).
-
-[^external-common-problem]: See [this popular thread](https://community.rstudio.com/t/shiny-app-as-a-package-directory-structure-and-www-folder/135323/8) on Posit Community.
-
-## Your app-package
-
-While developing, we get used to interacting with our app-package from the **Files** pane, or via the file explorer on your native operating system (Finder on macOS, or the File Explorer on Windows):
 
 ```{r}
-#| label: git_box_shinyAppPkg_06_data
+#| label: git_box_10_launch
 #| echo: false
 #| results: asis
 #| eval: true
 git_margin_box(
   contents = "alt",
   fig_pw = '75%', 
-  branch = "09_data", 
+  branch = "10_launch", 
   repo = 'moviesApp')
 ```
 
-::: {layout="[10,-1,10]" layout-valign="top"}
+When we launch our app using the standalone app function, we see the following: 
 
-!['Source' files `moviesApp` in **Files** pane](img/10_inst_files_pane.png)
+```{r}
+#| eval: false
+#| code-fold: false
+movies_app(run = 'p')
+```
 
-!['Source' files `moviesApp` in **Finder** (macOS)](img/10_inst_finder_pkg.png)
+:::: {.column-body-outset-right}
+
+::: {#fig-external_initial_movies_app}
+![`movies_app()` without logo](images/external_initial_movies_app.png){#fig-external_initial_movies_app width='100%' fig-align='center'}
+
+`www/shiny.png` is not accessible when we launch the app
+:::
 
 ::::
+
+The `shiny.png` logo in `www/` is not being loaded into the UI when the application is launched. Serving the contents of `www` was previously being handled automatically by the Shiny framework, but now that `moviesApp` is an R package, we'll need to explicitly tell the application where to find these resources.[^external-common-problem]
+
+[^external-common-problem]: This is a common problem developers encounter when converting shiny app into app-packages. See [this popular thread](https://community.rstudio.com/t/shiny-app-as-a-package-directory-structure-and-www-folder/135323/8) on Posit Community.
+
+## Our app-package files
+
+While developing, we are used to interacting with our app-package from the **Files** pane:
+
+::: {#fig-external_files_pane}
+
+!['Source' files `moviesApp` in **Files** pane](images/external_files_pane.png){#fig-external_files_pane width='80%'}
+
+
+:::
 
 However, when we run `install()` (or use [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>B</kbd>]{style="font-weight: bold; font-size: 0.80em"}), the output in the **Build** pane gives us the location of our *installed* package:
 
@@ -117,59 +120,104 @@ However, when we run `install()` (or use [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd>
 ```
 1. This is the location of the installed version of `moviesApp` 
 
-## Your app-package ... *installed*
+## Our app-package ... *installed*
 
-If we add `moviesApp/` to the path above, it allows us to view the contents of the *installed* package (I'm using the `tree` command in the Terminal, but the `fs::dir_tree()` function will also print a folder tree):[^path-package]
+If we were to `moviesApp` to the path above, we'd see the files and folders in our *installed* package. Below are folder trees for our source package and our installed package:[^path-package]
 
-[^path-package]: Using `fs::path_packcage(package = "moviesApp")` will also return the path to your installed package.
+
+
+[^path-package]: `fs::path_package(package = "moviesApp")` returns the path to your installed package and `fs::dir_tree()` function will print a folder tree. 
+
+:::: {layout="[50, 50]"}
+
+:::{style="font-size: 0.90em;"} 
 
 ```{bash}
 #| eval: false 
 #| code-fold: false
-/path/to/installed/package/moviesApp/
-  ├── DESCRIPTION # <1> 
-  ├── INDEX
-  ├── Meta/
-  │   ├── Rd.rds
-  │   ├── data.rds
-  │   ├── features.rds
-  │   ├── hsearch.rds
-  │   ├── links.rds
-  │   ├── nsInfo.rds
-  │   └── package.rds
-  ├── NAMESPACE # <2> 
-  ├── R/ # <3> 
-  │   ├── moviesApp
-  │   ├── moviesApp.rdb
-  │   └── moviesApp.rdx
-  ├── data/ # <4> 
-  │   ├── Rdata.rdb
-  │   ├── Rdata.rds
-  │   └── Rdata.rdx
-  ├── extdata/ # <5> 
-  │   └── movies.fst
-  ├── help/ # <6> 
-  │   ├── AnIndex
-  │   ├── aliases.rds
-  │   ├── paths.rds
-  │   ├── moviesApp.rdb
-  │   └── moviesApp.rdx
-  └── html/
-      ├── 00Index.html
-      └── R.css
+source/moviesApp/
+├── DESCRIPTION
+├── NAMESPACE
+├── R
+│   ├── data.R
+│   ├── display_type.R
+│   ├── mod_scatter_display.R
+│   ├── mod_var_input.R
+│   ├── movies_app.R
+│   ├── movies_server.R
+│   ├── movies_ui.R
+│   └── scatter_plot.R
+├── README.md
+├── app.R
+├── data
+│   ├── movies.RData
+│   └── movies.rda
+├── inst
+│   └── extdata
+│       └── movies.fst
+├── man
+│   ├── display_type.Rd
+│   ├── mod_scatter_display_server.Rd
+│   ├── mod_scatter_display_ui.Rd
+│   ├── mod_var_input_server.Rd
+│   ├── mod_var_input_ui.Rd
+│   ├── movies.Rd
+│   ├── movies_app.Rd
+│   ├── movies_server.Rd
+│   ├── movies_ui.Rd
+│   └── scatter_plot.Rd
+├── moviesApp.Rproj
+└── www
+    └── shiny.png
 ```
-1. Copied over from source files (with a `Built` field added)  
-2. Directly copied over from source files  
-3. `R/` copied over from source files (`.R` files converted)   
-4. `data/` copied over from source files (`.RData` and `.rda` files converted)
-5. `inst/` sub-folder in source files   
-6. The contents of the `man/` folder (`.Rd` files converted)
+
+:::
+
+:::{style="font-size: 0.90em;"} 
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+installed/moviesApp/
+├── DESCRIPTION
+├── INDEX
+├── Meta
+│   ├── Rd.rds
+│   ├── data.rds
+│   ├── features.rds
+│   ├── hsearch.rds
+│   ├── links.rds
+│   ├── nsInfo.rds
+│   └── package.rds
+├── NAMESPACE
+├── R
+│   ├── moviesApp
+│   ├── moviesApp.rdb
+│   └── moviesApp.rdx
+├── data
+│   ├── Rdata.rdb
+│   ├── Rdata.rds
+│   └── Rdata.rdx
+├── extdata
+│   └── movies.fst
+├── help
+│   ├── AnIndex
+│   ├── aliases.rds
+│   ├── moviesApp.rdb
+│   ├── moviesApp.rdx
+│   └── paths.rds
+└── html
+    ├── 00Index.html
+    └── R.css
+```
+
+:::
+
+::::
 
 The installed version of `moviesApp` has many of the same files as the 'source' version we've been working with (i.e., `NAMESPACE` and `DESCRIPTION`). It also might surprise you to see that many of the source files aren't included in the installed version of `moviesApp` (`.R`, `.Rd` files. etc.).
 
-Viewing the contents of an installed package should 1) demystify what happens when a package is installed and 2) give you an idea of how `system.file()` works. There are a few folder names we have to avoid using in `inst/`:[^inst-r-pkgs]
-
-
+Viewing the contents of your installed package should help demystify what happens when we run `devtools::install()` and give you a better idea of how `system.file()` works.[^inst-r-pkgs]
 
 [^inst-r-pkgs]: Read more about sub-directories to avoid in `inst/` in [R Packages, 2ed](https://r-pkgs.org/misc.html#sec-misc-inst).
 
@@ -177,7 +225,7 @@ Viewing the contents of an installed package should 1) demystify what happens wh
 
 ## [`system.file()`]{style="font-size: 0.95em;"} 
 
-`system.file()` gives us access to the package files *on installation* (i.e., the files we saw in the folder tree above). In the previous chapter, we used `system.file()` to access the `movies.fst` file in `inst/extdata/`: 
+`system.file()` gives us access to the package files *on installation* (i.e., the files we saw in the folder tree above). In the [data](@data.qmd) chapter, we used `system.file()` to access the `movies.fst` file in `inst/extdata/`: 
 
 ```{r}
 #| eval: false 
@@ -188,7 +236,7 @@ fst::read_fst(
   )
 ```
 
-As we can see, the `movies.fst` has two locations: the 'source' package location, and the 'installed' package location.
+As we can see, the `movies.fst` has two locations: the 'source' package location, and the 'installed' location.
 
 :::{layout="[45,55]" layout-valign="top"}
 
@@ -213,31 +261,29 @@ inst/
 
 :::
 
-`system.file()` is accessing `movies.fst` from the *installed* location.[^inst-view]
+`system.file()` is accessing `movies.fst` from the **installed** location.[^inst-view]
 
 [^inst-view]: The key takeaway here is that the `inst/` subfolders and files are available *unchanged* in the installed version (with the `inst/` folder omitted.).
 
-To include the contents of `www/` in our app-package, we'll need to use `isnt/` folder, `system.file()`, and the `shiny::addResourcePath()` function. 
+To include the contents of `www/` in our app-package, we'll need to move `www/` into `inst/`, then access it's contents with `system.file()` and `addResourcePath()`. 
 
 ## [`addResourcePath()`]{style="font-size: 0.95em;"}
 
 ```{r}
-#| label: git_box_shinyAppPkg_09a_inst-www
+#| label: git_box_11a_inst-www
 #| echo: false
 #| results: asis
 #| eval: true
 git_margin_box(
   contents = "standard",
   fig_pw = '75%', 
-  branch = "09a_inst-www", 
+  branch = "11a_inst-www", 
   repo = 'moviesApp')
 ```
 
 The `addResourcePath()` function will add a "*directory of static resources to Shiny's web server*." In `moviesApp`, want to add the `www` directory that includes the `shiny.png` file.[^add-resource-path-4]
 
 [^add-resource-path-4]: You can read more about adding external resources in the [documentation for `addResourcePath()`](https://shiny.posit.co/r/reference/shiny/latest/resourcepaths).
-
-If we want to continue keeping external resources in the `www/` folder, we can move `www/` and it's contents into `inst/`:
 
 ::: {layout="[10,-1, 10]" layout-valign="top"}
 
@@ -320,14 +366,14 @@ hot_key("all")
 #| eval: false 
 #| code-fold: false
 library(moviesApp)
-movies_app()
+movies_app(run = 'p')
 ```
 
 
 :::: {.column-body-outset-right}
 
-::: {#fig-10_inst_movies_app_img}
-![`movies_app()` with logo](img/10_inst_movies_app_img.png){#fig-10_inst_movies_app_img width='100%' fig-align='center'}
+::: {#fig-external_www_movies_app}
+![`movies_app()` with logo](images/external_www_movies_app.png){#fig-external_www_movies_app width='100%' fig-align='center'}
 
 `inst/www` accessible with `addResourcePath()`
 :::
@@ -343,13 +389,13 @@ The `inst/` folder can also be used to store files we're using in alternate vers
 We can store `inst/` alternative external files and configure our UI function to test different layouts. In the example below, I've included an optional UI layout from the [`bslib` package](https://rstudio.github.io/bslib/index.html).
 
 ```{r}
-#| label: git_box_shinyAppPkg_09b_inst-bslib
+#| label: git_box_11b_inst-bslib
 #| echo: false
 #| results: asis
 #| eval: true
 git_margin_box(
   fig_pw = '75%', 
-  branch = "09b_inst-bslib", 
+  branch = "11b_inst-bslib", 
   repo = 'moviesApp')
 ```
 
@@ -459,13 +505,13 @@ This alternate version of `movies_app()` uses the same modules and utility funct
 ```{r}
 #| eval: false 
 #| code-fold: false
-moviesApp::movies_app(test = FALSE, bslib = TRUE)
+movies_app(run = 'p', bslib = TRUE)
 ```
 
 :::: {.column-body-outset-right}
 
-::: {#fig-10_inst_bslib_app}
-![`movies_app()` with logo](img/10_inst_bslib_app.png){#fig-10_inst_bslib_app width='100%' fig-align='center'}
+::: {#fig-external_bslib_movies_app}
+![`movies_app()` with logo](images/external_bslib_movies_app.png){#fig-external_bslib_movies_app width='100%' fig-align='center'}
 
 `inst/www/bootstrap.png` image from `movies_ui()`
 :::
@@ -490,7 +536,7 @@ inst/dev/
 1 directory, 3 files
 ```
 
-#### [`dev` data]{style="font-size: 0.95em;"} 
+#### [`dev/` data]{style="font-size: 0.95em;"} 
 
 The 'development' application in `moviesApp` uses a tidy version of the [`ggplot2movies::movies` data](https://cran.r-project.org/web/packages/ggplot2movies/index.html), which we created in the [`data-raw/tidy_movies.R`](https://github.com/mjfrigaard/moviesApp/blob/09c_inst-dev/data-raw/tidy_movies.R) file.[^raw-data-5]
 
@@ -548,11 +594,13 @@ fst::write_fst(x = tidy_movies, path = "inst/dev/tidy_movies.fst")
 
 [^raw-data-5]: We covered the `data-raw/` folder in the [Data chapter](https://mjfrigaard.github.io/shinyap/data.html), and you can read more about it [here in R packages, 2ed](https://r-pkgs.org/data.html#sec-data-data-raw.)
 
-#### [`dev` modules]{style="font-size: 0.95em;"}
+#### [`dev/` code]{style="font-size: 0.95em;"}
 
-In `inst/dev/`, we've placed the application modules in an [`app.R` file](https://github.com/mjfrigaard/moviesApp/blob/09c_inst-dev/inst/dev/app.R):
+In `inst/dev/`, we've placed the application modules in an [`app.R` file](https://github.com/mjfrigaard/moviesApp/blob/09c_inst-dev/inst/dev/app.R). Any of the functions from `moviesApp` can be used in the `dev/` modules with explicit namespacing (i.e., `moviesApp::scatter_plot()`).
 
-1. `dev_mod_vars_ui()` contains choices for the names in the `tidy_movies` data:
+##### Modules
+
+`dev_mod_vars_ui()` contains choices for the names in the `tidy_movies` data, but there's no need to re-write the `mod_var_input_server()` function.
   
 ```{r}
 #| eval: false 
@@ -615,7 +663,7 @@ dev_mod_vars_ui <- function(id) {
   }
 ```
       
-2. The `dev_` versions of the display module imports the `tidy_movies.fst` data file and includes an option for removing missing values.
+Both functions in the `dev/` display module has been re-written to add functionality for importing the `tidy_movies.fst` data file and an option to removing missing values from the graph. 
   
 ```{r}
 #| eval: false 
@@ -711,11 +759,11 @@ dev_mod_scatter_server <- function(id, var_inputs) {
 2. Bind `missing` input to update when UI changes   
 3. Bind plot output to update with variable inputs and 'missing' checkbox output  
 
-Any of the functions from `moviesApp` can be used in the dev modules with explicit namespacing (i.e., `moviesApp::scatter_plot()`).
 
-#### [`dev` UI and server]{style="font-size: 0.95em;"} 
 
 `app.R` also contains development app UI and server functions. 
+
+##### UI and server
 
 In `devUI()`, development modules are paired with package modules (`dev_mod_vars_ui()` and `moviesApp::mod_var_input_server()`), and we've include an alternate image (`bootstrap.png`).[^export-modules-6]
 
@@ -773,7 +821,6 @@ devUI <- function() {
 3. Refer to alternate image   
 4. Development scatter-plot display module (UI)   
 
-
 ```{r}
 #| eval: false 
 #| code-fold: show 
@@ -800,7 +847,7 @@ Finally, the development app is launched with it's own standalone function (stor
 #| eval: true
 git_margin_box(
   fig_pw = '75%', 
-  branch = "09c_inst-dev", 
+  branch = "11c_inst-dev", 
   repo = 'moviesApp')
 ```
 
@@ -818,30 +865,16 @@ git_margin_box(
 #' 
 #'
 #' @export
-ggp2_movies_app <- function(test = TRUE, run = "w") {
+ggp2_movies_app <- function(options = list(), run = "w") {
   if (interactive()) {
     display_type(run = run)
-
-    if (isTRUE(test)) {
-      shinyAppDir(
-        appDir = system.file("dev",
-          package = "moviesApp"
-        ),
-        options(test.mode = TRUE)
-      )
-    } else {
-      shinyAppDir(
-        appDir = system.file("dev",
-          package = "moviesApp"
-        ),
-        options(test.mode = FALSE)
-      )
-    }
-  } else {
-    shinyAppDir(appDir = system.file("dev",
+  } 
+    shinyAppDir(
+    appDir = system.file("dev",
       package = "moviesApp"
-    ))
-  }
+    ),
+    options = options
+  )
 }
 ```
 
@@ -858,10 +891,17 @@ hot_key("all")
 ```
 
 
+```{r}
+#| code-fold: false
+#| eval: false
+ggp2_movies_app(run = 'p')
+```
+
+
 :::: {.column-body-outset-right}
 
-::: {#fig-10_inst_ggp2movies_app}
-![`ggplot2movies_app()`](img/10_inst_ggp2movies_app.png){#fig-10_inst_ggp2movies_app width='100%' fig-align='center'}
+::: {#fig-external_ggp2_movies_app}
+![`ggplot2movies_app()`](images/external_ggp2_movies_app.png){#fig-external_ggp2_movies_app width='100%' fig-align='center'}
 
 `inst/dev/` app with `dev_movies_ui()`
 :::
@@ -956,7 +996,7 @@ To deploy the app, call `rsconnect::deployApp()` in the console.
 ```{r}
 #| eval: false
 #| code-fold: false 
-rsconnect::deployApp(appName = 'moviesApp-prod')
+rsconnect::deployApp(appName = 'shinyapppkg')
 ```
 
 The deployment log will look something like this: 
