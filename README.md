@@ -1,9 +1,3 @@
----
-editor: 
-  markdown: 
-    wrap: 72
----
-
 <h1 align="center">
 
 <a href="https://github.com/mjfrigaard/shinyap">
@@ -61,10 +55,12 @@ mjfrigaard](https://img.shields.io/badge/%3C%2F%3E%20with%20%E2%99%A5%20by-mjfri
 
 ## About {#about}
 
+<!--
 > **\[?\]** Provide general information about your project here. What
 > problem does it (intend to) solve? What is the purpose of your
 > project? Why did you undertake it? You don't have to answer all the
 > questions -- just the ones relevant to your project.
+-->
 
 <details>
 
@@ -72,7 +68,10 @@ mjfrigaard](https://img.shields.io/badge/%3C%2F%3E%20with%20%E2%99%A5%20by-mjfri
 
 <br>
 
-# > **\[?\]** Please provide your screenshots here.
+<!--
+ > **\[?\]** Please provide your screenshots here.
+ 
+-->
 
 |                               Home Page                                |                               Login Page                                |
 |:----------------------------------:|:----------------------------------:|
