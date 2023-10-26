@@ -23,138 +23,116 @@ co_box(
 )
 ```
 
-This chapter covers setting up system tests with `shinytest2` and `testthat`, and what should be included in system tests.
+This chapter covers using `shinytest2` and `testthat` to perform system tests on each feature in your app-package. I'll also briefly cover set up with `chromote` (the package that gives us access to the Chromium headless browser).
 
-<!--
 
-## Test files 
-
-Up to this point, I've been storing the tests in test files named for each function: 
-
-```{bash}
-#| eval: false 
-#| code-fold: false
-tests
-└── testthat/
-    ├── test-mod_scatter_display.R
-    ├── test-mod_var_input.R
-    └── test-scatter_plot.R
-```
-
-This is the recommendations in [R Packages, 2ed](https://r-pkgs.org/code.html#sec-code-organising), and gives us the ability to programmatically compare test results with the traceability matrix. For example, we can add the following code to the [`test-specs` vignette](https://github.com/mjfrigaard/moviesApp/blob/10e_tests-system/vignettes/test-specs.Rmd) and capture our test results in a `tibble` display:
-
-```{r}
-#| eval: false 
-#| code-fold: false
-pkg_tests <- testthat::test_local("../", 
-  reporter = testthat::SilentReporter$new()) |> 
-  tibble::as_tibble() |> 
-  tidyr::pivot_longer(cols = c(passed, skipped, 
-                               warning, error, failed), 
-                    names_to = 'status', 
-                    values_to = "value") |> 
-  dplyr::filter(value > 0) |> 
-  dplyr::select(
-    `Test File` = file,
-    Test = test,
-    `Test Status` = status)
-```
-
-:::{#fig-11_tests_trace_matrix_pkg_tests}
-
-![Traceability matrix & `testthat::test_local()` output](img/11_tests_trace_matrix_pkg_tests.png){#fig-11_tests_trace_matrix_pkg_tests width='100%' align='center'}
-
-Package vignette with with traceability matrix and test results 
-:::
-
-Placing the test number in each call to `testthat::it()` will make it easier to link the tests back to the original functional requirements, features and specifications.
-
--->
 
 ## System tests
 
 > "*Failure to allow enough time for system test, in particular, is peculiarly disastrous. Since the delay comes at the end of the schedule, no one is aware of schedule trouble until almost the delivery date. Bad news, late and without warning, is unsettling to customers and to managers.*" - ['The Mythical Man-Month', Frederick P. Brooks Jr.](https://www.goodreads.com/en/book/show/13629)
 
-System (or end-to-end) tests simulate real user interactions in a 'pre-production' environment to verify the whole application (or system) works.[^tests-prod] Approaches to system testing vary, but in general, we'll want to run system tests before a release, which means all of the app's functional requirements are tested and released in lockstep.
+System (or end-to-end) tests simulate real user interactions in a 'pre-production' environment to verify the whole application (or system) works.[^tests-prod] Approaches to system testing vary, but in general, we'll want to run a system test for each feature in our application before a release. 
+
+If we've been documenting our unit and integration tests with BDD feature and scenario descriptions, the system tests can be used to confirm the functional requirements for the primary execution path (or user experience) before release.
 
 [^tests-prod]: System tests should strive to replicate the production *conditions*, even when/if it's not possible to perfectly replicate the environment.
 
-### [`shinytest2`]{style="font-size: 1.05em;"}
-
-
-[`shinytest2`](https://rstudio.github.io/shinytest2/index.html) requires a few steps to get up and running, most notably the [`chromote` package](https://rstudio.github.io/chromote/).[^shinytest2-start] 
-
-[^shinytest2-start]: A great place to start is the [Getting Started](https://rstudio.github.io/shinytest2/articles/shinytest2.html) vignette. 
+## Current tests
 
 ```{r}
-#| label: co_box_chromote
+#| label: git_box_12d_tests-modules
 #| echo: false
 #| results: asis
 #| eval: true
-co_box(
-  color = "g", fold = TRUE, look = "minimal",
-  size = '1.10', header = "Chromium access",
-  contents = 
-" 
-If you're working in an environment without access to the Chromium headless browser,
-  
-  ")
+git_margin_box(
+  contents = "alt",
+  fig_pw = '50%', 
+  branch = "12d_tests-modules", 
+  repo = 'moviesApp')
 ```
 
-After installing the `shinytest2` dependencies, you'll want to verify you can create a new session with: 
+The current files in our tests folder are below: 
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+tests
+├── testthat
+│   ├── fixtures
+│   │   ├── make-tidy_ggp2_movies.R
+│   │   └── tidy_ggp2_movies.rds
+│   ├── helper.R
+│   ├── test-mod_scatter_display.R
+│   ├── test-mod_var_input.R
+│   └── test-scatter_plot.R
+└── testthat.R
+
+3 directories, 7 files
+```
+
+The output from `devtools::test()` is below:
 
 ```{r}
 #| eval: false 
 #| code-fold: false
-library(chromote)
-b <- ChromoteSession$new()
-b$view()
-```
-
-:::{#fig-11_chromote_new_verify}
-
-![Chromium headless browser](img/11_chromote_new_verify.png){#fig-11_chromote_new_verify width='100%' align='center'}
-
-A new `Chromote` session
-:::
-
-
-```{r}
-#| eval: false 
-#| code-fold: false
-shinytest2::use_shinytest2()
+devtools::test()
 ```
 
 ```{verbatim}
-#| eval: false 
-#| code-fold: false
-! Runner already found: tests/testthat.R
-✔ Adding 'shinytest2::load_app_env()' to 'tests/testthat/setup-shinytest2.R'
+ℹ Testing moviesApp
+✔ | F W  S  OK | Context
+
+⠏ |          0 | mod_scatter_display                                                
+INFO [2023-10-26 10:31:02] [ START display = selected_vars initial values]
+⠋ |          1 | mod_scatter_display                                  
+INFO [2023-10-26 10:31:03] [ END display = selected_vars initial values]
+INFO [2023-10-26 10:31:03] [ START display = scatterplot[['alt']] = 'Plot object']
+⠙ |          2 | mod_scatter_display                     
+INFO [2023-10-26 10:31:03] [ END display = scatterplot[['alt']] = 'Plot object']
+INFO [2023-10-26 10:31:03] [ START display = inputs() creates ggplot2 object]
+INFO [2023-10-26 10:31:03] [ END display = inputs() creates ggplot2 object]
+✔ |          3 | mod_scatter_display
+
+⠏ |          0 | mod_var_input                           
+INFO [2023-10-26 10:31:03] [ START input = initial inputs returned()]
+⠋ |          1 | mod_var_input                       
+INFO [2023-10-26 10:31:03] [ END input = initial inputs returned()]
+✔ |          1 | mod_var_input
+
+⠏ |          0 | scatter_plot                                          
+INFO [2023-10-26 10:31:03] [ START data 2 = fixtures/tidy_ggp2_movies.rds]
+⠋ |          1 | scatter_plot                                          
+INFO [2023-10-26 10:31:03] [ END data 2 = fixtures/tidy_ggp2_movies.rds]
+INFO [2023-10-26 10:31:03] [ START data 1 = data/movies.rda]
+INFO [2023-10-26 10:31:03] [ END data 1 = data/movies.rda]
+✔ |          2 | scatter_plot
+
+══ Results ═════════════════════════════════════════════════════════════════════
+Duration: 1.4 s
+
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 6 ]
 ```
 
-```{verbatim}
-#| eval: false 
-#| code-fold: false
-✔ Adding '*_.new.png' to '.gitignore'
-```
 
-```{verbatim}
-#| eval: false 
-#| code-fold: false
-✔ Adding '_\\.new\\.png$' to '.Rbuildignore'
-```
+### [`shinytest2`]{style="font-size: 1.05em;"}
 
-```{verbatim}
-#| eval: false 
-#| code-fold: false
-✔ Setting active project to '/path/to/moviesApp'
-```
+`shinytest2` requires a few steps to get up and running (most notably the [`chromote` package](https://rstudio.github.io/chromote/)), but you'll find excellent documentation on the [package website](https://rstudio.github.io/shinytest2/index.html).[^shinytest2-start] 
 
-```{verbatim}
-#| eval: false 
-#| code-fold: false
-✔ Adding 'shinytest2' to Suggests field in DESCRIPTION
-```
+
+[^shinytest2-start]: A great place to start is the [Getting Started](https://rstudio.github.io/shinytest2/articles/shinytest2.html) vignette. 
+
+
+The `shinytest2::use_shinytest2()` performs the following setup steps: 
+
+-   [x]   ✔ Adding `shinytest2::load_app_env()` to `tests/testthat/setup-shinytest2.R`
+
+-   [x]   ✔ Adding `*_.new.png` to `.gitignore`
+
+-   [x]   ✔ Adding `_\\.new\\.png$` to `.Rbuildignore`
+
+-   [x]   ✔ Adding `shinytest2` to `Suggests` field in `DESCRIPTION`
+
+We also get some advice on using `shinytest2` functions in our code: 
 
 ```{verbatim}
 #| eval: false 
@@ -164,54 +142,229 @@ shinytest2::use_shinytest2()
 • Then directly refer to functions with `shinytest2::fun()`
 ```
 
-```{verbatim}
-#| eval: false 
-#| code-fold: false
-✔ Setting active project to '<no active project>'
-```
-
-
-
-
-
-<!--
-
-> Manual Testing: Initially, you may have to manually interact with the Shiny app to ensure it behaves as expected.
-
-> Automated Browser Testing: Use tools like shinytest to automate browser-based testing for the Shiny application. shinytest captures the state of the application and allows you to compare it to expected states.
-
-> User Scenarios: Script typical user interaction scenarios to ensure that the whole system, including front-end and back-end, work seamlessly.
-
--->
-
-
-
-
-<!--
-
-#### [`withr`]{style="font-size: 1.05em;"}
-
-The date/time output from `test_logger()` doesn't provide the level of precision we want to monitor our unit tests (they're supposed to be fast). The R option to change this setting is `options(digits.secs)`, but we don't want to include this options in our test file (we just need it whenever we use `test_logger()`).[^tests-message2]
-
-We can add `withr::local_options()` inside `test_logger()` to make sure this option only applies to the test environment it's called from. Subsequent tests will pass without a warning and provide a more precise date/time message:
-
-[^tests-message2]: This example is similar to the `message2()` function on the [`testthat` website](https://testthat.r-lib.org/articles/test-fixtures.html#test-fixtures), but calls `withr` *inside* the helper function.
-
-Back in the **Console**, I can see the output from `Sys.time()` doesn't include the `test_logger()` option:
+*After setting up `shinytest2`, be sure you can create a new chromote session like the one below:*
 
 ```{r}
 #| eval: false 
 #| code-fold: false
-Sys.time()
+library(chromote)
+b <- ChromoteSession$new()
+b$view()
 ```
+
+:::{#fig-tests_sys_chromote_new}
+
+![Chromium headless browser](images/tests_sys_chromote_new.png){#fig-tests_sys_chromote_new width='80%' align='center'}
+
+A new `Chromote` session
+:::
+
+## Recording tests
+
+If we launch the test recorder with `shinytest2::record_test()`, change the inputs in our application, click on **Expect Shiny values** and **Save test and exit**, a test is recorded to a new test file: `tests/testthat/test-shinytest2.R`
+
+
+:::{#fig-tests_sys_record_test}
+
+![Test recorder](images/tests_sys_record_test.png){#fig-tests_sys_record_test width='100%' align='center'}
+
+Creating a test with `shinytest2::record_test()`
+:::
 
 ```{verbatim}
-#| eval: false 
-#| code-fold: false
-[1] "2023-09-23 14:16:30 PDT"
+[ FAIL 0 | WARN 2 | SKIP 0 | PASS 1 ]
+
+── Warning (test-shinytest2.R:11:3): {shinytest2} recording: feature-01 ──
+Adding new file snapshot: 'tests/testthat/_snaps/feature-01-001_.png'
+
+── Warning (test-shinytest2.R:11:3): {shinytest2} recording: feature-01 ──
+Adding new file snapshot: 'tests/testthat/_snaps/feature-01-001.json'
+[ FAIL 0 | WARN 2 | SKIP 0 | PASS 1 ]
 ```
 
--->
+
+The contents of `test-shinytest2.R` are below:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+library(shinytest2)
+test_that("{shinytest2} recording: feature-01", {
+  app <- AppDriver$new(name = "feature-01", 
+                       height = 800, width = 1173)
+  app$set_inputs(`vars-y` = "imdb_num_votes")
+  app$set_inputs(`vars-x` = "critics_score")
+  app$set_inputs(`vars-z` = "genre")
+  app$set_inputs(`vars-alpha` = 0.7)
+  app$set_inputs(`vars-size` = 3)
+  app$set_inputs(`vars-plot_title` = "New plot title")
+  app$expect_values()
+})
+```
+
+As we can see, each action in the test recorder has a corresponding call in the test: 
+
+1. Initialize the `AppDriver$new()` with the name of the test and the dimensions of the Chromium browser.  
+2. Change the y axis (`vars-y`) to 'IMBD number of votes' (`imdb_num_votes`)   
+3. Change the x axis (`vars-x`) to 'Critics Score' (`critics_score`)   
+4. Change the color by (`vars-z`) to 'Genre' (`genre`)    
+5. Change the point opacity (`vars-alpha`) to '0.7'    
+6. Change the point size (`vars-alpha`) to '3'    
+7. Change the plot title to (`vars-plot_title`) to 'New plot title' 
+
+We can use this initial test as a template for writing our feature scenarios. 
+
+### BDD test templates
+
+There are multiple ways to approach your test layout with `testthat`'s `describe()`, `it()` and/or `test_that()` functions. Below is an example with dedicated `Feature` and `Scenario` descriptions, a reference to the feature number in the `it()` (or `test_that()`) call: 
+
+```{r}
+#| eval: false 
+#| code-fold: false
+describe("Feature 1: Scatter plot data visualization dropdowns
+           As a film data analyst
+           I want to explore variables in the movie review data
+           So that I can analyze relationships between movie reivew sources", {
+             
+describe("Scenario: Change dropdown values for plotting
+            Given the movie review application is loaded
+            When I choose the variable [ ] for the x-axis
+            And I choose the variable [ ] for the y-axis
+            And I choose the variable [ ] for the color
+            And I choose the size of the points to be [ ]
+            And I choose the opacity of the points to be [ ]
+            And I enter '[ ]' for the plot title
+           
+            Then the scatter plot should show [ ] on the x-axis
+            And the scatter plot should show [ ] on the y-axis
+            And the points on the scatter plot should be colored by [ ]
+            And the size of the points on the scatter plot should be [ ]
+            And the opacity of the points on the scatter plot should be [ ]
+            And the title of the plot should be '[ ]'", {
+              
+              it("Feature 01", {
+                    app <- AppDriver$new(name = "feature-01", 
+                                       height = 800, width = 1173)
+                  app$set_inputs(`vars-y` = "imdb_num_votes")
+                  app$set_inputs(`vars-x` = "critics_score")
+                  app$set_inputs(`vars-z` = "genre")
+                  app$set_inputs(`vars-alpha` = 0.7)
+                  app$set_inputs(`vars-size` = 3)
+                  app$set_inputs(`vars-plot_title` = "New plot title")
+                  app$expect_values()
+              })
+      })
+})
+```
+
+With this approach you can create the test file as soon as you have a feature described (and come back later to fill in the `Scenario` and test).
+
+An alternative approach is to use nested `describe()` functions and include the `Scenario`'s `Then` steps into the test (because these are what will actually be tested):
+
+```{r}
+#| eval: false 
+#| code-fold: false
+library(shinytest2)
+describe("Feature 1: Scatter plot data visualization dropdowns
+           As a film data analyst
+           I want to explore variables in the movie review data
+           So that I can analyze relationships between movie reivew sources", {
+             
+  describe("Scenario A: Change dropdown values for plotting
+             Given the movie review application is loaded
+             When I choose the variable [ ] for the x-axis
+             And I choose the variable [ ] for the y-axis
+             And I choose the variable [ ] for the color", {
+        it("Then the scatter plot should show [ ] on the x-axis
+             And the scatter plot should show [ ] on the y-axis
+             And the points on the scatter plot should be colored by [ ]", {
+              app <- AppDriver$new(name = "feature-01-senario-a", 
+                                     height = 800, width = 1173)
+                app$set_inputs(`vars-y` = "imdb_num_votes")
+                app$set_inputs(`vars-x` = "critics_score")
+                app$set_inputs(`vars-z` = "genre")
+                app$expect_values()
+       })
+     })
+             
+  describe("Scenario B: Change dropdown values for plotting
+              Given the movie review application is loaded
+              When I choose the size of the points to be [ ]
+              And I choose the opacity of the points to be [ ]
+              And I enter '[ ]' for the plot title", {
+         it("Then the size of the points on the scatter plot should be [ ]
+              And the opacity of the points on the scatter plot should be [ ]
+              And the title of the plot should be '[ ]'", {
+              app <- AppDriver$new(name = "feature-01-senario-b", 
+                                     height = 800, width = 1173)
+                app$set_inputs(`vars-alpha` = 0.7)
+                app$set_inputs(`vars-size` = 3)
+                app$set_inputs(`vars-plot_title` = "New plot title")
+                app$expect_values()
+        })
+      })
+})
+```
+
+### Testing apps in `inst/`
+
+If I want to test a feature for one of the alternative applications I have in `moviesApp`, I can pass their location to the `app_dir` argument of `AppDriver$new()`. In the test below, the scenario describes changing the x, y, and color inputs and removing the missing values from the graph: 
+
+```{r}
+#| eval: false 
+#| code-fold: false
+library(shinytest2)
+describe(
+  "Feature 1: Scatter plot data visualization dropdowns
+     As a film data analyst
+     I want to explore movie review variables from IMDB (ggplot2movies::movies data)
+     So that I can analyze relationships between movie attributes and ratings", {
+  describe(
+    "Scenario: Change dropdown values for plotting
+        Given the movie review application is loaded
+        When I choose the variable 'Length' for the x-axis
+        And I choose the variable 'Rating' for the y-axis
+        And I choose the variable 'Genre' for the color
+        And I click the 'Remove missing' checkbox", code = {
+    it("Then the scatter plot should show 'Length' on the x-axis
+        And the scatter plot should show 'Rating' on the y-axis
+        And the points on the scatter plot should be colored by 'Genre'
+        And the missing values should be removed from the plot", {
+            
+    test_logger(start = 'ggp2movies-feat-01', msg = "update x, y, z, missing")
+      
+    app <- AppDriver$new(app_dir = system.file("dev", package = "moviesApp"), 
+                         name = "ggp2movies_app-feature-01", 
+                         wait = FALSE, timeout = 30000,
+                         height = 800, width = 1173)
+      app$set_inputs(`vars-y` = "length")
+      app$set_inputs(`vars-x` = "rating")
+      app$set_inputs(`vars-z` = "genre")
+      app$set_inputs(`plot-missing` = TRUE)
+      app$expect_values()
+          
+      test_logger(end = 'ggp2movies-feat-01', msg = "update x, y, z, missing")
+      
+      })
+   })
+})
+```
+
+Not that I've changed the `wait` and `timeout` arguments in `AppDriver$new()` because this tests takes over 10 seconds to complete (which I can see with my `test_logger()` output): 
+
+```{verbatim}
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]
+INFO [2023-10-26 12:58:57] [ START ggp2movies-feat-01 = update x, y, z, missing]
+[ FAIL 0 | WARN 2 | SKIP 0 | PASS 1 ]
+INFO [2023-10-26 12:59:09] [ END ggp2movies-feat-01 = update x, y, z, missing]
+```
+
+:::{#fig-ggp2movies_app-feature-01-001_}
+
+![Snapshot png file](images/ggp2movies_app-feature-01-001_.png){#fig-ggp2movies_app-feature-01-001_ width='100%' align='center'}
+
+File saved in `tests/testthat/_snaps/ggp2movies_app-feature-01-001_.png'`
+:::
 
 ## Recap 
 
@@ -266,9 +419,71 @@ co_box(
 
 > By implementing these various levels of tests, you can build confidence that your R package and Shiny app are robust, reliable, and ready for deployment.
 
--->
 
-<!--
 Testing an R package with a Shiny application can be challenging due to the various components and layers of interactivity. Here's a general strategy to approach this:
--->
 
+## Test files 
+
+Up to this point, I've been storing the tests in test files named for each function: 
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+tests
+└── testthat/
+    ├── test-mod_scatter_display.R
+    ├── test-mod_var_input.R
+    └── test-scatter_plot.R
+```
+
+This is the recommendations in [R Packages, 2ed](https://r-pkgs.org/code.html#sec-code-organising), and gives us the ability to programmatically compare test results with the traceability matrix. For example, we can add the following code to the [`test-specs` vignette](https://github.com/mjfrigaard/moviesApp/blob/10e_tests-system/vignettes/test-specs.Rmd) and capture our test results in a `tibble` display:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+pkg_tests <- testthat::test_local("../", 
+  reporter = testthat::SilentReporter$new()) |> 
+  tibble::as_tibble() |> 
+  tidyr::pivot_longer(cols = c(passed, skipped, 
+                               warning, error, failed), 
+                    names_to = 'status', 
+                    values_to = "value") |> 
+  dplyr::filter(value > 0) |> 
+  dplyr::select(
+    `Test File` = file,
+    Test = test,
+    `Test Status` = status)
+```
+
+:::{#fig-11_tests_trace_matrix_pkg_tests}
+
+![Traceability matrix & `testthat::test_local()` output](img/11_tests_trace_matrix_pkg_tests.png){#fig-11_tests_trace_matrix_pkg_tests width='100%' align='center'}
+
+Package vignette with with traceability matrix and test results 
+:::
+
+Placing the test number in each call to `testthat::it()` will make it easier to link the tests back to the original functional requirements, features and specifications.
+
+#### [`withr`]{style="font-size: 1.05em;"}
+
+The date/time output from `test_logger()` doesn't provide the level of precision we want to monitor our unit tests (they're supposed to be fast). The R option to change this setting is `options(digits.secs)`, but we don't want to include this options in our test file (we just need it whenever we use `test_logger()`).[^tests-message2]
+
+We can add `withr::local_options()` inside `test_logger()` to make sure this option only applies to the test environment it's called from. Subsequent tests will pass without a warning and provide a more precise date/time message:
+
+[^tests-message2]: This example is similar to the `message2()` function on the [`testthat` website](https://testthat.r-lib.org/articles/test-fixtures.html#test-fixtures), but calls `withr` *inside* the helper function.
+
+Back in the **Console**, I can see the output from `Sys.time()` doesn't include the `test_logger()` option:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+Sys.time()
+```
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+[1] "2023-09-23 14:16:30 PDT"
+```
+
+-->
