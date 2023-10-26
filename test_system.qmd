@@ -26,7 +26,6 @@ co_box(
 This chapter covers using `shinytest2` and `testthat` to perform system tests on each feature in your app-package. I'll also briefly cover set up with `chromote` (the package that gives us access to the Chromium headless browser).
 
 
-
 ## System tests
 
 > "*Failure to allow enough time for system test, in particular, is peculiarly disastrous. Since the delay comes at the end of the schedule, no one is aware of schedule trouble until almost the delivery date. Bad news, late and without warning, is unsettling to customers and to managers.*" - ['The Mythical Man-Month', Frederick P. Brooks Jr.](https://www.goodreads.com/en/book/show/13629)
@@ -171,6 +170,8 @@ If we launch the test recorder with `shinytest2::record_test()`, change the inpu
 Creating a test with `shinytest2::record_test()`
 :::
 
+The test runs and saves the PNG snapshot and test values to the `tests/testthat/_snaps/` folder: 
+
 ```{verbatim}
 [ FAIL 0 | WARN 2 | SKIP 0 | PASS 1 ]
 
@@ -183,7 +184,7 @@ Adding new file snapshot: 'tests/testthat/_snaps/feature-01-001.json'
 ```
 
 
-The contents of `test-shinytest2.R` are below:
+The contents of the new `test-shinytest2.R` test file are below:
 
 ```{r}
 #| eval: false 
@@ -212,7 +213,7 @@ As we can see, each action in the test recorder has a corresponding call in the 
 6. Change the point size (`vars-alpha`) to '3'    
 7. Change the plot title to (`vars-plot_title`) to 'New plot title' 
 
-We can use this initial test as a template for writing our feature scenarios. 
+We'll use this initial test as a template for writing the steps in our test `Scenario`s. 
 
 ### BDD test templates
 
@@ -257,9 +258,9 @@ describe("Scenario: Change dropdown values for plotting
 })
 ```
 
-With this approach you can create the test file as soon as you have a feature described (and come back later to fill in the `Scenario` and test).
+With this approach you can create the test file as soon as you have a `Feature` description (and come back later to fill in the `Scenario`s and tests).
 
-An alternative approach is to use nested `describe()` functions and include the `Scenario`'s `Then` steps into the test (because these are what will actually be tested):
+An alternative approach is to use nested `describe()` functions and include each of the `Scenario`'s `Then` steps in the `it()` or `test_that()` call (these are what will actually be tested):
 
 ```{r}
 #| eval: false 
@@ -306,9 +307,11 @@ describe("Feature 1: Scatter plot data visualization dropdowns
 })
 ```
 
+An important not on this approach is the different names for each `AppDriver$new()` (otherwise we'd be overwriting the previous snapshot/values).
+
 ### Testing apps in `inst/`
 
-If I want to test a feature for one of the alternative applications I have in `moviesApp`, I can pass their location to the `app_dir` argument of `AppDriver$new()`. In the test below, the scenario describes changing the x, y, and color inputs and removing the missing values from the graph: 
+If we want to test a feature for one of the alternative applications in `moviesApp`, we can pass their location to the `app_dir` argument of `AppDriver$new()`. In the test below, the scenario describes changing inputs for x, y, and color, and removing the missing values from the graph: 
 
 ```{r}
 #| eval: false 
@@ -359,6 +362,8 @@ INFO [2023-10-26 12:58:57] [ START ggp2movies-feat-01 = update x, y, z, missing]
 INFO [2023-10-26 12:59:09] [ END ggp2movies-feat-01 = update x, y, z, missing]
 ```
 
+When I confirm this in the output `png` file, I can see the x, y, and color values have been changed (and the missing values have been removed).
+
 :::{#fig-ggp2movies_app-feature-01-001_}
 
 ![Snapshot png file](images/ggp2movies_app-feature-01-001_.png){#fig-ggp2movies_app-feature-01-001_ width='100%' align='center'}
@@ -366,11 +371,91 @@ INFO [2023-10-26 12:59:09] [ END ggp2movies-feat-01 = update x, y, z, missing]
 File saved in `tests/testthat/_snaps/ggp2movies_app-feature-01-001_.png'`
 :::
 
+
+## [`test.mode`]{style="font-size: 1.05em;"}
+
+If you recall, we've included an argument in both of our standalone app functions to allow for `options` to be passed to `shinyApp()`. 
+
+```{r}
+#| eval: false 
+#| code-fold: false
+movies_app(options = list())
+```
+
+If we're testing our application, we can include the `test.mode = TRUE` option, which will return any values passed to `exportTestValues()`:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+movies_app(options = list(test.mode = TRUE), run = 'p')
+```
+
+To export values, place the name of exported reactive values in curly brackets (`{}`). Below is an example using the `inputs()` reactive object in the `mod_scatter_display_server()`:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+exportTestValues(
+   x = { inputs()$x },
+   y = { inputs()$y },
+   z = { inputs()$z },
+   alpha = { inputs()$alpha },
+   size = { inputs()$size },
+   title = { inputs()$plot_title }
+  )
+```
+
+In our test, we can create the `AppDriver$new()` object, extract the values with `get_values()`, then write tests against any of the exported values:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+app <- AppDriver$new(name = "test-values",
+                     height = 800, width = 1173,
+                     wait = FALSE, timeout = 300000)
+
+test_values <- app$get_values()
+
+test_values[['export']]
+```
+
+```{verbatim}
+$`plot-alpha`
+[1] 0.5
+
+$`plot-size`
+[1] 2
+
+$`plot-title`
+[1] ""
+
+$`plot-x`
+[1] "imdb_rating"
+
+$`plot-y`
+[1] "audience_score"
+
+$`plot-z`
+[1] "mpaa_rating"
+```
+
+```{r}
+#| label: git_box_12e_tests-system
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "standard",
+  fig_pw = '75%', 
+  branch = "12e_tests-system", 
+  repo = 'moviesApp')
+```
+
 ## Recap 
 
 Behavior-driven development (or behavior-driven testing) fills the void between non-technical stakeholders and developers by encouraging natural, descriptive language (often complete sentences) to define and communicate the application requirements.
 
-The goal of any shiny application should be to create something that helps drive data-driven decisions. I've found building a traceability matrix and using `testthat` to scope tests forces me ask myself, "*do the tests address all of the user's needs?*" (which saves me from developing a feature no one asked for).
+Capturing the application's desired behaviors in `Feature`s (*As a *, *I want*, *So that*) and `Scenario`s (*Given*, *When*, *Then*) provides a testing script that's clear and easy to follow. Using the BDD format also makes system tests easier to update if the features and scenarios change. 
 
 ```{r}
 #| label: co_box_app_recap
@@ -379,35 +464,22 @@ The goal of any shiny application should be to create something that helps drive
 #| eval: true
 co_box(
   color = "b",
-  header = "Recap: testing your app-package",
+  header = "Recap: System tests",
   contents = "
 
-**Testing shiny app-packages**
+**System tests for your shiny app-package**
   
-  - Scoping tests: ... user specifications, features, and functional requierments.
+  - **`shinytest2`**: perform system (or end-to-end) tests by installing `shinytest2` and running `shinytest2::use_shinytest2`
   
-    - **User specifications**:  
+    - `record_test()`: call `record_test()` to launch your application in the test recorder.   
   
-    - **Features**:
+    - Recording tests: interact with your application in the test recorder and export values and/or snapshots.   
   
-    - **Functional requierments**:
+    - Test files: `record_test()` automatically creates a new test file in `tests/testthat/`    
   
-  - Unit tests: set up the unit testing infrastructure with `usethis::use_testthat()` 
+  - **BDD functions**: use `describe()` and `it()` to add features and sceanrios in test files.    
   
-    - Test files: create new test files with `usethis::use_test()`
-  
-    - **BDD functions**: use `describe()` add context for feature or specifications and `it()` blocks for test code.
-  
-  - Fixtures:  
-  
-  - Helpers: 
-  
-  - Mocks: 
-  
-  - Module tests: `testServer()` ...
-  
-  - System tests: `shinytest2` ...
-  
+    - `describe('Feature...', code = { it('Scenario...', code = { ... })})`
   ", 
   fold = FALSE
 )
@@ -461,6 +533,8 @@ pkg_tests <- testthat::test_local("../",
 
 Package vignette with with traceability matrix and test results 
 :::
+
+The goal of any shiny application should be to create something that helps drive data-driven decisions. I've found building a traceability matrix and using `testthat` to scope tests forces me ask myself, "*do the tests address all of the user's needs?*" (which saves me from developing a feature no one asked for).
 
 Placing the test number in each call to `testthat::it()` will make it easier to link the tests back to the original functional requirements, features and specifications.
 

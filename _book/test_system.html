@@ -369,6 +369,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#bdd-test-templates" id="toc-bdd-test-templates" class="nav-link" data-scroll-target="#bdd-test-templates">BDD test templates</a></li>
   <li><a href="#testing-apps-in-inst" id="toc-testing-apps-in-inst" class="nav-link" data-scroll-target="#testing-apps-in-inst">Testing apps in <code>inst/</code></a></li>
   </ul></li>
+  <li><a href="#test.mode" id="toc-test.mode" class="nav-link" data-scroll-target="#test.mode"><span style="font-size: 1.05em;"><code>test.mode</code></span></a></li>
   <li><a href="#recap" id="toc-recap" class="nav-link" data-scroll-target="#recap">Recap</a></li>
   </ul>
 <div class="toc-actions"><div><i class="bi bi-github"></i></div><div class="action-links"><p><a href="https://github.com/mjfrigaard/shinyap/edit/main/test_system.qmd" class="toc-action">Edit this page</a></p><p><a href="https://github.com/mjfrigaard/shinyap/issues/new" class="toc-action">Report an issue</a></p></div></div></nav>
@@ -530,6 +531,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <figcaption class="figure-caption">Figure&nbsp;14.2: Creating a test with <code>shinytest2::record_test()</code></figcaption>
 </figure>
 </div>
+<p>The test runs and saves the PNG snapshot and test values to the <code>tests/testthat/_snaps/</code> folder:</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 2 | SKIP 0 | PASS 1 ]</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>── Warning (test-shinytest2.R:11:3): {shinytest2} recording: feature-01 ──</span>
@@ -538,7 +540,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>── Warning (test-shinytest2.R:11:3): {shinytest2} recording: feature-01 ──</span>
 <span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>Adding new file snapshot: 'tests/testthat/_snaps/feature-01-001.json'</span>
 <span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 2 | SKIP 0 | PASS 1 ]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>The contents of <code>test-shinytest2.R</code> are below:</p>
+<p>The contents of the new <code>test-shinytest2.R</code> test file are below:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(shinytest2)</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">test_that</span>(<span class="st">"{shinytest2} recording: feature-01"</span>, {</span>
@@ -569,7 +571,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
 <li>Change the plot title to (<code>vars-plot_title</code>) to ‘New plot title’</li>
 </ol>
-<p>We can use this initial test as a template for writing our feature scenarios.</p>
+<p>We’ll use this initial test as a template for writing the steps in our test <code>Scenario</code>s.</p>
 <section id="bdd-test-templates" class="level3">
 <h3 class="anchored" data-anchor-id="bdd-test-templates">BDD test templates</h3>
 <p>There are multiple ways to approach your test layout with <code>testthat</code>’s <code>describe()</code>, <code>it()</code> and/or <code>test_that()</code> functions. Below is an example with dedicated <code>Feature</code> and <code>Scenario</code> descriptions, a reference to the feature number in the <code>it()</code> (or <code>test_that()</code>) call:</p>
@@ -609,8 +611,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a>      })</span>
 <span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>With this approach you can create the test file as soon as you have a feature described (and come back later to fill in the <code>Scenario</code> and test).</p>
-<p>An alternative approach is to use nested <code>describe()</code> functions and include the <code>Scenario</code>’s <code>Then</code> steps into the test (because these are what will actually be tested):</p>
+<p>With this approach you can create the test file as soon as you have a <code>Feature</code> description (and come back later to fill in the <code>Scenario</code>s and tests).</p>
+<p>An alternative approach is to use nested <code>describe()</code> functions and include each of the <code>Scenario</code>’s <code>Then</code> steps in the <code>it()</code> or <code>test_that()</code> call (these are what will actually be tested):</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(shinytest2)</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">describe</span>(<span class="st">"Feature 1: Scatter plot data visualization dropdowns</span></span>
@@ -653,10 +655,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a>      })</span>
 <span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>An important not on this approach is the different names for each <code>AppDriver$new()</code> (otherwise we’d be overwriting the previous snapshot/values).</p>
 </section>
 <section id="testing-apps-in-inst" class="level3">
 <h3 class="anchored" data-anchor-id="testing-apps-in-inst">Testing apps in <code>inst/</code></h3>
-<p>If I want to test a feature for one of the alternative applications I have in <code>moviesApp</code>, I can pass their location to the <code>app_dir</code> argument of <code>AppDriver$new()</code>. In the test below, the scenario describes changing the x, y, and color inputs and removing the missing values from the graph:</p>
+<p>If we want to test a feature for one of the alternative applications in <code>moviesApp</code>, we can pass their location to the <code>app_dir</code> argument of <code>AppDriver$new()</code>. In the test below, the scenario describes changing inputs for x, y, and color, and removing the missing values from the graph:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(shinytest2)</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">describe</span>(</span>
@@ -699,6 +702,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>INFO [2023-10-26 12:58:57] [ START ggp2movies-feat-01 = update x, y, z, missing]</span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 2 | SKIP 0 | PASS 1 ]</span>
 <span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>INFO [2023-10-26 12:59:09] [ END ggp2movies-feat-01 = update x, y, z, missing]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>When I confirm this in the output <code>png</code> file, I can see the x, y, and color values have been changed (and the missing values have been removed).</p>
 <div id="fig-ggp2movies_app-feature-01-001_" class="quarto-figure quarto-figure-center anchored">
 <figure class="figure">
 <div id="fig-ggp2movies_app-feature-01-001_" class="quarto-figure quarto-figure-center anchored">
@@ -712,41 +716,92 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </section>
 </section>
+<section id="test.mode" class="level2 page-columns page-full">
+<h2 class="anchored" data-anchor-id="test.mode"><span style="font-size: 1.05em;"><code>test.mode</code></span></h2>
+<p>If you recall, we’ve included an argument in both of our standalone app functions to allow for <code>options</code> to be passed to <code>shinyApp()</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">movies_app</span>(<span class="at">options =</span> <span class="fu">list</span>())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>If we’re testing our application, we can include the <code>test.mode = TRUE</code> option, which will return any values passed to <code>exportTestValues()</code>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">movies_app</span>(<span class="at">options =</span> <span class="fu">list</span>(<span class="at">test.mode =</span> <span class="cn">TRUE</span>), <span class="at">run =</span> <span class="st">'p'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>To export values, place the name of exported reactive values in curly brackets (<code>{}</code>). Below is an example using the <code>inputs()</code> reactive object in the <code>mod_scatter_display_server()</code>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">exportTestValues</span>(</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>   <span class="at">x =</span> { <span class="fu">inputs</span>()<span class="sc">$</span>x },</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>   <span class="at">y =</span> { <span class="fu">inputs</span>()<span class="sc">$</span>y },</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>   <span class="at">z =</span> { <span class="fu">inputs</span>()<span class="sc">$</span>z },</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>   <span class="at">alpha =</span> { <span class="fu">inputs</span>()<span class="sc">$</span>alpha },</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>   <span class="at">size =</span> { <span class="fu">inputs</span>()<span class="sc">$</span>size },</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>   <span class="at">title =</span> { <span class="fu">inputs</span>()<span class="sc">$</span>plot_title }</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>In our test, we can create the <code>AppDriver$new()</code> object, extract the values with <code>get_values()</code>, then write tests against any of the exported values:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>app <span class="ot">&lt;-</span> AppDriver<span class="sc">$</span><span class="fu">new</span>(<span class="at">name =</span> <span class="st">"test-values"</span>,</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>                     <span class="at">height =</span> <span class="dv">800</span>, <span class="at">width =</span> <span class="dv">1173</span>,</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>                     <span class="at">wait =</span> <span class="cn">FALSE</span>, <span class="at">timeout =</span> <span class="dv">300000</span>)</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>test_values <span class="ot">&lt;-</span> app<span class="sc">$</span><span class="fu">get_values</span>()</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>test_values[[<span class="st">'export'</span>]]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>$`plot-alpha`</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>[1] 0.5</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>$`plot-size`</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>[1] 2</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>$`plot-title`</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>[1] ""</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>$`plot-x`</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>[1] "imdb_rating"</span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>$`plot-y`</span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>[1] "audience_score"</span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>$`plot-z`</span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>[1] "mpaa_rating"</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+
+<div class="no-row-height column-margin column-container"><div class="">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/new_branch_ico.png" class="img-fluid figure-img" style="width:75.0%"></p>
+</figure>
+</div>
+<p>This section’s code is in the <a href="https://github.com/mjfrigaard/moviesApp/tree/12e_tests-system"><code>12e_tests-system</code></a> branch of <a href="https://github.com/mjfrigaard/moviesApp"><code>moviesApp</code></a>.</p>
+</div></div></section>
 <section id="recap" class="level2">
 <h2 class="anchored" data-anchor-id="recap">Recap</h2>
 <p>Behavior-driven development (or behavior-driven testing) fills the void between non-technical stakeholders and developers by encouraging natural, descriptive language (often complete sentences) to define and communicate the application requirements.</p>
-<p>The goal of any shiny application should be to create something that helps drive data-driven decisions. I’ve found building a traceability matrix and using <code>testthat</code> to scope tests forces me ask myself, “<em>do the tests address all of the user’s needs?</em>” (which saves me from developing a feature no one asked for).</p>
+<p>Capturing the application’s desired behaviors in <code>Feature</code>s (<em>As a </em>, <em>I want</em>, <em>So that</em>) and <code>Scenario</code>s (<em>Given</em>, <em>When</em>, <em>Then</em>) provides a testing script that’s clear and easy to follow. Using the BDD format also makes system tests easier to update if the features and scenarios change.</p>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="true" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span style="font-weight: bold; font-size: 1.10em;">Recap: testing your app-package</span>
+<span style="font-weight: bold; font-size: 1.10em;">Recap: System tests</span>
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
 <div id="callout-2" class="callout-2-contents callout-collapse collapse show">
 <div class="callout-body-container callout-body">
 <div style="font-size: 1.05em; color: #282b2d;">
-<p><strong>Testing shiny app-packages</strong></p>
+<p><strong>System tests for your shiny app-package</strong></p>
 <ul>
-<li><p>Scoping tests: … user specifications, features, and functional requierments.</p>
+<li><p><strong><code>shinytest2</code></strong>: perform system (or end-to-end) tests by installing <code>shinytest2</code> and running <code>shinytest2::use_shinytest2</code></p>
 <ul>
-<li><p><strong>User specifications</strong>:</p></li>
-<li><p><strong>Features</strong>:</p></li>
-<li><p><strong>Functional requierments</strong>:</p></li>
+<li><p><code>record_test()</code>: call <code>record_test()</code> to launch your application in the test recorder.</p></li>
+<li><p>Recording tests: interact with your application in the test recorder and export values and/or snapshots.</p></li>
+<li><p>Test files: <code>record_test()</code> automatically creates a new test file in <code>tests/testthat/</code></p></li>
 </ul></li>
-<li><p>Unit tests: set up the unit testing infrastructure with <code>usethis::use_testthat()</code></p>
+<li><p><strong>BDD functions</strong>: use <code>describe()</code> and <code>it()</code> to add features and sceanrios in test files.</p>
 <ul>
-<li><p>Test files: create new test files with <code>usethis::use_test()</code></p></li>
-<li><p><strong>BDD functions</strong>: use <code>describe()</code> add context for feature or specifications and <code>it()</code> blocks for test code.</p></li>
+<li><code>describe('Feature...', code = { it('Scenario...', code = { ... })})</code></li>
 </ul></li>
-<li><p>Fixtures:</p></li>
-<li><p>Helpers:</p></li>
-<li><p>Mocks:</p></li>
-<li><p>Module tests: <code>testServer()</code> …</p></li>
-<li><p>System tests: <code>shinytest2</code> …</p></li>
 </ul>
 </div>
 </div>
@@ -806,6 +861,8 @@ pkg_tests <- testthat::test_local("../",
 
 Package vignette with with traceability matrix and test results 
 :::
+
+The goal of any shiny application should be to create something that helps drive data-driven decisions. I've found building a traceability matrix and using `testthat` to scope tests forces me ask myself, "*do the tests address all of the user's needs?*" (which saves me from developing a feature no one asked for).
 
 Placing the test number in each call to `testthat::it()` will make it easier to link the tests back to the original functional requirements, features and specifications.
 
