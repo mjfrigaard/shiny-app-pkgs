@@ -26,7 +26,7 @@ co_box(
 )
 ```
 
-This chapter introduces tools to help write clean and efficient tests. These files, folders and methods can be included in our app-package test suite and are described in-depth in [R Packages, 2ed](https://r-pkgs.org/testing-design.html#sec-testing-design-principles), and the [`testthat` documentation.](https://testthat.r-lib.org/articles/third-edition.html) (but within the context of a standard R package). The sections below contain examples of each tool implemented in an app-package.
+This chapter introduces tools to help write clean and efficient tests. These files, folders and methods can be included in our app-package test suite and are described in-depth in [R Packages, 2ed](https://r-pkgs.org/testing-design.html#sec-testing-design-principles), and the [`testthat` documentation.](https://testthat.r-lib.org/articles/third-edition.html) (but within the context of a standard R package). The sections below contain examples of each tool implemented in our app-package.
 
 ## Testing best practices
 
@@ -79,6 +79,17 @@ Read more about Gherkin on the [Cucumber website.](https://cucumber.io/docs/gher
 :::
 
 ## Test fixtures
+
+```{r}
+#| label: git_box_12b_tests-fixtures
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  fig_pw = '65%', 
+  branch = "12b_tests-fixtures", 
+  repo = 'moviesApp')
+```
 
 <!-- https://www.tidyverse.org/blog/2020/04/self-cleaning-test-fixtures/ -->
 
@@ -231,22 +242,22 @@ devtools:::test_coverage_active_file()
 
 ![Test coverage on active file](img/11_tests_coverage_scatter_plot.png){width="100%" fig-align="center"}
 
-```{r}
-#| label: git_box_10b_tests-fixtures
-#| echo: false
-#| results: asis
-#| eval: true
-git_margin_box(
-  fig_pw = '65%', 
-  branch = "10b_tests-fixtures", 
-  repo = 'moviesApp')
-```
-
 If the data `tidy_ggp2_movies.rds` in `tests/testthat/fixtures/` are going to be used repeatedly, it might also make sense to store it in `inst/extdata/` or `data-raw/`. Test fixtures are described in-depth in [R Packages, 2ed](https://r-pkgs.org/testing-advanced.html#test-fixtures) and in the [`testthat` documentation](https://testthat.r-lib.org/articles/test-fixtures.html#test-fixtures).
 
 ## Test helpers
 
 <!-- https://r-pkgs.org/testing-design.html#testthat-helper-files -->
+
+```{r}
+#| label: git_box_12c_tests-helpers
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  fig_pw = '65%', 
+  branch = "12c_tests-helpers", 
+  repo = 'moviesApp')
+```
 
 > "*Helper files are a mighty weapon in the battle to eliminate code floating around at the top-level of test files.*" Testthat helper files, [R Packages, 2ed](https://r-pkgs.org/testing-design.html#testthat-helper-files)
 
@@ -475,157 +486,88 @@ Another option for using snapshots for testing is the `expect_snapshot_file()` f
 
 [^test_tools-12]: Follow the `expect_snapshot_file()` example from the [`testthat` documentation](https://testthat.r-lib.org/reference/expect_snapshot_file.html#ref-examples)
 
-In this test, I'll list feature **F1.2** from the traceability matrix in a top-level `describe()` block, then nest each scenario for the functional requirement in `it()` statements (with each snapshot the test will capture).
-
-```{r}
-#| label: co_box_trace_matrix_feat_funct_snaps
-#| echo: false
-#| code-fold: false
-#| include: true
-trace_matrix <- tibble::tibble(
-  `Features` = c(
-    "F1.2: Dropdown menus (continuous x & y axes, categorical point coloration)",
-    NA_character_,
-    NA_character_,
-    NA_character_
-  ),
-  `Requirements` = c(
-    "FR 1.2: The app should display dropdown menus listing available continuous variables for x-axis and y-axis selection.",
-    "FR 1.3: Upon user selection of x-axis and y-axis variables, the app should update the scatter plot to reflect the user’s choices.",
-    "FR 1.4: The app should present a dropdown menu listing available categorical variables for point coloration.",
-    "FR 1.5: The app should dynamically change the color of points in the scatter plot based on the user’s categorical variable selection."
-  )
-) 
-trace_matrix |> 
-  gt::gt(auto_align = TRUE) |> 
-  gt::sub_missing(
-  columns = gt::everything(),
-  rows = gt::everything(),
-  missing_text = "-"
-)
-```
-
-Combining functional requirements in the same test file is helpful if we're trying to keep a 1:1 between the `test/testthat/` file names and file names in `R/`.[^test_tools-13]
+In this test, I'll list the `Feature` in a top-level `describe()` block, then nest the `Scenario` for the functional requirement in `it()` statements (with each snapshot the test will capture). Combining `Scenario`s in the same test file is helpful if we're trying to keep a 1:1 between the `test/testthat/` file names and file names in `R/`.[^test_tools-13]
 
 [^test_tools-13]: matching files names between `R/` and `tests/testthat/` keeps our code organized and ensures the `devtools::test_coverage_active_file()` function [works.](https://testthat.r-lib.org/articles/special-files.html)
 
 ```{r}
 #| eval: false 
 #| code-fold: false
-testthat::describe( # <1>
-  "F1.3/1.5: Dropdown menus (continuous x & y axes, categorical point coloration)", # <1>
-  code = { 
+testthat::it( # <1>
+  "Scenario: Create scatter plot
+      Given I have launched the movie review exploration app,
+      When the scatter plot renders,
+      Then the points on the x axis should represent 'Ratings'
+      And the points on the y axis should represent 'Length'
+      And the points should be colored by 'MPAA' rating
+      And the size of the points should be set to '2'
+      And the opacity of the points should be set to '0.5'",
+  code = {
     
-testthat::it(# <2>
-  "Scenario: Scatter plot initial x, y, color values 
-    When I launched the Scatter Plot Data Visualization
-    And I have a dataset of movie reviews from IMDB and Rotten Tomatoes
-    Then the scatter plot should show 'IMDB Rating' on the x-axis
-    And the scatter plot should show 'Audience Score' on the y-axis
-    And the points on the scatter plot should be colored by 'MPAA Rating' 
-  ", code = { # <2>
+    test_logger( # <2>
+      start = "snap scatter_plot()", 
+      msg = "initial x,y,z,size,alpha")  # <2>
 
-    test_logger(start = "T2", msg = "Tests FR1.3/1.5 initial x/y/z") # <3>
-                  
-    scatter_inputs <- list(
-                       x = 'imdb_rating', # <4>
-                       y = 'audience_score',
-                       z = 'mpaa_rating',
-                       alpha = 0.5,
-                       size = 2,
-                       plot_title = 'Enter plot title') # <4>
-    
-    vdiffr::expect_doppelganger( # <5>
-      title = "FR12-FR14: initial x y z axes",
-      fig = scatter_plot(movies, 
-        x_var = scatter_inputs$x, 
-        y_var = scatter_inputs$y, 
-        col_var = scatter_inputs$z, 
-        alpha_var = scatter_inputs$alpha, 
-        size_var = scatter_inputs$size 
-      ) + 
-        ggplot2::labs( 
-          title = variable$plot_title, 
-          x = stringr::str_replace_all( 
-                tools::toTitleCase( 
-                  scatter_inputs$x), "_", " "), 
-          y = stringr::str_replace_all( 
-                tools::toTitleCase( 
-                  scatter_inputs$y), "_", " ") 
-        ) + 
-        ggplot2::theme_minimal() + 
-        ggplot2::theme(legend.position = "bottom") 
-    ) # <5>
-    
-    test_logger(end = "T2", msg = "Tests FR1.3/1.5 initial x/y/z")  # <6>
-    
-  }) # <2>
-  
-  testthat::it(# <7>
-    " 
-  Scenario: Select x, y, color values for plotting
-    When I launched the Scatter Plot Data Visualization
-    And I select the variable 'Critics Score' for the x-axis
-    And I select the variable 'Runtime' for the y-axis
-    And I select the variable 'Title Type' for the color 
-    Then the scatter plot should show 'Critics Score' on the x-axis
-    And the scatter plot should show 'Runtime' on the y-axis
-    And the points on the scatter plot should be colored by 'Title Type' 
-  ", code = { # <7>
+    scatter_inputs <- list(  # <3>
+      x = "imdb_rating",
+      y = "audience_score",
+      z = "mpaa_rating",
+      alpha = 0.5,
+      size = 2,
+      plot_title = "Enter plot title"
+    ) # <3>
 
-    test_logger(start = "T3", msg = "Tests FR1.3/1.5 update x/y/z") # <8>
+    vdiffr::expect_doppelganger( # <4>
+      title = "Initial x y z axes",
+      fig = scatter_plot(movies,
+        x_var = scatter_inputs$x,
+        y_var = scatter_inputs$y,
+        col_var = scatter_inputs$z,
+        alpha_var = scatter_inputs$alpha,
+        size_var = scatter_inputs$size
+      ) +
+        ggplot2::labs(
+          title = scatter_inputs$plot_title,
+          x = stringr::str_replace_all(
+            tools::toTitleCase(
+              scatter_inputs$x
+            ), "_", " "
+          ),
+          y = stringr::str_replace_all(
+            tools::toTitleCase(
+              scatter_inputs$y
+            ), "_", " "
+          )
+        ) +
+        ggplot2::theme_minimal() +
+        ggplot2::theme(legend.position = "bottom")
+    ) # <4>
+
+    test_logger( # <5>
+      end = "snap scatter_plot()", 
+      msg = "initial x,y,z,size,alpha") # <5>
     
-    scatter_inputs <- list( # <9>
-                       x = 'audience_score',
-                       y = 'imdb_rating', 
-                       z = 'critics_rating',
-                       alpha = 0.5,
-                       size = 2,
-                       plot_title = 'Enter plot title'
-      ) # <9>
-    
-    vdiffr::expect_doppelganger( # <10>
-      title = "FR 1.3-1.4: update x, y, color", 
-      fig = scatter_plot(movies, 
-        x_var = scatter_inputs$x, 
-        y_var = scatter_inputs$y, 
-        col_var = scatter_inputs$z, 
-        alpha_var = scatter_inputs$alpha, 
-        size_var = scatter_inputs$size 
-      )) # <10>
-        
-    test_logger(end = "T3", msg = "Tests FR1.3/1.5 update x/y/z")  # <11>
-    
-  }) # <7>
-  
-}) # <1>
+  }
+)# <1>
 ```
+1.  Test scope (**T2**)\
+2.  Log start (**T2**)\
+3.  Initial `movies` variable inputs for `x`, `y`, and `z` from UI\
+4.  Snapshot with initial values\
+5.  Log end (**T2**)\
 
-1.  Feature(s) scope\
-2.  Test scope (**T2**)\
-3.  Log start (**T2**)\
-4.  Initial `movies` variable inputs for `x`, `y`, and `z` from UI\
-5.  Snapshot with initial values\
-6.  Log end (**T2**)\
-7.  Test scope (**T3**)\
-8.  Log start (**T3**)\
-9.  Updated `movies` variable inputs for `x`, `y`, and `z`\
-10. Snapshot with updated values\
-11. Log end (**T3**)
-
-In this test, I've separated the scenarios into different `it()` sections, and the test results return the output from `test_logger()` for more context of what's being tested:
+In this test, I've separated the scenarios into it's own `it()` sections, and the test results return the output from `test_logger()` for more context of what's being tested:
 
 ```{verbatim}
 #| eval: false 
 #| code-fold: false
-[ FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]
-INFO [2023-10-12 07:24:39] [ START T2 = Tests FR1.3/1.5 initial x/y/z]
-[ FAIL 0 | WARN 0 | SKIP 0 | PASS 1 ]
-INFO [2023-10-12 07:24:40] [ END T2 = Tests FR1.3/1.5 initial x/y/z]
+INFO [2023-10-27 10:58:25] [ START snap scatter_plot() = initial x,y,z,size,alpha]
+[ FAIL 0 | WARN 1 | SKIP 0 | PASS 3 ]
+INFO [2023-10-27 10:58:25] [ END snap scatter_plot() = initial x,y,z,size,alpha]
 
-INFO [2023-10-12 07:24:40] [ START T3 = Tests FR1.3/1.5 update x/y/z]
-[ FAIL 0 | WARN 0 | SKIP 0 | PASS 2 ]
-INFO [2023-10-12 07:24:40] [ END T3 = Tests FR1.3/1.5 update x/y/z]
+INFO [2023-10-27 10:58:25] [ START snap scatter_plot() = updated x,y,z]
+[ FAIL 0 | WARN 2 | SKIP 0 | PASS 4 ]
+INFO [2023-10-27 10:58:26] [ END snap scatter_plot() = updated x,y,z]
 ```
 
 We also see a warning when the snapshot has been saved in the `tests/testthat/_snaps/` folder the first time the test is run:
@@ -633,27 +575,31 @@ We also see a warning when the snapshot has been saved in the `tests/testthat/_s
 ```{verbatim}
 #| eval: false 
 #| code-fold: false
-── Warning (test-scatter_plot.R:26:5): 
-  Scenario: Scatter plot initial x, y, color values 
-    When I launched the Scatter Plot Data Visualization
-    And I have a dataset of movie reviews from IMDB and Rotten Tomatoes
-    Then the scatter plot should show 'IMDB Rating' on the x-axis
-    And the scatter plot should show 'Audience Score' on the y-axis
-    And the points on the scatter plot should be colored by 'MPAA Rating' 
-Adding new file snapshot: 'tests/testthat/_snaps/fr12-fr14-initial-x-y-z-axes.svg'
+── Warning (test-scatter_plot.R:124:9): 
+      Scenario: Create scatter plot
+          Given I have launched the movie review exploration app,
+          When the scatter plot renders,
+          Then the points on the x axis should represent 'Ratings'
+          And the points on the y axis should represent 'Length'
+          And the points should be colored by 'MPAA' rating
+          And the size of the points should be set to '2'
+          And the opacity of the points should be set to '0.5' ──
+Adding new file snapshot: 'tests/testthat/_snaps/initial-x-y-z-axes.svg'
 
-── Warning (test-scatter_plot.R:75:5):  
-  Scenario: Select x, y, color values for plotting
-    When I launched the Scatter Plot Data Visualization
-    And I select the variable 'Audience Score' for the x-axis
-    And I select the variable 'IMDB Rating' for the y-axis
-    And I select the variable 'Critics Rating' for the color 
-    Then the scatter plot should show 'Audience Score' on the x-axis
-    And the scatter plot should show 'IMDB Rating' on the y-axis
-    And the points on the scatter plot should be colored by 'Critics Rating'
-Adding new file snapshot: 'tests/testthat/_snaps/fr14-fr15-update-x-y-color.svg'
+── Warning (test-scatter_plot.R:186:7): 
+      Scenario: Change x, y, color values for plotting
+        When I launch the Scatter Plot Data Visualization
+        And I select the variable 'Audience Score' for the x-axis
+        And I select the variable 'IMDB Rating' for the y-axis
+        And I select the variable 'Critics Rating' for the color
+        Then the scatter plot should show 'Audience Score' on the x-axis
+        And the scatter plot should show 'IMDB Rating' on the y-axis
+        And the points on the scatter plot should be colored by 'Critics Rating' ──
+Adding new file snapshot: 'tests/testthat/_snaps/updated-x-y-color.svg'
 [ FAIL 0 | WARN 2 | SKIP 0 | PASS 2 ]
 ```
+
+On subsequent runs, this warning will disappear (as long as there are no changes to the `.svg` files). 
 
 ```{r}
 #| label: co_box_expect_doppelganger
@@ -667,40 +613,6 @@ co_box(
   contents = "
 Placing the functional requirement in the `title` argument of `expect_doppelganger()` gives us a clear idea of what the snapshot file *should* contain.
 "
-)
-```
-
-On subsequent runs, this warning will disappear (as long as there are no changes to the `.svg` files). We should also update the traceability matrix with the tests we've used to verify the functional requirements:
-
-```{r}
-#| label: co_box_trace_matrix_add_t1_and_t2
-#| echo: false
-#| code-fold: false
-tibble::tibble(
-  `Features` = c(
-    "F1.2: Dropdown menus (continuous x & y axes, categorical point coloration)",
-    NA_character_,
-    NA_character_,
-    NA_character_
-  ),
-  `Requirements` = c(
-    "FR 1.2: The app should display dropdown menus listing available continuous variables for x-axis and y-axis selection.",
-    "FR 1.3: Upon user selection of x-axis and y-axis variables, the app should update the scatter plot to reflect the user’s choices.",
-    "FR 1.4: The app should present a dropdown menu listing available categorical variables for point coloration.",
-    "FR 1.5: The app should dynamically change the color of points in the scatter plot based on the user’s categorical variable selection."
-  ),
-  Tests = c(
-    "T2",
-    "T3",
-    "T2",
-    "T3"
-  )
-) |> 
-  gt::gt(auto_align = TRUE) |> 
-  gt::sub_missing(
-  columns = gt::everything(),
-  rows = gt::everything(),
-  missing_text = "-"
 )
 ```
 
@@ -740,18 +652,18 @@ Graph objects are difficult to use as test objects
 
 The output shows us all the potential points of failure when comparing complex objects like graphs (despite the actual outputs appearing identical), so it's best to limit the number of 'visual unit tests' unless they're absolutely necessary.
 
+## Test mocks
+
 ```{r}
-#| label: git_box_10c_tests-helpers
+#| label: git_box_12f_tests-mocks
 #| echo: false
 #| results: asis
 #| eval: true
 git_margin_box(
   fig_pw = '65%', 
-  branch = "10c_tests-helpers", 
+  branch = "12f_tests-mocks", 
   repo = 'moviesApp')
 ```
-
-## Test mocks
 
 Test code may rely on external systems, behavior, functions, or objects. To ensure that our unit tests remain fast and focused solely on the functional requirement being tested, it's important to minimize these external dependencies.
 
