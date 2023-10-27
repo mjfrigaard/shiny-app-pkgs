@@ -26,15 +26,11 @@ co_box(
 )
 ```
 
-This chapter introduces tools to help write clean and efficient tests. These files, folders and methods can be included in our app-package test suite and are described in-depth in [R Packages, 2ed](https://r-pkgs.org/testing-design.html#sec-testing-design-principles), and the [`testthat` documentation.](https://testthat.r-lib.org/articles/third-edition.html) (but within the context of a standard R package). The sections below contain examples of each tool implemented in our app-package.
-
-## Testing best practices
-
-One of the motivations for developing a Shiny application in an R package is the ability to test your code. R packages have a well-established framework for testing (`testthat`), which allows us to write and run unit tests. At the time of this writing, the second edition of R Packages also dedicates three chapters to testing.[^test_tools-1]
+This chapter introduces tools to help write clean and efficient tests. These files, folders and methods can be included in our app-package test suite and are described in-depth in [R Packages, 2ed](https://r-pkgs.org/testing-design.html#sec-testing-design-principles), and the [`testthat` documentation.](https://testthat.r-lib.org/articles/third-edition.html) (but within the context of a standard R package). The sections below contain examples of each tool implemented in our app-package.[^test_tools-1]
 
 [^test_tools-1]: The three chapters in R Packages, 2ed, dedicated to testing are [Testing basics](https://r-pkgs.org/testing-basics.html), [Designing your test suite](https://r-pkgs.org/testing-design.html), and [Advanced testing techniques](https://r-pkgs.org/testing-advanced.html)
 
-### Test scope
+## Test scope
 
 One of the recent updates to the `testthat` package (version 3.2.0) emphasizes limiting code that exists outside of our tests.[^test_tools-2]
 
@@ -42,43 +38,24 @@ One of the recent updates to the `testthat` package (version 3.2.0) emphasizes l
 
 > "*Eliminating (or at least minimizing) top-level code outside of `test_that()` will have the beneficial effect of making your tests more hermetic. This is basically the testing analogue of the general programming advice that it's wise to avoid unstructured sharing of state.*" - [Self-sufficient tests, R Packages, 2ed](https://r-pkgs.org/testing-design.html#self-sufficient-tests)
 
-The code outside of `test_that()` usually serves a specific purpose: functions called to load, create, or manipulate data; setting options; creating folders or files; databases connections; etc. The topics in this chapter will demonstrate how to include these behaviors in our tests while adhering to the advice above by properly using test fixtures, helpers, and mocks.
+Code outside of `test_that()` usually serves a specific purpose (load or manipulate data, set options, create folders or files, etc). The topics in this chapter will demonstrate how to include these behaviors in our tests without placing code outside of the test scope.
 
-::: {.callout-note collapse="false" appearance="minimal"}
-
-### BDD refresher: features & scenarios
-
-In BDD, requirements are written plain language 'feature files' using a series of keywords:   
-
-```{bash}
-#| eval: false 
-#| code-fold: false 
-Feature: # <1>
-  # <1>
-  Background: # <2>
-    Given # <3> 
-    
-  Scenario: # <4>
-    When # <5>
-    And # <6> 
-    Then # <7>
-    # <4>
+```{r}
+#| label: co_box_Mocking
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b", fold = TRUE, 
+  size = "1.05", look = "simple",
+  header = "Mocking",
+  contents = "
+Test mocks are covered in [Special Topics](test_mocks.qmd), because the example isn't from our app-package (it comes from the package development masterclass given at [posit::conf(2023)](https://github.com/posit-conf-2023/pkg-dev-masterclass)). 
+"
+)
 ```
-1. **High-level description** (title and description)  
-2. Steps or conditions that exist **before each scenario**   
-3. Used to **describe the initial context** or **preconditions for the scenario**      
-4. A series of steps outlining a **concrete examples that illustrates a feature**   
-5. Used to **describe an event, or an action**  
-6. Use to combine **`Given`**, **`When`**, or **`Then`**     
-7. Use to **verify expected outcomes that are observable by a user**  
 
-`Feature`, `Background`, and `Scenario` information can be included in nested `testthat::describe()` blocks, but every `Then` keyword should have a corresponding `testthat::it()` call.  
-
-Read more about Gherkin on the [Cucumber website.](https://cucumber.io/docs/gherkin/reference/).
-
-:::
-
-## Test fixtures
+## Fixtures
 
 ```{r}
 #| label: git_box_12b_tests-fixtures
@@ -92,12 +69,6 @@ git_margin_box(
 ```
 
 <!-- https://www.tidyverse.org/blog/2020/04/self-cleaning-test-fixtures/ -->
-
-The two principles to keep in mind while developing test fixtures, helpers, and mocks in an app-package are:
-
-1.  Keep test scope logic defined to a single test (or all tests)
-
-2.  Explicitly setup and tear down anything created during a test (and reset test state between each test run)
 
 Test fixtures can be anything used to create repeatable test conditions (data, file paths, functions, etc.). Good test fixtures provide a consistent, well-defined test environment, and then are removed/destroyed when the test is executed. This ensures any changes made during the test don't persist or interfere with future tests.[^test_tools-5]
 
@@ -146,6 +117,40 @@ tests
 Data files stored in `tests/testthat/fixtures/` can be accessed with `testthat::test_path()` inside each test.
 
 ### Example: test fixture
+
+::: {.callout-note collapse="true" appearance="minimal"}
+
+### BDD refresher: features & scenarios
+
+In BDD, requirements are written plain language 'feature files' using a series of keywords:   
+
+```{bash}
+#| eval: false 
+#| code-fold: false 
+Feature: # <1>
+  # <1>
+  Background: # <2>
+    Given # <3> 
+    
+  Scenario: # <4>
+    When # <5>
+    And # <6> 
+    Then # <7>
+    # <4>
+```
+1. **High-level description** (title and description)  
+2. Steps or conditions that exist **before each scenario**   
+3. Used to **describe the initial context** or **preconditions for the scenario**      
+4. A series of steps outlining a **concrete examples that illustrates a feature**   
+5. Used to **describe an event, or an action**  
+6. Use to combine **`Given`**, **`When`**, or **`Then`**     
+7. Use to **verify expected outcomes that are observable by a user**  
+
+`Feature`, `Background`, and `Scenario` information can be included in nested `testthat::describe()` blocks, but every `Then` keyword should have a corresponding `testthat::it()` call.  
+
+Read more about Gherkin on the [Cucumber website.](https://cucumber.io/docs/gherkin/reference/).
+
+:::
 
 Below is a test that answers the question, '*does the plot generate without producing an error?*' when using the `tidy_ggp2_movies.rds` test fixture with the `scatter_plot()` utility function. This type of test appropriate because we want to confirm the data source (`tidy_ggp2_movies`) will generate a plot object when passed to the `scatter_plot()` utility function, not necessarily the specific contents of the graph.[^test_tools-is.ggplot]
 
@@ -207,57 +212,11 @@ testthat::describe( # <1>
 5.  Create observed object  
 6.  Expectation
 
-#### Test development 
-
-While developing, using keyboard shortcuts makes it easier to iterate between building fixtures, writing and running tests, and checking code coverage.
-
-```{r}
-#| label: hot_key_tf_01
-#| echo: false
-#| results: asis
-#| eval: true
-hot_key(fun = 'tf')
-```
-
-```{verbatim}
-#| eval: false 
-#| code-fold: false
-devtools:::test_active_file()
-[ FAIL 0 | WARN 0 | SKIP 0 | PASS 1 ]
-```
-
-```{r}
-#| label: hot_key_cf_01
-#| echo: false
-#| results: asis
-#| eval: true
-hot_key(fun = 'cf')
-```
-
-```{r}
-#| eval: false 
-#| code-fold: false
-devtools:::test_coverage_active_file()
-```
-
-![Test coverage on active file](img/11_tests_coverage_scatter_plot.png){width="100%" fig-align="center"}
-
 If the data `tidy_ggp2_movies.rds` in `tests/testthat/fixtures/` are going to be used repeatedly, it might also make sense to store it in `inst/extdata/` or `data-raw/`. Test fixtures are described in-depth in [R Packages, 2ed](https://r-pkgs.org/testing-advanced.html#test-fixtures) and in the [`testthat` documentation](https://testthat.r-lib.org/articles/test-fixtures.html#test-fixtures).
 
-## Test helpers
+## Helpers
 
 <!-- https://r-pkgs.org/testing-design.html#testthat-helper-files -->
-
-```{r}
-#| label: git_box_12c_tests-helpers
-#| echo: false
-#| results: asis
-#| eval: true
-git_margin_box(
-  fig_pw = '65%', 
-  branch = "12c_tests-helpers", 
-  repo = 'moviesApp')
-```
 
 > "*Helper files are a mighty weapon in the battle to eliminate code floating around at the top-level of test files.*" Testthat helper files, [R Packages, 2ed](https://r-pkgs.org/testing-design.html#testthat-helper-files)
 
@@ -326,16 +285,8 @@ While this removes duplicated code, it also makes it less clear for the reader w
 #| eval: false 
 #| code-fold: false 
 #| collapse: true
-testthat::it(
-  "Scenario: Scatter plot initial x, y, color values 
-     When I launched the Scatter Plot Data Visualization
-     And I have a dataset of movie reviews from IMDB 
-     Then the scatter plot should show 'Rating' on the x-axis
-     And the scatter plot should show 'Length' on the y-axis
-     And the points on the scatter plot should be colored by 'MPAA' rating", 
-  code = {
-           
-    tidy_ggp2_movies <- readRDS(test_path("fixtures", # <1>
+
+tidy_ggp2_movies <- readRDS(test_path("fixtures", # <1>
                                 "tidy_ggp2_movies.rds")) # <1>
   
 app_graph <- scatter_plot(
@@ -347,36 +298,9 @@ app_graph <- scatter_plot(
   size_var = var_inputs()$size) # <2>
 
 testthat::expect_true(ggplot2::is.ggplot(app_graph))
-})
 ```
 1. Load test fixture  
-2. This is how we refer to the inputs in `mod_scatter_display_server()`
-
-
-```{r}
-#| label: co_box_dry
-#| echo: false
-#| results: asis
-#| eval: true
-co_box(
-  color = "r", 
-  fold = FALSE,
-  look = 'simple',
-  size = "1.05", 
-  hsize = "1.15",
-  header = "Violating the DRY principle",
-  contents = "
-If you have repeated code in your tests, consider the following questions below before creating a helper function: 
-  
-1. Does the code help explain what behavior is being tested? 
-  
-2. Would a helper make it harder to debug the test when it fails?  
-  
-It’s more important that test code is obvious than DRY, because it’s more likely you’ll be dealing with this test when it fails (and you're not likely to remember why all the top-level code is there).
-  
-"
-)
-```
+2. Identical to the code in `mod_scatter_display_server()`
 
 In contrast, the `make_ggp2_inputs()` function below creates inputs for the `scatter_plot()` utility function:
 
@@ -428,7 +352,43 @@ make_var_inputs <- function() {
 }
 ```
 
+```{r}
+#| label: co_box_dry
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "r", 
+  fold = FALSE,
+  look = 'simple',
+  size = "1.05", 
+  hsize = "1.15",
+  header = "Violating the DRY principle",
+  contents = "
+If you have repeated code in your tests, consider the following questions below before creating a helper function: 
+  
+1. Does the code help explain what behavior is being tested? 
+  
+2. Would a helper make it harder to debug the test when it fails?  
+  
+It’s more important that test code is obvious than DRY, because it’s more likely you’ll be dealing with this test when it fails (and you're not likely to remember why all the top-level code is there).
+  
+"
+)
+```
+
 #### Logging
+
+```{r}
+#| label: git_box_12c_tests-helpers
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  fig_pw = '65%', 
+  branch = "12c_tests-helpers", 
+  repo = 'moviesApp')
+```
 
 I prefer test outputs to be verbose, so I usually create a `test_logger()` helper function that allows me to give more context and information with each test:
 
@@ -459,11 +419,65 @@ test_logger <- function(start = NULL, end = NULL, msg) {
 
 [^test_tools-logging]: If you like verbose logging outputs, check out the [`logger` package](https://daroczig.github.io/logger/)
 
-I tend to use functions like `test_logger()` enough to justify placing them in a testing utility file ([`R/testthat.R`](https://github.com/mjfrigaard/moviesApp/blob/10c_tests-helpers/R/testthat.R)) below `R/`. Including testing functions in the `R/` folder also ensures they're documented and any dependencies become part of your app-package).[^test_tools-helpers-r-dir]
+I tend to use functions like `test_logger()` enough to justify placing them in a testing utility file ([`R/testthat.R`](https://github.com/mjfrigaard/moviesApp/blob/10c_tests-helpers/R/testthat.R)) below `R/`. Including testing functions in the `R/` folder also ensures they're documented (and any dependencies become part of your app-package).[^test_tools-helpers-r-dir]
 
 [^test_tools-helpers-r-dir]: Placing common files for testing below `R/` is covered in [R Packages, 2ed](https://r-pkgs.org/testing-design.html#hiding-in-plain-sight-files-below-r)
 
+#### Test development 
+
+While developing, using keyboard shortcuts makes it easier to iterate between building fixtures, writing and running tests, and checking code coverage.
+
+```{r}
+#| label: hot_key_tf_01
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key(fun = 'tf')
+```
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+devtools:::test_active_file()
+ FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]
+INFO [2023-10-27 12:39:23] [ START fixture = tidy_ggp2_movies.rds]
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 1 ]
+INFO [2023-10-27 12:39:23] [ START fixture = tidy_ggp2_movies.rds]
+
+INFO [2023-10-27 12:39:23] [ START data = movies.rda]
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 2 ]
+INFO [2023-10-27 12:39:23] [ END data = movies.rda]
+```
+
+```{r}
+#| label: hot_key_cf_01
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key(fun = 'cf')
+```
+
+```{r}
+#| eval: false 
+#| code-fold: false
+devtools:::test_coverage_active_file()
+```
+
+![Test coverage on active file](img/11_tests_coverage_scatter_plot.png){width="100%" fig-align="center"}
+
+
 #### Example: snapshots
+
+```{r}
+#| label: git_box_12g_tests-snapshots
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  fig_pw = '65%', 
+  branch = "12g_tests-snapshots", 
+  repo = 'moviesApp')
+```
 
 Writing tests for graph outputs can be difficult because the "correctness" of a graph is somewhat subjective and requires human judgment. If the expected output we're interesting in testing is cumbersome to describe programmatically, we can consider using a snapshot tests. Examples of this include UI elements (which are mostly HTML created by Shiny's UI layout and input/output functions) and data visualizations.[^test_tools-snapshot-advice]
 
@@ -486,7 +500,7 @@ Another option for using snapshots for testing is the `expect_snapshot_file()` f
 
 [^test_tools-12]: Follow the `expect_snapshot_file()` example from the [`testthat` documentation](https://testthat.r-lib.org/reference/expect_snapshot_file.html#ref-examples)
 
-In this test, I'll list the `Feature` in a top-level `describe()` block, then nest the `Scenario` for the functional requirement in `it()` statements (with each snapshot the test will capture). Combining `Scenario`s in the same test file is helpful if we're trying to keep a 1:1 between the `test/testthat/` file names and file names in `R/`.[^test_tools-13]
+In this test, I'll list the `Feature` in a top-level `describe()` block, then nest the `Scenario` for the functional requirement in `it()` statements (with each snapshot the test will capture). Combining scenarios in the same test file is helpful if we're trying to keep a 1:1 between the `test/testthat/` file names and file names in `R/`.[^test_tools-13]
 
 [^test_tools-13]: matching files names between `R/` and `tests/testthat/` keeps our code organized and ensures the `devtools::test_coverage_active_file()` function [works.](https://testthat.r-lib.org/articles/special-files.html)
 
@@ -500,8 +514,9 @@ testthat::it( # <1>
       Then the points on the x axis should represent 'Ratings'
       And the points on the y axis should represent 'Length'
       And the points should be colored by 'MPAA' rating
+      And the opacity of the points should be set to '0.5'
       And the size of the points should be set to '2'
-      And the opacity of the points should be set to '0.5'",
+      And the plot title should be set to 'Enter plot title'",
   code = {
     
     test_logger( # <2>
@@ -556,7 +571,7 @@ testthat::it( # <1>
 4.  Snapshot with initial values\
 5.  Log end (**T2**)\
 
-In this test, I've separated the scenarios into it's own `it()` sections, and the test results return the output from `test_logger()` for more context of what's being tested:
+Test results also return the output from `test_logger()` with the context I've added on what's being tested:
 
 ```{verbatim}
 #| eval: false 
@@ -652,209 +667,6 @@ Graph objects are difficult to use as test objects
 
 The output shows us all the potential points of failure when comparing complex objects like graphs (despite the actual outputs appearing identical), so it's best to limit the number of 'visual unit tests' unless they're absolutely necessary.
 
-## Test mocks
-
-```{r}
-#| label: git_box_12f_tests-mocks
-#| echo: false
-#| results: asis
-#| eval: true
-git_margin_box(
-  fig_pw = '65%', 
-  branch = "12f_tests-mocks", 
-  repo = 'moviesApp')
-```
-
-Test code may rely on external systems, behavior, functions, or objects. To ensure that our unit tests remain fast and focused solely on the functional requirement being tested, it's important to minimize these external dependencies.
-
-Test mocking functions are a relatively new addition to `testthat` [^tests-mocking-testthat-3e]. The mocking functions can be used to substitute functions by emulating their behavior within the test scope (in BDD terms, mocks are creating the `Given` conditions).
-
-[^tests-mocking-testthat-3e]: Read more about mocking in the updates to [`testthat`](https://www.tidyverse.org/blog/2023/10/testthat-3-2-0/#mocking)
-
-### Example: mocking add-on functions
-
-Instead of real-time computations, mocks return predefined responses to given inputs. Consider the `check_installed()` function below:[^tests-pkg-dev-wrkshp]
-
-[^tests-pkg-dev-wrkshp]: This example comes from the package development masterclass [workshop at `posit::conf(2023)`](https://github.com/posit-conf-2023/pkg-dev-masterclass/tree/main).
-
-
-```{r}
-#| eval: true 
-#| code-fold: false
-check_installed <- function(package) {
-  if (is_installed(package)) {
-    return(invisible())
-  } else {
-    stop("Please install '{package}' before continuing")
-  }
-}
-```
-
-Below is a feature  description for `check_installed()` and two scenarios for each expected behavior:
-
-```{verbatim}
-#| eval: false
-#| code-fold: false
-Feature: Checking if an R package is installed
-
-  Scenario: Checking an installed package
-    Given the R package 'base' is installed
-    When I call the `check_installed()` function with 'base'
-    Then the function should return without any error
-
-  Scenario: Checking an uninstalled package
-    Given the R package 'foo' is not installed
-    When I call the `check_installed()` function with 'foo'
-    Then the function should raise an error with the message
-      `Please install 'nonexistent_package' before continuing`
-```
-
-The `check_installed()` shouldn't be confused with [`rlang::check_installed()`](https://rlang.r-lib.org/reference/is_installed.html), which checks if a package is installed, and if it isn't, prompts the user install the package using [`pak::pkg_install()`](https://pak.r-lib.org/reference/pkg_install.html). 
-
-Lets review how `is_installed()` behaves with installed and missing packages: 
-
-```{r}
-#| code-fold: false
-#| collapse: true
-rlang::is_installed('foo')
-rlang::is_installed('base')
-```
-
-The version of `check_installed()` in `moviesApp` will check if a package is installed and return `invisible()` if it is (which, when assigned to an object, evaluates to `NULL`):
-
-```{r}
-#| code-fold: false
-#| collapse: true
-#| error: true
-check_installed('base')
-```
-
-```{r}
-#| code-fold: false
-#| collapse: true
-#| error: true
-x <- check_installed('base')
-x
-```
-
-If the package is not installed, `check_installed()` prints an error message:
-
-```{r}
-#| code-fold: false
-#| collapse: true
-#| error: true
-check_installed('foo')
-```
-
-To use mocking with `is_installed()`, we'll use the following syntax: 
-
-```{verbatim}
-#| eval: false
-#| code-fold: false
-local_mocked_bindings(
-  {local function} = function(...) {value}
-)
-```
-
-In this case, `{local function}` is `is_installed()` from `rlang`, and we want to test the two possible `{value}`s (`TRUE`/`FALSE`). 
-
-In the first test, we'll use `expect_error()` to confirm that the error message is returned for an uninstalled package by using `local_mocked_bindings()` and setting the `is_installed()` value to `FALSE`:
-
-```{r}
-#| eval: false
-#| code-fold: false
-describe("Feature: Checking if an R package is installed", {
-  
-  test_that(
-    "Scenario: Checking an uninstalled package
-        Given the R package 'foo' is not installed
-        When I call the `check_installed()` function with 'foo'
-        Then the function should raise an error with the message
-        `Please install 'nonexistent_package' before continuing`", {
-          
-    test_logger(start = "mock is_installed", msg = "FALSE") # <1>
-    local_mocked_bindings(is_installed = function(package) FALSE) # <2>
-    expect_error(object = check_installed("foo")) # <3>
-    test_logger(end = "mock is_installed", msg = "FALSE") # <1>
-    
-  })
-  
-})
-```
-1. Log test `start` and `end`
-2. Set `{value}` to `FALSE`   
-3. Pass a package we know **is not installed**   
-
-
-To test installed packages, we'll confirm `check_installed('foo')` with `expect_invisible()`: 
-
-```{r}
-#| eval: false
-#| code-fold: false
-describe("Feature: Checking if an R package is installed", {
-  
-  test_that(
-    "Scenario: Checking an installed package
-        Given the R package 'base' is installed
-        When I call the `check_installed()` function with 'base'
-        Then the function should return without any error", {
-          
-    test_logger(start = "mock is_installed", msg = "TRUE") # <1>
-    local_mocked_bindings(is_installed = function(package) TRUE) # <2>
-    expect_invisible(check_installed("base")) # <3>
-    test_logger(end = "mock is_installed", msg = "TRUE") # <1>
-    
-  })
-})
-```
-1. Log test `start` and `end`
-2. Set `{value}` to `TRUE`   
-3. Pass a package we know **is installed**   
-
-The output from the tests above is provided below: 
-
-```{verbatim}
-#| eval: false 
-#| code-fold: false
-[ FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]
-INFO [2023-10-08 22:59:43] [ START mock is_installed = FALSE]
-[ FAIL 0 | WARN 0 | SKIP 0 | PASS 1 ]
-INFO [2023-10-08 22:59:43] [ END mock is_installed = FALSE]
-
-INFO [2023-10-08 22:59:43] [ START mock is_installed = TRUE]
-[ FAIL 0 | WARN 0 | SKIP 0 | PASS 2 ]
-INFO [2023-10-08 22:59:43] [ END mock is_installed = TRUE]
-```
-
-#### Notes on mocking
-
-The `roxygen2` documentation for `check_installed()` uses the `@importFrom` tag to import `is_installed` and add it to the `moviesApp` namespace (using explicit namespacing alone won't work):
-
-```{r}
-#| eval: false 
-#| code-fold: false
-#' Check if package is installed
-#' 
-#' @description
-#' An example function for demonstrating how to use `testthat`'s
-#' mocking functions.
-#' 
-#' @param package string, name of package
-#'
-#' @return invisible 
-#'
-#' @importFrom rlang is_installed # <1>
-#'
-#' @export
-#'
-#' @examples
-#' check_installed("foo")
-#' check_installed("base")
-```
-1. Fortunately we already included rlang in our `DESCRIPTION` file for `.data` in `scatter_plot()`
-
-Using `testthat`'s mocking functions allow us to craft unit tests that evaluate a single, specific behavior. Read more about mocking functions on the [`testthat` webite](https://testthat.r-lib.org/reference/local_mocked_bindings.html).
-
 ## Recap
 
 ```{r}
@@ -872,8 +684,6 @@ co_box(
 - **Fixtures**: Fixtures prepare the test environment and the initial state. The `tidy_ggp2_movies.rds` data is a test fixture, and it creates the `tidy_ggp2_movies` data within the test scope. 
 
 - **Helpers**: If find yourself writing small, reusable pieces of code to perform specific tasks inside your tests, consider converting them into a function in `tests/testthat/helper.R`.
-
-- **Mocks**: Mocking allows us to isolate a function we're testing from external dependencies by simulating behaviors inside the test. We used `local_mocked_bindings()` from `testthat` to mock the bahavior of `rlang::is_installed()`.
   
   ", 
   fold = FALSE
