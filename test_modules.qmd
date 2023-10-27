@@ -21,15 +21,13 @@ co_box(
 )
 ```
 
-In the previous chapters we added fixtures, helpers and mocks to our test suite and how to use them while running unit tests. In this chapter, we're going briefly discuss some tips for testing modules, how to organize our tests files, and additional packages that help you track tests and application behaviors.
+In the previous chapters we added fixtures and helpers to our test suite and how to use them while running unit tests. In this chapter, we're going briefly discuss some tips for testing modules with `testServer()`--specifically, how to verify modules are transferring values correctly.
 
 ## Integration tests 
 
 Integration tests verify that functions and components work together, and often involves instantiating multiple objects to interact with each other in a single test. 
 
-## [`testServer()`]{style="font-size: 0.95em;"}
-
-We can combine the BDD functions with `testServer()` to test *reactive interactions* between modules. For example, to confirm that the drop-down feature requirement (**F1.2**) is working (i.e., that user-inputs are updating in the application), we need to test two changes:
+We can combine the BDD functions with `testServer()` to test *reactive interactions* between modules. For example, to confirm that the drop-down feature requirement is working (i.e., that user-inputs are updating in the application), we need to test two changes:
 
 1. Values passed to the UI are returned from `mod_var_input_server()`  
 2. The reactive values returned from `mod_var_input_server()` are passed into `mod_scatter_display_server()` and available as the reactive object `inputs()`
@@ -38,23 +36,20 @@ Example scenarios for these changes are provided below:
 
 ```{verbatim}
 #| code-fold: false
-Feature 1.2: Dropdown menus (continuous x & y axes, categorical point colors)
+Feature: Scatter Plot Configuration in Movie Review Application
+      As a user 
+      I want the initial graph pre-configured with variables and aesthetics,
+      So that I can immediately see a meaningful visualization.
 
-  Scenario: Scatter plot initial x, y, color values 
-    When I launched the Scatter Plot Data Visualization
-    And I have a dataset of movie reviews from IMDB and Rotten Tomatoes
-    Then the scatter plot should show 'IMDB Rating' on the x-axis
-    And the scatter plot should show 'Audience Score' on the y-axis
-    And the points on the scatter plot should be colored by 'MPAA Rating'
-
-  Scenario: Change x, y, color values for plotting
-    When I launched the Scatter Plot Data Visualization
-    And I choose the variable 'IMDB Rating' for the x-axis
-    And I choose the variable 'Audience Score' for the y-axis
-    And I choose the variable 'MPAA Raing' for the color
-    Then the scatter plot should show 'IMDB Rating' on the x-axis
-    And the scatter plot should show 'Audience Score' on the y-axis
-    And the points on the scatter plot should be colored by 'MPAA Raing'
+Scenario: Scatter plot initial x, y, color values 
+         Given the movie review application is loaded
+         When I view the initial scatter plot
+         Then the scatter plot should show 'IMDB Rating' on the x-axis
+         And the scatter plot should show 'Audience Score' on the y-axis
+         And the points on the scatter plot should be colored by 'MPAA Rating'
+         And the opacity of the points should be set to '0.5'
+         And the size of the points should be set to '2'
+         And the plot title should be 'Enter plot title'
 ```
 
 
@@ -67,56 +62,41 @@ Inside `testServer()`, we can create a list of graph inputs for `mod_var_input_s
 #| eval: false 
 #| include: true
 #| code-fold: false
-testthat::describe(
-  "F1.2: Dropdown menus (continuous x & y axes, categorical point coloration)", # <1>
-  code = { 
-  
-  testthat::it(# <2>
-    "Scenario: Scatter plot initial x, y, color values 
-      When I launched the Scatter Plot Data Visualization
-      And I have a dataset of movie reviews from IMDB and Rotten Tomatoes
-      Then the scatter plot should show 'IMDB Rating' on the x-axis
-      And the scatter plot should show 'Audience Score' on the y-axis
-      And the points on the scatter plot should be colored by 'MPAA Rating'", # <2>
-    code = {                     
+       
     
-    shiny::testServer(app = mod_var_input_server, expr = {       # <3>
+    shiny::testServer(app = mod_var_input_server, expr = {       # <1>
       
-      test_logger(start = "T5", msg = "F1.2: returned()")
+      test_logger(start = "var_inputs", msg = "returned()")
       
       # create list of output vals
-      test_vals <- list(y = "imdb_rating",                      # <4>
+      test_vals <- list(y = "imdb_rating",                      # <2>
                         x = "audience_score",
                         z = "mpaa_rating",
                         alpha = 0.75,
                         size = 3,
-                        plot_title = "Example title")           # <4>
+                        plot_title = "Example title")           # <2>
 
       # change inputs
-      session$setInputs(y = "imdb_rating",                       # <5>
+      session$setInputs(y = "imdb_rating",                       # <3>
                         x = "audience_score",
                         z = "mpaa_rating",
                         alpha = 0.75,
                         size = 3,
-                        plot_title = "Example title")           # <5>
+                        plot_title = "Example title")           # <3>
 
       testthat::expect_equal(
-        object = session$returned(),        # <6>
-        expected = test_vals                # <6>
+        object = session$returned(),        # <4>
+        expected = test_vals                # <4>
       )
 
       test_logger(end = "T5", msg = "F1.2: returned()")
       
-    }) # <3>
-  }) # <2>
 }) # <1>
 ```
-1. Feature description (**F1.2**)   
-2. Test scope for inputs  
-3. Call to `testServer()`   
-4. Create output values for comparison  
-5. Set each input using `setInputs(input = )`  
-6. Confirm returned values against `test_vals`     
+1. Call to `testServer()`   
+2. Create output values for comparison  
+3. Set each input using `setInputs(input = )`  
+4. Confirm returned values against `test_vals`     
 
 The test above confirms 1) new input values can be passed into the UI, and 2) these values are returned from `mod_var_input_server()`.
 
@@ -196,54 +176,39 @@ If we're testing a module function that collects the reactive values, we need to
 ```{r}
 #| eval: false 
 #| code-fold: false
-testthat::describe(
-  "F1.2: Dropdown menus (continuous x & y axes, categorical point coloration)", # <1>
-  code = {
-    testthat::it( # <2>
-      "Scenario: Scatter plot initial x, y, color values
-          When I launched the Scatter Plot Data Visualization
-          And I have a dataset of movie reviews from IMDB and Rotten Tomatoes
-          Then the scatter plot should show 'IMDB Rating' on the x-axis
-          And the scatter plot should show 'Audience Score' on the y-axis
-          And the points on the scatter plot should be colored by 'MPAA Rating'", 
-      code = {
-        shiny::testServer(
-          app = mod_scatter_display_server,
-          args = list(
-            var_inputs =
-              shiny::reactive( # <3>
-                list( 
-                    x = "critics_score",
-                    y = "imdb_rating",
-                    z = "mpaa_rating",
-                    alpha = 0.5,
-                    size = 2,
-                    plot_title = "Enter Plot Title"
-                  )
-                ) # <3>
-          ),
-          expr = {
-            test_logger(start = "T6", msg = "F1.2: initial values")
-            testthat::expect_equal( # <4>
-              object = inputs(),
-              expected = list(
-                x = "critics_score",
-                y = "imdb_rating",
-                z = "mpaa_rating",
-                alpha = 0.5,
-                size = 2,
-                plot_title = "Enter Plot Title"
-              )
-            ) # <4>
-            test_logger(end = "T5", msg = "F1.2: initial values")
-        })
-    }) # <2>
-}) # <1>
+shiny::testServer(
+  app = mod_scatter_display_server,
+  args = list(
+    var_inputs =
+      shiny::reactive( # <1>
+        list( 
+            x = "critics_score",
+            y = "imdb_rating",
+            z = "mpaa_rating",
+            alpha = 0.5,
+            size = 2,
+            plot_title = "Enter Plot Title"
+          )
+        ) # <1>
+  ),
+  expr = {
+    test_logger(start = "display", msg = "selected_vars initial values")
+    testthat::expect_equal( # <2>
+      object = inputs(),
+      expected = list(
+        x = "critics_score",
+        y = "imdb_rating",
+        z = "mpaa_rating",
+        alpha = 0.5,
+        size = 2,
+        plot_title = "Enter Plot Title"
+      )
+    ) # <2>
+    test_logger(end = "display", msg = "selected_vars initial values")
+})
 ```
-1. Feature requirement description 
-2. Scenario test scope    
-3. List of reactive variable inputs  
-4. Compare `inputs()` to initial values  
+1. List of reactive variable inputs  
+2. Compare `inputs()` to initial values  
 
 
 

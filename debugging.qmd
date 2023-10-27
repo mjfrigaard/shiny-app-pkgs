@@ -43,7 +43,9 @@ These two methods cover 90% of my debugging needs while developing shiny apps (a
 
 ## Debugging & Shiny 
 
-The contents of a Shiny app-package can quickly become complex and intertwined (utility functions, modules, UI and server functions, data, etc.). During regular development, Posit Workbench's interactive  debugger lets us inspect variables and expressions *at runtime* and execute code line-by-line. In Shiny functions, we can track the execution of reactive expressions and observers, which allows us to unravel reactivity-related issues that are often difficult to diagnose.
+The contents of a Shiny app-package can quickly become complex and intertwined (utility functions, modules, UI and server functions, data, etc.). During regular development, Posit Workbench's interactive debugger lets us inspect variables and expressions *at runtime* and execute code line-by-line. 
+
+In Shiny functions, we can track the execution of reactive expressions and observers, which allows us to unravel reactivity-related issues that are often difficult to diagnose.
 
 ### [`browser()`]{style="font-size: 0.95em;"} 
 
@@ -55,10 +57,16 @@ The contents of a Shiny app-package can quickly become complex and intertwined (
 
 Wrapping `browser()` with `observe()` will trigger the debugger when the observer is invalidated, allowing us to interactively examine variables and reactive expressions (within the scope of the `observe()` function):
 
+:::{.column-margin}
+
+![Posit Workbench's interactive debugger](img/debug_debugger.png)
+
+:::
+
 ```{r}
 #| eval: false 
 #| code-fold: false
-shiny_server_fun <- function(input, output, session) {
+shiny_server_function <- function(input, output, session) {
 
     observe({ # <1>
         browser() # <2> 
@@ -77,24 +85,18 @@ shiny_server_fun <- function(input, output, session) {
 Don't forget to load any debugging calls with `devtools::load_all()` *before* re-launching the app: 
 
 ```{r}
+#| eval: false 
+#| code-fold: false
+devtools::load_all(".")
+```
+
+```{r}
 #| label: hot_key_load_all
 #| echo: false
 #| results: asis
 #| eval: true
 hot_key(fun = "L")
 ```
-
-```{r}
-#| eval: false 
-#| code-fold: false
-devtools::load_all(".")
-```
-
-:::{.column-margin}
-
-![Posit Workbench's interactive debugger](img/debug_debugger.png)
-
-:::
 
 ## Debugging app functions
 
@@ -117,9 +119,9 @@ Let's start by debugging the scatter plot display in our primary standalone app 
 movies_app(test = FALSE)
 ```
 
-:::{#fig-debug_module_server_error_01}
+:::{#fig-debug_movies_app_01}
 
-![Error in `movies_app()`](img/debug_module_server_error_01.png){#fig-debug_module_server_error_01 width='100%' align='center'}
+![Error in `movies_app()`](images/debug_movies_app_01.png){#fig-debug_movies_app_01 width='100%' align='center'}
 
 Errors in the UI are not always informative... 
 :::
@@ -168,6 +170,17 @@ lobstr::ast(
 First we'll add `browser()` and `observe()` in the `movies_server()` function to capture the behaviors of both modules: 
 
 ```{r}
+#| label: git_box_spec_topic-debugging-02
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  fig_pw = '65%', 
+  branch = "spec_topic-debugging-02", 
+  repo = 'moviesApp')
+```
+
+```{r}
 #| eval: false 
 #| code-fold: false
 movies_server <- function(input, output, session) {
@@ -205,7 +218,7 @@ hot_key(fun = "L")
 ```{r}
 #| eval: false 
 #| code-fold: false
-movies_app(test = FALSE, run = 'p')
+movies_app(options = list(test.mode = FALSE), run = 'p')
 ```
 
 ```{verbatim}
@@ -216,18 +229,18 @@ movies_app(test = FALSE, run = 'p')
 
 The application launches, but `browser()` pauses the execution of the modules and activates the IDE's debugger:
 
-:::{#fig-debug_module_server_fun_01}
+:::{#fig-debug_app_server_02}
 
-![Debugger with call to `browser()` inside `observe()`](img/debug_module_server_fun_01.png){#fig-debug_module_server_fun_01 width='100%' align='center'}
+![Debugger with call to `browser()` inside `observe()`](images/debug_app_server_02.png){#fig-debug_app_server_02 width='100%' align='center'}
 
 Note that the plot hasn't rendered in the application yet because the call to `observe(browser())` suspends the execution of any subsequent code   
 :::
 
 This allows us to view the objects that are available in `movies_server()` *before* the variables are passed to the graph rendering functions. In the **Source** pane, we can see the call to `browser()` highlighted (telling us the `Browse[1]>` location in this function).
 
-:::{#fig-debug_movies_server_browser_01}
+:::{#fig-debug_browser_placement_02}
 
-![`R/movies_server.R` with `observe(browser())`](img/debug_movies_server_browser_01.png){#fig-debug_movies_server_browser_01 width='100%' align='center'}
+![`R/movies_server.R` with `observe(browser())`](images/debug_browser_placement_02.png){#fig-debug_browser_placement_02 width='100%' align='center'}
 
 Because `browser()` was called inside `observe()`, the execution will pause, and we can interactively examine values
 :::
@@ -309,9 +322,9 @@ movies_server <- function(input, output, session) {
 
 In the debugger, we want to confirm the returned values from the variable input module, `selected_vars`, which requires us to execute the next two lines of code:
 
-:::{#fig-debug_movies_server_browser_02}
+:::{#fig-debug_mod_display_server_02}
 
-![Execute the function line-by-line with `n` to create `selected_vars`](img/debug_movies_server_browser_02.png){#fig-debug_movies_server_browser_02 width='100%' align='center'}
+![Execute the function line-by-line with `n` to create `selected_vars`](images/debug_mod_display_server_02.png){#fig-debug_mod_display_server_02 width='100%' align='center'}
 
 Click the **Next** icon twice to create `selected_vars`
 :::
@@ -380,13 +393,13 @@ These two steps confirm that the UI values are being collected by the variable i
 ## Debugging modules
 
 ```{r}
-#| label: git_box_spec_topic-debugging-02
+#| label: git_box_spec_topic-debugging-03
 #| echo: false
 #| results: asis
 #| eval: true
 git_margin_box(
   fig_pw = '65%', 
-  branch = "spec_topic-debugging-02", 
+  branch = "spec_topic-debugging-03", 
   repo = 'moviesApp')
 ```
 
@@ -427,7 +440,7 @@ hot_key(fun = "L")
 ```{r}
 #| eval: false 
 #| code-fold: false
-movies_app(test = FALSE, run = 'p')
+movies_app(options = list(test.mode = FALSE), run = 'p')
 ```
 
 ### Verify module communication 
@@ -492,9 +505,9 @@ After confirming `var_inputs()` has been created, we'll also want to verify the 
 
 To do this, we'll progress through the module function (using `n` in the debugger console or by clicking **Next**) until the `inputs()` reactive has been created,
 
-:::{#fig-debug_module_server_browser_02}
+:::{#fig-debug_mod_display_server_ouput_02}
 
-![Progressing _past_ `inputs()` tells us it's been created](img/debug_module_server_browser_02.png){width='100%'}
+![Progressing _past_ `inputs()` tells us it's been created](images/debug_mod_display_server_ouput_02.png){#fig-debug_mod_display_server_ouput_02 width='100%'}
 
 Use `n` in the debugger or click **Next** to progress through the function
 :::
@@ -535,6 +548,17 @@ These two steps have shown us 1) the modules are communicating properly, and 2) 
 
 ### Verify graph 
 
+```{r}
+#| label: git_box_spec_topic-debugging-04
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  fig_pw = '65%', 
+  branch = "spec_topic-debugging-04", 
+  repo = 'moviesApp')
+```
+
 If we want to debug the scatter plot output, we need to move our `observe(browser())` functions inside the call to `renderPlot()`:
 
 ```{r}
@@ -570,7 +594,7 @@ hot_key(fun = "L")
 ```{r}
 #| eval: false 
 #| code-fold: false
-movies_app(test = FALSE, run = 'p')
+movies_app(options = list(test.mode = FALSE), run = 'p')
 ```
 
 Inside `renderPlot()`, we can progress to the creation of the `plot` object:
@@ -598,18 +622,11 @@ debug at moviesApp/R/mod_scatter_display.R#68:
 
 :::
 
-:::{#fig-debug_render_plot_01}
+From here we can step inside the `scatter_plot()` utility function to identify the source of the error:
 
-![Debugger location in `renderPlot()`](img/debug_render_plot_01.png){#fig-debug_render_plot_01 width='100%' align='center'}
+:::{#fig-debug_scatter_plot_03}
 
-Inside `renderPlot()`, we can step inside the `scatter_plot()` utility function
-:::
-
-From here we can step inside the `scatter_plot()` function to identify the source of the error:
-
-:::{#fig-debug_render_plot_02}
-
-![Step into `scatter_plot()`](img/debug_render_plot_02.png){#fig-debug_render_plot_02 width='100%' align='center'}
+![Step into `scatter_plot()`](images/debug_scatter_plot_03.png){#fig-debug_scatter_plot_03 width='100%' align='center'}
 
 Use `s` in the debugger console to 'step into' `scatter_plot()`
 :::
@@ -680,17 +697,6 @@ If a module or standalone app function is producing a bug (i.e., failing to rend
 
 ## Exploring code 
 
-```{r}
-#| label: git_box_spec_topic-debugging-03
-#| echo: false
-#| results: asis
-#| eval: true
-git_margin_box(
-  fig_pw = '65%', 
-  branch = "spec_topic-debugging-03", 
-  repo = 'moviesApp')
-```
-
 `observe()` and `browser()` aren't only useful for addressing bugs--we can also use the debugger to understand how an application works.
 
 Suppose it's been awhile since we've looked at the `ggplot2movies::movies` version of `movies_app()` (run with `ggp2_movies_app()`). We can place calls to `observe(browser())` in the `inst/dev/app.R` file, load the package, and run the application to see how it executes.
@@ -739,7 +745,7 @@ hot_key(fun = "L")
 ```{r}
 #| eval: false 
 #| code-fold: false
-ggp2_movies_app(test = FALSE, run = 'p')
+ggp2_movies_app(options = list(test.mode = FALSE), run = 'p')
 ```
 
 
@@ -750,9 +756,9 @@ This will suspend the execution of application before the tidy `ggplot2movies::m
 
 ::: {layout="[50, 50]" layout-valign="top"}
 
-![Debugging `dev_mod_scatter_server()`](img/debug_ggp2_movies_app_01.png){width='100%'}
+![Debugging `dev_mod_scatter_server()`](images/debug_dev_app_04.png){width='100%'}
 
-![`ggp2_movies_app()` in interactive debugger](img/debug_ggp2_movies_app_02.png){width='100%'}
+![`ggp2_movies_app()` in interactive debugger](images/debug_dev_ggp2_movies_app_04.png){width='100%'}
 
 :::
 
@@ -796,7 +802,7 @@ This gives us an idea of the total rows before missing are removed.
 
 After loading `all_data`, the module creates a reactive `graph_data()`, but this is 'bound' to `input$missing`, so we'll confirm the  `input$missing` value:
 
-![](img/debug_ggp2_movies_graph_data.png){width='85%' fig-align='center'}
+![](images/debug_dev_verify_missing_04.png){width='85%' fig-align='center'}
 
 ::: {layout="[35, 65]" layout-valign="top"}
 
@@ -871,7 +877,7 @@ List of 6
 
 `var_inputs()` is used to create the `inputs()` reactive, so we'll confirm the values here, too.
 
-![](img/debug_ggp2_movies_inputs.png){width='85%' fig-align='center'}
+![](images/debug_dev_verify_inputs_04.png){width='85%' fig-align='center'}
 
 ::: {layout="[35, 65]" layout-valign="top"}
 
@@ -908,7 +914,7 @@ Finally, we'll render the plot in the app:
 Browse[2]> n
 ```
 
-![](img/debug_ggp2_movies_render_graph.png)
+![](images/debug_dev_verify_app_04.png)
 
 :::
 
@@ -935,19 +941,16 @@ Shiny's reactive model can make debugging challenging because the issues aren't 
 )
 ```
 
-
-
-
 ## Debugging apps 
 
 ```{r}
-#| label: git_box_spec_topic-debugging-04
+#| label: git_box_spec_topic-debugging-05
 #| echo: false
 #| results: asis
 #| eval: true
 git_margin_box(
   fig_pw = '65%', 
-  branch = "spec_topic-debugging-04", 
+  branch = "spec_topic-debugging-05", 
   repo = 'moviesApp')
 ```
 
@@ -1006,13 +1009,13 @@ hot_key(fun = "L")
 ```{r}
 #| eval: false 
 #| code-fold: false
-movies_app(test = FALSE, run = 'p')
+movies_app(options = list(test.mode = FALSE), run = 'p')
 ```
 
 
-:::{#fig-debug_print_mod_var_inputs}
+:::{#fig-debug_print_movies_app_05}
 
-!['Print' in `movies_app()`](img/debug_print_mod_var_inputs.png){#fig-debug_print_mod_var_inputs width='100%' align='center'}
+!['Print' in `movies_app()`](images/debug_print_movies_app_05.png){#fig-debug_print_movies_app_05 width='100%' align='center'}
 
 `reactiveValuesToList()` printed from `mod_var_inputs`
 :::
@@ -1075,26 +1078,28 @@ movies_app(test = FALSE, run = 'p', bslib = TRUE)
 ```
 
 
-:::{#fig-debug_print_bslib_app}
+:::{#fig-debug_print_bslib_movies_app_05}
 
-!['Print' in `movies_app(bslib = TRUE)`](img/debug_print_bslib_app.png){#fig-debug_print_bslib_app width='100%' align='center'}
+!['Print' in `movies_app(bslib = TRUE)`](images/debug_print_bslib_movies_app_05.png){#fig-debug_print_bslib_movies_app_05 width='100%' align='center'}
 
 `reactiveValuesToList()` printed from `movies_ui()` and `movies_server()`
 :::
 
 Here we can see both levels of reactive values (from the module and the UI/server functions). The handy thing about this method is that the values change when we interact with the application:
 
-:::{#fig-debug_print_bslib_app_changes}
+:::{#fig-debug_change_print_bslib_movies_app_05}
 
-![Changing values in `movies_app(bslib = TRUE)`](img/debug_print_bslib_app_changes.png){#fig-debug_print_bslib_app_changes width='100%' align='center'}
+![Changing values in `movies_app(bslib = TRUE)`](images/debug_change_print_bslib_movies_app_05.png){#fig-debug_change_print_bslib_movies_app_05 width='100%' align='center'}
 
 The output in the UI will update with changes to the `inputId`s
 :::
 
 
-## More debugging methods
+## Recap
 
-Shiny's documentation has a list of methods for debugging shiny applications. Knowing how to read call stacks (or stacktraces)...
+`browser()` and `observe()` are powerful tools for debugging your application. Navigating a function using the debugger console gives you control over the execution of each line. If we want to see what's happening 'behind the scenes', we can collect the reactive values and print them in the UI while the app is running. 
 
-## Recap 
+The Shiny documentation also has a [list of methods](https://shiny.posit.co/r/articles/improve/debugging/) for debugging shiny applications, and learning how to read call stacks (or a stacktrace) will help you debug your shiny app.[^debug-call-stacks]
+
+[^debug-call-stacks]: Watch [this video](https://www.youtube.com/watch?v=g1h-YDWVRLc) to learn about call stacks and abstract folder trees with `lobstr`. 
 
