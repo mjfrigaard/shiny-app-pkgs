@@ -23,39 +23,13 @@ co_box(
 )
 ```
 
-## Testing app-packages
-
-Testing shiny applications poses some unique challenges. Shiny functions are written in the context of its reactive model,[^tests-shiny-reactive] so some standard testing techniques and methods for regular R packages don't directly apply. Fortunately, every developer looking to test their code is faced with the same two questions:
-
-[^tests-shiny-reactive]: The ['Reactivity - An overview'](https://shiny.posit.co/r/articles/build/reactivity-overview/) article gives an excellent description (and mental module) of reactive programming.
+Every developer looking to test their code is faced with the same two questions:
 
 1. What should I test?  
 2. How should I test it?   
 
-```{r}
-#| label: co_box_tldr
-#| echo: false
-#| results: asis
-#| eval: true
-co_box(
-  color = "b", look = "minimal",
-  header = "TLDR", fold = TRUE,
-  contents = "
-  
-##### Application Requirements
-  
-- **User Specifications**: Describe what the end-users expect the application to accomplish\n
-- **Features**: User-focused descriptions of the high-level capabilities or characteristics of an application, and often represent a bundle of smaller functionalities\n
-- **Functional Requirements**: The precise, measurable, and testable 'functions' an application should perform\n
-- **Traceability Matrix**: Maps the user specifications to the functional requirements and tests, ensuring that all needs are met and functions are tested\n
-  
-  "
-)
-```
+This chapter focuses on what to test--or specifically, ***how to figure out what to test***. This process usually involves converting a list of user needs into testable requirements. The following chapters in this section have examples of tests, but don't go into depth on *how* to write tests. Excellent resources exist for writing unit tests in R packages [^tests-intro-unit-tests] and testing shiny apps. [^tests-intro-testing] [^tests-intro-testserver] The goal of this chapter is to illustrate the connections between the user's needs, the code below `R/`, and developing tests.
 
-This chapter focuses on *what* to test. The following chapters provide a few examples of tests but won't go into depth on *how* to write tests. Excellent resources exist for writing unit tests in R packages [^tests-intro-unit-tests] and testing shiny apps. [^tests-intro-testing] [^tests-intro-testserver] The goal of this chapter is to illustrate the connections between the user's needs, the code below `R/`, and developing tests.[^testing-introduce-bdd]
-
-[^testing-introduce-bdd]: The behavior-driven development functions aren't covered in [R Packages, 2ed](https://r-pkgs.org/testing-basics.html) or the [Testing chapter](https://mastering-shiny.org/scaling-testing.html) of Mastering Shiny, but I've found them to be particularly useful for building app-packages.
 
 [^tests-intro-unit-tests]: Unit tests are covered extensively in [R Packages, 2ed](https://r-pkgs.org/testing-basics.html) and the [`testthat` documentation](https://testthat.r-lib.org/index.html)
 
@@ -76,44 +50,40 @@ library(covr)
 
 (*If you're using `devtools`, you won't have to worry about installing `testthat` and `covr`*)
 
-### Where to look
-
-The traditional application development process looks something like the figure below:
-
-![An oversimplified application development process](img/tests_standard_flow.png){width='80%'}
-
-Most applications have accompanying resources to address what *should* be tested, the most common source being a software requirements specification (SRS) document.[^tests-srs] The SRS is a development document that breaks down an application's intended purpose (i.e., the problem it's designed to solve) into three general areas: user specifications, features, and functional requirements: 
-
--   **The user specifications capture the needs and expectations of the end-user.** These are usually non-technical and focused on the "why" and the "what" of the application.
-
--   **The features describe the high-level capabilities of the application.** Features are defined early in the life of a project and often become the talking points during discussions between stakeholders and developers. Features can be used for scoping and prioritization and may comprise various functional (and sometimes non-functional) requirements.
-
--   **Functional requirements are the testable, specific actions, inputs, and outputs.** Functional requirements provide the technical details of how the features will be implemented, and a single feature can give rise to multiple functional requirements.
-
--   A **traceability matrix** is a table that ‘traces’ the user specifications to features and functional requirements (and the tests they give rise to) to verify that the application has been developed correctly. 
-
-[^tests-srs]: Read more about what goes in the [Software Requirements Specification](https://en.wikipedia.org/wiki/Software_requirements_specification)
-
-These guidelines direct the development process, albeit from slightly different perspectives. However, understanding the relationship between user specifications, features, and functional requirements helps us build applications that satisfy the technical standards while addressing the user's needs.
-
-The traceability matrix is a tool to ensure the tests cover all the functionalities and address the user specifications *and* that every user need corresponds to a functionality that's been tested. 
-
-I'll use `moviesApp` to illustrate a brief example in the sections below. 
-
-## User Specifications
-
 ```{r}
-#| label: git_box_10a_tests-specs
+#| label: co_box_tldr
 #| echo: false
 #| results: asis
 #| eval: true
-git_margin_box(
-  fig_pw = '65%', 
-  branch = "10a_tests-specs", 
-  repo = 'moviesApp')
+co_box(
+  color = "b", look = "minimal",
+  header = "TLDR", fold = TRUE,
+  contents = "
+  
+##### Application Requirements
+  
+- **User Specifications**: Describe what the end-users expect the application to accomplish\n
+- **Features**: User-focused descriptions of the high-level capabilities or characteristics of an application, and often represent a bundle of smaller functionalities\n
+- **Functional Requirements**: The precise, measurable, and testable 'functions' an application should perform\n
+- **BDD Features and Scenarios:** Descriptions of the expected behavior of the application features using a set of special keywords (`Feature`, `Scenario`, `Given`, `When`, `Then`, `And`, `But`).\n
+    - `describe()`: *'specifies a larger component or function and contains a set of specifications'*. Include feature descriptions and any relevant background information the `describe()` blocks\n
+    - `it()`: contains the test code or expectations. These are use to test each functional requirement (or `Then` statements from scenarios).\n
+
+- **Traceability matrix:** A table that ‘traces’ the user specifications to features and functional requirements (and the tests they give rise to) to verify that the application has been developed correctly.\n
+  
+  "
+)
 ```
 
-**User specifications** are what the end-user (in this case, a film analyst) wants to achieve with the application. The language used for these descriptions is non-technical but should provide a basis for deriving the more technical (but still high-level) features. [^tests-specs-user-specs]
+## Application requirements 
+
+Information about the various tasks and activities an application is expected to perform in typically stored in some kind of software requirements specification (SRS) document.[^tests-srs] The SRS can include things like distinct design characteristics, budgetary, technological, or timeline restrictions, etc. This document breaks down an application's intended purpose (i.e., the problem it's designed to solve) into three general areas: **user specifications**, **features**, and **functional requirements**. 
+
+[^tests-srs]: Read more about what goes in the [Software Requirements Specification](https://en.wikipedia.org/wiki/Software_requirements_specification)
+
+### User Specifications
+
+The user specifications are the goals and objectives stakeholders want to achieve with the application. They use terms like 'deliver value' and 'provide insight' and provide the basis for deriving the application's features. [^tests-specs-user-specs]
 
 [^tests-specs-user-specs]: User Specifications are sometimes referred to as "user stories," "use cases," or "general requirements"
 
@@ -121,49 +91,49 @@ git_margin_box(
 #| label: co_box_user_specs
 #| echo: false
 #| results: asis
-#| eval: true
+#| eval: false
 co_box(
-  color = "b", fold = FALSE, look = "minimal", 
-  size = '1.10', header = "Scatter plot user specification",
+  color = "b", fold = TRUE, look = "minimal", 
+  size = '1.10', header = "Example Specifications",
   contents = "
+**S1**: The application should source movie review data from platforms like IMDB or Rotten Tomatoes and should include variables like audience and critic reviews, number of votes, ratings, genres, etc.\n
   
-**US1**: Shiny App Scatter Plot Data Visualization for Movie Review Explorer:\n
+**S2**: Users should be able to select variables from the movie review data and explore relationships between reviews, ratings, etc., in a visualization.\n
   
-  - The application should source movie review data from platforms like IMDB or Rotten Tomatoes and should encompass both continuous variables (e.g., audience and critic reviews) and categorical variables (e.g., MPAA ratings).\n
+**S3**: The application should have controls for users to customize to colors and visual attributes of the visualization. 
   
-  - Users should have dropdown menus for selecting continuous variables for x and y axes, and a separate dropdown to choose a categorical variable (to color the points in the scatter plot).\n
-  
-  - The application should also have sliders or similar controls for users to adjust the size and opacity of the points (allowing them to handle overlapping points more effectively). Finally, users should have the option to enter text and provide a custom title for the scatter plot.\n
+**S4**: Finally, users should also have the option to enter text and provide a custom title.\n
   
   ")
 ```
 
-## Features
+### Features
 
-**Features** (or **feature requirements**) translate the user's expectations into language that describes the tasks a film analyst should be able to accomplish with the application (i.e., explore data with a scatter plot). However, features are still phrased to satisfy the user needs outlined in the specifications.
+Features translate the user expectations into an application capabilities. Generally speaking, features capture the tasks and activities user should "be able to" accomplish with the application (i.e., explore data with a graph).
 
 ```{r}
 #| label: co_box_feat_reqs
 #| echo: false
 #| results: asis
-#| eval: true
+#| eval: false
 co_box(
-  color = "b", fold = FALSE, look = "minimal",
-  size = '1.10', header = "Scatter plot features",
+  color = "b", fold = TRUE, look = "minimal",
+  size = '1.10', header = "Example Features",
   contents = 
-" 
-**Movie review app Scatter plot data visualization features:** 
-  
+"
 **F1.1**: The movie review data should contain continuous variables (e.g., critic and audience ratings) and categorical variables (e.g., mpaa, genres) from IMDB and Rotten Tomatoes.\n
-**F1.2**: The UI should display dropdown menus for selecting continuous variables on both the x-axis and y-axis, and a dropdown menu categorical variable for point coloration.\n
-**F1.3**: Incorporate sliders or similar controls for adjusting point size and point opacity.\n\n
-**F1.4**: Provide input field for users to enter an optional scatter plot title.\n
+  
+**F1.2**: The UI should display dropdown menus for selecting continuous variables on both the x-axis and y-axis, and a dropdown menu categorical variable for coloration.\n
+  
+**F1.3**: Incorporate a sliders or similar controls for adjusting graph aesthetics, such as size, shape, or opacity.\n
+  
+**F1.4**: Provide an input text field for users to enter an optional plot title.\n
   ")
 ```
 
-## Functional Requirements
+### Functional Requirements
 
-**Functional requirements** are written for the developer, providing technical details on the feature (i.e., the scatter plot) and how the application should behave. A single feature will often give rise to multiple functional requirements (these are where the end-users' expectations come into direct contact with code)[^tests-specs-feat]
+Functional requirements are written for developers and provide the technical details on each feature. A single feature often gives rise to multiple functional requirements (these are where users needs come into direct contact with code)[^tests-specs-feat]
 
 [^tests-specs-feat]: 'Features' and 'functional requirements' are sometimes used interchangeably, but they refer to different aspects of the application. **Features** are high-level capabilities an application *should* have, and often contain a collection of smaller functionalities (broken down into the specific **functional requirements**).
 
@@ -171,47 +141,261 @@ co_box(
 #| label: co_box_fun_reqs
 #| echo: false
 #| results: asis
-#| eval: true
+#| eval: false
 co_box(
-  color = "b", fold = FALSE, look = "minimal",
-  size = '1.10', header = "Scatter plot functional requirements",
+  color = "b", fold = TRUE, look = "minimal",
+  size = '1.10', header = "Example functional requirements",
   contents = 
 " 
-  - **FR 1.1**: The app data should be from IMDB and Rotten Tomatoes (accessed from appropriate APIs) containing both continuous and categorical variables stored in a tabular format.\n
+**FR 1.1**: The application data should be sourced from IMDB and Rotten Tomatoes (accessed from appropriate APIs) and contain both continuous and categorical variables stored in a tabular format.\n
   
-  - **FR 1.2**: The app should display dropdown menus listing available continuous variables for x-axis and y-axis selection.\n
+**FR 1.2**: The application should display dropdown menus listing available continuous variables for x-axis and y-axis selection.\n
   
-  - **FR 1.3**: Upon user selection of x-axis and y-axis variables, the app should update the scatter plot to reflect the user's choices.\n
+**FR 1.3**: Upon user selection of x-axis and y-axis variables, the application should update the graph to reflect the user's choices.\n
   
-  - **FR 1.4**: The app should present a dropdown menu listing available categorical variables for point coloration.\n
+**FR 1.4**: The application should present a dropdown menu listing available categorical variables for coloration.\n
   
-  - **FR 1.5**: The app should dynamically change the color of points in the scatter plot based on the user's categorical variable selection.\n
+**FR 1.5**: The application should dynamically change the color of points in the graph based on the user's categorical variable selection.\n
   
-  - **FR 1.6**: The app should provide a slider control that allows users to adjust the size of the points, ranging from a pre-defined minimum to a maximum size.\n
+**FR 1.6**: The app should provide a slider control that allows users to adjust size, ranging from a pre-defined minimum to a maximum size.\n
   
-  - **FR 1.7**: The app should offer an opacity control, letting users adjust the transparency of points from fully opaque to fully transparent.\n
+**FR 1.7**: The app should offer an opacity control, letting users adjust transparency from fully opaque to fully transparent.\n
   
-  - **FR 1.8**: The app should display an input field where users can type in a custom title for the scatter plot.
+**FR 1.8**: The app should display an input field where users can type in a custom title for the graph.
   
-  - **FR 1.9**: Upon user entry or modification in the title input field, the app should update the scatter plot's title in real-time.
+**FR 1.9**: Upon user entry or modification in the title input text field, the app should update the graphs's title in real-time.
   
   ")
 ```
 
+#### In summary
 
-Capturing an application's requirements involves three steps:
+The areas above help direct the development process, albeit from slightly different perspectives.
 
-1. Understand the user's needs.  
+1. The user specifications capture the needs and expectations of the end-user. 
 
-2. Convert the need into a feature or capability.  
+2. The features describe the high-level capabilities of the application.
 
-3. Translate each feature into code (i.e., 'functions') the application requires
+3. Functional requirements are the testable, specific actions, inputs, and outputs.
 
-If we've documented these three items, we'll have a clearer picture of what tests to write.
+## Application developemnt
+
+The Shiny application development process follows something like the figure below:
+
+![General application development process](img/tests_standard_flow.png){width='80%'}
+
+The figure above is an oversimplification, but it highlights a common separation (or 'hand-off') between users/stakeholders and developers. In the sections below, we'll look at two common development processes: test-driven and behavior-driven development.
+
+### Test-driven development
+
+If `moviesApp` was built using test-driven development (TDD), the process might look something like this:
+
+1.  Gather user needs and translate into application features:
+    a. Document the application's capabilities for exploring movie review variables from IMDB and Rotten Tomatoes. 
+    b. Include feature descriptions for displaying continuous variables (i.e., 'critics score' and 'audience score') categorical variables (i.e., 'MPAA' ), graph visual attributes (size, color, opacity), and an optional plot title. 
+
+2. Write Tests: 
+    a. Write tests to ensure the graph displays relationships between a set of continuous and categorical variables when the app launches. 
+
+3. Run Tests: 
+    a. Before writing any code, these tests will fail. 
+    
+4. Develop Features: 
+    a. Write UI, server, module, and utility functions for user inputs and graph outputs. 
+    
+5. Rerun Tests: 
+    a. If the graph has been correctly implemented in the application, the tests should pass.
+    
+6. Write more Tests:  
+    a. Add more tests for additional functionalities (e.g., an option to remove missing values from graph). 
+    
+Starting with tests and writing just enough code to get them to pass often results in developing less (but better) code. The drawback to this approach is a strict focus on the function being tested and not the overall objective of the application.
+
+### Behavior-driven development
+
+In behavior-driven development (BDD) (or behavior-driven testing), users and developers work together to understand, define and express application behaviors in non-technical language, [^tests-bdd-readmore]
+
+> "*Using conversation and examples to specify how you expect a system to behave is a core part of BDD*" - [BDD in Action, 2ed](https://www.manning.com/books/bdd-in-action-second-edition)
+
+Placing an emphasis on writing human-readable expectations for the application's behaviors makes it easier to develop tests that can focus on verifying each user need exists (and is functioning properly). In BDD, the application's expected capabilities are captured in `Feature`s and illustrated with concrete examples, or `Scenario`s.
+
+[^tests-bdd-readmore]: Read more about [behavior-driven development](https://en.wikipedia.org/wiki/Behavior-driven_development)
+
+
+#### [`Feature`]{style="font-size: 1.05em;"}
+
+In BDD, a `Feature` describes an *implemented behavior or capability* in the application, from a user's perspective. Typically, these are written in the Gherkin format using specific keywords:[^tests-gherkin]
+
+1. `As a ...`   
+2. `I want ...`    
+3. `So that ...`   
+
+[^tests-gherkin]: [Gherkin](https://en.wikipedia.org/wiki/Cucumber_(software)#Gherkin_language) is the domain-specific language format used for expressing software behaviors. Tools like [Cucumber](https://cucumber.io/docs/gherkin/reference/) or [SpecFlow](https://specflow.org/learn/gherkin/) maps and executes the Gherkin descriptions against the code to generate a pass/fail report status for each requirement. 
+
+Below is an example Gherkin `Feature` for the graph in `movies_app()`:
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+Feature: Visualization
+    As a user
+    I want to see the changes in the plot
+    So that I can visualize the impact of my customizations
+```
+
+As you can see, the feature uses plain language and the wording is user-centric, so it remains accessible to *both* developers and users (or other non-technical stakeholders).
+
+#### [`Scenario`]{style="font-size: 1.05em;"}
+
+A Gherkin `Scenario` provides a concrete example of how the `Feature` works and has the following general format: 
+
+1. `Given ...`   
+2. `When ...`    
+3. `Then ...`  
+
+An example `Scenario` for `movies_app()` might be:
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+  Scenario: Viewing the Data Visualization
+    Given I have launched the application
+    And it contains movie review data from IMDB and Rotten Tomatoes
+    And the data contains variables like 'Critics Score' and 'MPAA'
+    When I interact with the controls in the sidebar panel
+    Then the graph should update with the selected options
+```
+
+#### [`Background`]{style="font-size: 1.05em;"}
+
+Instead of repeating any pre-conditions in each `Scenario` (i.e., the steps contained in the "*`Given`*" and first "*`And`*" statement), we can establish the context with a `Background`:
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+  Background: Launching the application
+    Given I have launched the application
+    And it loads with movie review data from IMDB and Rotten Tomatoes
+    
+  Scenario: Viewing the Data Visualization
+    Given the data contains variables like 'Critics Score' and 'MPAA'
+    When I interact with the controls in the sidebar panel
+    Then the graph should update with the selected options
+```
+
+Adopting the Gherkin format (or something similar) provides a common language to express an application's behavior: 
+
+1. As developers, we can work with users and shareholders to write specifications that describe the expected behavior of each `Feature` 
+
+2. When developing tests, we can group the tests by their `Feature` and `Scenario`s
+
+3. Each test can execute a step (i.e., the `Then` statements).
+
+In the next section we'll cover how to map test code for each `Scenario` step with `testthat`.
+
+### BDD and `testthat`
+
+> "*Use `describe()` to verify that you implement the right things and use [`it()`] to ensure you do the things right.*" - `testthat` [documentation](https://testthat.r-lib.org/reference/describe.html)
+
+`testthat`'s BDD functions (`describe()` and `it()`) allow us add Gherkin-style features and scenarios to our test files, ensuring the application remains user-centric while meeting the technical specifications.[^tests-bdd-describe]
+
+#### [`describe()`]{style="font-size: 0.95em;"} a feature
+
+We can use the language from our `Feature`, `Background`, and `Scenario` to in the `description` in the argument of `describe()`:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+testthat::describe(
+  description = "Feature: Visualization
+                   As a user
+                   I want to see the changes in the plot
+                   So that I can visualize the impact of my customizations",
+  code = {
+  
+})
+```
+
+We can also nest `describe()` calls, which means we can include the `Background` (or other relevant information): 
+
+```{r}
+#| eval: false 
+#| code-fold: false
+describe( # <1>
+  "Feature: Visualization
+      As a user
+      I want to see the changes in the graph
+      So that I can visualize the impact of my customizations.", 
+  code = { # <1>
+    
+  describe(# <2>
+    "Background: Launching the application
+        Given I have launched the application
+        And it loads with movie review data from IMDB and Rotten Tomatoes", 
+    code = {   
+               
+      })       # <2>
+    
+  }) # <1>
+```
+1. BDD Feature (**title and description**)    
+2. Background (preexisting conditions **before each scenario**)  
+
+#### Confirm [`it()`]{style="font-size: 0.95em;"} with a test
+
+Inside `describe()`, we can include multiple `it()` blocks which "*functions as a test and is evaluated in its own environment.*" 
+
+In the example below, we'll use an `it()` block to test the example scenario from above:[^tests-it-blocks]
+
+```{r}
+#| eval: false 
+#| code-fold: false
+testthat::describe( # <1>
+  "Feature: Visualization
+      As a user
+      I want to see the changes in the graph
+      So that I can visualize the impact of my customizations.", 
+  code = { # <1>
+  
+  testthat::describe(# <2>
+    "Background: Launching the application
+        Given I have launched the application
+        And it loads with movie review data from IMDB and Rotten Tomatoes",
+      code = { # <2>
+      
+    testthat::it( # <3>
+      "Scenario: Viewing the Data Visualization
+         Given the data contains variables like 'Critics Score' and 'MPAA'
+         When I interact with the controls in the sidebar panel
+         Then the graph should update with the selected options", # <3>
+        code = { # <3>
+          # test code # <4>
+        }) # <3>
+      
+    }) # <2>
+  
+}) # <1>
+```
+1. BDD Feature (**title and description**)    
+2. Background (preexisting conditions **before each scenario**) 
+3. Scenario (a **concrete examples that illustrates a feature**)
+4. Test code  
+
+In the scenario above, `Then` contains the information required for the `testthat` expectation. This could be `expect_snapshot_file()` or `vdiffr::expect_doppelganger()`--whichever makes sense from the user's perspective.
+
+This is an generic example, but hopefully the example tests in the upcoming chapters convey how helpful and expressive the BDD functions can be (or they inspire you to properly implement what I'm attempting to do in your own app-packages).[^tests-tdd-bdd]
+
+[^tests-tdd-bdd]: For an excellent description on the relationships between behavior-driven development, test-driven development, and domain-driven design, I highly recommend [BDD in Action, 2ed](https://www.manning.com/books/bdd-in-action-second-edition) by John Ferguson Smart and Jan Molack.
+
+[^tests-bdd-describe]: Read more about `describe()` and `it()` in the [`testthat` documentation.](https://testthat.r-lib.org/reference/describe.html) and in the [appendix.](bdd.qmd)
+
+[^tests-it-blocks]: Each [`it()`](https://testthat.r-lib.org/reference/describe.html) block contains the expectations (or what you would traditionally include in `test_that()`).
 
 ## Traceability Matrix
 
-After translating the user needs into functional requirements, we can quickly identify what needs to be tested by building a look-up table (i.e., a matrix). I like to store early drafts of the application requirements in a vignette:
+After translating the user needs into functional requirements, we can identify what needs to be tested by building a look-up table (i.e., a matrix).
+
+I like to store early drafts of the requirements and traceability matrix in a vignette:[^tests-vignette-matrix]
 
 ```{r}
 #| eval: false 
@@ -255,11 +439,24 @@ Building a traceability matrix ensures:
 
 3. Tests have been written for each functional requirement.
 
+[^tests-vignette-matrix]: Storing the traceability matrix in a vignette is great for developers, but using an issue-tracking system with version control is also a good idea, like GitHub Projects or Azure DevOps.
+
 ## Recap 
 
-Documenting the traceability matrix in vignettes is great for developers, but using an issue-tracking system with version control is also a good idea, like GitHub Projects or Azure DevOps.
+```{r}
+#| label: git_box_10a_tests-specs
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  fig_pw = '65%', 
+  branch = "12a_tests-specs", 
+  repo = 'moviesApp')
+```
 
-The following section covers the `testthat` infrastructure, unit tests, and behavior-driven development.
+Understanding the relationship between user specifications, features, and functional requirements gives us the information we need to build applications that satisfy the technical standards while addressing user needs. Documenting requirements in Gherkin-style features and scenarios allows us to capture the application's behavior without giving details on how the functionality is implemented.
+
+In the next chapter, we're going to cover various tools to improve the tests in your app-package. The overarching goal of these tools is to reduce code executed *outside* of your tests (i.e., placed above the call to `test_that()` or `it()`).[^tests-self-sufficient]
 
 ```{r}
 #| label: co_box_app_recap
@@ -288,3 +485,7 @@ co_box(
 )
 ```
 
+
+<!--
+traceability matrix and behavior-driven development (BDD) to ensure the user's specifications are met (and the app's features are implemented correctly).
+-->
