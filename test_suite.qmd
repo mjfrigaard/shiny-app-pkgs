@@ -23,7 +23,9 @@ co_box(
 )
 ```
 
-This chapter covers setting up the `testthat`’s infrastructure for unit tests and commonly used functions while writing tests. I'll also introduce an alternative approach to test development that combines the contents of our traceability matrix and behavior-driven development (BDD) to ensure the user's specifications are met (and the app's features are implemented correctly).
+Testing shiny applications poses some unique challenges. Shiny functions are written in the context of its reactive model,[^tests-shiny-reactive] so some standard testing techniques and methods for regular R packages don't directly apply. This chapter covers setting up the `testthat`’s infrastructure for unit tests. I'll also introduce some keyboard shortcuts for commonly used functions while developing tests.
+
+[^tests-shiny-reactive]: The ['Reactivity - An overview'](https://shiny.posit.co/r/articles/build/reactivity-overview/) article gives an excellent description (and mental module) of reactive programming.
 
 ```{r}
 #| label: co_box_tldr
@@ -67,7 +69,7 @@ co_box(
 
 `testthat` is the standard package for testing in R packages and one of the most widely used and supported packages on CRAN. Its widespread adoption is likely due to its ability to simplify the setup, creation, and execution of unit tests.
 
-In our app-packages, we'll use `testthat` unit tests to ensure the underlying logic (i.e., non-reactive utility functions) behaves correctly. Combining Shiny's `testServer()` function and the `shinytest2` package with testthat provides a comprehensive testing suite for our app-package.
+In our app-packages, we'll use `testthat` unit tests to ensure the underlying logic (i.e., non-reactive utility functions) behaves correctly. Combining Shiny's `testServer()` function and the `shinytest2` package with `testthat` provides a comprehensive testing suite for our app-package.
 
 
 ## [Set up with `use_testthat()`]{style="font-size: 0.95em;"}
@@ -203,7 +205,6 @@ R Packages, 2ed also [suggests](https://r-pkgs.org/testing-basics.html#run-tests
 
 :::
 
-
 When the test is run, we'll see feedback on whether it passes or fails (and occasionally some encouragement):
 
 ```{r}
@@ -219,314 +220,7 @@ test_that("multiplication works", {
 })
 ```
 
-The section below introduces `testthat`'s BDD functions. 
-
-## Behavior-driven development
-
-In behavior-driven development (BDD) (or behavior-driven testing), users and developers work together to understand, define and express an application's behaviors using non-technical language.
-
-> "*Using conversation and examples to specify how you expect a system to behave is a core part of BDD*" - [BDD in Action, 2ed](https://www.manning.com/books/bdd-in-action-second-edition)
-
-By placing an emphasis on writing human-readable examples of an application's behavior, tests can be developed with a focus on executable specifications.[^tests-gherkin]
-
-[^tests-gherkin]:  In a [BDD process](https://en.wikipedia.org/wiki/Behavior-driven_development), scenarios are written in [Gherkin](https://cucumber.io/docs/gherkin/reference/) and stored in a text file called a feature file.
-
-### Test-driven vs. behavior-driven
-
-In **test-driven development**, application for the `movies_app()` might look like the following:
-
-1.  Gather requirements:
-    a.  Develop an app to explore movie reviews from IMDB and Rotten Tomatoes. 
-    b. Include a dropdown for displaying continuous variables (i.e., 'critics score' and 'audience score') and categorical variables (i.e., 'MPAA' ) in a scatter plot. 
-
-2. Write Tests: 
-    a. Using `testthat` and `testServer()`, ensure a scatter plot displays points for the relationship between a default set of continuous and categorical variables when the app launches. 
-
-3. Run Tests: 
-    a. Before writing any code, this test will fail. 
-    
-4. Develop Features: 
-    a. Write the UI and server functions, including dropdowns and scatter plot output. 
-    
-5. Rerun Tests: 
-    a. If the scatter plot has been implemented correctly, the test should pass. 
-    
-6. Write more Tests:  
-    a. Add tests for specific functionalities, e.g., dropdowns or controls for point size and opacity. 
-
-7. Continuous Integration (CI):  
-    a. To ensure app reliability throughout development, incorporate all tests into a CI pipeline. 
-    
-Starting with a test and writing just enough code to pass the test often results in developing less (but better) code. One drawback to this approach is its strict focus on the function being tested and not the overall objective of the application.[^tests-tdd-bdd]
-
-In **behavior-driven development**, implementing a feature requires users and developers to work together to outline scenarios, which focus on the expected *behavior* of the feature from a user's perspective. 
-
-Below is an example feature and scenario for the scatter plot in `movies_app()`:
-
-```{verbatim}
-#| eval: false 
-#| code-fold: false
-Feature 1.2: Movie Review Data Variable Selection Dropdown Menus
-  
-  As a film analyst who wants to visualize movie review data,
-  I want dropdown menus for selecting continuous x and y axes variables,
-  And I want a dropdown menu for selecting a categorical variables, 
-  So that I can customize the data visualization to my preferences.
-  
-  Background:
-    Given I have launched the Movie Reviews Data Visualization App
-    And I have movie review data from IMDB and Rotten Tomatoes
-    And the data contains continuous variables like '_scores' 
-    And the data contains categorical variables like 'MPAA'
-
-  Scenario: Initial App Launch Dropdown Menus
-    Given I have launched the movie review exploration app,
-    When I view the options for customizing the data visualization
-    Then I should see a dropdown menu to choose a continuous x-axis variable
-    And I should see a dropdown menu to choose a continuous y-axis variable
-    And I should see a dropdown menu to choose a categorical variable
-```
-
-As you can see, the feature above is written in plain language, and it's wording is user-centric ("*As a...*", "*I want ...*", "*So that ...*"). The `Background` and `Scenario` are also written to be accessible for *both* developers and users (or other non-technical stakeholders).
-
-[^tests-tdd-bdd]: For an excellent description on the relationships between behavior-driven development, test-driven development, and domain-driven design, I highly recommend [BDD in Action, 2ed](https://www.manning.com/books/bdd-in-action-second-edition) by John Ferguson Smart and Jan Molack.
-
-### BDD and `testthat`
-
-> "*Use `describe()` to verify that you implement the right things and use [`it()`] to ensure you do the things right.*" - `testthat` [documentation](https://testthat.r-lib.org/reference/describe.html)
-
-`testthat`'s BDD functions (`describe()` and `it()`) allow us add scenarios to our test files, ensuring the application remains user-centric while meeting the technical specifications. [^tests-bdd-readmore]
-
-[^tests-bdd-readmore]: Read more about [behavior-driven development](https://en.wikipedia.org/wiki/Behavior-driven_development)
-
-#### [`describe()`]{style="font-size: 0.95em;"} a feature
-
-We can use the language from our traceability matrix to write a feature and scenario, then include this in the `description` argument of `describe()`:
-
-```{r}
-#| eval: false 
-#| code-fold: false
-testthat::describe(
-  description = 
-  "Feature 1.2: Movie Review Data Variable Selection Dropdown Menus
-  
-  As a film analyst who wants to visualize movie review data,
-  I want dropdown menus for selecting continuous x and y axes variables,
-  And I want a dropdown menu for selecting a categorical variables, 
-  So that I can customize the data visualization to my preferences.", code = {
-  
-})
-```
-
-We can also nest `describe()` calls, which means we can include the `Background` (or other relevant information): 
-
-```{r}
-#| eval: false 
-#| code-fold: false
-testthat::describe( # <1>
-  "Feature 1.2: Movie Review Data Variable Selection Dropdown Menus
-  
-    As a film analyst who wants to visualize movie review data,
-    I want dropdown menus for selecting continuous x and y axes variables,
-    And I want a dropdown menu for selecting a categorical variables, 
-    So that I can customize the data visualization to my preferences.", 
-  code = { # <1>
-    
-  testthat::describe(# <2>
-    "Background:
-       Given I have launched the Movie Reviews Data Visualization App
-       And I have movie review data from IMDB and Rotten Tomatoes
-       And the data contains continuous variables like '_scores' 
-       And the data contains categorical variables like 'MPAA'", 
-    code = {   
-               
-      })       # <2>
-    
-  }) # <1>
-```
-1. BDD Feature (**title and description**)    
-2. Background (preexisting conditions **before each scenario**)  
-
-#### Confirm [`it()`]{style="font-size: 0.95em;"} with a test
-
-Inside `describe()`, we can include multiple `it()` blocks which "*functions as a test and is evaluated in its own environment.*" 
-
-In the example below, we'll use an `it()` block to test the example scenario from above:[^tests-it-blocks]
-
-```{r}
-#| eval: false 
-#| code-fold: false
-testthat::describe( # <1>
-"Feature 1.2: Movie Review Data Variable Selection Dropdown Menus
-  
-    As a film analyst who wants to visualize movie review data,
-    I want dropdown menus for selecting continuous x and y axes variables,
-    And I want a dropdown menu for selecting a categorical variables, 
-    So that I can customize the data visualization to my preferences.", 
-  code = { # <1>
-  
-  testthat::describe(# <2>
-    "Background:
-       Given I have launched the Movie Reviews Data Visualization App
-       And I have movie review data from IMDB and Rotten Tomatoes
-       And the data contains continuous variables like '_scores' 
-       And the data contains categorical variables like 'MPAA'", 
-      code = { # <2>
-      
-    testthat::it( # <3>
-    "Scenario: Initial App Launch Dropdown Menus
-        Given I have launched the movie review exploration app,
-        When I view the options for customizing the data visualization
-        Then I should see a dropdown menu to choose a continuous x-axis variable
-        And I should see a dropdown menu to choose a continuous y-axis variable
-        And I should see a dropdown menu to choose a categorical variable", # <3>
-        code = { # <3>
-          # test code # <4>
-        }) # <3>
-      
-    }) # <2>
-  
-}) # <1>
-```
-1. BDD Feature (**title and description**)    
-2. Background (preexisting conditions **before each scenario**) 
-3. Scenario (a **concrete examples that illustrates a feature**)
-4. Test code  
-
-[^tests-it-blocks]: Each [`it()`](https://testthat.r-lib.org/reference/describe.html) block contains the expectations (or what you would traditionally include in `test_that()`).
-
-In the scenario above, `Then` contains the information required for the `testthat` expectation. This could be `expect_snapshot_file()` or `vdiffr::expect_doppelganger()`--whichever makes sense from the user's perspective.
-
-This is an generic example, but I hope it demonstrates the connection between the user specification, feature, scenario, and test. It also  allows us to fill in the **Test** column in the traceability matrix.
-
-```{r}
-#| label: co_box_bdd_trace_all
-#| echo: false
-#| code-fold: false
-#| include: true
-trace_matrix <- tibble::tibble(
-  Specification = c(
-    "US1"
-  ),
-  Features = c(
-    "F1.1"
-  ),
-  Requirements = c(
-    "FR 1.1"
-  ),
-  Test = c(
-    "test-scatter_plot.R"
-  ),
-) 
-trace_matrix |> 
-  gt::gt(auto_align = TRUE) |> 
-  gt::sub_missing(
-  columns = gt::everything(),
-  rows = gt::everything(),
-  missing_text = "-"
-)
-```
-
-
-The traceability matrix and `testthat`'s BDD functions make it possible to know what code needs to be tested (even before it's developed).[^tests-bdd-describe] 
-
-[^tests-bdd-describe]: Read more about `describe()` and `it()` in the [`testthat` documentation.](https://testthat.r-lib.org/reference/describe.html) and in the [appendix.](bdd.qmd)
-
-
-:::{.callout-note collapse="true" title="Functional Requirements BDD Scenarios"}
-
-F1.1: The movie review dataset in the application should contain continuous variables (e.g., critic and audience ratings) and categorical variables (e.g., mpaa, genres) from IMDB and Rotten Tomatoes.
-
-```{bash}
-#| code-fold: true
-#| eval: false 
-#| code-summary: 'show/hide Gherkin syntax'
-Feature: Movie Review Dataset Variables
-
-  In order to provide comprehensive movie reviews,
-  As an application,
-  I want to have a dataset with variables from IMDB and Rotten Tomatoes.
-  
-  Background: 
-    Given the application has access to IMDB and Rotten Tomatoes APIs
-    
-  Scenario:  Movie Review Continuous and Categorical Variables 
-    When the application loads from IMDB and Rotten Tomatoes movie review data
-    Then the dataset should include a continuous critic ratings variable 
-    And the dataset should include a continuous audience ratings variable 
-    And the dataset should include a categorical mpaa ratings variable 
-    And the dataset should include a categorical genres variable 
-```
-
-F1.2: The UI should display dropdown menus for selecting continuous variables on both the x-axis and y-axis, and a dropdown menu categorical variable for point coloration.
-
-```{bash}
-#| code-fold: true
-#| eval: false
-#| code-summary: 'show/hide Gherkin syntax'
-Feature 1.2: Scatter Plot Points Dropdown Menu Controls
-
-  As a film analyst creating a scatter plot,
-  I want dropdown menus to select continuous variables for x and y axes 
-  And I want a dropdown menu to select a categorical variable for point color,
-  So that I can effectively visualize relationships and categories in the data.
-
-  Scenario: Dropdown Menu Display and Use for Controling Scatter Plot Points
-    Given the scatter plot customization options displayed in the UI
-    When I define the variables in the scatter plot axes and point color
-    Then I should see a continuous variable dropdown menu x-axis control 
-    And I should see a continuous variable dropdown menu y-axis control 
-    And I should see a categorical variable dropdown menu point color control 
-
-```
-
-F1.3: Incorporate sliders or similar controls for adjusting point size and point opacity
-
-```{bash}
-#| code-fold: true
-#| eval: false
-#| code-summary: 'show/hide Gherkin syntax'
-Feature 1.3: Adjustable Point Size and Opacity Controls
-
-  As a user who wants to interactively customize data visualization,
-  I want sliders or similar controls to adjust the point size and opacity,
-  So that I can tailor the visualization according to my preferences and needs.
-  
-  Scenario: Sliders for Adjusting Point Size and Opacity
-    Given the movie review app UI is loaded
-    When I look for controls to customize point appearance in the visualization
-    Then I should see a slider or similar control for adjusting the point size
-    And I should see a slider or similar control for adjusting the point opacity
-
-```
-
-F1.4: Provide input field for users to enter an optional scatter plot title.
-
-```{bash}
-#| code-fold: true
-#| eval: false
-#| code-summary: 'show/hide Gherkin syntax'
-Feature 1.4: Custom Scatter Plot Title
-
-  As a user who wants to personalize the scatter plot visualization,
-  I want an input field to enter an optional title for the scatter plot,
-  So that the visualization can be meaningful and tailored to my needs.
-
-  Scenario: Displaying Input Field for Scatter Plot Title
-    Given the movie review app UI is loaded
-    When I want to add a title to the scatter plot
-    Then I should see an input field where I can enter the title text
-```
-
-:::
-
 ## Recap
-
-Hopefully the example tests in the upcoming chapters convey how helpful and expressive the BDD functions can be (or they inspire you to properly implement what I'm attempting to do in your own app-packages).
-
-In the next chapter, we're going to cover various tools to improve the tests in your app-package. The overarching goal of these tools is to reduce code executed *outside* of your tests (i.e., placed above the call to `test_that()` or `it()`).[^tests-self-sufficient]
-
-[^tests-self-sufficient]: For more on this topic, consult the ['Self-sufficient tests'](https://r-pkgs.org/testing-design.html#self-sufficient-tests) section in [R Packages, 2ed](https://r-pkgs.org/)
 
 ```{r}
 #| label: co_box_recap
@@ -554,16 +248,7 @@ co_box(
 - `test_active_file()`: runs tests in the current open test file\n
   
 - `test_coverage_active_file()`: test coverage for the current open test file\n
-  
-###### Behavior-driven development functions:
-  
-- `describe()`: *'specifies a larger component or function and contains a set of specifications'*. Include feature descriptions and any relevant background information the `describe()` blocks\n
-
-- `it()`: contains the test code or expectations. These are use to test each functional requirement (or `Then` statements from scenarios).\n
-  
-- Use the traceability matrix to track the user specifications, features, functional requirements, and tests. 
-  
-  "
+"
 )
 ```
 
