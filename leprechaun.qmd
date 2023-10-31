@@ -13,19 +13,677 @@ source("_common.R")
 #| results: asis
 #| eval: true
 co_box(
-  color = "r", 
+  color = "o", 
   look = "minimal",
-  header = "Alert",
-  contents = "The contents for section are being development. Thank you for your patience."
+  header = "Caution",
+  contents = "The contents for section are being revised. Thank you for your patience."
 )
 ```
 
-`leprechaun` stuff
+This chapter walks through building a version of the `moviesApp` with the [`leprechaun`](https://leprechaun.opifex.org/#/) framework. The resulting app-package (`lap`) is in the [`fw_lap` branch](https://github.com/mjfrigaard/moviesApp/tree/fw_lap).
 
 ```{r}
 #| eval: false
+#| code-fold: false
 install.packages("leprechaun")
 library(leprechaun)
 ```
 
-end `leprechaun.qmd`
+```{r}
+#| label: git_box_lap
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "standard",
+  fig_pw = '75%', 
+  branch = "fw_lap", 
+  repo = 'moviesApp')
+```
+
+After checking out the `fw_lap` branch, be sure to load, document, and install the application.
+
+```{r}
+#| label: dev_key_all_01
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key("all")
+```
+
+## `lap` (a `leprechaun` app-package)
+
+`lap` exports the `movies` data and the standalone app function, `run()`.
+
+```{r}
+#| eval: false
+#| code-fold: false
+library(lap)
+lap::run()
+```
+
+::: {#fig-leprechaun_run}
+
+![`lap` movies app](images/leprechaun_run.png){#fig-leprechaun_run width='100%' align='center'}
+
+After loading, documenting, and installing `lap`, launch the movies with `run()`
+:::
+
+## Set up
+
+Create new leprechaun app-packages with `usethis::create_package('lap')`. After the package is created, `leprechaun::scaffold()` [^leprechaun-scaffold] builds the core app files:[^leprechaun-create-pkg]
+
+[^leprechaun-create-pkg]: Remember to provide a list of fields to `usethis::create_package()` for the `DESCRIPTION` file (or edit this manually).
+
+[^leprechaun-scaffold]: `leprechaun::scaffold()` has arguments for `ui` (`fluidPage` or `navbarPage`) `bs_version` (bootstrap version) and `overwrite` (if you need to start over).
+
+```{bash}
+#| eval: false
+#| code-fold: false
+R
+├── _disable_autoload.R # <1>
+├── assets.R # <2>
+├── input-handlers.R # <3>
+├── leprechaun-utils.R # <4>
+├── run.R # <5>
+├── server.R # <6>
+├── ui.R # <7>
+└── zzz.R # <8>
+
+1 directory, 8 files
+```
+1. Disables `shiny::loadSupport()`  
+2. Includes functions for serving JavaScript files, adding/removing modules, and collapsing files. 
+3. Utility functions for handling `list`s and `data.frame`s  
+4. Contains the `make_send_message()` function for 'send[ing] custom messages to the front-end'
+5. Standalone app function  
+6. App primary server function   
+7. App primary ui function   
+8. Includes wrapper for adding external files 
+
+Three folders are added to the `inst/` folder
+
+```{bash}
+#| eval: false
+#| code-fold: false
+inst
+├── assets
+├── dev
+├── img
+└── run
+    └── app.R
+
+5 directories, 1 file
+```
+
+A `.leprechaun` lock file is created, and `shiny`, `bslib`, `htmltools` and `pkgload` are added to the `DESCRIPTION`. 
+
+```{bash}
+#| eval: false
+#| code-fold: false
+Imports: 
+    bslib,
+    htmltools,
+    shiny
+Suggests: 
+    pkgload
+```
+
+The `lap` folder structure should look familiar if you've been following along with the previous chapters. The standard R package files and folders (`DESCRIPTION`, `NAMESPACE`, `R/`, and `.Rproj`) are accompanied by `inst/` sub-folders (recall that `inst/` contents are available when the package is installed).
+
+
+## App files 
+
+- [x] **Code files**: new code files in `leprechaun` apps can be created with `usethis::use_r()` or a few helper functions.
+<br><br>
+  - [x] **Modules**: Modules can be added with `leprechaun::add_module("name")` [^leprechaun-add-module]
+<br><br>
+    -   Module files created with `add_module()` have a `module_` prefix.
+<br><br>
+  - [x] **Run**: `R/run.R` contains functions for running the app.[^leprechaun-add-run]
+<br><br>
+  - [x] **UI and server**: `R/ui.R` holds the `ui()` and `assets()` functions.[^leprechaun-assets-fun] `R/server.R` by default creates `send_message` with `make_send_message(session)`.[^leprechaun-server-fun]
+<br><br>
+  - [x] **Utility function**: `R/utils_scatter_plot.R` holds the `scatter_plot()` utility function.[^leprechaun-add-util-fun]
+
+
+[^leprechaun-add-module]: `leprechaun` modules created with `add_module()` have the following naming convention: `leprechaun::add_module("name")` creates `var_inputUI()` and `var_input_server()`.
+
+[^leprechaun-assets-fun]: `assets()` loads the resources called in the `R/assets.R` file with the `serveAssets()` function.
+
+[^leprechaun-server-fun]: `make_send_message()` is in `R/leprechaun-utils.R`.
+
+[^leprechaun-add-util-fun]: The same `scatter_plot()` function from `moviesApp` (i.e, imports `.data` from `rlang`)
+
+[^leprechaun-add-run]: `R/run.R` includes functions for running the production (`run()`) and development (`run_dev()`) version of the application. 
+
+```{bash}
+#| eval: false
+#| code-fold: false
+R
+├── module_plot_display.R
+├── module_var_input.R
+├── run.R
+├── server.R
+├── ui.R
+└── utils_scatter_plot.R
+
+1 directory, 6 files
+```
+
+## Data files 
+
+- [x] **Including data files**: the `movies.RData` data was moved into `inst/extdata`, then loaded into `data/` with the script created with `usethis::use_data_raw('movies')`:
+
+```{bash}
+#| eval: false
+#| code-fold: false
+data-raw/
+└── movies.R
+
+1 directory, 1 file
+```
+
+```{bash}
+#| eval: false
+#| code-fold: false
+└── extdata
+      └── movies.RData
+1 directory, 1 file
+```
+
+```{bash}
+#| eval: false
+#| code-fold: false
+data
+└── movies.rda
+
+1 directory, 1 file
+```
+
+## External files 
+
+
+
+- [x] **Including external files**: The `R/zzz.R` file contains the `.onLoad()` function [^leprechaun-onLoad]
+<br><br>
+  - [x] `inst/run/app.R`: This *looks* like it would be used to run the application, but it's not.[^leprechaun-inst-run-app]
+<br><br>
+- [x] **Using `packer`**: I'll demo using the `make_send_message()` from the  JavaScript example on the [package website](https://leprechaun.opifex.org/#/examples/basic#javascript):
+<br><br>
+  - [x] Run `packer::scaffold_leprechaun()` 
+<br><br>
+      -   *Initializes `npm`, adds `npm` scripts, creates `srcjs`, `srcjs/config`, `webpack`, `webpack-cli`, and `webpack-merge`*
+<br><br>
+  - [x] Run `leprechaun::use_packer()` (creates `inst/dev/packer.R`)
+<br><br>
+  - [x] Run `leprechaun::build()`
+
+This creates `inst/dev/packer.R` and `inst/assets/index.js`.[^leprechaun-packer-folders]
+
+```{bash}
+#| eval: false
+#| code-fold: false
+inst
+├── assets
+│   └── index.js
+├── dev
+│   └── packer.R
+├── extdata
+│   └── movies.RData
+├── img
+└── run
+    └── app.R
+```
+
+Assign the output from `make_send_message()` to `send_message()` in `R/server.R`, then pass the `msgId` and `text` of the message: 
+
+```{r}
+#| eval: false
+#| code-fold: false
+server <- function(input, output, session){
+	## New code -->
+  send_message <- make_send_message(session) # <1>
+  
+	send_message("show-packer", # <2>
+				  text = "this message is from your R/server.R file") # <2>
+	
+   selected_vars <- var_input_server("vars")
+
+   plot_display_server("plot", var_inputs = selected_vars)
+   ## New code <--
+
+}
+```
+1. Create `send_message()`   
+2. Use `send_message()` to send message the UI.
+
+[^leprechaun-onLoad]: `.onLoad()` is a wrapper for `shiny::addResourcePath('img', system.file('img', package = 'lap'))`
+
+[^leprechaun-inst-run-app]: `inst/run/app.R` contains a call to `leprechaun::build()`, then `pkgload::load_all()`. 
+
+[^leprechaun-packer-folders]: Using [`packer`](https://packer.john-coene.com/#/) will download multiple folders into your `leprechaun` app package root folder (`srcjs/`, `node_modules/`, `package-lock.json`, `package.json`, `webpack.common.js`, `webpack.dev.js`, `webpack.prod.js`). These are not necessary and can be removed (but do not remove `inst/dev/packer.R` and `inst/assets/index.js`).
+
+After loading, documenting, and installing your app-package: 
+
+```{r}
+#| label: dev_key_all_02
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key("all")
+```
+
+Run the application: 
+
+```{r}
+#| eval: false
+#| code-fold: false
+lap::run()
+```
+
+::: {#fig-leprechaun_send_message_server}
+
+![`send_message()` in `lap::run()`](images/leprechaun_send_message_server.png){#fig-leprechaun_send_message_server width='70%' align='center'}
+
+Adding the `make_send_message()` functionality to `R/server.R`
+:::
+
+- [x] **Adding images**: I'll demonstrate adding an image to the UI
+<br><br>
+  - [x] Place the `leprechaun.jpg` file in `inst/img/`
+<br><br>
+  - [x] Add the `img/` path to the code to UI: 
+
+    ```{r}
+    #| eval: false
+    #| code-fold: false
+    tags$img(
+      src = "img/leprechaun.jpg", 
+      height = "25%", 
+      width = "25%")
+    ```
+    
+  - [x] run `devtools::load_all()`, `devtools::document()`, and `devtools::install()`, then run the application with `run()`: 
+
+```{r}
+#| label: dev_key_all_03
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key("all")
+```
+
+```{r}
+#| eval: false
+#| code-fold: false
+lap::run()
+```
+
+::: {#fig-leprechaun_add_image}
+![`leprechaun.jpg` in `R/ui.R`](images/leprechaun_add_image.png){#fig-leprechaun_add_image width="100%" fig-align="center"}
+
+Adding images to `inst/img/`
+:::
+
+- [x] **Adding Sass**: To Sass styling, I can use `leprechaun`'s [`use_sass()`](https://leprechaun.opifex.org/#/reference/use_sass) function
+<br><br>
+  - [x] Run `leprechaun::use_sass()` (no arguments): the `scss/` folder is created and it includes `_core.scss` and `main.scss`.
+    
+    ```{bash}
+    #| eval: false
+    #| code-fold: false
+    scss
+    ├── _core.scss
+    └── main.scss
+    
+    1 directory, 2 files
+    ```
+
+    -   The original `_core.scss` file is below
+    
+    ```scss
+    html{
+    	.error {
+    		color: red
+    	}
+    }
+    ```
+
+  - [x] Change the `color:` from `red` to green (`#38B44A`) using `$accent: #38B44A;`
+    
+    ```scss
+    $accent: #38B44A;
+    
+    html{
+        h1 {
+            color: $accent;
+        }
+    }
+    ```
+
+  - [x] Save this file and run [`leprechaun::build()`](https://leprechaun.opifex.org/#/reference/build):[^leprechaun-scss-folders]
+
+    ```{r}
+    #| label: build-leprechaun
+    #| code-fold: false
+    #| eval: false
+    leprechaun::build()
+    ```
+    
+    ```{bash}
+    #| label: build-running-sass-leprechaun
+    #| code-fold: false
+    #| eval: false
+    ✔ Running packer.R
+    ✔ Bundled       
+    ✔ Running sass.R
+    ```
+
+  - [x] Once again, run `devtools::load_all()`, `devtools::document()`, and `devtools::install()`, then run the application with `run()`:
+
+```{r}
+#| label: dev_key_all_04
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key("all")
+```
+
+```{r}
+#| eval: false
+#| code-fold: false
+lap::run()
+```
+
+::: {#fig-leprechaun_add_scss}
+![](images/leprechaun_add_scss.png){#fig-leprechaun_add_scss width="100%" fig-align="center"}
+
+Running `lap` with new Sass
+:::
+
+[^leprechaun-scss-folders]: The `scss` folder is added to the root directory, but after running `leprechaun::build()` and creating `inst/dev/sass.R`, this folder can be removed. 
+
+## Tests 
+
+`leprechaun` doesn't any specific support for testing (like the `golem` framework), but we can create tests using any combination of `testthat`, `testServer()`, and `shinytest2`. 
+
+## `lap` dependencies 
+
+It's also worth noting that using the `leprechaun` framework doesn't add itself as a dependency: 
+
+```{bash}
+#| eval: false 
+#| code-fold: true
+#| code-summary: 'expand to see the lap dependency tree'
+local::. 0.0.0.9000 ✨👷🏾‍♂️ ⬇ (unknown size)                               
+├─bslib 0.5.1 ✨ ⬇ (5.90 MB)
+│ ├─base64enc 0.1-3 ✨
+│ ├─cachem 1.0.8 ✨ ⬇ (69.43 kB)
+│ │ ├─rlang 1.1.1 ✨
+│ │ └─fastmap 1.1.1 ✨ ⬇ (201.10 kB)
+│ ├─htmltools 0.5.6.1 ✨ ⬇ (355.95 kB)
+│ │ ├─digest 0.6.33 ✨ ⬇ (297.88 kB)
+│ │ ├─base64enc
+│ │ ├─rlang
+│ │ ├─fastmap
+│ │ └─ellipsis 0.3.2 ✨
+│ │   └─rlang
+│ ├─jquerylib 0.1.4 ✨ ⬇ (526.36 kB)
+│ │ └─htmltools
+│ ├─jsonlite 1.8.7 ✨ ⬇ (1.13 MB)
+│ ├─memoise 2.0.1 ✨ ⬇ (47.96 kB)
+│ │ ├─rlang
+│ │ └─cachem
+│ ├─mime 0.12 ✨
+│ ├─rlang
+│ └─sass 0.4.7 ✨ ⬇ (2.41 MB)
+│   ├─fs 1.6.3 ✨ ⬇ (625.41 kB)
+│   ├─rlang
+│   ├─htmltools
+│   ├─R6 2.5.1 ✨ ⬇ (83.05 kB)
+│   └─rappdirs 0.3.3 ✨
+├─ggplot2 3.4.4 ✨
+│ ├─cli 3.6.1 ✨
+│ ├─glue 1.6.2 ✨
+│ ├─gtable 0.3.4 ✨
+│ │ ├─cli
+│ │ ├─glue
+│ │ ├─lifecycle 1.0.3 ✨ ⬇ (123.60 kB)
+│ │ │ ├─cli
+│ │ │ ├─glue
+│ │ │ └─rlang
+│ │ └─rlang
+│ ├─isoband 0.2.7 ✨
+│ ├─lifecycle
+│ ├─MASS 7.3-60 < 7.3-60.1 ✋
+│ ├─mgcv 1.9-0 
+│ │ ├─Matrix 1.6-1.1 
+│ │ │ └─lattice 0.22-5 
+│ │ └─nlme 3.1-163 
+│ │   └─lattice
+│ ├─rlang
+│ ├─scales 1.2.1 ✨
+│ │ ├─farver 2.1.1 ✨
+│ │ ├─labeling 0.4.3 ✨
+│ │ ├─lifecycle
+│ │ ├─munsell 0.5.0 ✨
+│ │ │ └─colorspace 2.1-0 ✨
+│ │ ├─R6
+│ │ ├─RColorBrewer 1.1-3 ✨
+│ │ ├─rlang
+│ │ └─viridisLite 0.4.2 ✨
+│ ├─tibble 3.2.1 ✨
+│ │ ├─fansi 1.0.5 ✨
+│ │ ├─lifecycle
+│ │ ├─magrittr 2.0.3 ✨
+│ │ ├─pillar 1.9.0 ✨
+│ │ │ ├─cli
+│ │ │ ├─fansi
+│ │ │ ├─glue
+│ │ │ ├─lifecycle
+│ │ │ ├─rlang
+│ │ │ ├─utf8 1.2.4 ✨
+│ │ │ └─vctrs 0.6.4 ✨
+│ │ │   ├─cli
+│ │ │   ├─glue
+│ │ │   ├─lifecycle
+│ │ │   └─rlang
+│ │ ├─pkgconfig 2.0.3 ✨
+│ │ ├─rlang
+│ │ └─vctrs
+│ ├─vctrs
+│ └─withr 2.5.2 ✨ ⬇ (230.90 kB)
+├─htmltools
+├─rlang
+└─shiny 1.7.5.1 ✨ ⬇ (4.35 MB)
+  ├─httpuv 1.6.12 ✨ ⬇ (2.66 MB)
+  │ ├─later 1.3.1 ✨ ⬇ (607.27 kB)
+  │ │ ├─Rcpp 1.0.11 ✨ ⬇ (3.31 MB)
+  │ │ └─rlang
+  │ ├─promises 1.2.1 ✨ ⬇ (1.82 MB)
+  │ │ ├─fastmap
+  │ │ ├─later
+  │ │ ├─magrittr
+  │ │ ├─R6
+  │ │ ├─Rcpp
+  │ │ └─rlang
+  │ ├─R6
+  │ └─Rcpp
+  ├─mime
+  ├─jsonlite
+  ├─xtable 1.8-4 ✨ ⬇ (701.99 kB)
+  ├─fontawesome 0.5.2 ✨ ⬇ (1.36 MB)
+  │ ├─rlang
+  │ └─htmltools
+  ├─htmltools
+  ├─R6
+  ├─sourcetools 0.1.7-1 ✨ ⬇ (137.44 kB)
+  ├─later
+  ├─promises
+  ├─crayon 1.5.2 ✨
+  ├─rlang
+  ├─fastmap
+  ├─withr
+  ├─commonmark 1.9.0 ✨ ⬇ (357.18 kB)
+  ├─glue
+  ├─bslib
+  ├─cachem
+  ├─ellipsis
+  └─lifecycle
+
+Key:  ✨ new | ✋ outdated |  ⬇ download | 👷🏾‍♂️ build
+```
+
+### `moviesApp` dependencies
+
+For comparison, this is the `moviesApp` dependency tree (note that using `devtools`/`usethis` doesn't make our app-package depend on these packages).
+
+```{bash}
+#| code-fold: true
+#| code-summary: 'expand to see the moviesApp dependency tree'
+#| eval: false
+local::. 0.0.0.9000 ✨👷‍♀️ ⬇ (unknown size)                                 
+├─bslib 0.5.1 ✨ ⬇ (5.90 MB)
+│ ├─base64enc 0.1-3 ✨
+│ ├─cachem 1.0.8 ✨ ⬇ (69.43 kB)
+│ │ ├─rlang 1.1.1 ✨
+│ │ └─fastmap 1.1.1 ✨ ⬇ (201.10 kB)
+│ ├─htmltools 0.5.6.1 ✨ ⬇ (355.95 kB)
+│ │ ├─digest 0.6.33 ✨ ⬇ (297.88 kB)
+│ │ ├─base64enc
+│ │ ├─rlang
+│ │ ├─fastmap
+│ │ └─ellipsis 0.3.2 ✨
+│ │   └─rlang
+│ ├─jquerylib 0.1.4 ✨ ⬇ (526.36 kB)
+│ │ └─htmltools
+│ ├─jsonlite 1.8.7 ✨ ⬇ (1.13 MB)
+│ ├─memoise 2.0.1 ✨ ⬇ (47.96 kB)
+│ │ ├─rlang
+│ │ └─cachem
+│ ├─mime 0.12 ✨
+│ ├─rlang
+│ └─sass 0.4.7 ✨ ⬇ (2.41 MB)
+│   ├─fs 1.6.3 ✨ ⬇ (625.41 kB)
+│   ├─rlang
+│   ├─htmltools
+│   ├─R6 2.5.1 ✨ ⬇ (83.05 kB)
+│   └─rappdirs 0.3.3 ✨
+├─ggplot2 3.4.4 ✨
+│ ├─cli 3.6.1 ✨
+│ ├─glue 1.6.2 ✨
+│ ├─gtable 0.3.4 ✨
+│ │ ├─cli
+│ │ ├─glue
+│ │ ├─lifecycle 1.0.3 ✨ ⬇ (123.60 kB)
+│ │ │ ├─cli
+│ │ │ ├─glue
+│ │ │ └─rlang
+│ │ └─rlang
+│ ├─isoband 0.2.7 ✨
+│ ├─lifecycle
+│ ├─MASS 7.3-60 < 7.3-60.1 ✋
+│ ├─mgcv 1.9-0 
+│ │ ├─Matrix 1.6-1.1 
+│ │ │ └─lattice 0.22-5 
+│ │ └─nlme 3.1-163 
+│ │   └─lattice
+│ ├─rlang
+│ ├─scales 1.2.1 ✨
+│ │ ├─farver 2.1.1 ✨
+│ │ ├─labeling 0.4.3 ✨
+│ │ ├─lifecycle
+│ │ ├─munsell 0.5.0 ✨
+│ │ │ └─colorspace 2.1-0 ✨
+│ │ ├─R6
+│ │ ├─RColorBrewer 1.1-3 ✨
+│ │ ├─rlang
+│ │ └─viridisLite 0.4.2 ✨
+│ ├─tibble 3.2.1 ✨
+│ │ ├─fansi 1.0.5 ✨
+│ │ ├─lifecycle
+│ │ ├─magrittr 2.0.3 ✨
+│ │ ├─pillar 1.9.0 ✨
+│ │ │ ├─cli
+│ │ │ ├─fansi
+│ │ │ ├─glue
+│ │ │ ├─lifecycle
+│ │ │ ├─rlang
+│ │ │ ├─utf8 1.2.4 ✨
+│ │ │ └─vctrs 0.6.4 ✨
+│ │ │   ├─cli
+│ │ │   ├─glue
+│ │ │   ├─lifecycle
+│ │ │   └─rlang
+│ │ ├─pkgconfig 2.0.3 ✨
+│ │ ├─rlang
+│ │ └─vctrs
+│ ├─vctrs
+│ └─withr 2.5.2 ✨👷‍♀️ ⬇ (102.32 kB)
+├─rlang
+├─sass
+├─shiny 1.7.5.1 ✨ ⬇ (4.35 MB)
+│ ├─httpuv 1.6.12 ✨ ⬇ (2.66 MB)
+│ │ ├─later 1.3.1 ✨ ⬇ (607.27 kB)
+│ │ │ ├─Rcpp 1.0.11 ✨ ⬇ (3.31 MB)
+│ │ │ └─rlang
+│ │ ├─promises 1.2.1 ✨ ⬇ (1.82 MB)
+│ │ │ ├─fastmap
+│ │ │ ├─later
+│ │ │ ├─magrittr
+│ │ │ ├─R6
+│ │ │ ├─Rcpp
+│ │ │ └─rlang
+│ │ ├─R6
+│ │ └─Rcpp
+│ ├─mime
+│ ├─jsonlite
+│ ├─xtable 1.8-4 ✨ ⬇ (701.99 kB)
+│ ├─fontawesome 0.5.2 ✨ ⬇ (1.36 MB)
+│ │ ├─rlang
+│ │ └─htmltools
+│ ├─htmltools
+│ ├─R6
+│ ├─sourcetools 0.1.7-1 ✨ ⬇ (137.44 kB)
+│ ├─later
+│ ├─promises
+│ ├─crayon 1.5.2 ✨
+│ ├─rlang
+│ ├─fastmap
+│ ├─withr
+│ ├─commonmark 1.9.0 ✨ ⬇ (357.18 kB)
+│ ├─glue
+│ ├─bslib
+│ ├─cachem
+│ ├─ellipsis
+│ └─lifecycle
+├─shinythemes 1.2.0 ✨ ⬇ (978.51 kB)
+│ └─shiny
+└─stringr 1.5.0 ✨ ⬇ (311.21 kB)
+  ├─cli
+  ├─glue
+  ├─lifecycle
+  ├─magrittr
+  ├─rlang
+  ├─stringi 1.7.12 ✨ ⬇ (14.63 MB)
+  └─vctrs
+
+Key:  ✨ new | ✋ outdated |  ⬇ download | 👷‍♀️ build
+```
+
+## Recap 
+
+[`leprechaun`](https://leprechaun.opifex.org/#/) apps are built using the same methods as app-packages (`devtools` and `usethis`), but are intended to be a 'leaner and smaller' version of `golem`.
+
+> *"it generates code and does not make itself a dependency of the application you build; this means applications are leaner, and smaller"*
+
+`leprechaun` is similar to `golem` in that it 'bundles' various app-package development functions into helper/utility functions. For example, `.onLoad()` is a wrapper for:
+
+```r
+shiny::addResourcePath("img", system.file("img", package = "lap"))
+```
+
+`.onLoad()` saves some time because you won't have to add the code above to the UI (at the cost of making your app code less clear and explicit). 
+
+`leprechaun` also relies on supporting packages like [`packer`](https://packer.john-coene.com/#/) to integrate and bundle, so becoming more familiar with these packages will extend what you can build with `leprechaun`.
