@@ -28,22 +28,22 @@ co_box(
 )
 ```
 
-Debugging is an essential skill for R programmers, and it's not restricted to fixing errors or broken code. When used as an exploration tool, the debugger allows us to ‘step into’ complex functions, see their inner workings and break down how the code executes in sequence.
+Debugging is an essential skill for R programmers, and it's not restricted to fixing errors or broken code. When used as an exploration tool, the debugger allows us to ‘step inside’ functions and break them down line-by-line to see how the code executes.
 
 ## Strategies 
 
-Posit Workbench's debugging tools are covered elsewhere,[^debug-other-resources] so I'll keep this chapter focused on what I use to debug shiny code inside an R package (although these methods will work on any shiny app).
+Posit Workbench's debugging tools are covered elsewhere,[^debug-other-resources] so I'll keep this chapter focused on what I use to debug Shiny code inside an R package (although these methods will work on any Shiny app):
 
 1. Wrapping `browser()` in a call to `observe()`  
 2. Capturing reactive values with `reactiveValuesToList()` and sending output to the UI
 
-These two methods cover 90% of my debugging needs while developing shiny apps (and their accompanying tests). In the following sections, I'll provide examples of how--and when--I use each method.
+These two methods cover 90% of my debugging needs while developing Shiny apps (and their accompanying tests). In the following sections, I'll provide examples of how--and when--I use each method.
 
 [^debug-other-resources]: For an introduction to the IDE's debugging tools, see this [Posit article](https://support.posit.co/hc/en-us/articles/205612627-Debugging-with-the-RStudio-IDE). Debugging is also covered in [Advanced R, 2ed](https://adv-r.hadley.nz/debugging.html) and [Mastering Shiny.](https://mastering-shiny.org/action-workflow.html#debugging)
 
 ## Debugging & Shiny 
 
-The contents of a Shiny app-package can quickly become complex and intertwined (utility functions, modules, UI and server functions, data, etc.). During regular development, Posit Workbench's interactive debugger lets us inspect variables and expressions *at runtime* and execute code line-by-line. 
+The contents of a Shiny app-package can quickly become a complicated and intertwined combination of utility, module, UI, server, and standalone app functions. During regular development, Posit Workbench's interactive debugger lets us inspect variables and expressions *at runtime*, and execute the code line-by-line. 
 
 In Shiny functions, we can track the execution of reactive expressions and observers, which allows us to unravel reactivity-related issues that are often difficult to diagnose.
 
@@ -81,6 +81,26 @@ shiny_server_function <- function(input, output, session) {
 ```
 1. `observe()` function scope  
 2. Call to `browser()` (called at the top of the `observe()` scope)  
+
+```{r}
+#| label: co_box_dbug_modules
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g", 
+  size = '1.10', 
+  header = "Debugging reactivity", 
+  hsize = '1.15', 
+  fold = FALSE, 
+  look = 'default',
+  contents = "
+  
+Shiny's reactive model can make debugging challenging because the issues aren't limited to logic or calculations, but also include the timing, sequence, or creation of reactive values.
+  
+  "
+)
+```
 
 Don't forget to load any debugging calls with `devtools::load_all()` *before* re-launching the app: 
 
@@ -126,7 +146,7 @@ movies_app(test = FALSE)
 Errors in the UI are not always informative... 
 :::
 
-This error is not very descriptive, but fortunately the following warning is also returned in the **Console**: 
+The error in the UI is not very descriptive, but fortunately the following warning is also returned in the **Console**: 
 
 ```{verbatim}
 #| eval: false 
@@ -137,7 +157,7 @@ Caused by error in `.data[[NULL]]`:
 ! Must subset the data pronoun with a string, not `NULL`.
 ```
 
-The scatter plot display module is called from `movies_server()`, but it also calls `scatter_plot()` (our graph utility function) internally, so it's hard to know *exactly* where this error is coming from.[^debug-lobstr] 
+When debugging Shiny apps, my goal is to locate the source of most informative error message. In `movies_app()`, I know the `scatter_plot()` function is called from *within* the scatter plot display module, which is called from `movies_server()`, so it's hard to know *exactly* where this error is coming from:[^debug-lobstr] 
 
 [^debug-lobstr]: Create an 'abstract folder tree' to help understand an application's 'call stack' with the [`ast()` function](https://lobstr.r-lib.org/reference/ast.html) from the [`lobstr` package](https://lobstr.r-lib.org/). 
 
@@ -147,7 +167,6 @@ The scatter plot display module is called from `movies_server()`, but it also ca
 lobstr::ast(
   movies_app( 
     movies_server(
-      mod_var_input_server(),
       mod_scatter_display_server(
         scatter_plot()
         )
@@ -161,7 +180,6 @@ lobstr::ast(
 #| code-fold: false
 █─movies_app
 └─█─movies_server
-  ├─█─mod_var_input_server
   └─█─mod_scatter_display_server 
     └─█─scatter_plot
 ```
@@ -236,7 +254,9 @@ The application launches, but `browser()` pauses the execution of the modules an
 Note that the plot hasn't rendered in the application yet because the call to `observe(browser())` suspends the execution of any subsequent code   
 :::
 
-This allows us to view the objects that are available in `movies_server()` *before* the variables are passed to the graph rendering functions. In the **Source** pane, we can see the call to `browser()` highlighted (telling us the `Browse[1]>` location in this function).
+This allows us to view the objects that are available in `movies_server()` *before* the variables are passed to the graph rendering functions. 
+
+In the **Source** pane, we can see the call to `browser()` highlighted (telling us the `Browse[1]>` location in this function).
 
 :::{#fig-debug_browser_placement_02}
 
@@ -246,62 +266,50 @@ Because `browser()` was called inside `observe()`, the execution will pause, and
 :::
 
 
-### Verify module communication
+### Module communication
 
-```{r}
-#| eval: false 
-#| include: false
-#| echo: false 
-#| collapse: false
-#| code-fold: false
-lobstr::ast(
-    movies_server(
-      `selected_vars <- mod_var_input_server("vars")`,
-      `mod_scatter_display_server("plot", var_inputs = selected_vars)`
-      )
-  )
-```
-
-In `movies_server()`, the variable input module returns a list (`selected_vars`) with the variable names (`x`, `y`, `z`), graph aesthetics (`alpha` and `size`), and an optional plot title (`plot_title`).
+In `movies_server()`, the variable input module returns a reactive list (`selected_vars`) with the variable names (`input$x`, `input$y`, `input$z`), graph aesthetics (`input$alpha` and `input$size`), and an optional plot title (`input$plot_title`).
 
 ```{r}
 #| eval: false
 #| include: false 
-lobstr::ast(
-    movies_server(
-      `selected_vars <- mod_var_input_server("vars")`
-      )
-  )
+# lobstr::ast(
+#     movies_server(
+#       `selected_vars <- mod_var_input_server("vars")`
+#       )
+#   )
 ```
 
 ```{bash}
 #| eval: false 
 #| code-fold: false
 █─movies_server 
-└─selected_vars <- mod_var_input_server("vars")
+└─selected_vars <- mod_var_input_server("vars") # <1>
 ```
-
+1. Reactive values returned from variable input module
 
 `selected_vars` becomes the input for the scatter plot display module (`var_inputs`):
 
 ```{r}
 #| eval: false
 #| include: false  
-lobstr::ast(
-    movies_server(
-      `selected_vars <- mod_var_input_server("vars")`,
-      `mod_scatter_display_server("plot", var_inputs = selected_vars)`
-      )
-  )
+# lobstr::ast(
+#     movies_server(
+#       `selected_vars <- mod_var_input_server("vars")`,
+#       `mod_scatter_display_server("plot", var_inputs = selected_vars)`
+#       )
+#   )
 ```
 
 ```{bash}
 #| eval: false 
 #| code-fold: false
 █─movies_server 
-├─selected_vars <- mod_var_input_server("vars")
-└─mod_scatter_display_server("plot", var_inputs = selected_vars)
+├─selected_vars <- mod_var_input_server("vars") # <1>
+└─mod_scatter_display_server("plot", var_inputs = selected_vars) # <2>
 ```
+1. Reactive values returned from variable input module
+2. Variable inputs passed to scatter plot display module
 
 <!--
 ```{r}
@@ -352,9 +360,9 @@ reactive({
 
 :::
 
-This output shows that `selected_vars` (*without parentheses*) contains the *method* (i.e., the reactive list of inputs), and not the actual values. 
+This output shows that `selected_vars` (without parentheses) contains the *method* (i.e., the reactive list of inputs), and not the actual values. 
 
-If we check `selected_vars()` in the debugger, we see this contains the values from the variable input module: 
+If we check `selected_vars()` (with parentheses) in the debugger, we see this contains the *values* from the variable input module: 
 
 ::: {layout="[35, 65]" layout-valign="top"}
 
@@ -403,7 +411,7 @@ git_margin_box(
   repo = 'moviesApp')
 ```
 
-We'll repeat a similar process for `mod_scatter_display_server()`, but include the call to `observe(browser())` *after* `moduleServer()`. Then we'll load the package and run the application again: 
+We'll repeat a similar process in `mod_scatter_display_server()`, but include the call to `observe(browser())` *after* `moduleServer()`. Then we'll load the package and run the application again: 
 
 ```{r}
 #| eval: false 
@@ -501,7 +509,7 @@ Inside the scatter plot display module, the `var_inputs` argument is used to cre
 1. Variable inputs (from `selected_vars`)   
 2. `inputs()` for `scatter_plot()`   
 
-After confirming `var_inputs()` has been created, we'll also want to verify the values are passed correctly from `var_inputs()` to the `inputs()` list used to build the scatter plot. 
+Now that we've confirmed `var_inputs()` has been created, we'll verify the values are passed correctly *from* `var_inputs()` *to* `inputs()` (which is used to create the scatter plot).
 
 To do this, we'll progress through the module function (using `n` in the debugger console or by clicking **Next**) until the `inputs()` reactive has been created,
 
@@ -754,7 +762,7 @@ This will suspend the execution of application before the tidy `ggplot2movies::m
 
 :::: {.column-page-inset-right}
 
-::: {layout="[50, 50]" layout-valign="top"}
+::: {layout="[60, 40]" layout-valign="top"}
 
 ![Debugging `dev_mod_scatter_server()`](images/debug_dev_app_04.png){width='100%'}
 
@@ -800,7 +808,7 @@ This gives us an idea of the total rows before missing are removed.
 
 #### Verfiy missing 
 
-After loading `all_data`, the module creates a reactive `graph_data()`, but this is 'bound' to `input$missing`, so we'll confirm the  `input$missing` value:
+After loading `all_data`, the module creates a reactive `graph_data()`. We can see `graph_data()` is 'bound' to `input$missing`, so we'll confirm the  `input$missing` value:
 
 ![](images/debug_dev_verify_missing_04.png){width='85%' fig-align='center'}
 
@@ -820,7 +828,7 @@ Browse[2]> input$missing
 
 :::
 
-Since '*Remove missing*' has been selected, we want to verify the missing values have been removed from `graph_data()`:
+This tells us '*Remove missing*' has been selected, and we can verify the missing values have been removed from `graph_data()`:
 
 ::: {layout="[35, 65]" layout-valign="top"}
 
@@ -850,7 +858,7 @@ Browse[2]> str(graph_data())
 
 #### Verfiy variable inputs 
     
-Now we'll confirm the `var_inputs()` list of graph values from the `dev` variable input module:
+Next we'll confirm the `var_inputs()` list of graph values from our `dev` variable input module:
 
 ::: {layout="[35, 65]" layout-valign="top"}
 
@@ -875,7 +883,7 @@ List of 6
 :::
 
 
-`var_inputs()` is used to create the `inputs()` reactive, so we'll confirm the values here, too.
+`var_inputs()` is creates the `inputs()` reactive for the graph, so we'll confirm those values, too.
 
 ![](images/debug_dev_verify_inputs_04.png){width='85%' fig-align='center'}
 
@@ -904,7 +912,7 @@ List of 6
 
 #### Verfiy graph
 
-Finally, we'll render the plot in the app: 
+Now that we have an understanding of the reactive flow inside the app, we'll render the plot: 
 
 ::: {layout="[35, 65]" layout-valign="top"}
 
@@ -918,28 +926,7 @@ Browse[2]> n
 
 :::
 
-These steps give us an idea of the 'order of execution' in the `dev` scatter plot display module, and helps us understand how each `bindEvent()` is working.
-
-
-```{r}
-#| label: co_box_dbug_modules
-#| echo: false
-#| results: asis
-#| eval: true
-co_box(
-  color = "g", 
-  size = '1.15', 
-  header = "Debugging modules", 
-  hsize = '1.20', 
-  fold = FALSE, 
-  look = 'default',
-  contents = "
-  
-Shiny's reactive model can make debugging challenging because the issues aren't limited to logic or calculations, but also include the timing, sequence, or creation of reactive values.
-  
-  "
-)
-```
+Using `browser()` to 'step through' an application gives us a better understanding of the 'order of execution' in our `dev` scatter plot display module, (and it lets us see how `input$missing` and `bindEvent()` are working).
 
 ## Debugging apps 
 
@@ -956,7 +943,7 @@ git_margin_box(
 
 One of the best tried and tested methods of debugging is simply adding a `cat()` or `print()` call somewhere in your code to print variables or objects to the R console. This is a basic but effective way to track variable changes.
 
-We can do something similar in shiny applications by combining `verbatimTextOutput()`, `renderPrint()`, and `reactiveValuesToList()`: 
+We can do something similar in Shiny applications by combining `verbatimTextOutput()`, `renderPrint()`, and `reactiveValuesToList()`: 
 
 In [`mod_var_input`](https://github.com/mjfrigaard/moviesApp/blob/spec_topic-debugging-04/R/mod_var_input.R): 
 
@@ -1015,12 +1002,12 @@ movies_app(options = list(test.mode = FALSE), run = 'p')
 
 :::{#fig-debug_print_movies_app_05}
 
-!['Print' in `movies_app()`](images/debug_print_movies_app_05.png){#fig-debug_print_movies_app_05 width='100%' align='center'}
+!['Print' in `movies_app()`](images/debug_reactive_values_sidebar.png){#fig-debug_print_movies_app_05 width='40%' fig-align='left'}
 
 `reactiveValuesToList()` printed from `mod_var_inputs`
 :::
 
-Now we can see the reactive values from our module in the application UI! 
+Now we can see the reactive values from our module in the application sidebar! 
 
 ### Exploring app 'levels'  
 
@@ -1091,7 +1078,7 @@ Here we can see both levels of reactive values (from the module and the UI/serve
 
 ![Changing values in `movies_app(bslib = TRUE)`](images/debug_change_print_bslib_movies_app_05.png){#fig-debug_change_print_bslib_movies_app_05 width='100%' align='center'}
 
-The output in the UI will update with changes to the `inputId`s
+`y` and `vars-y` *both* update when the UI inputs change
 :::
 
 
@@ -1099,7 +1086,7 @@ The output in the UI will update with changes to the `inputId`s
 
 `browser()` and `observe()` are powerful tools for debugging your application. Navigating a function using the debugger console gives you control over the execution of each line. If we want to see what's happening 'behind the scenes', we can collect the reactive values and print them in the UI while the app is running. 
 
-The Shiny documentation also has a [list of methods](https://shiny.posit.co/r/articles/improve/debugging/) for debugging shiny applications, and learning how to read call stacks (or a stacktrace) will help you debug your shiny app.[^debug-call-stacks]
+The Shiny documentation also has a [list of methods](https://shiny.posit.co/r/articles/improve/debugging/) for debugging apps, and learning how to read call stacks (or a stacktrace) will help you debug your shiny app.[^debug-call-stacks]
 
 [^debug-call-stacks]: Watch [this video](https://www.youtube.com/watch?v=g1h-YDWVRLc) to learn about call stacks and abstract folder trees with `lobstr`. 
 
