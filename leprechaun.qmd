@@ -26,18 +26,19 @@ co_box(
 #| results: asis
 #| eval: true
 co_box(
-  color = "b", look = "minimal", size = '1.10',
-  header = "![](images/leprechaun.png){width='8%'} &emsp; `leprechaun` framework features", 
+  color = "b", look = "minimal", size = '1.10', hsize = '1.15',
+  header = "![](images/leprechaun.png){width='10%'} &emsp; `leprechaun` framework features", 
   fold = FALSE,
-  contents = "<br>
+  contents = "
   
 - Helper functions for adding modules, js, css, html, etc.
   
-- 'Pre-packaged' with UI, server, and standalone app functions
+- `leprechaun` apps come 'pre-packaged' with UI, server, and standalone app functions
   
-- App external resources location in `inst/`
+- A variety of external resources can be included and 'bundled' in the `inst/` folder 
   
-- Keeps dependencies low 
+- `leprechaun` helps keep your app-package dependencies low (think `golem` 
+à la carte)
   
 "
 )
@@ -124,21 +125,6 @@ R
 7. App primary ui function   
 8. Includes wrapper for adding external files 
 
-Three folders are added to the `inst/` folder
-
-```{bash}
-#| eval: false
-#| code-fold: false
-inst
-├── assets
-├── dev
-├── img
-└── run
-    └── app.R
-
-5 directories, 1 file
-```
-
 A `.leprechaun` lock file is created, and `shiny`, `bslib`, `htmltools` and `pkgload` are added to the `DESCRIPTION`. 
 
 ```{bash}
@@ -155,20 +141,27 @@ Suggests:
 The `lap` folder structure should look familiar if you've been following along with the previous chapters. The standard R package files and folders (`DESCRIPTION`, `NAMESPACE`, `R/`, and `.Rproj`) are accompanied by `inst/` sub-folders (recall that `inst/` contents are available when the package is installed).
 
 
-## App files 
+## App code 
 
-- [x] **Code files**: new code files in `leprechaun` apps can be created with `usethis::use_r()` or a few helper functions.
+- [x] **Code files**: new code files in `leprechaun` apps can be created with `usethis::use_r()` or with `leprechaun`'s helper functions.
 <br><br>
-  - [x] **Modules**: Modules can be added with `leprechaun::add_module("name")` [^leprechaun-add-module]
+  - [x] **Modules**: Add modules with `leprechaun::add_module("name")` [^leprechaun-add-module]
 <br><br>
     -   Module files created with `add_module()` have a `module_` prefix.
 <br><br>
   - [x] **Run**: `R/run.R` contains functions for running the app.[^leprechaun-add-run]
 <br><br>
-  - [x] **UI and server**: `R/ui.R` holds the `ui()` and `assets()` functions.[^leprechaun-assets-fun] `R/server.R` by default creates `send_message` with `make_send_message(session)`.[^leprechaun-server-fun]
+  - [x] **UI and server**: Add the modules to `R/ui.R` and `R/server.R`.
+<br><br>
+    -   `R/server.R` includes the `send_message` and `make_send_message(session)` functions by default.[^leprechaun-server-fun]
+<br><br>
+    -   `R/ui.R` holds the `ui()` and `assets()` functions.[^leprechaun-assets-fun]
 <br><br>
   - [x] **Utility function**: `R/utils_scatter_plot.R` holds the `scatter_plot()` utility function.[^leprechaun-add-util-fun]
-
+<br><br>
+  - [x] **Adding external files**: The `R/zzz.R` file contains the `.onLoad()` function [^leprechaun-onLoad]
+<br><br>
+  - [x] **`app.R` file**: include an `app.R` in the root directory using  `add_app_file()` [^leprechaun-add-app-file]
 
 [^leprechaun-add-module]: `leprechaun` modules created with `add_module()` have the following naming convention: `leprechaun::add_module("name")` creates `var_inputUI()` and `var_input_server()`.
 
@@ -179,6 +172,10 @@ The `lap` folder structure should look familiar if you've been following along w
 [^leprechaun-add-util-fun]: The same `scatter_plot()` function from `moviesApp` (i.e, imports `.data` from `rlang`)
 
 [^leprechaun-add-run]: `R/run.R` includes functions for running the production (`run()`) and development (`run_dev()`) version of the application. 
+
+[^leprechaun-onLoad]: `.onLoad()` is a wrapper for `shiny::addResourcePath('img', system.file('img', package = 'lap'))`
+
+[^leprechaun-add-app-file]: the `app.R` file includes a call to `pkgload::load_all()`.
 
 ```{bash}
 #| eval: false
@@ -193,6 +190,26 @@ R
 
 1 directory, 6 files
 ```
+
+## App files 
+
+The initial call to `leprechaun::scaffold()` creates the following folders in the `inst/` folder
+
+```{bash}
+#| eval: false
+#| code-fold: false
+inst
+├── assets
+├── dev
+├── img
+└── run
+    └── app.R
+
+5 directories, 1 file
+```
+
+
+The `inst/run/app.R` *looks* like a standard `app.R` file, but it's not.[^leprechaun-inst-run-app]
 
 ## Data files 
 
@@ -224,23 +241,21 @@ data
 1 directory, 1 file
 ```
 
-## External files 
+## `leprechaun` features
 
+The `leprechaun` workflow involves a combination of `use_` functions that are combined with `leprechaun::build()` to add various functionality to your application. I'll demonstrate three options in the sections below: 
 
+### Using `packer`
 
-- [x] **Including external files**: The `R/zzz.R` file contains the `.onLoad()` function [^leprechaun-onLoad]
+I'll demo using the `make_send_message()` from the  JavaScript example on the [package website](https://leprechaun.opifex.org/#/examples/basic#javascript):
+
+- [x] Run `packer::scaffold_leprechaun()` 
 <br><br>
-  - [x] `inst/run/app.R`: This *looks* like it would be used to run the application, but it's not.[^leprechaun-inst-run-app]
+    -   *Initializes `npm`, adds `npm` scripts, creates `srcjs`, `srcjs/config`, `webpack`, `webpack-cli`, and `webpack-merge`*
 <br><br>
-- [x] **Using `packer`**: I'll demo using the `make_send_message()` from the  JavaScript example on the [package website](https://leprechaun.opifex.org/#/examples/basic#javascript):
+- [x] Run `leprechaun::use_packer()` (creates `inst/dev/packer.R`)
 <br><br>
-  - [x] Run `packer::scaffold_leprechaun()` 
-<br><br>
-      -   *Initializes `npm`, adds `npm` scripts, creates `srcjs`, `srcjs/config`, `webpack`, `webpack-cli`, and `webpack-merge`*
-<br><br>
-  - [x] Run `leprechaun::use_packer()` (creates `inst/dev/packer.R`)
-<br><br>
-  - [x] Run `leprechaun::build()`
+- [x] Run `leprechaun::build()`
 
 This creates `inst/dev/packer.R` and `inst/assets/index.js`.[^leprechaun-packer-folders]
 
@@ -281,7 +296,7 @@ server <- function(input, output, session){
 1. Create `send_message()`   
 2. Use `send_message()` to send message the UI.
 
-[^leprechaun-onLoad]: `.onLoad()` is a wrapper for `shiny::addResourcePath('img', system.file('img', package = 'lap'))`
+
 
 [^leprechaun-inst-run-app]: `inst/run/app.R` contains a call to `leprechaun::build()`, then `pkgload::load_all()`. 
 
@@ -312,22 +327,24 @@ lap::run()
 Adding the `make_send_message()` functionality to `R/server.R`
 :::
 
-- [x] **Adding images**: I'll demonstrate adding an image to the UI
-<br><br>
-  - [x] Place the `leprechaun.jpg` file in `inst/img/`
-<br><br>
-  - [x] Add the `img/` path to the code to UI: 
+### Adding images
 
-    ```{r}
-    #| eval: false
-    #| code-fold: false
-    tags$img(
-      src = "img/leprechaun.jpg", 
-      height = "25%", 
-      width = "25%")
-    ```
-    
-  - [x] run `devtools::load_all()`, `devtools::document()`, and `devtools::install()`, then run the application with `run()`: 
+I'll demonstrate adding an image file (`leprechaun.jpg`) to the UI function.
+
+- [x] Place the `leprechaun.jpg` file in `inst/img/`
+<br><br>
+- [x] Add the `img/` path to the code to UI: 
+
+```{r}
+#| eval: false
+#| code-fold: false
+tags$img(
+  src = "img/leprechaun.jpg", 
+  height = "25%", 
+  width = "25%")
+```
+  
+- [x] run `devtools::load_all()`, `devtools::document()`, and `devtools::install()`, then run the application with `run()`: 
 
 ```{r}
 #| label: dev_key_all_03
@@ -349,61 +366,65 @@ lap::run()
 Adding images to `inst/img/`
 :::
 
-- [x] **Adding Sass**: To Sass styling, I can use `leprechaun`'s [`use_sass()`](https://leprechaun.opifex.org/#/reference/use_sass) function
+### Adding Sass
+
+To add Sass styling, I can use `leprechaun`'s [`use_sass()`](https://leprechaun.opifex.org/#/reference/use_sass) function
+
+- [x] Run `leprechaun::use_sass()`
 <br><br>
-  - [x] Run `leprechaun::use_sass()` (no arguments): the `scss/` folder is created and it includes `_core.scss` and `main.scss`.
+  -   a `scss/` folder will be created that contains `_core.scss` and `main.scss`
     
-    ```{bash}
-    #| eval: false
-    #| code-fold: false
-    scss
-    ├── _core.scss
-    └── main.scss
-    
-    1 directory, 2 files
-    ```
+```{bash}
+#| eval: false
+#| code-fold: false
+scss
+├── _core.scss
+└── main.scss
 
-    -   The original `_core.scss` file is below
+1 directory, 2 files
+```
+
+  -   The original `_core.scss` file is below
     
-    ```scss
-    html{
-    	.error {
-    		color: red
-    	}
+```scss
+html{
+	.error {
+		color: red
+	}
+}
+```
+
+- [x] Change the `color:` from `red` to green (`#38B44A`) using `$accent: #38B44A;`
+    
+```scss
+$accent: #38B44A;
+
+html{
+    h1 {
+        color: $accent;
     }
-    ```
+}
+```
 
-  - [x] Change the `color:` from `red` to green (`#38B44A`) using `$accent: #38B44A;`
-    
-    ```scss
-    $accent: #38B44A;
-    
-    html{
-        h1 {
-            color: $accent;
-        }
-    }
-    ```
+- [x] Save this file and run [`leprechaun::build()`](https://leprechaun.opifex.org/#/reference/build):[^leprechaun-scss-folders]
 
-  - [x] Save this file and run [`leprechaun::build()`](https://leprechaun.opifex.org/#/reference/build):[^leprechaun-scss-folders]
+```{r}
+#| label: build-leprechaun
+#| code-fold: false
+#| eval: false
+leprechaun::build()
+```
 
-    ```{r}
-    #| label: build-leprechaun
-    #| code-fold: false
-    #| eval: false
-    leprechaun::build()
-    ```
-    
-    ```{bash}
-    #| label: build-running-sass-leprechaun
-    #| code-fold: false
-    #| eval: false
-    ✔ Running packer.R
-    ✔ Bundled       
-    ✔ Running sass.R
-    ```
+```{bash}
+#| label: build-running-sass-leprechaun
+#| code-fold: false
+#| eval: false
+✔ Running packer.R
+✔ Bundled       
+✔ Running sass.R
+```
 
-  - [x] Once again, run `devtools::load_all()`, `devtools::document()`, and `devtools::install()`, then run the application with `run()`:
+- [x] Once again, run `devtools::load_all()`, `devtools::document()`, and `devtools::install()`, then run the application with `run()`:
 
 ```{r}
 #| label: dev_key_all_04
@@ -697,11 +718,11 @@ Key:  ✨ new | ✋ outdated |  ⬇ download | 👷‍♀️ build
 
 ## Recap 
 
-[`leprechaun`](https://leprechaun.opifex.org/#/) apps are built using the same methods as app-packages (`devtools` and `usethis`), but are intended to be a 'leaner and smaller' version of `golem`.
+[`leprechaun`](https://leprechaun.opifex.org/#/) apps are built using the same methods as app-packages (`devtools` and `usethis`), and are intended to be a 'leaner and smaller' version of `golem`.
 
 > *"it generates code and does not make itself a dependency of the application you build; this means applications are leaner, and smaller"*
 
-`leprechaun` is similar to `golem` in that it 'bundles' various app-package development functions into helper/utility functions. For example, `.onLoad()` is a wrapper for:
+`leprechaun` is similar to `golem` in that it 'bundles' various app-package development functions into helper/utility functions. For example, the `.onLoad()` function is a wrapper for:
 
 ```r
 shiny::addResourcePath("img", system.file("img", package = "lap"))
@@ -709,4 +730,5 @@ shiny::addResourcePath("img", system.file("img", package = "lap"))
 
 `.onLoad()` saves some time because you won't have to add the code above to the UI (at the cost of making your app code less clear and explicit). 
 
-`leprechaun` also relies on supporting packages like [`packer`](https://packer.john-coene.com/#/) to integrate and bundle, so becoming more familiar with these packages will extend what you can build with `leprechaun`.
+`leprechaun` also relies on external packages like [`packer`](https://packer.john-coene.com/#/) to integrate and bundle external code files, so becoming more familiar with these packages will extend what you can build with `leprechaun`.
+
