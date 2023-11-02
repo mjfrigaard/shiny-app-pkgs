@@ -1,0 +1,260 @@
+# Dependency trees {#sec-deps-trees}
+
+```{r}
+#| eval: true 
+#| echo: false 
+#| include: false
+source("_common.R")
+library(pak)
+```
+
+```{r}
+#| label: co_box_dev
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "o", 
+  look = "minimal",
+  header = "Caution",
+  contents = "The contents for section are being revised. Thank you for your patience."
+)
+```
+
+I'll explore the package dependencies using the [dependency lookup features](https://pak.r-lib.org/dev/reference/get-started.html#dependency-lookup) from the [`pak` package](https://pak.r-lib.org/dev/index.html)
+
+### Dependency trees 
+
+`pak::pkg_deps_tree()` shows us the dependencies for a particular package. To demonstrate how this function works, we'll explore the dependencies in three packages:
+
+1. [`rlang`](https://rlang.r-lib.org/): *"Functions for Base Types and Core R and 'Tidyverse' Features"*
+2. [`lifecycle`](https://lifecycle.r-lib.org/): *"Manage the Life Cycle of your Package Functions"*, and 
+3. [`vctrs`](https://vctrs.r-lib.org/): *"Vector Helpers"*
+
+Let's start with the [`rlang` package](https://rlang.r-lib.org/): 
+
+```{r}
+#| code-fold: false 
+#| eval: false
+#| echo: true 
+#| collapse: true
+#| comment: ""
+pak::pkg_deps_tree("rlang")
+```
+
+```{verbatim}
+#| code-fold: false 
+#| eval: false
+rlang 1.1.1 ✨
+
+Key:  ✨ new
+```
+
+`rlang` is *"a collection of frameworks and APIs for programming with R"* and it's built with only base R packages (that's why it's `DESCRIPTION` file only `Imports` the `utils` package): 
+
+```{verbatim}
+#| code-fold: false 
+#| eval: false
+Imports:
+    utils
+```
+
+Now lets look at [`lifecycle`](https://lifecycle.r-lib.org/): 
+
+```{r}
+#| code-fold: false 
+#| eval: false
+#| echo: true 
+#| collapse: true
+#| comment: ""
+pak::pkg_deps_tree(pkg = "lifecycle")
+```
+
+```{verbatim}
+lifecycle 1.0.3 ✨ ⬇ (123.60 kB)               
+├─cli 3.6.1 ✨
+├─glue 1.6.2 ✨
+└─rlang 1.1.1 ✨
+```
+
+`lifecycle` depends on [`cli`](https://cli.r-lib.org/), [`glue`](https://glue.tidyverse.org/), and [`rlang`](https://rlang.r-lib.org/).
+
+- [`cli`](https://cli.r-lib.org/): *"Helpers for Developing Command Line Interfaces"*
+
+- [`glue`](https://glue.tidyverse.org/): "*Interpreted String Literals*"
+
+
+If we look at the `DESCRIPTION` file for `lifecycle`, it also imports `cli`, `glue`, and `rlang` (and specifies versions for `cli` and `rlang`)
+
+```{verbatim}
+#| code-fold: false 
+#| eval: false
+Imports:
+    cli (>= 3.4.0),
+    glue,
+    rlang (>= 1.1.0)
+```
+
+Finally, lets look at the dependencies in the [`vctrs`](https://vctrs.r-lib.org/) package. The `DESCRIPTION` file for `vctrs` imports `cli`, `glue`, `lifecycle`, and `rlang`
+
+```{verbatim}
+#| code-fold: false 
+#| eval: false
+Imports:
+    cli (>= 3.4.0),
+    glue,
+    lifecycle (>= 1.0.3),
+    rlang (>= 1.1.0)
+```
+
+If we check the dependency tree, we see the `cli`, `glue`, and `rlang` are listed twice (once for `vctrs`, and again for `lifecycle`):
+
+```{r}
+#| code-fold: false 
+#| eval: false
+#| echo: true 
+#| collapse: true
+#| comment: ""
+pak::pkg_deps_tree(pkg = "vctrs")
+```
+
+```{verbatim}
+#| code-fold: false 
+#| eval: false
+vctrs 0.6.4 ✨                               
+├─cli 3.6.1 ✨
+├─glue 1.6.2 ✨
+├─lifecycle 1.0.3 ✨ ⬇ (123.60 kB)
+│ ├─cli
+│ ├─glue
+│ └─rlang 1.1.1 ✨
+└─rlang
+
+Key:  ✨ new |  ⬇ download
+```
+
+`vctrs` depends on `cli`, `glue`, `rlang`, and `lifecycle` (which also depends on `cli`, `glue`, and `rlang`)
+
+#### Explaining dependencies
+
+We can show dependency relationships with `pak::pkg_deps_explain()`:
+
+How does `lifecycle` depend on `rlang`?
+
+```{r}
+#| code-fold: false 
+#| eval: false
+#| echo: true 
+#| collapse: true
+#| comment: "\n"
+pak::pkg_deps_explain("lifecycle", "rlang")
+```
+
+```{verbatim}
+lifecycle -> rlang 
+```
+
+How does `vctrs` depend on `rlang`?
+
+```{r}
+#| code-fold: false 
+#| eval: false
+#| echo: true 
+#| collapse: true
+#| comment: "\n"
+pak::pkg_deps_explain("vctrs", "rlang")
+```
+
+```{verbatim}
+vctrs -> lifecycle -> rlang                                    
+vctrs -> rlang
+```
+
+`vctrs` directly depends on `rlang` and `lifecycle` (which also depends on `rlang`).
+
+### The conscious uncoupling of `devtools`
+
+The [conscious uncoupling](https://github.com/r-lib/devtools#conscious-uncoupling) of `devtools` split package development across multiple packages. Let's see how this works, starting with the commonly used `devtools` function `load_all()`
+
+#### `pkgload`
+
+`load_all()` is handled by the 
+[pkgload](https://pkgload.r-lib.org/) package, which "*Simulate[s] Package Installation and Attach*".
+
+How does `devtools` depend on `pkgload`?
+
+```{r}
+#| code-fold: false 
+#| eval: false
+#| echo: true 
+#| collapse: true
+#| comment: "\n"
+pak::pkg_deps_explain("devtools", "pkgload")
+```
+
+```{verbatim}
+devtools -> pkgload                                            
+devtools -> roxygen2 -> pkgload
+devtools -> testthat -> pkgload
+```
+
+This relationship shows the three actions that call `load_all()` during package development: 
+
+1. `devtools::load_all()` actually calls `pkgload::load_all()`
+
+2. `devtools::document()` and `devtools::test()` also call `pkgload::load_all()` 
+
+```{r}
+#| code-fold: false 
+#| eval: false
+#| echo: true 
+#| collapse: true
+#| comment: "\n"
+pak::pkg_deps_explain("devtools", "roxygen2")
+```
+
+```{verbatim}
+devtools -> roxygen2
+```
+
+```{r}
+#| code-fold: false 
+#| eval: false
+#| echo: true 
+#| collapse: true
+#| comment: "\n"
+pak::pkg_deps_explain("devtools", "testthat")
+```
+
+```{verbatim}
+devtools -> testthat 
+```
+
+#### `Depends`
+
+How does `devtools` depend on `usethis`?
+
+```{r}
+#| code-fold: false 
+#| eval: false
+#| echo: true 
+#| collapse: true
+#| comment: "\n"
+pak::pkg_deps_explain("devtools", "usethis")
+```
+
+```{verbatim}
+devtools -> usethis
+```
+
+In the `DECRIPTION` file for `devtools`, `usethis` is listed under `Depends`:
+
+```{verbatim}
+Depends: 
+    R (>= 3.0.2),
+    usethis (>= 2.1.6)
+```
+
+## Shiny app-packages
+
+All Shiny app-packages will inherently depend on `shiny`, so including more dependencies can make developers justifiably uneasy.
