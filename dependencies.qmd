@@ -792,8 +792,7 @@ We have some special considerations for the imports in `moviesApp`:
   
 ```{r}
 #| eval: false 
-#| code-fold: true 
-#| code-summary: 'show/hide @import in movies_app()'
+#| code-fold: false 
 #' Movies app standalone function
 #'
 #' Wrapper function for `shinyApp()`
@@ -814,8 +813,7 @@ We have some special considerations for the imports in `moviesApp`:
 
 ```{r}
 #| eval: false 
-#| code-fold: true 
-#| code-summary: 'show/hide @importFrom in scatter_plot()'
+#| code-fold: false 
 #' Create scatter plot 
 #'
 #' Custom [`ggplot2`](https://ggplot2.tidyverse.org/) function for building scatter plots in `moviesApp()`.
@@ -981,31 +979,45 @@ ggplot2::ggplot(data = mtcars,
 
 ## More info on imports 
 
+I've provided a handful of useful tips on package imports below: 
+
+***How can I include an add-on package to my `DESCRIPTION` file?***
+
 -   `usethis::use_package()` automatically adds a package in the `Imports` section, and has options for specifying the minimum version
+
+***Will users of my app-package have access to the packages listed in the `Imports` field of my `DESCRIPTION` file?***
 
 -   `library(moviesApp)` loads the namespace of imported packages, but they are not attached to the `search()` path[^desc-add-on-access] 
 
 [^desc-add-on-access]: Users can access functions from add-on packages with the `pkg::fun` syntax
 
+***How can I tell the difference between functions written by a package author and imported functions in the code below `R/`?***
+
 -   Using `pkg::fun()` makes calls to add-on packages explicit and easy to differentiate from the native functions developed in `moviesApp`[^rpks-pkg-fun-syntax]
 
 [^rpks-pkg-fun-syntax]: "*Our recommended default is to call external functions using the `package::function()` syntax*" - [R Packages, 2ed](https://r-pkgs.org/dependencies-in-practice.html#sec-dependencies-in-imports)
 
--   Managing the `NAMESPACE` ensures your app-package works when it's installed and loaded on another machine   
-<br>
-    -   R reads the package namespace to find the functions and objects it uses[^ns-lookup]
+***What does the `NAMESPACE` do when my package is installed by a user?***
+
+-   Managing the `NAMESPACE` ensures your app-package works when it's installed and loaded on another machine, because R will read your package namespace to find what it imports and exports[^ns-lookup]
 
 [^ns-lookup]: *The namespace controls the search strategy for variables used by functions in the package. If not found locally, R searches the package namespace first, then the imports, then the base namespace and then the normal search path (so the base namespace precedes the normal search rather than being at the end of it).* - [Writing R Extensions](https://cran.r-project.org/doc/manuals/R-exts.html#Package-namespaces)
 
-- Place the `@importFrom pkg fun` tag directly above the code using the add-on function (or call `usethis::use_import_from()`).[^use-import-from]
+***Where should I place the `@importFrom` tag in the code below R/?***
 
-- Prefer `@importFrom` over `@import`[^r-ext-imports] [^r-pkgs-imports]
+- Place the `@importFrom pkg fun` tag directly above the code using the add-on function.[^use-import-from]
+
+***Should I be using `@importFrom` or `@import` from?***
+
+- Prefer using `@importFrom` over `@import`[^r-ext-imports] [^r-pkgs-imports]
 
 [^r-ext-imports]: "*Using `importFrom` selectively rather than `Imports` is good practice and recommended notably [when importing from packages with more than a dozen exports and especially from those written by others (so what they export can change in future)]{style="font-weight: bold; color: #043b67;"}.*" - [Specifying imports and exports](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Specifying-imports-and-exports). 
 
 [^r-pkgs-imports]: "*Specifically, we recommend that you [default to not importing anything from [add-on packages] into your namespace]{style="font-weight: bold; color: #043b67;"}. This makes it very easy to identify which functions live outside of your package, which is especially useful when you read your code in the future. This also eliminates any concerns about name conflicts between [add-on packages] and your package.*" - [R Packages, 2ed](https://r-pkgs.org/dependencies-in-practice.html#sec-dependencies-in-imports)
 
 [^use-import-from]: You can also consolidate all `@import` and `@importFrom` tags into a single package doc file (i.e., `R/[moviesApp]-package.R`) by calling `usethis::use_package_doc()`.
+
+***Where can I find more information about package namespaces and imports?***
 
 -   Imports are described briefly in R Packages, 2ed[^r-pkgs-fun-lookup] and covered in-depth in Advanced R, 2ed[^advr-imports] 
 <br><br>
@@ -1017,7 +1029,7 @@ ggplot2::ggplot(data = mtcars,
 
 [^r-pkgs-fun-lookup]: See the [Function lookup inside a package](https://r-pkgs.org/dependencies-mindset-background.html#function-lookup-inside-a-package) Section of [R Packages, 2ed](https://r-pkgs.org/)
 
-In order for app-package to work, users needs to have access to any of the add-on packages that are called in the code below `R/`. Knowing [when, why, how and what happens]{style="font-weight: bold;"} to imports is important because it helps you decide how to fit these habits into your package development workflow. 
+In order for app-package to work, users needs to have access to any add-on packages that are called in the code below `R/`. Knowing when, why, how and what happens to imports helps you decide how to fit these habits into your package development workflow. 
 
 ## Checking dependencies 
 
