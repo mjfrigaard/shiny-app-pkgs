@@ -20,12 +20,326 @@ co_box(
 )
 ```
 
-`rhino` stuff
-
 ```{r}
-#| eval: false
-install.packages("rhino")
-library(rhino)
+#| label: co_box_tldr
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "r", look = "minimal", size = '1.10', hsize = '1.30',
+  header = "![](images/rhino.png){width='10%'} &emsp; The `rhino` framework", 
+  fold = FALSE,
+  contents = "
+<br>
+**WARNING**: `rhino` isn't like the previous two frameworks we've covered in this section, because `rhino` doesn't create an app-package.
+<br>
+
+- `rhino` apps rely on [`renv`](https://rstudio.github.io/renv/articles/renv.html) and [`box`](https://klmr.me/box/) for managing imported dependencies (instead of the `DESCRIPTION` and `NAMESPACE` files in an R package).
+  
+- `rhino` requires [node.js](https://www.wikiwand.com/en/Node.js), open-source JavaScript runtime environment.
+  
+"
+)
 ```
 
-end `rhino.qmd`
+This chapter briefly describes a version of `moviesApp` built using [`rhino`](https://appsilon.github.io/rhino/). The resulting app (`rap`) is in the [`fw_rap` branch](https://github.com/mjfrigaard/moviesApp/tree/fw_rap). 
+
+```{r}
+#| label: git_box_rap
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "standard",
+  fig_pw = '75%', 
+  branch = "fw_rap", 
+  repo = 'moviesApp')
+```
+
+The branch in this chapter is slightly different than the previous `golem` and `leprechaun` branches, because instead of loading, documenting, and installing `rap`, we're going to re-initialize the IDE by selecting **Session** > **Terminate R...**
+
+::: {#fig-rhino_session_terminate}
+
+![Re-initialize the IDE](images/rhino_session_terminate.png){#fig-rhino_session_terminate width='30%' fig-align='center'}
+
+On the `fw_rap` branch, re-initialize the IDE (instead of loading, documenting, and installing)
+:::
+
+When the IDE re-opens, we see the `rap` files and notice the **Build** pane has been removed: 
+
+::: {#fig-rhino_app_ide}
+
+![`rhino` app IDE](images/rhino_app_ide.png){#fig-rhino_session_terminate width='100%' fig-align='center'}
+
+Notice the **Build** pane has been removed from the `fw_rap` branch
+:::
+
+The **Build** pane is deactivated because **`rhino` applications aren't R packages**.[^rhino-terminate] 
+
+Launch the application in `rap` by opening the `app.R` file and clicking **Run App** (or by passing `rhino::app()` into the **Console**).
+
+::: {#fig-rhino_run_app}
+
+![Calling `rhino::app()`](images/rhino_run_app.png){#fig-rhino_run_app width='100%' fig-align='center'}
+
+Running the application in `rap`
+:::
+
+
+
+[^rhino-terminate]: I re-initialize the session on the `fw_rap` branch so I'm not tempted to load, document, install, or test the code using the IDE.
+
+## `rap` (a `rhino` app)
+
+The files in `rap` are below: 
+
+```{bash}
+#| eval: false 
+#| code-fold: false 
+├── .Rprofile         # <1> 
+├── .github/          # <2> 
+│   └── workflows     # <2> 
+├── .gitignore
+├── .lintr            # <3> 
+├── .renvignore       # <4> 
+├── .rscignore        
+├── README.md
+├── app
+│   ├── js
+│   ├── logic
+│   ├── main.R
+│   ├── static
+│   ├── styles
+│   └── view
+├── app.R
+├── config.yml
+├── dependencies.R.  # <5> 
+├── moviesApp.Rproj
+├── renv             # <6> 
+│   ├── .gitignore.   
+│   ├── activate.R
+│   ├── library
+│   ├── settings.json
+│   └── staging
+├── renv.lock       # <6> 
+├── rhino.yml
+└── tests
+    ├── cypress
+    ├── cypress.json
+    └── testthat
+
+24 directories, 31 files
+```
+1. Activates the [`renv` package](https://rstudio.github.io/renv/articles/renv.html)
+2. CI/CD via [GitHub actions](https://github.com/r-lib/actions)  
+3. Lintr (from [`lintr`](https://lintr.r-lib.org/) package)  
+4. `renv` ignore (works like `.gitignore`)   
+5. `rhino` app dependencies 
+6. `renv` library of packages in app project   
+
+As we can see, most of the standard R package folders and files are missing from `rap`, because `rhino` applications use the [`box` package](https://klmr.me/box/) for importing dependencies and organizing code.[^rhino-box-depends] 
+
+## `rhino` features
+
+The [`rhino` website](https://appsilon.github.io/rhino/articles/explanation/application-structure.html) explains the philosophy behind the application structure above, so I won't repeat that information here. However, I highly recommend reading the available documentation on [`rhino`](https://appsilon.github.io/rhino/articles/tutorial/create-your-first-rhino-app.html) and [`box`](https://klmr.me/box/articles/box.html) before deciding to adopt this framework.[^rhino-recommended-documentation] 
+
+
+[^rhino-box-depends]: Imported dependencies in `rhino` apps use [`box` modules](https://klmr.me/box/articles/box.html) instead of the `DESCRIPTION` and `NAMESPACE`.
+
+[^rhino-recommended-documentation]: I highly recommend reading about [testing box modules](https://klmr.me/box/articles/testing.html) and `rhino` applications [with cypress](https://appsilon.github.io/rhino/articles/tutorial/write-end-to-end-tests-with-cypress.html) and [`shinytest2`](https://appsilon.github.io/rhino/articles/how-to/use-shinytest2.html). 
+
+## `box` modules
+
+A `box` module (not to be confused with a Shiny module) is a collection of `.R` scripts in a folder. The modules in a new `rhino` app are stored in the `app/logic/` and `app/view/` folders: 
+
+```{bash}
+#| eval: false 
+#| code-fold: false 
+app/
+  ├── logic/ # <1> 
+  │   ├── __init__.R
+  │   ├── check-point_plot.R
+  │   ├── data.R
+  │   └── plot.R
+  ├── main.R
+  └── view/ # <2> 
+      ├── __init__.R
+      ├── display.R
+      └── inputs.R
+
+3 directories, 8 files
+```
+1. Non-shiny code  
+2. Shiny modules and app code
+
+### Example `tidy/logo` module
+
+Here is a quick example of how `box` modules work:[^rhino-box-blog-post]
+
+-   Below I'll attempt to use the `tidyverse_logo()` function from the `tidyverse` package:
+
+    ```{r}
+    #| label: tidyverse_logo_test
+    #| echo: true
+    #| eval: false
+    #| error: true
+    #| code-fold: false
+    tidyverse_logo()
+    ```
+    
+    ```
+    Error in tidyverse_logo(): could not find function "tidyverse_logo"
+    ```
+    
+    -   The error is expected, because `tidyverse` has been installed, but hasn't been loaded with `libaray(tidyverse)`.
+
+-   In a `tidy` module, I'll import the `tidyverse_logo()` from `tidyverse` by creating a `logo.R` file and include the following code:
+    
+    - The code must include `#' @export` on the preceding line:
+
+    ```{r}
+    #| label: box_tidy
+    #| eval: false
+    #| code-fold: false
+    # contents of tidy/logo.R
+    #' @export
+    box::use(
+      tidyverse[tidyverse_logo] 
+    )
+    ```
+    
+    -   Note I did not have to use `tidyverse::tidyverse_logo()`
+
+-   To use the `tidy` module, I'll call `box::use(tidy/logo)`, which loads `logo` into the environment. 
+
+    ```{r}
+    #| label: box_use_tidy_logo
+    #| eval: false
+    #| code-fold: false
+    box::use(tidy/logo)
+    ls(logo)
+    ```
+    
+    ```bash
+     <module: tidy/logo>
+    ```
+    
+    -   I can use `ls()` on `logo` to return the object(s) it imports:  
+    
+    ```{r}
+    #| label: ls_logo
+    #| eval: false
+    #| code-fold: false
+    ls(logo)
+    ```
+    
+    ```bash
+    [1] "tidyverse_logo"
+    ```
+    
+-   To access the `tidyverse_logo()` function, I can use `logo$tidyverse_logo()`:
+
+    ```{r}
+    #| label: logo_tidyverse_logo
+    #| eval: false
+    #| code-fold: false
+    logo$tidyverse_logo()
+    ```
+    
+    ```bash
+    ⬢ __  _    __   .    ⬡           ⬢  . 
+     / /_(_)__/ /_ ___  _____ _______ ___ 
+    / __/ / _  / // / |/ / -_) __(_-</ -_)
+    \__/_/\_,_/\_, /|___/\__/_/ /___/\__/ 
+         ⬢  . /___/      ⬡      .       ⬢ 
+    ```
+
+-   Note that the `tidyverse_logo()` function is still not loaded *outside* the `logo` module
+
+    ```{r}
+    #| label: tidyverse_logo_retest
+    #| eval: false
+    #| error: true
+    #| code-fold: false
+    tidyverse_logo()
+    ```
+    
+    ```
+    Error in tidyverse_logo(): could not find function "tidyverse_logo"
+    ```
+
+By explicitly naming the functions you intend to use with `box::use(package[function])`, `box` modules remove the need install and load packages with `install.packages()` and `library()`.[^rhino-explicit-namespaces]
+
+## Tests
+
+`rhino` apps have support for testing with `testthat`, `shiny::testServer()`, `shinytest2`, and [Cypress](https://appsilon.github.io/rhino/articles/tutorial/write-end-to-end-tests-with-cypress.html). 
+
+```{bash}
+#| eval: false 
+#| code-fold: false 
+tests/
+├── cypress                 # <1>
+│   └── integration
+│       └── app.spec.js
+├── cypress.json            # <1>
+└── testthat                # <2>
+    └── test-main.R         # <2>
+
+4 directories, 3 files
+```
+1. Cypress test infrastructure  
+1. `testthat` test infrastructure  
+
+Below is the boilerplate test code in the `tests/testthat/test-main.R` file:
+
+```{r}
+#| eval: false 
+#| code-fold: false 
+box::use(                # <1>
+  shiny[testServer], 
+  testthat[...],
+)
+
+box::use(
+  app/main[...],
+)                       # <1>
+
+test_that("main server works", {     # <2>
+  testServer(server, {
+    expect_equal(output$message, "Hello!")
+  })
+}) # <2>
+```
+1. `box` module importing test package functions
+2. Using `shiny::testServer()` and `testthat::test_that()` functions in test. 
+
+## `rhino` dependencies 
+
+In `rhino` apps, dependencies are managed by [`renv`](https://rstudio.github.io/renv/articles/renv.html) and the `dependencies.R` file. The `renv` package is designed to, 
+
+> *"create[s] and manage[s] project-local R libraries, save[s] the state of these libraries to a 'lockfile', and later restore[s] the library as required."* [^rhino-renv-description] 
+
+The `rhino::pkg_install()` helper function updates *both* the `dependencies.R` file and `renv` library. Using `dependencies.R`, `renv`, and `box` modules removes the need to manage dependencies in a `DESCRIPTION` or `NAMESPACE` file.[^rhino-renv-config]
+
+[^rhino-box-blog-post]: I've written a [blog post](https://mjfrigaard.github.io/posts/box/) on using box modules (outside of a Shiny application).
+
+[^rhino-explicit-namespaces]: "*In fact, `box` completely replaces the base R `library` and `require` functions*" - [`box` documentation](https://klmr.me/box/index.html).
+
+[^rhino-renv-description]: As described in `renv`'s [DESCRIPTION file](https://github.com/rstudio/renv/blob/main/DESCRIPTION)
+
+[^rhino-renv-config]: Be sure to read the [`renv` configuration article](https://appsilon.github.io/rhino/articles/explanation/renv-configuration.html) for a better understanding on how it works with rhino apps.
+
+## Recap 
+
+`rhino` takes a novel and innovative approach to developing Shiny applications (and covering all the ways they differ from app-packages is beyond the scope of this book). Feel free to review the code in the [`fw_rap` branch](https://github.com/mjfrigaard/moviesApp/tree/fw_rap) for a better understanding of how the `box` modules are structured and used within the `ui` and `server`. 
+
+The `rhino` framework isn't used as widey `golem`,[^rhino-cran-downloads] but it's been gaining popularity (and has been used in a recent [pilot FDA submission](https://github.com/appsilon/rhino-fda-pilot)). 
+
+::: {#fig-rhino_cran_downloads}
+
+![`rhino` CRAN downloads](images/rhino_cran_downloads.png){#fig-rhino_cran_downloads width='100%' fig-align='center'}
+
+CRAN downloads for `rhino`, `leprechaun`, and `goelm` between 2020-10-31 and 2023-10-31.
+:::
+
+[^rhino-cran-downloads]: Check for yourself on  [cran-downloads](https://hadley.shinyapps.io/cran-downloads/)
