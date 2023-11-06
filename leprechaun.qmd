@@ -208,27 +208,32 @@ inst/
 
 ## Development 
 
-- [x] **Code files**: new code files in `leprechaun` apps can be created with `usethis::use_r()` or with `leprechaun`'s helper functions.
+- [x] **Code files**: new code files in `leprechaun` apps can be created with `usethis::use_r()` or with a helper function:
 <br><br>
-  - [x] **Modules**: Add modules with `leprechaun::add_module("name")` [^leprechaun-add-module]
+  - [x] Create modules with `add_module()`. Modules created with `add_module("name")` will have:[^leprechaun-add-module]
+<br>
+    -   A module file with a `module_name` prefix (`R/module_name.R`)
+    -   A module UI function: `nameUI()` 
+    -   A module server function: `name_server()`  
+<br>
+  - [x] Create an `app.R` file with `add_app_file()`. This includes a call to `pkgload::load_all()` and `run()`.[^leprechaun-add-app-file]
+<br><br> 
+- [x] **App files**: `R/run.R` contains functions for running the app.[^leprechaun-add-run]
 <br><br>
-    -   Module files created with `add_module()` have a `module_` prefix.
+  - [x] Add the modules to `R/ui.R` and `R/server.R`.
 <br><br>
-  - [x] **Run**: `R/run.R` contains functions for running the app.[^leprechaun-add-run]
-<br><br>
-  - [x] **UI and server**: Add the modules to `R/ui.R` and `R/server.R`.
-<br><br>
-    -   `R/server.R` includes the `send_message` and `make_send_message(session)` functions by default.[^leprechaun-server-fun]
+    -   `R/server.R` includes a call to `send_message` by default.[^leprechaun-server-fun]
 <br><br>
     -   `R/ui.R` holds the `ui()` and `assets()` functions.[^leprechaun-assets-fun]
 <br><br>
   - [x] **Utility function**: `R/utils_scatter_plot.R` holds the `scatter_plot()` utility function.[^leprechaun-add-util-fun]
 <br><br>
-  - [x] **Adding external files**: The `R/zzz.R` file contains the `.onLoad()` function [^leprechaun-onLoad]
+  - [x] **Adding files**: The `R/zzz.R` file contains the `.onLoad()` function, which wraps `system.file('img', package = 'lap')` and `addResourcePath()` for including external resources.
 <br><br>
-  - [x] **`app.R` file**: include an `app.R` in the root directory using  `add_app_file()` [^leprechaun-add-app-file]
 
-[^leprechaun-add-module]: `leprechaun` modules created with `add_module()` have the following naming convention: `leprechaun::add_module("name")` creates `var_inputUI()` and `var_input_server()`.
+[^leprechaun-add-module]: `leprechaun` modules do not have the same naming conventions as `golem` (or that I've recommended throughout this book).
+
+[^leprechaun-add-app-file]: `pkgload::load_all()` has `reset` set to `TRUE` and `helpers` set to `FALSE`.
 
 [^leprechaun-assets-fun]: `assets()` loads the resources called in the `R/assets.R` file with the `serveAssets()` function.
 
@@ -237,10 +242,6 @@ inst/
 [^leprechaun-add-util-fun]: The same `scatter_plot()` function from `moviesApp` (i.e, imports `.data` from `rlang`)
 
 [^leprechaun-add-run]: `R/run.R` includes functions for running the production (`run()`) and development (`run_dev()`) version of the application. 
-
-[^leprechaun-onLoad]: `.onLoad()` is a wrapper for `shiny::addResourcePath('img', system.file('img', package = 'lap'))`
-
-[^leprechaun-add-app-file]: the `app.R` file includes a call to `pkgload::load_all()`.
 
 ```{bash}
 #| eval: false
@@ -370,7 +371,7 @@ Adding the `make_send_message()` functionality to `R/server.R`
 
 #### Add images
 
-I'll demonstrate adding an image file (`leprechaun.jpg`) to the UI function.
+Adding images is simplified with the `.onLoad()` function, which I'll demonstrate by adding the `leprechaun.jpg` image file to the UI function.
 
 - [x] Place the `leprechaun.jpg` file in `inst/img/`
 <br><br>
@@ -514,13 +515,7 @@ x leprechaun
 
 > *"it generates code and does not make itself a dependency of the application you build; this means applications are leaner, and smaller"*
 
-`leprechaun` is similar to `golem` in that it 'bundles' various app-package development functions into helper/utility functions. For example, the `.onLoad()` function is a wrapper for:
-
-```r
-shiny::addResourcePath("img", system.file("img", package = "lap"))
-```
-
-`.onLoad()` saves some time because you won't have to add the code above to the UI (at the cost of making your app code less clear and explicit). 
+`leprechaun` is similar to `golem` in that it 'bundles' various app-package development functions into helper/utility functions. For example, the `.onLoad()` function saves some time (at the cost of making your app code less clear and explicit). 
 
 `leprechaun` also relies on external packages like [`packer`](https://packer.john-coene.com/#/) to integrate and bundle external code files, so becoming more familiar with these packages will extend what you can build with `leprechaun`.
 
