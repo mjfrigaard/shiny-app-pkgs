@@ -40,6 +40,7 @@ One of the recent updates to the `testthat` package (version 3.2.0) emphasizes l
 
 Code outside of `test_that()` usually serves a specific purpose (load or manipulate data, set options, create folders or files, etc). The topics in this chapter will demonstrate how to include these behaviors in our tests without placing code outside of the test scope.
 
+
 ```{r}
 #| label: co_box_Mocking
 #| echo: false
@@ -54,6 +55,115 @@ Test mocks are covered in [Special Topics](test_mocks.qmd), because the example 
 "
 )
 ```
+
+### BDD code snippets
+
+If you decide to adopt the BDD functions in your test suite, I highly recommend creating code snippets to reduce the typing/copying and pasting.[^tests-tools-snippets] 
+
+[^tests-tools-snippets]: Read more about creating code snippets on the [Posit website.](https://docs.posit.co/ide/user/ide/guide/productivity/snippets.html)
+
+You can edit keyboard shortcuts by selecting **Tools** > **Edit Code Snippets...**
+
+::: {layout="[49, -2, 49]"}
+
+#### Snippets
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+snippet bddback
+	describe(
+	"Background: ${1:background}
+	    Given ...
+	    And ...", code {
+	})
+	
+snippet bddfeat
+	describe(
+	 "Feature: ${1:feature}
+	    As a ...
+	    I want ...
+	    So that ...", code {
+		expect_equal(TRUE, TRUE)
+	})
+	
+snippet bddscene
+	it(
+	 "Scenario: ${1:scenario}
+	   Given ...
+	   When ...
+	   Then ...", code = {
+		expect_equal(TRUE, TRUE)
+	})
+	
+snippet bddtemp
+	describe(
+	"Feature: ${1:feature}
+	    As a ...
+	    I want ...
+	    So that ...", code {
+		it(
+		 "Scenario: ${2:scenario}
+		   Given ...
+		   When ...
+		   Then ...", code = {
+			expect_equal(TRUE, TRUE)
+		})
+	})
+```
+
+#### Templates
+
+```{r}
+#| eval: false 
+#| code-fold: false
+# bddback ----
+describe(
+"Background: background
+    Given ...
+    And ...", code {
+})
+
+# bddfeat ----
+describe(
+ "Feature: feature
+    As a ...
+    I want ...
+    So that ...", code {
+  expect_equal(TRUE, TRUE)
+})
+
+# bddscene ----
+it(
+ "Scenario: scenario
+   Given ...
+   When ...
+   Then ...", code = {
+  expect_equal(TRUE, TRUE)
+})
+
+# bddtemp ----
+describe(
+"Feature: feature
+    As a ...
+    I want ...
+    So that ...", code {
+  it(
+   "Scenario: scenario
+     Given ...
+     When ...
+     Then ...", code = {
+    expect_equal(TRUE, TRUE)
+  })
+})
+```
+
+:::
+
+Snippets also work well with tab completion in the Posit Workbench IDE: 
+
+![BDD Code Snippets](images/tests_spec_bdd_snippets.png){width='80%' fig-align='center'}
+
 
 ## Fixtures
 
@@ -87,8 +197,6 @@ tests/
 └── testthat.R
 ```
 
-
-
 ### Test data
 
 Large static data files are an example of a test fixture.[^test_tools-6] Any code used to create test data should be stored with the output file (using a clear naming convention).
@@ -117,40 +225,6 @@ tests
 Data files stored in `tests/testthat/fixtures/` can be accessed with `testthat::test_path()` inside each test.
 
 ### Example: test fixture
-
-::: {.callout-note collapse="true" appearance="minimal"}
-
-### BDD refresher: features & scenarios
-
-In BDD, requirements are written plain language 'feature files' using a series of keywords:   
-
-```{bash}
-#| eval: false 
-#| code-fold: false 
-Feature: # <1>
-  # <1>
-  Background: # <2>
-    Given # <3> 
-    
-  Scenario: # <4>
-    When # <5>
-    And # <6> 
-    Then # <7>
-    # <4>
-```
-1. **High-level description** (title and description)  
-2. Steps or conditions that exist **before each scenario**   
-3. Used to **describe the initial context** or **preconditions for the scenario**      
-4. A series of steps outlining a **concrete examples that illustrates a feature**   
-5. Used to **describe an event, or an action**  
-6. Use to combine **`Given`**, **`When`**, or **`Then`**     
-7. Use to **verify expected outcomes that are observable by a user**  
-
-`Feature`, `Background`, and `Scenario` information can be included in nested `testthat::describe()` blocks, but every `Then` keyword should have a corresponding `testthat::it()` call.  
-
-Read more about Gherkin on the [Cucumber website.](https://cucumber.io/docs/gherkin/reference/).
-
-:::
 
 Below is a test that answers the question, '*does the plot generate without producing an error?*' when using the `tidy_ggp2_movies.rds` test fixture with the `scatter_plot()` utility function. This type of test appropriate because we want to confirm the data source (`tidy_ggp2_movies`) will generate a plot object when passed to the `scatter_plot()` utility function, not necessarily the specific contents of the graph.[^test_tools-is.ggplot]
 
@@ -204,7 +278,6 @@ testthat::describe( # <1>
 
 }) # <1>
 ```
-
 1.  Feature   
 2.  Scenario   
 3.  Test inputs   
