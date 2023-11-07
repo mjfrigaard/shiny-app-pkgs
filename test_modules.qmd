@@ -32,16 +32,61 @@ We can combine the BDD functions with `testServer()` to test *reactive interacti
 1. Values passed to the UI are returned from `mod_var_input_server()`  
 2. The reactive values returned from `mod_var_input_server()` are passed into `mod_scatter_display_server()` and available as the reactive object `inputs()`
 
-Example scenarios for these changes are provided below: 
+::: {.callout-note collapse="true" appearance="minimal"}
 
-```{verbatim}
+### [BDD refresher: features & scenarios]{style="font-size: 1.10em;"}
+
+::: {style="font-size: 1.10em;"}
+
+In BDD, requirements are written plain language 'feature files' using a series of keywords:   
+
+```{bash}
+#| eval: false 
+#| code-fold: false 
+Feature: # <1>
+  As a # <1>
+  I want # <1>
+  So that # <1>
+  
+  Background: # <2>
+    Given # <3> 
+    
+  Scenario: # <4>
+    When # <5>
+    And # <6> 
+    Then # <7>
+    # <4>
+```
+1. **High-level description** (title and description)  
+2. Steps or conditions that exist **before each scenario**   
+3. Used to **describe the initial context** or **preconditions for the scenario**      
+4. A series of steps outlining a **concrete examples that illustrates a feature**   
+5. Used to **describe an event, or an action**  
+6. Use to combine **`Given`**, **`When`**, or **`Then`**     
+7. Use to **verify expected outcomes that are observable by a user**  
+
+`Feature` and `Background` information can be included in nested `describe()` blocks, but every `Scenario` (i.e., `Then`) keyword should have a corresponding `it()` or `test_that()` call.  
+
+Read more about Gherkin on the [Cucumber website.](https://cucumber.io/docs/gherkin/reference/).
+
+:::
+:::
+
+The feature and scenario for these changes are provided below: 
+
+```{r}
+#| eval: false 
+#| include: true
 #| code-fold: false
-Feature: Scatter Plot Configuration in Movie Review Application
+testthat::describe(
+  "Feature: Scatter Plot Configuration in Movie Review Application
       As a user 
       I want the initial graph pre-configured with variables and aesthetics,
-      So that I can immediately see a meaningful visualization.
-
-Scenario: Scatter plot initial x, y, color values 
+      So that I can immediately see a meaningful visualization.", 
+  code = {
+  
+  testthat::it(
+    "Scenario: Scatter plot initial x, y, color values 
          Given the movie review application is loaded
          When I view the initial scatter plot
          Then the scatter plot should show 'IMDB Rating' on the x-axis
@@ -49,10 +94,15 @@ Scenario: Scatter plot initial x, y, color values
          And the points on the scatter plot should be colored by 'MPAA Rating'
          And the opacity of the points should be set to '0.5'
          And the size of the points should be set to '2'
-         And the plot title should be 'Enter plot title'
+         And the plot title should be 'Enter plot title'", code = {
+           
+           shiny::testServer(app = mod_var_input_server, expr = {
+              # test code
+           })
+           
+         })
+  })
 ```
-
-
 
 ### [`session$returned()`]{style="font-size: 0.95em;"}
 
@@ -123,10 +173,7 @@ movies_server <- function(input, output, session) {
 ```
 1. Calls `return(reactive(list(...)))`  
 
-
-When we pause execution with Posit Workbench's debugger we can see the difference between calling `selected_vars` and `selected_vars()`:[^tests-13]
-
-[^tests-13]: We'll cover using `browser()` and the IDE's debugger in a [future chapter](@special_topics.qmd).
+When we pause execution with Posit Workbench's debugger we can see the difference between calling `selected_vars` and `selected_vars()`:
 
 ::: {layout="[49, -2, 49]"}
 
@@ -171,7 +218,37 @@ $plot_title
 
 :::
 
-If we're testing a module function that collects the reactive values, we need to wrap those values in `reactive()` in the `args()` argument:
+*We'll cover using `browser()` and the IDE's debugger in the [debugging chapter](debugging.qmd).*
+
+The feature and scenario for the functionality above is captured in `testthat`'s BDD functions below: 
+
+```{r}
+#| eval: false 
+#| include: true
+#| code-fold: false
+describe(
+  "Feature: Scatter Plot Configuration in Movie Review Application
+      As a user 
+      I want the initial graph pre-configured with variables and aesthetics,
+      So that I can immediately see a meaningful visualization.",
+  code = {
+    it(
+      "Scenario: Scatter plot initial x, y, color values 
+         Given the movie review application is loaded
+         When I view the initial scatter plot
+         Then the scatter plot should show 'IMDB Rating' on the x-axis
+         And the scatter plot should show 'Audience Score' on the y-axis
+         And the points on the scatter plot should be colored by 'MPAA Rating'
+         And the size of the points should be set to '2'
+         And the opacity of the points should be set to '0.5'
+         And the plot title should be 'Enter plot title'",
+      code = {
+        
+      })
+  })
+```
+
+Inside `testServer()`, if we're testing a module function that collects the reactive values, we need to wrap those values in `reactive()` in the `args()` argument:
 
 ```{r}
 #| eval: false 
@@ -210,9 +287,7 @@ shiny::testServer(
 1. List of reactive variable inputs  
 2. Compare `inputs()` to initial values  
 
-
-
-I've included the example above because it's not included on the `testServer()` [documentation](https://shiny.posit.co/r/articles/improve/server-function-testing/), and I've found this method works well if you want to confirm two modules are communicating (i.e., returning and collecting outputs). System test with `shinytest2` are a better option if we're trying to capture a more comprehensive execution path (i.e., user story) in the application. 
+I've included the example above because it's not included on the `testServer()` [documentation](https://shiny.posit.co/r/articles/improve/server-function-testing/), and I've found this method works well if you want to confirm two modules are communicating (i.e., returning and collecting outputs). System test with `shinytest2` are a better option if we're trying to capture a more comprehensive execution path (i.e., user scenario) in the application. 
 
 ### Module test coverage 
 
