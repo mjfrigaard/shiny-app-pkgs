@@ -199,10 +199,11 @@ R
 ├── data.R # <4>
 ├── golem_utils_server.R # <5>
 ├── golem_utils_ui.R # <5>
-├── mod_plot.R # <6>
-├── mod_plot_utils_server.R # <6>
-├── mod_var.R # <7>
-└── run_app.R # <8>
+├── mod_scatter_display.R # <6>
+├── mod_var_input.R # <7>
+├── utils_mod_scatter_display.R # <8> 
+├── utils_tests.R # <9>
+└── run_app.R # <10>
 
 1 directory, 11 files
 ```
@@ -212,8 +213,10 @@ R
 4. Data documentation   
 5. `golem` utility functions   
 6. Scatter plot module  
-7. Variable input module   
-8. Standalone app function  
+7. Variable input module
+8. Scatter plot utility function (`scatter_plot()`)
+9. Test utility function (`test_logger()`)
+10. Standalone app function  
   
 - [x] **External files**: adding external files is handled with `golem_add_external_resources()`, which uses the same methods we covered in the [External files](external.qmd) chapter.[^golem-add-external-files]  
 <br>
@@ -221,7 +224,7 @@ R
 <br><br>
   - [x] `app/` contains the application files. [^golem-inst-app] 
 <br><br>
-  - [x] `extdata/` contains external data files. [^golem-inst-extdata] 
+  - [x] `extdata/` contains the external data files. [^golem-inst-extdata] 
 <br><br>
   - [x] `golem-config.yml` is used to set various configuration options. [^golem-inst-config] 
   
@@ -232,7 +235,7 @@ R
 
 [^golem-inst-app]: the `app/` folder is used to add external resources to the application (similar to the previous versions of `moviesApp`).
 
-[^golem-inst-extdata]: This contains the `RData` file for the original movies data.
+[^golem-inst-extdata]: This contains the `RData` file for the original movies data and the exported `tidy_movies.fst` file.
 
 [^golem-inst-config]: `golem` apps use a `golem-config.yml` file for setting various options. These are initially set with `set_golem_options()` (and based on the [`config` package](https://rstudio.github.io/config/))
   
@@ -247,17 +250,20 @@ inst
 │       ├── golem-hex.png
 │       └── shiny.png
 ├── extdata
-│   └── movies.RData
+│   ├── movies.RData
+│   └── tidy_movies.fst
 └── golem-config.yml
 
-4 directories, 6 files
+4 directories, 7 files
 ```
 
-- [x] **Data**: the data in `golem` app-packages function like the data folder and files in a standard R package we covereed in the [Data](data.qmd) chapter.
+- [x] **Data**: the data in `golem` app-packages function like the data folder and files in a standard R package we covered in the [Data](data.qmd) chapter.
 <br><br>
   - [x] `data/`: contains the `movies.rda` file used in the application 
 <br><br>
   - [x] `data-raw/`: `movies.R` reads in `data-raw/movies.RData` and creates `data/movies.rda`
+<br><br>
+    - [x] `tidy_movies.R` reads in the `ggplot2movies::movies` data and creates the `inst/extdata/tidy_movies.fst` data.
   
   
 ```{bash}
@@ -275,7 +281,8 @@ data
 #| code-fold: false
 data-raw
 ├── movies.R
-└── movies.RData
+├── movies.RData
+└── tidy_movies.R
 
 1 directory, 2 files
 ```
@@ -294,24 +301,27 @@ data-raw
 #| code-fold: false
 man
 ├── app_server.Rd # <1>
-├── app_sys.Rd # <1>
 ├── app_ui.Rd # <1>
-├── get_golem_config.Rd # <1>
-├── golem_add_external_resources.Rd # <1>
-├── mod_plot_server.Rd # <2>
-├── mod_plot_ui.Rd # <2>
-├── mod_var_server.Rd # <2>
-├── mod_var_ui.Rd # <2>
-├── movies.Rd # <3>
-├── point_plot.Rd # <2>
-└── run_app.Rd # <4>
+├── golem_add_external_resources.Rd # <2>
+├── mod_scatter_display_server.Rd # <3>
+├── mod_scatter_display_ui.Rd # <3>
+├── mod_plot_ui.Rd # <3>
+├── mod_var_input_server.Rd # <3>
+├── mod_var_input_ui.Rd # <3>
+├── movies.Rd # <4>
+├── run_app.Rd # <5>
+├── scatter_plot.Rd # <6>
+└── test_logger.Rd # <7>
 
 1 directory, 12 files
 ```
-1. These come 'pre-packaged' in `golem` apps 
-2. Module and utility functions  
-3. Data documentation 
-4. The 'pre-packaged' standalone app function is the only export from `golem` apps.
+1. Primary UI and server functions ('pre-packaged' in `golem` apps)
+2. External resources utility function ('pre-packaged' in `golem` apps)  
+3. Modules 
+4. Data documentation 
+5. The 'pre-packaged' standalone app function (only export from `golem` apps)   
+6. Plot utility function (exported from `gap`)   
+7. Test utility function   
 
 ```{bash}
 #| eval: false
@@ -321,6 +331,10 @@ vignettes/
 
 1 directory, 1 file
 ```
+
+### Tests 
+
+`golem` applications provide a lot of boilerplate tests.
 
 - [x] **Tests**: The testing framework for `golem` app-packages is set up with [`golem::use_recommended_tests()`](https://thinkr-open.github.io/golem/reference/use_recommended.html) in the `dev/01_start.R` script.[^golem-tests-recommended]
 <br><br>
@@ -344,26 +358,240 @@ vignettes/
 #| eval: false
 #| code-fold: false
 tests
-├── README.md
-├── spelling.R
+├── README.md # <1> 
+├── spelling.R # <2> 
 ├── testthat
 │   ├── _snaps
-│   ├── test-golem-recommended.R # <1> 
-│   ├── test-golem_utils_server.R # <2> 
-│   ├── test-golem_utils_ui.R # <3>
-│   ├── test-mod_plot.R # <4> 
-│   ├── test-mod_plot_utils_server.R # <4>
-│   └── test-mod_var_input.R # <5>
+│   ├── fixtures # <3> 
+│   │   ├── make-tidy_ggp2_movies.R
+│   │   └── tidy_ggp2_movies.rds # <3> 
+│   ├── helper.R # <4> 
+│   ├── setup-shinytest2.R # <5> 
+│   ├── test-app-feature-01.R # <6> 
+│   ├── test-golem-recommended.R # <7> 
+│   ├── test-golem_utils_server.R # <8> 
+│   ├── test-golem_utils_ui.R # <9>
+│   ├── test-mod_scatter_display.R # <10>
+│   ├── test-mod_var_input.R # <11>
+│   ├── test-shinytest2.R # <12>
+│   └── test-utils_mod_scatter_display.R # <13>
 └── testthat.R
 
-3 directories, 9 files
+4 directories, 15 files
 ```
-1. Created with: `golem::use_recommended_tests()`
-2. Created with: `golem::use_utils_ui(with_test = TRUE)` 
-3. Created with: `golem::use_utils_server(with_test = TRUE)`
-4. Created with: `golem::add_module(name = 'plot', ` `with_test = TRUE, export = TRUE,` `utils = 'server')`
-5. Created with: `golem::add_module(name = 'var_input',`  `with_test = TRUE, export = TRUE)`
+1. Created from `covrpage` package   
+2. Created from spelling package   
+3. Test fixtures   
+4. Test helpers   
+5. Setting up `shinytest2`   
+6. `shinytest2` feature test   
+7. Created with: `golem::use_recommended_tests()`
+8. Created with: `golem::use_utils_ui(with_test = TRUE)` 
+9. Created with: `golem::use_utils_server(with_test = TRUE)`
+10. Created with: `golem::add_module(name = 'scatter_display', ` `with_test = TRUE)`
+11. Created with: `golem::add_module(name = 'var_input',`  `with_test = TRUE)`
+12. Test recording from `shinytest2::record_test()`   
+13. Utility function test (`scatter_plot()`)
 
+I've converted the tests from the previous chapters for the modules and utility functions in `gap`:
+
+#### Unit tests 
+
+-   [x] `test-golem-recommended.R`
+
+```{r}
+#| eval: false 
+#| code-fold: false
+devtools:::test_active_file()
+```
+
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 11 ]
+```
+
+-   [x] `test-golem_utils_server.R`
+
+```{r}
+#| eval: false 
+#| code-fold: false
+devtools:::test_active_file()
+```
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 13 ]
+```
+
+-   [x] `test-golem_utils_ui.R`
+
+```{r}
+#| eval: false 
+#| code-fold: false
+devtools:::test_active_file()
+```
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 51 ]
+```
+
+-   [x] The tests for `scatter_plot()` is in the `test-utils_mod_scatter_display.R` file.
+
+```{r}
+#| eval: false 
+#| code-fold: false
+devtools:::test_active_file()
+```
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]
+INFO [2023-11-07 13:30:24] [ START fixture = tidy_ggp2_movies.rds]
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 1 ]
+INFO [2023-11-07 13:30:24] [ START fixture = tidy_ggp2_movies.rds]
+
+INFO [2023-11-07 13:30:24] [ START data = movies.rda]
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 2 ]
+INFO [2023-11-07 13:30:24] [ END data = movies.rda]
+```
+
+
+#### Module tests 
+
+The communication between `mod_var_input_server()` and `mod_scatter_display_server()` are in `test-mod_var_input.R` and `test-mod_scatter_display.R`.
+
+-   [x] `test-mod_var_input.R`
+
+```{r}
+#| eval: false 
+#| code-fold: false
+devtools:::test_active_file()
+```
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]
+INFO [2023-11-07 13:34:42] [ START input = initial inputs returned()]
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 1 ]
+INFO [2023-11-07 13:34:42] [ END input = initial inputs returned()]
+```
+
+-   [x] `test-mod_scatter_display.R`
+
+```{r}
+#| eval: false 
+#| code-fold: false
+devtools:::test_active_file()
+```
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]
+INFO [2023-11-07 13:36:51] [ START fixture = tidy_ggp2_movies.rds]
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 1 ]
+INFO [2023-11-07 13:36:51] [ START fixture = tidy_ggp2_movies.rds]
+
+INFO [2023-11-07 13:36:51] [ START data = movies.rda]
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 2 ]
+INFO [2023-11-07 13:36:51] [ END data = movies.rda]
+```
+
+#### System tests 
+
+The two system tests are in `test-shinytest2.R` and `test-app-feature-01.R`: 
+
+-   [x] `test-shinytest2.R` is the initial resulting test from `shinytest2::record_test()` covered in [System tests](test_system.qmd)
+
+```{r}
+#| eval: false 
+#| code-fold: false
+devtools:::test_active_file()
+```
+
+These let us know the initial snapshots are saved in `tests/testthat/_snaps/`
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+[ FAIL 0 | WARN 2 | SKIP 0 | PASS 1 ]
+
+── Warning (test-shinytest2.R): {shinytest2} recording: feature-01 ──
+Adding new file snapshot: 'tests/testthat/_snaps/feature-01-001_.png'
+
+── Warning (test-shinytest2.R): {shinytest2} recording: feature-01 ──
+Adding new file snapshot: 'tests/testthat/_snaps/feature-01-001.json'
+[ FAIL 0 | WARN 2 | SKIP 0 | PASS 1 ]
+```
+
+-   [x] `test-app-feature-01.R` contains feature tests, and the snapshot warnings display the `Scenario` descriptions:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+devtools:::test_active_file()
+```
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+[ FAIL 0 | WARN 4 | SKIP 0 | PASS 2 ]
+
+── Warning (test-app-feature-01.R): 
+          Scenario A: Change dropdown values for plotting
+           Given the movie review application is loaded
+           When I choose the variable [critics_score] for the x-axis
+           And I choose the variable [imdb_num_votes] for the y-axis
+           And I choose the variable [genre] for the color: 
+           Then the scatter plot should show [critics_score] on the x-axis
+           And the scatter plot should show [imdb_num_votes] on the y-axis
+           And the points on the scatter plot should be colored by [genre] ──
+Adding new file snapshot: 'tests/testthat/_snaps/feature-01-senario-a-001_.png'
+
+── Warning (test-app-feature-01.R): 
+          Scenario B: Change dropdown values for plotting
+          Given the movie review application is loaded
+          When I choose the size of the points to be [3]
+          And I choose the opacity of the points to be [0.7]
+          And I enter '[New plot title]' for the plot title: 
+          Then the size of the points on the scatter plot should be [3]
+          And the opacity of the points on the scatter plot should be [0.7]
+          And the title of the plot should be '[New plot title]' ──
+Adding new file snapshot: 'tests/testthat/_snaps/feature-01-senario-b-001_.png'
+
+[ FAIL 0 | WARN 4 | SKIP 0 | PASS 2 ]
+```
+
+```{r}
+#| label: co_box_system_tests
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "r", size = '1.05', hsize = '1.10', fold = FALSE, look = 'minimal',
+  header = "`loadSupport()` warning with `shinytest2`",
+  contents = "
+After setting up `shinytest2`, the `tests/testthat/setup-shinytest2.R` file contains a call to `shinytest2::load_app_env()`. This runs automatically with `shinytest2` tests and produces a familiar warning: 
+  
+\`\`\`
+Warning message:
+In shiny::loadSupport(app_dir, renv = renv, globalrenv = globalrenv) :
+  Loading R/ subdirectory for Shiny application, but this directory appears
+  to contain an R package. Sourcing files in R/ may cause unexpected behavior.
+\`\`\`
+  
+We covered this warning message in the [Launch](launch.qmd) chapter, and it's being addressed in a future release of [`shinytest2`](https://github.com/rstudio/shinytest2/issues/264)
+  
+  "
+)
+```
 
 ### Deployment
 
