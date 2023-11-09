@@ -50,6 +50,7 @@ Feature: # <1>
   
   Background: # <2>
     Given # <3> 
+    And # <3>
     
   Scenario: # <4>
     When # <5>
@@ -72,41 +73,56 @@ Read more about Gherkin on the [Cucumber website.](https://cucumber.io/docs/gher
 :::
 :::
 
-The feature and scenario for these changes are provided below: 
+The feature, background, and scenario for the changes in `mod_var_input_server()` are provided below: 
 
 ```{r}
 #| eval: false 
 #| include: true
 #| code-fold: false
-testthat::describe(
+describe(
   "Feature: Scatter Plot Configuration in Movie Review Application
       As a user 
       I want the initial graph pre-configured with variables and aesthetics,
-      So that I can immediately see a meaningful visualization.", 
+      So that I can change the inputs and see a meaningful visualization.", 
   code = {
   
-  testthat::it(
-    "Scenario: Scatter plot initial x, y, color values 
+  describe(
+    "Background: Initial scatter plot x, y, color values 
          Given the movie review application is loaded
-         When I view the initial scatter plot
-         Then the scatter plot should show 'IMDB Rating' on the x-axis
-         And the scatter plot should show 'Audience Score' on the y-axis
-         And the points on the scatter plot should be colored by 'MPAA Rating'
-         And the opacity of the points should be set to '0.5'
-         And the size of the points should be set to '2'
-         And the plot title should be 'Enter plot title'", code = {
+         And the scatter plot initial x-axis value is [IMDB Rating] 
+         And the scatter plot initial y-axis value is [Audience Score]
+         And the scatter plot initial color value is [MPAA Rating]
+         And the initial opacity of the points is set to [0.5]
+         And the initial size of the points is set to [2]
+         And the initial plot title is set to [Enter plot title]", code = {
            
-           shiny::testServer(app = mod_var_input_server, expr = {
-              # test code
-           })
+  it("Scenario: Changing scatter plot x, y, color values
+       Given the movie review application is loaded
+       When I choose the [Critics Score] variable for the x-axis
+       And I choose the [Runtime] variable for the y-axis
+       And I choose the [Title type] variable for color
+       Then the scatter plot should show [Critics score] on the x-axis
+       And the scatter plot should show [Runtime] on the y-axis
+       And the points on the scatter plot should be colored by [Title type]
+       And the opacity of the points should be set to [0.5]
+       And the size of the points should be set to [2]
+       And the plot title should be [Enter plot title]", code = {
+         
+         shiny::testServer(app = mod_var_input_server, expr = {
+            
+           # test code ----- 
            
-         })
-  })
+         })  
+       })
+    })
+})
 ```
 
 ### [`session$returned()`]{style="font-size: 0.95em;"}
 
-Inside `testServer()`, we can create a list of graph inputs for `mod_var_input_server()`, then pass identical values to `session$setInputs()`, and confirm the returned object with `session$returned()`:
+Inside `testServer()`, we can create a list of initial graph inputs for `mod_var_input_server()`, then pass identical values to `session$setInputs()`, and confirm the returned object with `session$returned()`:[^tests-modules-returned]
+
+[^tests-modules-returned]: Read more about returned values in the section titled, ***'Modules with return values'*** in the [Shiny documentation](https://shiny.posit.co/r/articles/improve/server-function-testing/index.html).
 
 ```{r}
 #| eval: false 
@@ -116,7 +132,7 @@ Inside `testServer()`, we can create a list of graph inputs for `mod_var_input_s
     
     shiny::testServer(app = mod_var_input_server, expr = {       # <1>
       
-      test_logger(start = "var_inputs", msg = "returned()")
+      test_logger(start = "var_inputs", msg = "initial returned()")
       
       # create list of output vals
       test_vals <- list(y = "imdb_rating",                      # <2>
@@ -139,7 +155,7 @@ Inside `testServer()`, we can create a list of graph inputs for `mod_var_input_s
         expected = test_vals                # <4>
       )
 
-      test_logger(end = "T5", msg = "F1.2: returned()")
+      test_logger(end = "var_inputs", msg = "initial returned()")
       
 }) # <1>
 ```
@@ -148,13 +164,65 @@ Inside `testServer()`, we can create a list of graph inputs for `mod_var_input_s
 3. Set each input using `setInputs(input = )`  
 4. Confirm returned values against `test_vals`     
 
-The test above confirms 1) new input values can be passed into the UI, and 2) these values are returned from `mod_var_input_server()`.
+The test above confirms the initial values can be passed and returned from `mod_var_input_server()`.
+
+### [`session$flushReact()`]{style="font-size: 0.95em;"}
+
+If we want to test changing inputs, we should call `session$flushReact()` to remove the values set by `session$setInputs()` [^tests-modules-flush-react]
+
+```{r}
+#| eval: false 
+#| code-fold: false
+shiny::testServer(app = mod_var_input_server, expr = {       # <1>
+    # flush reactives
+    session$flushReact() # <2>
+    test_logger(start = "var_inputs", msg = "updated returned()")
+    # set inputs
+    session$setInputs(y = "critics_score", # <3>
+                      x = "runtime",
+                      z = "title_type",
+                      alpha = 0.5,
+                      size = 2,
+                      plot_title = "Enter plot title") # <3>
+
+    testthat::expect_equal(object = session$returned(), # <4>
+      expected = list(y = "critics_score",
+                      x = "runtime",
+                      z = "title_type",
+                      alpha = 0.5,
+                      size = 2,
+                      plot_title = "Enter plot title")) # <4>
+    
+    test_logger(end = "var_inputs", msg = "updated returned()")
+}) # <1>
+```
+1. Call to `testServer()`   
+2. Flush reactives from previous `expect_equal()`
+3. Set changed input values using `setInputs(input = )`  
+4. Confirm returned values against `session$returned()`
+
+[^tests-modules-flush-react]: Read more about flushing reactive values in the section titled, ***'Flushing Reactives'*** in the [Shiny documentation](https://shiny.posit.co/r/articles/improve/server-function-testing/index.html).
+
+The final result of running `test_active_file()` on `test-mod_var_input.R` is below: 
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]
+INFO [2023-11-08 20:00:39] [ START var_inputs = initial returned()]
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 1 ]
+INFO [2023-11-08 20:00:39] [ END var_inputs = initial returned()]
+
+INFO [2023-11-08 20:00:39] [ START var_inputs = updated returned()]
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 2 ]
+INFO [2023-11-08 20:00:39] [ END var_inputs = updated returned()]
+```
 
 ### [`args = list()`]{style="font-size: 0.95em;"}
 
-Now that we've confirmed `mod_var_input_server()` is returning values, we want to make sure reactive values are read correctly by `mod_scatter_display_server()`. 
+Now that we've confirmed `mod_var_input_server()` is returning the initial updated values, we want to make sure reactive values are passed correctly into `mod_scatter_display_server()`. 
 
-In `movies_server()`, when we pass `selected_vars` to the `var_inputs` argument, we're not passing the returned values (this is why we don't need the parentheses). We're calling on the method (or function) created by the call to `reactive()` (inside `mod_var_input_server()`).
+In `movies_server()`, when we pass `selected_vars` to the `var_inputs` argument, we're not passing the returned values (this is why we don't need the parentheses). We're calling on the *method* (or function) created by the call to `reactive()` (inside `mod_var_input_server()`).
 
 I've included the `movies_server()` function below to refresh our memory of how this *should* work:[^tests-12]
 
@@ -248,7 +316,9 @@ describe(
   })
 ```
 
-Inside `testServer()`, if we're testing a module function that collects the reactive values, we need to wrap those values in `reactive()` in the `args()` argument:
+Inside `testServer()`, if we're testing a module function that collects the reactive values, we need to wrap those values in `reactive()` in the `args()` argument: [^tests-modules-args]
+
+[^tests-modules-args]: Read more about adding parameters to `testServer()` in the section titled, ***'Modules with additional parameters'*** in the [Shiny documentation](https://shiny.posit.co/r/articles/improve/server-function-testing/index.html).
 
 ```{r}
 #| eval: false 
