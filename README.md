@@ -74,7 +74,7 @@ Shiny App-Packages covers how to create a Shiny application as an R package.
 
 Make sure you have [R](https://cran.r-project.org/), [Posit Workbench](https://posit.co/products/enterprise/workbench/), and [Git](https://git-scm.com/) installed.
 
-### Prerequisites {#prerequisites}
+### Prerequisites 
 
 The contents of the text assumes you're comfortable with R, Posit Workbench, Shiny, and the `tidyverse`. Maybe you haven't built a ton of applications, but you understand reactivity, and you're comfortable with the core Shiny concepts (i.e., the UI, server, `*_Input()`, `*_Output()`, and `render_*` functions, etc.).
 
