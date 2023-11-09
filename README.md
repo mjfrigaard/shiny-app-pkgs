@@ -22,7 +22,7 @@ a Question</a>
 <br />
 
 [![Project
-license](https://img.shields.io/github/license/mjfrigaard/shinyap.svg?style=flat-square)](LICENSE)
+license](https://img.shields.io/badge/LICENSE-MIT-blue)](https://github.com/mjfrigaard/shinyap/LICENSE.md)
 
 [![Pull Requests
 welcome](https://img.shields.io/badge/PRs-welcome-ff69b4.svg?style=flat-square)](https://github.com/mjfrigaard/shinyap/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
@@ -38,22 +38,20 @@ mjfrigaard](https://img.shields.io/badge/%3C%2F%3E%20with%20%E2%99%A5%20by-mjfri
     -   [Built With](#built-with)
 -   [Getting Started](#getting-started)
     -   [Prerequisites](#prerequisites)
-    -   [Installation](#installation)
 -   [Usage](#usage)
--   [Roadmap](#roadmap)
--   [Support](#support)
+-   [Issues](#issues)
 -   [Project assistance](#project-assistance)
 -   [Contributing](#contributing)
 -   [Authors & contributors](#authors--contributors)
--   [Security](#security)
 -   [License](#license)
--   [Acknowledgements](#acknowledgements)
 
 </details>
 
 ------------------------------------------------------------------------
 
 ## About {#about}
+
+Shiny App-Packages covers how to create a Shiny application as an R package.
 
 <!--
 > **\[?\]** Provide general information about your project here. What
@@ -69,17 +67,20 @@ mjfrigaard](https://img.shields.io/badge/%3C%2F%3E%20with%20%E2%99%A5%20by-mjfri
 <br>
 
 <!--
- > **\[?\]** Please provide your screenshots here.
- 
+ > ![](images/screen_shot_01.png)
+ > ![](images/screen_shot_02.png)
 -->
+ 
 
-|                               Home Page                                |                               Login Page                                |
+|     Developing apps in inst/       |      Handling dependencies         |
 |:----------------------------------:|:----------------------------------:|
-| <img src="docs/images/screenshot.png" title="Home Page" width="100%"/> | <img src="docs/images/screenshot.png" title="Login Page" width="100%"/> |
+| <img src="images/screen_shot_01.png" title="Developing apps in inst/" width="100%"/> | <img src="images/screen_shot_02.png" title="Handling dependencies" width="100%"/> |
 
 </details>
 
 ### Built With {#built-with}
+
+[Quarto](https://quarto.org/), [Shiny](https://shiny.posit.co/) and [Posit workbench](https://posit.co/products/enterprise/workbench/).
 
 <!--
 > **\[?\]** Please provide the technologies that are used in the
@@ -88,26 +89,23 @@ mjfrigaard](https://img.shields.io/badge/%3C%2F%3E%20with%20%E2%99%A5%20by-mjfri
 
 ## Getting Started {#getting-started}
 
+Make sure you have [R](https://cran.r-project.org/), [Posit Workbench](https://posit.co/products/enterprise/workbench/), and [Git](https://git-scm.com/) installed.
+
 ### Prerequisites {#prerequisites}
 
-<!--
-> **\[?\]** What are the project requirements/dependencies?
--->
+The contents of the text assumes you're comfortable with R, Posit Workbench, Shiny, and the `tidyverse`. Maybe you haven't built a ton of applications, but you understand reactivity, and you're comfortable with the core Shiny concepts (i.e., the UI, server, `*_Input()`, `*_Output()`, and `render_*` functions, etc.).
 
-### Installation {#installation}
-
-<!--
-> **\[?\]** Describe how to install and get started with the project.
--->
 
 ## Usage {#usage}
 
-<!--
-> **\[?\]** How does one go about using it? Provide various use cases
-> and code examples here.
--->
+The code examples can be found in the [`moviesApp` repo](https://github.com/mjfrigaard/moviesApp). The sections from each chapter can be found in the branches. 
 
-## Roadmap {#roadmap}
+```bash
+git checkout <branch>
+```
+
+
+## Issues {#issues}
 
 See the [open
 issues](https://github.com/mjfrigaard/shinyap/issues) for a list
@@ -121,8 +119,6 @@ of proposed features (and known issues).
     (Add your votes using the 👍 reaction)
 -   [Newest
     Bugs](https://github.com/mjfrigaard/shinyap/issues?q=is%3Aopen+is%3Aissue+label%3Abug)
-
-## Support {#support}
 
 <!--
 > **\[?\]** Provide additional ways to contact the project
@@ -144,9 +140,6 @@ Shiny App-Packages:
 -   Add a [GitHub Star](https://github.com/mjfrigaard/shinyap) to
     the project.
 -   Tweet about the Shiny App-Packages.
--   Write interesting articles about the project on
-    [Dev.to](https://dev.to/), [Medium](https://medium.com/) or your
-    personal blog.
 
 Together, we can make Shiny App-Packages **better**!
 
@@ -157,25 +150,13 @@ what make the open-source community such an amazing place to learn,
 inspire, and create. Any contributions you make will benefit everybody
 else and are **greatly appreciated**.
 
-Please read [our contribution guidelines](docs/CONTRIBUTING.md), and
-thank you for being involved!
-
 ## Authors & contributors
 
 The original setup of this repository is by
-[FULL_NAME](https://github.com/mjfrigaard).
+[Martin Frigaard](https://github.com/mjfrigaard).
 
 For a full list of all authors and contributors, see [the contributors
 page](https://github.com/mjfrigaard/shinyap/contributors).
-
-## Security {#security}
-
-Shiny App-Packages follows good practices of security, but 100% security
-cannot be assured. Shiny App-Packages is provided **"as is"** without any
-**warranty**. Use at your own risk.
-
-*For more information and to report security issues, please refer to our
-[security documentation](docs/SECURITY.md).*
 
 ## License {#license}
 
@@ -183,9 +164,11 @@ This project is licensed under the **MIT license**.
 
 See [LICENSE](LICENSE) for more information.
 
+<!--
+
 ## Acknowledgements {#acknowledgements}
 
-<!--
+
 > **\[?\]** If your work was funded by any organization or institution,
 > acknowledge their support here. In addition, if your work relies on
 > other software libraries, or was inspired by looking at other work, it
