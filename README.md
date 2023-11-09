@@ -30,26 +30,9 @@ welcome](https://img.shields.io/badge/PRs-welcome-ff69b4.svg?style=flat-square)]
 mjfrigaard](https://img.shields.io/badge/%3C%2F%3E%20with%20%E2%99%A5%20by-mjfrigaard-ff1414.svg?style=flat-square)](https://github.com/mjfrigaard)
 </p>
 
-<details open="open">
-
-<summary>Table of Contents</summary>
-
--   [About](#about)
-    -   [Built With](#built-with)
--   [Getting Started](#getting-started)
-    -   [Prerequisites](#prerequisites)
--   [Usage](#usage)
--   [Issues](#issues)
--   [Project assistance](#project-assistance)
--   [Contributing](#contributing)
--   [Authors & contributors](#authors--contributors)
--   [License](#license)
-
-</details>
-
 ------------------------------------------------------------------------
 
-## About {#about}
+## About 
 
 Shiny App-Packages covers how to create a Shiny application as an R package.
 
@@ -78,7 +61,7 @@ Shiny App-Packages covers how to create a Shiny application as an R package.
 
 </details>
 
-### Built With {#built-with}
+### Built With 
 
 [Quarto](https://quarto.org/), [Shiny](https://shiny.posit.co/) and [Posit workbench](https://posit.co/products/enterprise/workbench/).
 
@@ -87,7 +70,7 @@ Shiny App-Packages covers how to create a Shiny application as an R package.
 > project.
 -->
 
-## Getting Started {#getting-started}
+## Getting Started 
 
 Make sure you have [R](https://cran.r-project.org/), [Posit Workbench](https://posit.co/products/enterprise/workbench/), and [Git](https://git-scm.com/) installed.
 
@@ -96,7 +79,7 @@ Make sure you have [R](https://cran.r-project.org/), [Posit Workbench](https://p
 The contents of the text assumes you're comfortable with R, Posit Workbench, Shiny, and the `tidyverse`. Maybe you haven't built a ton of applications, but you understand reactivity, and you're comfortable with the core Shiny concepts (i.e., the UI, server, `*_Input()`, `*_Output()`, and `render_*` functions, etc.).
 
 
-## Usage {#usage}
+## Usage 
 
 The code examples can be found in the [`moviesApp` repo](https://github.com/mjfrigaard/moviesApp). The sections from each chapter can be found in the branches. 
 
@@ -105,7 +88,7 @@ git checkout <branch>
 ```
 
 
-## Issues {#issues}
+## Issues 
 
 See the [open
 issues](https://github.com/mjfrigaard/shinyap/issues) for a list
@@ -132,7 +115,7 @@ Reach out to the maintainer at one of the following places:
 -   Contact options listed on [this GitHub
     profile](https://github.com/mjfrigaard)
 
-## Project assistance {#project-assistance}
+## Project assistance 
 
 If you want to say **thank you** or/and support active development of
 Shiny App-Packages:
@@ -143,7 +126,7 @@ Shiny App-Packages:
 
 Together, we can make Shiny App-Packages **better**!
 
-## Contributing {#contributing}
+## Contributing 
 
 First off, thanks for taking the time to contribute! Contributions are
 what make the open-source community such an amazing place to learn,
@@ -158,7 +141,7 @@ The original setup of this repository is by
 For a full list of all authors and contributors, see [the contributors
 page](https://github.com/mjfrigaard/shinyap/contributors).
 
-## License {#license}
+## License 
 
 This project is licensed under the **MIT license**.
 
