@@ -108,7 +108,7 @@ glue::glue("\n:::: {{layout='[ 15, 33, 16 ]'}}
 
 ::: {{style='font-weight: bold; font-size: 1.15em' layout-valign='bottom'}}
 
-######
+<br><br>
 
 <kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd> / <kbd>D</kbd> / <kbd>B</kbd>
 :::
@@ -121,7 +121,7 @@ glue::glue("\n:::: {{layout='[ 15, 33, 16 ]'}}
 
 ::::")
   } else if (fun == 'tf') {
-glue::glue("\n:::: {{layout='[ 30, 40, 30 ]'}}
+glue::glue("\n:::: {{layout='[ 30, 50, 20 ]'}}
 
 ::: {{#first-column}}
 
@@ -131,7 +131,7 @@ glue::glue("\n:::: {{layout='[ 30, 40, 30 ]'}}
 
 ::: {{style='font-weight: bold; font-size: 1.15em' layout-valign='bottom'}}
 
-######
+<br>
 
 <kbd>Ctrl/Cmd</kbd> + <kbd>T</kbd>
 :::
@@ -144,7 +144,7 @@ glue::glue("\n:::: {{layout='[ 30, 40, 30 ]'}}
 
 ::::")
   } else if (fun == 'cf') {
-glue::glue("\n:::: {{layout='[ 25, 50, 25 ]'}}
+glue::glue("\n:::: {{layout='[ 30, 50, 20 ]'}}
 
 ::: {{#first-column}}
 
@@ -154,7 +154,7 @@ glue::glue("\n:::: {{layout='[ 25, 50, 25 ]'}}
 
 ::: {{style='font-weight: bold; font-size: 1.15em' layout-valign='bottom'}}
 
-######
+<br>
 
 <kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd>
 :::
@@ -167,7 +167,7 @@ glue::glue("\n:::: {{layout='[ 25, 50, 25 ]'}}
 
 ::::")
   } else {
-glue::glue("\n:::: {{layout='[ 20, 60, 20 ]'}}
+glue::glue("\n:::: {{layout='[ 30, 50, 20 ]'}}
 
 ::: {{#first-column}}
 
@@ -177,7 +177,7 @@ glue::glue("\n:::: {{layout='[ 20, 60, 20 ]'}}
 
 ::: {{style='font-weight: bold; font-size: 1.25em' layout-valign='bottom'}}
 
-######
+<br>
 
 <kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>{fun}</kbd>
 :::
