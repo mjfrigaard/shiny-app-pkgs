@@ -2,7 +2,6 @@
 
 <!---
 https://www.freecodecamp.org/news/clean-coding-for-beginners/
-
 -->
 
 ```{r}
@@ -11,6 +10,7 @@ https://www.freecodecamp.org/news/clean-coding-for-beginners/
 #| include: false
 source("_common.R")
 library(rlang)
+library(shiny)
 ```
 
 ```{r}
@@ -26,37 +26,29 @@ co_box(
 )
 ```
 
-This chapter introduces tools to help write clean and efficient tests. These files, folders and methods can be included in our app-package test suite and are described in-depth in [R Packages, 2ed](https://r-pkgs.org/testing-design.html#sec-testing-design-principles), and the [`testthat` documentation.](https://testthat.r-lib.org/articles/third-edition.html) (but within the context of a standard R package). The sections below contain examples of each tool implemented in our app-package.[^test_tools-1]
+This chapter introduces tools to help write clean and efficient tests. These files, folders and methods can be included in our app-package test suite and are described in-depth in [R Packages, 2ed](https://r-pkgs.org/testing-design.html#sec-testing-design-principles), and the [`testthat` documentation.](https://testthat.r-lib.org/articles/third-edition.html), but within the context of a standard R package. The sections below contain examples of each tool implemented in our app-package.[^test_tools-documentation]
 
-[^test_tools-1]: The three chapters in R Packages, 2ed, dedicated to testing are [Testing basics](https://r-pkgs.org/testing-basics.html), [Designing your test suite](https://r-pkgs.org/testing-design.html), and [Advanced testing techniques](https://r-pkgs.org/testing-advanced.html)
+[^test_tools-documentation]: The three chapters in R Packages, 2ed, dedicated to testing are [Testing basics](https://r-pkgs.org/testing-basics.html), [Designing your test suite](https://r-pkgs.org/testing-design.html), and [Advanced testing techniques](https://r-pkgs.org/testing-advanced.html)
 
 ## Test scope
 
-One of the recent updates to the `testthat` package (version 3.2.0) emphasizes limiting code that exists outside of our tests.[^test_tools-2]
+One of the recent updates to the `testthat` package (version 3.2.0) emphasizes limiting code that exists outside of our tests.[^test_tools-testthat-recent-changes]
 
-[^test_tools-2]: Read a summary of the changes to the `testthat` package on the [tidyverse blog](https://www.tidyverse.org/blog/2023/10/testthat-3-2-0/)
+[^test_tools-testthat-recent-changes]: Read a summary of the changes to the `testthat` package on the [tidyverse blog](https://www.tidyverse.org/blog/2023/10/testthat-3-2-0/)
 
 > "*Eliminating (or at least minimizing) top-level code outside of `test_that()` will have the beneficial effect of making your tests more hermetic. This is basically the testing analogue of the general programming advice that it's wise to avoid unstructured sharing of state.*" - [Self-sufficient tests, R Packages, 2ed](https://r-pkgs.org/testing-design.html#self-sufficient-tests)
 
+Strategies for reducing or removing the code outside of `test_that()` tests include:[^test_tools-pkg-dev-masterclass]
+
+> - *Move file-scope logic to either narrower scope (just this test) or a broader scope (all files).*
+> 
+> - *It's ok to copy and paste: test code doesn't have to be super DRY. Obvious >>> DRY*
+
+[^test_tools-pkg-dev-masterclass]: these tips (and more!) were covered in the Package Development Masterclass delivered at [posit::conf(2023)](https://github.com/posit-conf-2023)
+
 Code outside of `test_that()` usually serves a specific purpose (load or manipulate data, set options, create folders or files, etc). The topics in this chapter will demonstrate how to include these behaviors in our tests without placing code outside of the test scope.
 
-
-```{r}
-#| label: co_box_Mocking
-#| echo: false
-#| results: asis
-#| eval: true
-co_box(
-  color = "b", fold = TRUE, 
-  size = "1.05", look = "simple",
-  header = "Mocking",
-  contents = "
-Test mocks are covered in [Special Topics](test_mocks.qmd), because the example isn't from our app-package (it comes from the package development masterclass given at [posit::conf(2023)](https://github.com/posit-conf-2023/pkg-dev-masterclass)). 
-"
-)
-```
-
-### BDD code snippets
+### Using BDD functions
 
 If you decide to adopt the BDD functions in your test suite, I highly recommend creating code snippets to reduce the typing/copying and pasting.[^tests-tools-snippets] 
 
@@ -539,7 +531,7 @@ devtools:::test_coverage_active_file()
 ![Test coverage on active file](img/11_tests_coverage_scatter_plot.png){width="100%" fig-align="center"}
 
 
-#### Example: snapshots
+### Example: snapshots
 
 ```{r}
 #| label: git_box_12g_tests-snapshots
@@ -552,195 +544,227 @@ git_margin_box(
   repo = 'moviesApp')
 ```
 
-Writing tests for graph outputs can be difficult because the "correctness" of a graph is somewhat subjective and requires human judgment. If the expected output we're interesting in testing is cumbersome to describe programmatically, we can consider using a snapshot tests. Examples of this include UI elements (which are mostly HTML created by Shiny's UI layout and input/output functions) and data visualizations.[^test_tools-snapshot-advice]
+Writing tests for UI outputs can be difficult because their "correctness" is somewhat subjective and requires human judgment. If the expected output we're interesting in testing is cumbersome to describe programmatically, we can consider using a snapshot tests. Examples of this include UI elements (which are mostly HTML created by Shiny's UI layout and input/output functions) and data visualizations.[^test_tools-graph-snapshots]
 
-[^test_tools-snapshot-advice]: Mastering Shiny covers [creatng a snapshot file](https://mastering-shiny.org/scaling-testing.html#user-interface-functions) to test UI elements, but also notes this is probably not the best approach.
+[^test_tools-graph-snapshots]: Graph snapshots are covered in @sec-tests-snapshots-vdiffr.
 
-If we want to create a graph snapshot test, the [`vdiffr`](https://vdiffr.r-lib.org/) package allows us to perform a 'visual unit test' by capturing the expected output as an `.svg` file that we can compare with future versions.
-
-The `expect_doppelganger()` function from `vdiffr` is designed specifically to work with ['graphical plots'](https://vdiffr.r-lib.org/reference/expect_doppelganger.html).
+I've included a small UI function (`text_logo()`) in the `R/` folder of `moviesApp`: 
 
 ```{r}
-#| eval: false 
+#| eval: true 
 #| code-fold: false
-vdiffr::expect_doppelganger(
-      title = "name of graph", 
-      fig = # ...code to create graph...
-  )
-```
-
-Another option for using snapshots for testing is the `expect_snapshot_file()` function [^test_tools-12] but `expect_doppelganger()` is probably the better option for comparing graph outputs.
-
-[^test_tools-12]: Follow the `expect_snapshot_file()` example from the [`testthat` documentation](https://testthat.r-lib.org/reference/expect_snapshot_file.html#ref-examples)
-
-In this test, I'll list the `Feature` in a top-level `describe()` block, then nest the `Scenario` for the functional requirement in `it()` statements (with each snapshot the test will capture). Combining scenarios in the same test file is helpful if we're trying to keep a 1:1 between the `test/testthat/` file names and file names in `R/`.[^test_tools-13]
-
-[^test_tools-13]: matching files names between `R/` and `tests/testthat/` keeps our code organized and ensures the `devtools::test_coverage_active_file()` function [works.](https://testthat.r-lib.org/articles/special-files.html)
-
-```{r}
-#| eval: false 
-#| code-fold: false
-testthat::it( # <1>
-  "Scenario: Create scatter plot
-      Given I have launched the movie review exploration app,
-      When the scatter plot renders,
-      Then the points on the x axis should represent 'Ratings'
-      And the points on the y axis should represent 'Length'
-      And the points should be colored by 'MPAA' rating
-      And the opacity of the points should be set to '0.5'
-      And the size of the points should be set to '2'
-      And the plot title should be set to 'Enter plot title'",
-  code = {
-    
-    test_logger( # <2>
-      start = "snap scatter_plot()", 
-      msg = "initial x,y,z,size,alpha")  # <2>
-
-    scatter_inputs <- list(  # <3>
-      x = "imdb_rating",
-      y = "audience_score",
-      z = "mpaa_rating",
-      alpha = 0.5,
-      size = 2,
-      plot_title = "Enter plot title"
-    ) # <3>
-
-    vdiffr::expect_doppelganger( # <4>
-      title = "Initial x y z axes",
-      fig = scatter_plot(movies,
-        x_var = scatter_inputs$x,
-        y_var = scatter_inputs$y,
-        col_var = scatter_inputs$z,
-        alpha_var = scatter_inputs$alpha,
-        size_var = scatter_inputs$size
-      ) +
-        ggplot2::labs(
-          title = scatter_inputs$plot_title,
-          x = stringr::str_replace_all(
-            tools::toTitleCase(
-              scatter_inputs$x
-            ), "_", " "
-          ),
-          y = stringr::str_replace_all(
-            tools::toTitleCase(
-              scatter_inputs$y
-            ), "_", " "
-          )
-        ) +
-        ggplot2::theme_minimal() +
-        ggplot2::theme(legend.position = "bottom")
-    ) # <4>
-
-    test_logger( # <5>
-      end = "snap scatter_plot()", 
-      msg = "initial x,y,z,size,alpha") # <5>
-    
+text_logo <- function(size = 'h3') {
+  if (any(size %in% c("h1", "h2", "h3", "h4", "h5", "h6"))) {
+  HTML(
+    paste0(
+    "<span>\n", 
+      paste0("  <", size, ">", collapse = ""), "\n",
+      "    <code>√\\/--‹(•_•)›--√\\/</code>\n", 
+      paste0("  <", size, "/>", collapse = ""), "\n",
+    "</span>\n"
+      )
+    )
+  } else {
+    rlang::abort(paste(size, "isnt supported", sep = " "))
   }
-)# <1>
-```
-1.  Test scope (**T2**)\
-2.  Log start (**T2**)\
-3.  Initial `movies` variable inputs for `x`, `y`, and `z` from UI\
-4.  Snapshot with initial values\
-5.  Log end (**T2**)\
-
-Test results also return the output from `test_logger()` with the context I've added on what's being tested:
-
-```{verbatim}
-#| eval: false 
-#| code-fold: false
-INFO [2023-10-27 10:58:25] [ START snap scatter_plot() = initial x,y,z,size,alpha]
-[ FAIL 0 | WARN 1 | SKIP 0 | PASS 3 ]
-INFO [2023-10-27 10:58:25] [ END snap scatter_plot() = initial x,y,z,size,alpha]
-
-INFO [2023-10-27 10:58:25] [ START snap scatter_plot() = updated x,y,z]
-[ FAIL 0 | WARN 2 | SKIP 0 | PASS 4 ]
-INFO [2023-10-27 10:58:26] [ END snap scatter_plot() = updated x,y,z]
+}
 ```
 
-We also see a warning when the snapshot has been saved in the `tests/testthat/_snaps/` folder the first time the test is run:
+This function generates the HTML so we can include a small logo in the UI.[^test_tools-text_logo] 
 
-```{verbatim}
-#| eval: false 
-#| code-fold: false
-── Warning (test-scatter_plot.R:124:9): 
-      Scenario: Create scatter plot
-          Given I have launched the movie review exploration app,
-          When the scatter plot renders,
-          Then the points on the x axis should represent 'Ratings'
-          And the points on the y axis should represent 'Length'
-          And the points should be colored by 'MPAA' rating
-          And the size of the points should be set to '2'
-          And the opacity of the points should be set to '0.5' ──
-Adding new file snapshot: 'tests/testthat/_snaps/initial-x-y-z-axes.svg'
+[^test_tools-text_logo]: This is a simple example, but I chose it because it needs some tricky escape characters to work. 
 
-── Warning (test-scatter_plot.R:186:7): 
-      Scenario: Change x, y, color values for plotting
-        When I launch the Scatter Plot Data Visualization
-        And I select the variable 'Audience Score' for the x-axis
-        And I select the variable 'IMDB Rating' for the y-axis
-        And I select the variable 'Critics Rating' for the color
-        Then the scatter plot should show 'Audience Score' on the x-axis
-        And the scatter plot should show 'IMDB Rating' on the y-axis
-        And the points on the scatter plot should be colored by 'Critics Rating' ──
-Adding new file snapshot: 'tests/testthat/_snaps/updated-x-y-color.svg'
-[ FAIL 0 | WARN 2 | SKIP 0 | PASS 2 ]
-```
+:::{layout="[50,50]" layout-valign="center"}
 
-On subsequent runs, this warning will disappear (as long as there are no changes to the `.svg` files). 
+The output in the UI:
 
 ```{r}
-#| label: co_box_expect_doppelganger
+#| code-fold: false
+#| echo: false
+#| eval: true
+#| results: markup
+text_logo()
+```
+
+The pre-rendered HTML:
+
+```html
+<span>
+  <h3>
+    <code>√\/--‹(•_•)›--√\/</code>
+  </h3>
+</span>
+```
+
+:::
+
+Reviewing the entire HTML contents of `movies_ui()` to see if `text_logo()` is working isn't practical, but we can store it's results in a snapshot file using `expect_snapshot()`. In `tests/testthat/test-text_logo.R`, I'll write the following tests:[^test_tools-snapshot-advice]
+
+```{r}
+#| label: co_box_snaps_warning
 #| echo: false
 #| results: asis
 #| eval: true
 co_box(
-  color = "g", fold = TRUE, 
-  size = "1.05",
-  header = "Reviewing snapshots",
+  color = "r", 
+  look = "default", 
+  size = '1.10', 
+  hsize = '1.15',
+  header = "Warning: snapshots and multiple line descriptions",
   contents = "
-Placing the functional requirement in the `title` argument of `expect_doppelganger()` gives us a clear idea of what the snapshot file *should* contain.
-"
+It's important to include any multiple-line text in the `describe()` block when creating snapshots with `expect_snapshot()`. Multiline text in the `desc` of `test_that()` will always overwrite the snapshot file. 
+  
+Thank you to [@LDSamson](https://github.com/LDSamson) for bringing this to my attention!
+  
+See [this issue](https://github.com/r-lib/testthat/issues/1900) for more information.
+  ",
+  fold = FALSE
 )
 ```
 
-#### Advice on snapshots
+[^test_tools-snapshot-advice]: Mastering Shiny covers [creatng a snapshot file](https://mastering-shiny.org/scaling-testing.html#user-interface-functions) to test UI elements, but also notes this is probably not the best approach.
 
-Snapshots are brittle. The term "brittle" in the context of testing refers to a susceptibility to fail with small changes. Brittleness can produce false negatives test failures (i.e., due to inconsequential changes in the graph) when comparing a new graph to the baseline image.
+-   Confirm the default `size` argument:
 
-Below is the output from `diffobj::diffObj()` comparing our custom plotting function (`scatter_plot()`) against a graph built with analogous `ggplot2` code:
+    ```{r}
+    #| code-fold: false
+    #| eval: false
+    describe(
+        "Scenario: Generating a logo with default size
+        Given the user did not specify a [size] in text_logo()
+        When text_logo() is invoked without a [size] argument
+        Then the correct HTML for a ['h3'] text logo is returned",
+        code = {
+      
+        test_that("text_logo()", code = {
+          test_logger(start = "snap", msg = "text_logo()")
+          expect_snapshot(text_logo())
+          test_logger(end = "snap", msg = "text_logo()")
+        })
+      })
+    ```
+    
+-   Confirm a new `size` argument:
+
+    ```{r}
+    #| code-fold: false
+    #| eval: false
+      describe(
+        "Scenario: Generating a logo of a specified size
+        Given the user wants a ['h1'] sized text logo
+        When text_logo(size = 'h1') is invoked 
+        Then the correct HTML for a ['h1'] text logo is returned", 
+        code = {
+          
+        test_that("text_logo('h1')", code = {
+          test_logger(start = "snap", msg = "text_logo('})')")
+          expect_snapshot(text_logo("h1"))
+          test_logger(start = "snap", msg = "text_logo('h1')")
+        })  
+      })
+    ```
+
+-   Confirm an invalid `size` argument:
+
+    ```{r}
+    #| code-fold: false
+    #| eval: false
+    describe(
+      "Scenario: Attempting to generate a logo with an invalid size
+      Given the user specifies an invalid [size] for the text logo
+      When text_logo() is invoked with an invalid [size] argument
+      Then an error is returned stating the [size] is not recognized", 
+      code = {
+      test_that("text_logo('invalid')", code = {
+        test_logger(start = "snap", msg = "text_logo('invalid')")
+        expect_error(text_logo("massive"), NULL)
+        test_logger(end = "snap", msg = "text_logo('invalid')")
+        })
+      })
+    ```
+
+
+    
+When I test this file, I see the following results and output from `test_logger()` along with two warnings about the creating of the snapshot files:
 
 ```{r}
-#| eval: false 
 #| code-fold: false
-ggp_graph <- ggplot2::ggplot(mtcars, 
-              ggplot2::aes(x = mpg, y = disp)) + 
-              ggplot2::geom_point(
-                ggplot2::aes(color = cyl), 
-                             alpha = 0.5, 
-                             size = 3)
-  
-app_graph <- scatter_plot(mtcars, 
-                  x_var = "mpg", 
-                  y_var = "disp", 
-                  col_var = "cyl", 
-                  alpha_var = 0.5, 
-                  size_var = 3)
-
-diffobj::diffObj(ggp_graph, app_graph)
+#| eval: false
+devtools:::test_active_file()
 ```
 
-::: column-page-inset-right
-::: {#fig-11_tests_diffobj_scatter_plot}
-![`diffobj::diffObj()` on graph outputs](img/11_tests_diffobj_scatter_plot.png){width="100%" align="center"}
+```{verbatim}
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]
+INFO [2023-11-17 08:50:55] [ START snap = text_logo()]
+[ FAIL 0 | WARN 1 | SKIP 0 | PASS 1 ]
+INFO [2023-11-17 08:50:55] [ END snap = text_logo()]
 
-Graph objects are difficult to use as test objects
-:::
+INFO [2023-11-17 08:50:55] [ START snap = text_logo('h1')]
+[ FAIL 0 | WARN 2 | SKIP 0 | PASS 2 ]
+INFO [2023-11-17 08:50:55] [ START snap = text_logo('h1')]
+
+INFO [2023-11-17 08:50:55] [ START snap = text_logo('invalid')]
+[ FAIL 0 | WARN 2 | SKIP 0 | PASS 3 ]
+INFO [2023-11-17 08:50:55] [ END snap = text_logo('invalid')]
+```
+
+```{verbatim}
+── Warning (test-text_logo.R:13:7): text_logo() ──
+Adding new snapshot:
+Code
+  text_logo()
+Output
+  <span>
+    <h3>
+      <code>√\/--‹(•_•)›--√\/</code>
+    </h3>
+  </span>
+
+── Warning (test-text_logo.R:22:7): text_logo('h1') ──
+Adding new snapshot:
+Code
+  text_logo("h1")
+Output
+  <span>
+    <h1>
+      <code>√\/-‹(•_•)›-√\/</code>
+    </h1>
+  </span>
+[ FAIL 0 | WARN 2 | SKIP 0 | PASS 3 ]
+```
+
+### Reviewing `_snaps/`
+
+Snapshots are stored in the `tests/testthat/_snaps/` folder. The output from `expect_snapshot_file()` is a markdown file with contents similar to what we saw above in the warning message. Should the markdown file contents change in future test runs, the tests will fail and we'll be prompted to review the changes. [^test_tools-shinytest2-snaps-prelude]
+
+For example, if the `<span>` changed to a `<div>` in `text_logo()` and caused a test failure, I could review the changes in `tests/testthat/_snaps/text_logo.md` with `testthat::snapshot_review('text_logo')`:
+
+:::{#fig-tests_tools_review_snapshot}
+
+![`testthat::snapshot_review('text_logo')`](images/tests_tools_review_snapshot.png){#fig-tests_tools_review_snapshot width="100%" fig-align="center"}
+
+Click **Accept**: `Accepting snapshot: 'tests/testthat/_snaps/text_logo.md'`
 :::
 
-The output shows us all the potential points of failure when comparing complex objects like graphs (despite the actual outputs appearing identical), so it's best to limit the number of 'visual unit tests' unless they're absolutely necessary.
+
+[^test_tools-shinytest2-snaps-prelude]: We'll encounter this folder again in the @sec-tests-system on system tests with `shinytest2`. 
 
 ## Recap
+
+```{r}
+#| label: co_box_Mocking
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b", fold = TRUE, 
+  size = "1.05", look = "simple",
+  header = "Mocking",
+  contents = "
+Test mocks are covered in [Special Topics](test_mocks.qmd), because the example isn't from our app-package (it comes from the package development masterclass given at [posit::conf(2023)](https://github.com/posit-conf-2023/pkg-dev-masterclass)). 
+"
+)
+```
 
 ```{r}
 #| label: co_box_app_recap
@@ -752,11 +776,13 @@ co_box(
   header = "Recap: test suite",
   contents = "
 
-**Shiny app-packages test suite**
+**Shiny app-packages test tools**
   
 - **Fixtures**: Fixtures prepare the test environment and the initial state. The `tidy_ggp2_movies.rds` data is a test fixture, and it creates the `tidy_ggp2_movies` data within the test scope. 
 
 - **Helpers**: If find yourself writing small, reusable pieces of code to perform specific tasks inside your tests, consider converting them into a function in `tests/testthat/helper.R`.
+  
+- **Snapshots**: Test complex outputs using snapshots, but cautiously. Snapshots are susceptibile to failure with small (sometimes inconsequential) changes, which produce false negatives test failures. 
   
   ", 
   fold = FALSE
