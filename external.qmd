@@ -54,20 +54,16 @@ img(src = 'www/shiny.png')
 )
 ```
 
-## What happened to our icon image?
-
-
 ```{r}
-#| label: git_box_10_launch
+#| label: git_box_install
 #| echo: false
 #| results: asis
 #| eval: true
 git_margin_box(
-  contents = "alt",
-  fig_pw = '75%', 
-  branch = "10_launch", 
-  repo = 'moviesApp')
+  contents = "install")
 ```
+
+## What happened to our icon image?
 
 When we launch our app using the standalone app function, we see the following: 
 
@@ -276,18 +272,6 @@ To include the contents of `www/` in our app-package, we'll need to move `www/` 
 
 ## [`addResourcePath()`]{style="font-size: 0.95em;"} {#sec-external-add-resource-path}
 
-```{r}
-#| label: git_box_11a_inst-www
-#| echo: false
-#| results: asis
-#| eval: true
-git_margin_box(
-  contents = "standard",
-  fig_pw = '75%', 
-  branch = "11a_inst-www", 
-  repo = 'moviesApp')
-```
-
 The `addResourcePath()` function will add a "*directory of static resources to Shiny's web server*." In `moviesApp`, want to add the `www` directory that includes the `shiny.png` file.[^add-resource-path-4]
 
 [^add-resource-path-4]: You can read more about adding external resources in the [documentation for `addResourcePath()`](https://shiny.posit.co/r/reference/shiny/latest/resourcepaths).
@@ -306,7 +290,7 @@ The `addResourcePath()` function will add a "*directory of static resources to S
     └── shiny.png
 ```
 
-#### [New `www` location]{style="font-size: 0.95em;"} 
+#### [New `www` location]{style="font-size: 0.95em;"} {#sec-external-inst-www}
 
 ```{bash}
 #| eval: false 
@@ -370,6 +354,18 @@ hot_key("all")
 ```
 
 ```{r}
+#| label: git_box_09a_inst-www
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  fig_pw = '75%', 
+  branch = "09a_inst-www", 
+  repo = 'moviesApp')
+```
+
+```{r}
 #| eval: false 
 #| code-fold: false
 library(moviesApp)
@@ -387,26 +383,17 @@ movies_app(run = 'p')
 
 ::::
 
+
+
 ## App versions with [`inst/`]{style="font-size: 1.05em;"} {#sec-inst-apps} 
 
 The `inst/` folder can also be used to store files we're using in alternate versions of our application. This can include alternate images, CSS styling, JS scripts, data files, or even entirely different apps!
 
-### [`www/`]{style="font-size: 0.95em;"} versions {#sec-external-inst-www}
+### Alternate UI layouts with [`bslib`]{style="font-size: 0.95em;"} {#sec-external-inst-bslib}
 
-We can store `inst/` alternative external files and configure our UI function to test different layouts. In the example below, I've included an optional UI layout from the [`bslib` package](https://rstudio.github.io/bslib/index.html).
+We can use `inst/` to store alternative files and configure our UI function to test different layouts. In the example below, I've included a second optional UI layout from the [`bslib` package](https://rstudio.github.io/bslib/index.html) in `movies_ui()`.
 
-```{r}
-#| label: git_box_11b_inst-bslib
-#| echo: false
-#| results: asis
-#| eval: true
-git_margin_box(
-  fig_pw = '75%', 
-  branch = "11b_inst-bslib", 
-  repo = 'moviesApp')
-```
-
-The `bslib` argument in the `movies_ui()` includes an alternate image file (stored in `inst/www/bootstrap.png`):
+The `bslib` argument includes an alternate image file (stored in `inst/www/bootstrap.png`):
 
 ```{r}
 #| label: co_box_bslib
@@ -430,68 +417,69 @@ Remember to include the `bslib` and `sass` packages to your `DESCRIPTION` with `
 #| code-summary: 'show/hide movies_ui()'
 movies_ui <- function(bslib = FALSE) {
   addResourcePath( # <1>
-    prefix = 'www', # <1>
+    prefix = 'www', 
     directoryPath = system.file('www', package = 'moviesApp')) # <1>
   if (isFALSE(bslib)) {
   tagList( # <2>
-    fluidPage( # <2>
-      theme = shinythemes::shinytheme("spacelab"), # <2>
-      titlePanel( # <2>
-        div( # <2>
-          img( # <2>
-            src = "www/shiny.png", # <2>
-            height = 60, # <2>
-            width = 55, # <2>
-            style = "margin:10px 10px" # <2>
-            ), # <2>
-         "Movie Reviews" # <2>
-        ) # <2>
-      ), # <2>
-      sidebarLayout( # <2>
-        sidebarPanel( # <2>
-          mod_var_input_ui("vars") # <2>
-        ), # <2>
-        mainPanel( # <2>
-          mod_scatter_display_ui("plot") # <2>
-        ) # <2>
-      ) # <2>
-    ) # <2>
+    fluidPage(
+      theme = shinythemes::shinytheme("spacelab"),
+      titlePanel(
+        div(
+          img(
+            src = "www/shiny.png",
+            height = 60,
+            width = 55,
+            style = "margin:10px 10px"
+            ), 
+         "Movie Reviews"
+        )
+      ),
+      sidebarLayout(
+        sidebarPanel(
+          mod_var_input_ui("vars")
+        ),
+        mainPanel(
+          mod_scatter_display_ui("plot")
+        )
+      )
+    )
   ) # <2>
-  } else { # <3>
+  } else {
     tagList( # <3>
-      bslib::page_fillable( # <3>
-        title = "Movie Reviews (bslib)", # <3>
-        theme = bslib::bs_theme( # <3>
-          bg = "#101010", # <3>
-          fg = "#F6F5F5", # <3>
-          primary = "#EE6F57", # <3>
-          secondary = "#32E0C4", # <3>
-          success = "#FF4B5C", # <3>
-          base_font = sass::font_google("Ubuntu"), # <3>
-          heading_font = sass::font_google("Ubuntu") # <3>
-        ), # <3>
-        bslib::layout_sidebar( # <3>
-          sidebar = bslib::sidebar( # <3>
-            mod_var_input_ui("vars") # <3>
-          ), # <3>
-          bslib::card( # <3>
-            full_screen = TRUE, # <3>
-                bslib::card_header( # <3>
-                  tags$img( # <3>
-                  src = "www/bootstrap.png", # <4>
-                  height = 80, # <3>
-                  width = 100, # <3>
-                  style = "margin:10px 10px" # <3>
-                ) # <3>
-              ), # <3>
-             bslib::card_body( # <3>
-              mod_scatter_display_ui("plot") # <3>
-            ) # <3>
-          ) # <3>
-        ) # <3>
-      ) # <3>
+      bslib::page_fillable(
+        title = "Movie Reviews (bslib)",
+        theme = bslib::bs_theme(
+          bg = "#101010",
+          fg = "#F6F5F5",
+          primary = "#EE6F57",
+          secondary = "#32E0C4",
+          success = "#FF4B5C",
+          base_font = sass::font_google("Ubuntu"),
+          heading_font = sass::font_google("Ubuntu")
+        ),
+        bslib::layout_sidebar(
+          sidebar = bslib::sidebar(
+            open = TRUE,
+            mod_var_input_ui("vars")
+          ),
+          bslib::card(
+            full_screen = TRUE,
+                bslib::card_header(
+                  img(src = "www/bootstrap.png", # <4>
+                  height = 80,
+                  width = 100,
+                  style = "margin:10px 10px")
+              ),
+             bslib::card_body(
+               div(
+                 mod_scatter_display_ui("plot")
+               )
+            )
+          )
+        )
+      )
     ) # <3>
-  }# <3>
+  }
 } 
 ```
 1. Include `inst/www` resources  
@@ -505,6 +493,17 @@ movies_ui <- function(bslib = FALSE) {
 #| results: asis
 #| eval: true
 hot_key("all")
+```
+
+
+```{r}
+#| label: git_launch_09b_inst-bslib
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  branch = "09b_inst-bslib")
 ```
 
 This alternate version of `movies_app()` uses the same modules and utility functions as the previous versions, but when `bslib = TRUE`, the app displays the alternate UI layout:
@@ -525,10 +524,11 @@ movies_app(run = 'p', bslib = TRUE)
 
 ::::
 
+
 The example above was a simple, but using `inst/` to hold alternate features (i.e., images or custom `.html`, `.css`, `.sass`, `.js` code) that can be easily displayed with an optional argument is a great tool for demonstrating features to users and stakeholders. 
 
  
-### [`dev/` versions]{style="font-size: 0.95em;"} {#sec-external-inst-dev}
+### Alternate data in [`dev/`]{style="font-size: 0.95em;"} {#sec-external-inst-dev}
 
 It's not uncommon to be working on multiple 'development' versions of an application in the same package. In these situations, we might want to begin developing our application in the `inst/dev` folder:
 
@@ -604,8 +604,6 @@ fst::write_fst(x = tidy_movies, path = "inst/dev/tidy_movies.fst")
 #### [`dev/` code]{style="font-size: 0.95em;"}
 
 In `inst/dev/`, we've placed the application modules in an [`app.R` file](https://github.com/mjfrigaard/moviesApp/blob/09c_inst-dev/inst/dev/app.R). Any of the functions from `moviesApp` can be used in the `dev/` modules with explicit namespacing (i.e., `moviesApp::scatter_plot()`).
-
-##### Modules
 
 `dev_mod_vars_ui()` contains choices for the names in the `tidy_movies` data, but there's no need to re-write the `mod_var_input_server()` function.
   
@@ -766,11 +764,7 @@ dev_mod_scatter_server <- function(id, var_inputs) {
 2. Bind `missing` input to update when UI changes   
 3. Bind plot output to update with variable inputs and 'missing' checkbox output  
 
-
-
 `app.R` also contains development app UI and server functions. 
-
-##### UI and server
 
 In `devUI()`, development modules are paired with package modules (`dev_mod_vars_ui()` and `moviesApp::mod_var_input_server()`), and we've include an alternate image (`bootstrap.png`).[^export-modules-6]
 
@@ -843,18 +837,18 @@ devServer <- function(input, output, session) {
 1. `mod_var_input_server()` exported from `moviesApp`'s `R/` folder 
 2. Defined in `dev/inst/app.R`
 
-#### [Launching `inst/dev/`]{style="font-size: 0.95em;"} {#sec-inst-dev-launch}
+#### Launch [`inst/dev/`]{style="font-size: 0.95em;"} {#sec-inst-dev-launch}
 
 Finally, the development app is launched with it's own standalone function (stored in `R/ggp2_movies_app.R`). The `ggp2_movies_app()` function is similar to `movies_app()`, but `appDir` is set to the location of the development files (which we provide with `system.file()`).
 
 ```{r}
-#| label: git_box_shinyAppPkg_09c_inst-dev
+#| label: git_box_09c_inst-dev
 #| echo: false
 #| results: asis
 #| eval: true
 git_margin_box(
   fig_pw = '75%', 
-  branch = "11c_inst-dev", 
+  branch = "09c_inst-dev", 
   repo = 'moviesApp')
 ```
 
@@ -888,6 +882,16 @@ ggp2_movies_app <- function(options = list(), run = "w") {
 <br>
 
 After loading, documenting, and installing `moviesApp`, we can run the development version using `ggplot2movies_app()`:
+
+```{r}
+#| label: git_launch_09c_inst-dev
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  branch = "09c_inst-dev")
+```
 
 ```{r}
 #| label: dev_key_load_all_02
@@ -1043,7 +1047,7 @@ Waiting for task: 1341341295
 You can see a deployed version of this application [here](https://mjfrigaard.shinyapps.io/shinyapppkg/)
 
 ```{r}
-#| label: git_box_shinyAppPkg_07_inst-prod
+#| label: git_box_09d_inst-prod
 #| echo: false
 #| results: asis
 #| eval: true
