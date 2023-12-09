@@ -13,9 +13,9 @@ source("_common.R")
 #| results: asis
 #| eval: true
 co_box(
-  color = "r", 
+  color = "y", 
   look = "minimal",
-  header = "Alert",
+  header = "Caution",
   contents = "The contents for section are being revised. Thank you for your patience."
 )
 ```
@@ -36,7 +36,7 @@ co_box(
 
 - `rhino` apps rely on [`renv`](https://rstudio.github.io/renv/articles/renv.html) and [`box`](https://klmr.me/box/) for managing imported dependencies (instead of the `DESCRIPTION` and `NAMESPACE` files in an R package).
   
-- `rhino` requires [node.js](https://www.wikiwand.com/en/Node.js), open-source JavaScript runtime environment.
+- `rhino` requires [node.js](https://www.wikiwand.com/en/Node.js), an open-source JavaScript runtime environment.
   
 "
 )
@@ -146,37 +146,39 @@ The [`rhino` website](https://appsilon.github.io/rhino/articles/explanation/appl
 
 [^rhino-box-depends]: Imported dependencies in `rhino` apps use [`box` modules](https://klmr.me/box/articles/box.html) instead of the `DESCRIPTION` and `NAMESPACE`.
 
-[^rhino-recommended-documentation]: I highly recommend reading about [testing box modules](https://klmr.me/box/articles/testing.html) and `rhino` applications [with cypress](https://appsilon.github.io/rhino/articles/tutorial/write-end-to-end-tests-with-cypress.html) and [`shinytest2`](https://appsilon.github.io/rhino/articles/how-to/use-shinytest2.html). 
+[^rhino-recommended-documentation]: Be sure to read up on [testing box modules](https://klmr.me/box/articles/testing.html) and `rhino` applications [with cypress](https://appsilon.github.io/rhino/articles/tutorial/write-end-to-end-tests-with-cypress.html) and [`shinytest2`](https://appsilon.github.io/rhino/articles/how-to/use-shinytest2.html). 
 
 ## `box` modules
 
-A `box` module (not to be confused with a Shiny module) is a collection of `.R` scripts in a folder. The modules in a new `rhino` app are stored in the `app/logic/` and `app/view/` folders: 
+A `box` module (not to be confused with a Shiny module) is a collection of `.R` scripts in a specified folder. The modules in a new `rhino` app are stored in the `app/logic/` and `app/view/` folders:[^rhino-code-structure]
+
+[^rhino-code-structure]: `rhino` [recommends](https://appsilon.github.io/rhino/articles/explanation/application-structure.html#philosophy) placing non-Shiny code in the `app/logic` folder and keeping all Shiny modules and reactive code in `app/view`.
 
 ```{bash}
 #| eval: false 
 #| code-fold: false 
-app/
-  ├── logic/ # <1> 
-  │   ├── __init__.R
-  │   ├── check-point_plot.R
-  │   ├── data.R
-  │   └── plot.R
-  ├── main.R
-  └── view/ # <2> 
-      ├── __init__.R
-      ├── display.R
-      └── inputs.R
+app
+├── js/ # <1>
+├── logic/ # <2>
+├── main.R # <3>
+├── static/ # <4>
+├── styles/ # <5>
+└── view/ # <6>
 
-3 directories, 8 files
+6 directories, 1 file
 ```
-1. Non-shiny code  
-2. Shiny modules and app code
+1. JavaScript code
+2. Non-shiny code  
+3. Primary app file  
+4. Static `.js` or `.css`  
+5. App CSS files 
+6. Shiny modules and app code
 
-### Example `tidy/logo` module
+### `box::use()`
 
-Here is a quick example of how `box` modules work:[^rhino-box-blog-post]
+Below I'll demonstrate how `box` modules work with the `tidyverse_logo()` function from the `tidyverse` meta-package:[^rhino-box-blog-post]
 
--   Below I'll attempt to use the `tidyverse_logo()` function from the `tidyverse` package:
+-   If I attempt to use the `tidyverse_logo()` function without installing or loading the `tidyverse` package, I see the following error:
 
     ```{r}
     #| label: tidyverse_logo_test
@@ -191,11 +193,11 @@ Here is a quick example of how `box` modules work:[^rhino-box-blog-post]
     Error in tidyverse_logo(): could not find function "tidyverse_logo"
     ```
     
-    -   The error is expected, because `tidyverse` has been installed, but hasn't been loaded with `libaray(tidyverse)`.
+    -   This is expected, because even if `tidyverse` has been installed, it hasn't been loaded with `libaray(tidyverse)`.
 
--   In a `tidy` module, I'll import the `tidyverse_logo()` from `tidyverse` by creating a `logo.R` file and include the following code:
+I'll create a new `box` module named `tidy` (which again, is just a folder named `tidy`), and I'll import the `tidyverse_logo()` from `tidyverse` by creating a `logo.R` file with the following code:
     
-    - The code must include `#' @export` on the preceding line:
+  - The code must include `#' @export` on the preceding line:
 
     ```{r}
     #| label: box_tidy
@@ -208,23 +210,24 @@ Here is a quick example of how `box` modules work:[^rhino-box-blog-post]
     )
     ```
     
-    -   Note I did not have to use `tidyverse::tidyverse_logo()`
+    -   Note I **did not** have to use `tidyverse::tidyverse_logo()`
 
--   To use the `tidy` module, I'll call `box::use(tidy/logo)`, which loads `logo` into the environment. 
+**`box::use()` is used for creating *and* using `box` modules.** The code above places the `tidyverse_logo()` function in the `tidy` module, and we'll also call `box::use(tidy/logo)` to access the `logo` object from the `tidy` module:
+
+  - `box::use(tidy/logo)` loads `logo` into the environment:
 
     ```{r}
     #| label: box_use_tidy_logo
     #| eval: false
     #| code-fold: false
     box::use(tidy/logo)
-    ls(logo)
     ```
     
     ```bash
      <module: tidy/logo>
     ```
     
-    -   I can use `ls()` on `logo` to return the object(s) it imports:  
+    -   I can use `ls()` on `logo` to return the object(s) it imports:
     
     ```{r}
     #| label: ls_logo
@@ -237,7 +240,9 @@ Here is a quick example of how `box` modules work:[^rhino-box-blog-post]
     [1] "tidyverse_logo"
     ```
     
--   To access the `tidyverse_logo()` function, I can use `logo$tidyverse_logo()`:
+**To access the objects within a `box` module, use the `$` operator.**
+
+  - `logo$tidyverse_logo()` accesses the `tidyverse_logo()` function:
 
     ```{r}
     #| label: logo_tidyverse_logo
@@ -253,8 +258,10 @@ Here is a quick example of how `box` modules work:[^rhino-box-blog-post]
     \__/_/\_,_/\_, /|___/\__/_/ /___/\__/ 
          ⬢  . /___/      ⬡      .       ⬢ 
     ```
+    
+`box` modules are totally self-contained, meaning the `tidyverse_logo()` function only exists *inside* the `logo` module.
 
--   Note that the `tidyverse_logo()` function is still not loaded *outside* the `logo` module
+  - Note what happens when I try to access the `tidyverse_logo()` function by itself:
 
     ```{r}
     #| label: tidyverse_logo_retest
@@ -269,6 +276,415 @@ Here is a quick example of how `box` modules work:[^rhino-box-blog-post]
     ```
 
 By explicitly naming the functions you intend to use with `box::use(package[function])`, `box` modules remove the need install and load packages with `install.packages()` and `library()`.[^rhino-explicit-namespaces]
+
+### Utility functions 
+
+In `rap`, I've placed the non-Shiny utility functions (i.e., the business logic) in `app/logic`:
+
+```{bash}
+#| eval: false 
+#| code-fold: false 
+app/logic
+├── __init__.R
+├── data.R
+└── plot.R
+
+1 directory, 4 files
+```
+
+In `app/logic/data.R`, `box::use()` adds the necessary `vroom` functions used to import the `movies.csv` data from the GitHub repository:
+
+```{r}
+#| eval: false 
+#| code-fold: false 
+# contents of app/logic/data.R
+
+#' @export
+box::use(
+  vroom[vroom, cols, col_skip] # <1>
+)
+
+#' import movies data 
+#' @export
+movies_data <- function() {
+  raw_csv_url <- "https://bit.ly/47FPO6t"
+  # from 07_data branch!
+  vroom(raw_csv_url, # <2>
+    col_types = cols(...1 = col_skip())) # <2>
+}
+```
+1. Add `vroom` functions 
+2. Call `vroom` functions
+
+In the `app/logic/plot.R` file, `box::use()` adds the necessary `ggplot2` and `rlang` functions for the `scatter_plot()` function:
+
+```{r}
+#| eval: false 
+#| code-fold: false 
+# contents of app/logic/plot.R
+
+#' scatter plot function
+#' @export
+scatter_plot <- function(df, x_var, y_var, col_var, alpha_var, size_var) {
+
+box::use(
+  ggplot2[ggplot, aes, geom_point], # <1> 
+  rlang[.data] # <2> 
+)
+  
+  ggplot( # <3>
+    data = df,
+    aes( 
+      x = .data[[x_var]], # <4>
+      y = .data[[y_var]], # <4>
+      color = .data[[col_var]] # <4>
+    )
+  ) +
+    geom_point(alpha = alpha_var, size = size_var) # <3>
+  
+}
+```
+1. Add `ggplot2` functions
+2. Add `rlang` functions
+3. Use `ggplot2` functions
+4. Use `rlang` functions
+
+The `app/logic/__init__.R` file exports the two modules above: 
+
+```{r}
+#| eval: false 
+#| code-fold: false 
+# Logic: application code independent from Shiny.
+# https://go.appsilon.com/rhino-project-structure
+#' @export
+box::use(
+  app / logic / data,
+  app / logic / plot
+)
+```
+
+### Shiny modules
+
+Our Shiny `box` modules are placed in `app/view`, and are separated into `inputs` and `display`: 
+
+```{bash}
+#| eval: false 
+#| code-fold: false 
+app/view
+├── __init__.R
+├── display.R
+└── inputs.R
+
+1 directory, 3 files
+```
+
+The `box` module stored in `app/view/inputs` is the code from `R/mod_var_input.R`. **`rhino` modules are still broken into `ui` and `server` functions, and `box::use()` is called *within* each function to add the necessary `package[function]`**:
+
+```{r}
+#| eval: false 
+#| code-fold: true 
+#| code-summary: 'view/hide ui from app/view/inputs'
+# app/view/inputs.R
+
+# define module functions
+
+#' input values ui
+#' @export
+ui <- function(id) {
+  box::use(
+    shiny[
+      NS, tagList, selectInput, h3,
+      sliderInput, textInput
+    ],
+  )
+  ns <- NS(id)
+  tagList(
+    selectInput(
+      inputId = ns("y"),
+      label = "Y-axis:",
+      choices = c(
+        "IMDB rating" = "imdb_rating",
+        "IMDB number of votes" = "imdb_num_votes",
+        "Critics Score" = "critics_score",
+        "Audience Score" = "audience_score",
+        "Runtime" = "runtime"
+      ),
+      selected = "audience_score"
+    ),
+    selectInput(
+      inputId = ns("x"),
+      label = "X-axis:",
+      choices = c(
+        "IMDB rating" = "imdb_rating",
+        "IMDB number of votes" = "imdb_num_votes",
+        "Critics Score" = "critics_score",
+        "Audience Score" = "audience_score",
+        "Runtime" = "runtime"
+      ),
+      selected = "imdb_rating"
+    ),
+    selectInput(
+      inputId = ns("z"),
+      label = "Color by:",
+      choices = c(
+        "Title Type" = "title_type",
+        "Genre" = "genre",
+        "MPAA Rating" = "mpaa_rating",
+        "Critics Rating" = "critics_rating",
+        "Audience Rating" = "audience_rating"
+      ),
+      selected = "mpaa_rating"
+    ),
+    sliderInput(
+      inputId = ns("alpha"),
+      label = "Alpha:",
+      min = 0, 
+      max = 1, 
+      step = 0.1,
+      value = 0.5
+    ),
+    sliderInput(
+      inputId = ns("size"),
+      label = "Size:",
+      min = 0, 
+      max = 5,
+      value = 2
+    ),
+    textInput(
+      inputId = ns("plot_title"),
+      label = "Plot title",
+      placeholder = "Enter plot title"
+    )
+  )
+}
+```
+
+The `server` function in `app/view/inputs` returns the same reactive list of inputs from the UI: 
+
+```{r}
+#| eval: false 
+#| code-fold: false
+#' input values server
+#' @export
+server <- function(id) {
+  box::use(
+    shiny[moduleServer, reactive],
+  )
+
+  moduleServer(id, function(input, output, session) {
+    return(
+      reactive({
+        list(
+          "x" = input$x,
+          "y" = input$y,
+          "z" = input$z,
+          "alpha" = input$alpha,
+          "size" = input$size,
+          "plot_title" = input$plot_title
+        )
+      })
+    )
+  })
+} 
+```
+
+The `app/view/display` module contains the code from `R/mod_scatter_display.R`, but with a few changes.
+
+-   The `app/logic/data` and `app/logic/plot` modules are added to `app/view/display` with `box::use()`:
+
+    ```{r}
+    #| eval: false 
+    #| code-fold: false
+    # app/view/display.R
+    
+    # import data and plot modules
+    box::use(
+      app / logic / data,
+      app / logic / plot
+    )
+    ```
+
+-   The `ui` in `app/view/display` includes the same UI code from `R/mod_scatter_display.R`, but after the necessary `shiny` functions are added with `box::use()`:
+
+    ```{r}
+    #| eval: false 
+    #| code-fold: false
+    #' display ui
+    #' @export
+    ui <- function(id) {
+      box::use(
+        shiny[NS, tagList, tags, plotOutput]
+      )
+      ns <- NS(id)
+      tagList(
+        tags$br(),
+        tags$blockquote(
+          tags$em(
+            tags$h6(
+              "The code for this application comes from the ",
+              tags$a("Building web applications with Shiny",
+                href = "https://rstudio-education.github.io/shiny-course/"
+              ),
+              "tutorial"
+            )
+          )
+        ),
+        plotOutput(outputId = ns("scatterplot"))
+      )
+    }
+    ```
+    
+-   The `server` function adds the `ggplot2`, `shiny`, `tools`, and `stringr` functions with `box::use()` for creating the plot output, and imports the `movies` data with `data$movies_data()`:
+
+    ```{r}
+    #| eval: false 
+    #| code-fold: false
+    #' display server
+    #' @export
+    server <- function(id, var_inputs) {
+      
+      # load 
+      box::use(
+        ggplot2[labs, theme_minimal, theme],
+        shiny[NS, moduleServer, plotOutput, reactive, renderPlot],
+        tools[toTitleCase],
+        stringr[str_replace_all]
+      )
+    
+      moduleServer(id, function(input, output, session) {
+        
+        # use data$movies_data() ----
+        movies <- data$movies_data()
+    
+        inputs <- reactive({
+          plot_title <- toTitleCase(var_inputs()$plot_title)
+          list(
+            x = var_inputs()$x,
+            y = var_inputs()$y,
+            z = var_inputs()$z,
+            alpha = var_inputs()$alpha,
+            size = var_inputs()$size,
+            plot_title = plot_title
+          )
+        })
+    
+        output$scatterplot <- renderPlot({
+          # use plot$scatter_plot() ----
+          plot <- plot$scatter_plot(
+            df = movies,
+            x_var = inputs()$x,
+            y_var = inputs()$y,
+            col_var = inputs()$z,
+            alpha_var = inputs()$alpha,
+            size_var = inputs()$size
+          )
+          plot +
+            labs(
+              title = inputs()$plot_title,
+              x = str_replace_all(
+                toTitleCase(inputs()$x ), "_", " " ),
+              y = str_replace_all(
+                toTitleCase(inputs()$y), "_", " " )
+            ) +
+            theme_minimal() +
+            theme(legend.position = "bottom")
+        })
+      })
+    }
+    ```
+
+## [`app/main.R`]{style="font-size: 1.05em;"}
+
+The `app/main.R` file contains the primary UI and Server functions for the application. This file adds the `shiny` functions *and* the `inputs` and `display` modules from `app/view`: 
+
+```{r}
+#| eval: false 
+#| code-fold: false
+# app/main.R
+
+# shiny functions
+box::use(
+  shiny[
+    NS, fluidPage, sidebarLayout, sidebarPanel,
+    mainPanel, fluidRow, column, tags, icon,
+    textOutput, moduleServer, renderText
+  ]
+)
+
+# import modules
+box::use(
+  # load inputs module ----
+  app / view / inputs,
+  # load display module ----
+  app / view / display
+)
+```
+
+Note that we don't need to import `app/logic` modules in `app/main.R`, because they're imported in their respective `app/view` modules. 
+
+The `ui()` and `server()` functions in `app/main` look very similar to the `movies_ui()` and `movies_server()` functions, except we access the modules using the `$` operator (i.e., `input$ui()`, `display$ui()`, etc.):
+
+```{r}
+#| eval: false 
+#| code-fold: false
+#' rap ui
+#' @export
+ui <- function(id) {
+  ns <- NS(id)
+  fluidPage(
+    sidebarLayout(
+      sidebarPanel(
+        # use inputs module UI ----
+        inputs$ui(ns("vals"))
+      ),
+      mainPanel(
+        fluidRow(
+          column(
+            width = 12,
+              tags$h3("rap")
+            )
+        ),
+        fluidRow(
+          column(
+            width = 1,
+            offset = 11,
+            # example info button ---
+            tags$button(
+              id = "help-button",
+              icon("info"),
+              # add 'onclick' after rhino::build_sass()
+              # and rhino::build_js()
+              onclick = "App.showHelp()"
+            )
+          )
+        ),
+        fluidRow(
+          column(
+            width = 12,
+            # use display module UI ----
+            display$ui(ns("disp"))
+          )
+        )
+      )
+    )
+  )
+}
+
+#' rap server
+#' @export
+server <- function(id) {
+  moduleServer(id, function(input, output, session) {
+    # use inputs module server ----
+    selected_vars <- inputs$server(id = "vals")
+    # use display module server ----
+    display$server(
+      id = "disp",
+      var_inputs = selected_vars
+    )
+  })
+}
+```
+
 
 ## Tests
 
@@ -312,6 +728,10 @@ test_that("main server works", {     # <2>
 ```
 1. `box` module importing test package functions
 2. Using `shiny::testServer()` and `testthat::test_that()` functions in test. 
+
+I've included tests for the utility functions and modules in the `17_rhino` branch, but I'll cover testing with rhino elsewhere.[^testing-rhino-apps]
+
+[^testing-rhino-apps]: See the [Shiny frameworks](https://mjfrigaard.github.io/sfw/) supplemental website for more information on testing your `rhino` app.
 
 ## `rhino` dependencies 
 
