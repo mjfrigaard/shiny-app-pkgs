@@ -78,34 +78,33 @@ git_margin_box <- function(contents = "standard", fig_pw = '70%', branch = 'main
   install = cat(paste0(
       "\n",
       "::::{.column-margin}\n\n",
-      ":::{style='font-size: 1.05em;'}\n\n",
+      # ":::{style='font-size: 1.10em;'}\n\n",
       "Install the [`shinyap` package](https://mjfrigaard.github.io/shinyap/articles/getting-started.html) to easily launch the applications:\n\n",
-    
+      ":::{style='font-size: 0.65rem;'}\n",
       "\`\`\`r \n",
       "install.packages('pak')\n",
-      "pak::pak(\n",
-      "\t'mjfrigaard/shinyap'\n",
-      "\t)\n",
+      "library(pak)\n",
+      "pak('mjfrigaard/shinyap')\n",
       "\`\`\`\n",
-    
       ":::\n\n",
+    
+      # ":::\n\n",
       ":::: \n\n"
     )),
   launch = cat(paste0(
       "\n",
       ":::: {.column-margin}\n\n",
     
-      ":::{style='font-size: 1.10em;'}\n\n",
+      # ":::{style='font-size: 1.10em;'}\n\n",
       "Launch app with the [`shinyap` package](https://mjfrigaard.github.io/shinyap/articles/getting-started.html):\n\n",
-      ":::\n\n",
+      # ":::\n\n",
     
-      ":::{style='font-size: 0.70em;'}\n",
+      ":::{style='font-size: 0.65rem;'}\n",
       "\`\`\`r \n",
-      "launch_app(\n",
-      "\t'", branch, "'\n",
-      "\t)\n",
+      "launch('", branch, "')\n",
       "\`\`\`\n",
       ":::\n",
+    
       ":::: \n\n"
     )),
   standard = cat(paste0(
@@ -116,8 +115,10 @@ git_margin_box <- function(contents = "standard", fig_pw = '70%', branch = 'main
       ":::\n\n",
       
       ":::{style='font-size: 1.05em;'}\n\n",
-      "\nThis section's code is in the [`", branch, "`](https://github.com/mjfrigaard/", repo, "/tree/", branch, ")
-      branch of [`", repo, "`](https://github.com/mjfrigaard/", repo, ").\n\n",
+      "\nThis section's code is in the [`", branch, 
+      "`](https://github.com/mjfrigaard/", repo, "/tree/", branch, ")
+      branch of [`", repo, "`](https://github.com/mjfrigaard/", 
+      repo, ").\n\n",
       ":::\n\n",
     
       "::::\n\n"
@@ -126,8 +127,10 @@ git_margin_box <- function(contents = "standard", fig_pw = '70%', branch = 'main
       "\n",
       ":::: {.column-margin}\n\n",
       "::: {style='font-size: 1.05em;'}\n\n",
-      "![](img/new_branch_ico.png){width='", fig_pw, "' fig-align='center'}\n\n",
-      "\nThis section's code is in the [`", branch, "`](https://github.com/mjfrigaard/", repo, "/tree/", branch, ")
+      "![](img/new_branch_ico.png){width='", fig_pw, 
+      "' fig-align='center'}\n\n",
+      "\nThis section's code is in the [`", branch, 
+      "`](https://github.com/mjfrigaard/", repo, "/tree/", branch, ")
       branch of [`", repo, "`](https://github.com/mjfrigaard/", repo, ").\n\n",
       "::: \n",
       ":::: \n\n"
@@ -137,7 +140,8 @@ git_margin_box <- function(contents = "standard", fig_pw = '70%', branch = 'main
       ":::: {.column-margin}\n\n",
       "::: {style='font-weight: bold; font-size: 1.00em;'}\n\n",
       "![](img/new_branch_ico.png){width='", fig_pw, "' fig-align='center'}\n\n",
-      "\n\n Git branch: [`", branch, "`](https://github.com/mjfrigaard/", repo, "/tree/", branch, ")\n\n",
+      "\n\n Git branch: [`", 
+      branch, "`](https://github.com/mjfrigaard/", repo, "/tree/", branch, ")\n\n",
       "Launch app with:\n\n",
       "::: \n\n",
       
