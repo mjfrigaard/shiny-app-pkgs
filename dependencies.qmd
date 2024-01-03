@@ -316,13 +316,13 @@ Error: 'movies_app' is not an exported object from 'namespace:moviesApp'
 ```
 
 ```{r}
-#| label: git_box_pkgApp_03_pkg-exports
+#| label: git_box_06.1_pkg-imports
 #| echo: false
 #| results: asis
 #| eval: true
 git_margin_box(
   fig_pw = '75%', 
-  branch = "06a_pkg-exports", 
+  branch = "06.1_pkg-exports", 
   repo = 'moviesApp')
 ```
 
@@ -637,6 +637,25 @@ c("ggplot2") %in% loadedNamespaces()
 [1] TRUE
 ```
 
+
+```{r}
+#| label: co_box_accessing_non_exported_funs
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b", 
+  fold = FALSE,
+  header = "Accessing non-exported functions", 
+  contents = "
+
+***What about functions that _aren't_ exported from `moviesApp`?***
+  
+Functions that are not exported (i.e., do not include the `@export` tag) are still accessible after installing and loading a package using the `pkg:::fun()`
+"
+)
+```
+
 ### What to [`@export`]{style="font-size: 1.05em"}
 
 > *'Always err on the side of caution, and simplicity. It's easier to give people more functionality than it is to take away stuff they're used to'* - [What to export, R Packages, 2ed](https://r-pkgs.org/dependencies-in-practice.html#what-to-export)
@@ -696,13 +715,13 @@ co_box(
 ## Imports {#sec-depends-imports}
 
 ```{r}
-#| label: git_box_pkgApp_04_pkg-imports
+#| label: git_box_06.2_pkg-imports
 #| echo: false
 #| results: asis
 #| eval: true
 git_margin_box(
   fig_pw = '75%', 
-  branch = "06b_pkg-imports", 
+  branch = "06.2_pkg-imports", 
   repo = 'moviesApp')
 ```
 
@@ -732,7 +751,7 @@ The `Suggests` field should include any packages that enhance our app-package, b
 
 ### Function-level access
 
-Function-level access is managed using namespace-qualified (or explicit namespacing). The `NAMESPACE` includes add-on packages or functions with an `@import` and `@importFrom` tag.[^imports-rpkgs-importFrom-import]
+Function-level access is managed using namespace-qualified references (or 'explicit namespacing') in the code below `R/`. The `NAMESPACE` can also be used to include add-on packages or functions with the `@import` and `@importFrom` tags.[^imports-rpkgs-importFrom-import]
 
 #### [`pkg::fun()`]{style="font-size: 1.05em"} {#sec-depends-pkg-fun-syntax}
 
@@ -786,7 +805,9 @@ We have some special considerations for the imports in `moviesApp`:
 ```
 1. Import entire shiny package namespace
 
-- [x] `.data` can't be exported using `::`, so we'll include `@importFrom` for the use of `.data` in `R/scatter_plot.R`  
+- [x] `.data` can't be exported using `::`, so we'll include `@importFrom` for the use of `.data` in `R/scatter_plot.R` 
+
+- [x] The `ggplot2` package has over 400 functions, so we don't want to import the entire package with `@import`. Adding the package to the Imports field and using namespace-qualified references.[^ggplot2-in-pkgs]
 
 ```{r}
 #| eval: false 
@@ -824,6 +845,7 @@ We have some special considerations for the imports in `moviesApp`:
 1. Import a the `.data` operator from `rlang`
 
 
+[^ggplot2-in-pkgs]: Read more about using `ggplot2` in packages in the section titled, '[Referring to `ggplot2` functions](https://ggplot2.tidyverse.org/dev/articles/ggplot2-in-packages.html#referring-to-ggplot2-functions)'
 
 <br>
 
@@ -954,7 +976,7 @@ ggplot2::ggplot(data = mtcars,
 
 
 
-## More info on imports 
+## More information on imports 
 
 I've provided a handful of useful tips on package imports below: 
 
@@ -982,17 +1004,17 @@ I've provided a handful of useful tips on package imports below:
 
 ***Where should I place the `@importFrom` tag in the code below R/?***
 
-- Place the `@importFrom pkg fun` tag directly above the code using the add-on function.[^use-import-from]
+- Place the `@importFrom pkg fun` tag directly above the code using the add-on function.
+
+- You can also consolidate all `@import` and `@importFrom` tags into a single package doc file (i.e., `R/[moviesApp]-package.R`) by calling `usethis::use_package_doc()`.
 
 ***Should I be using `@importFrom` or `@import` from?***
 
-- Prefer using `@importFrom` over `@import`[^r-ext-imports] [^r-pkgs-imports]
+- Prefer `@importFrom` over `@import` (but try to avoid using either [^r-ext-imports] [^r-pkgs-imports])
 
-[^r-ext-imports]: "*Using `importFrom` selectively rather than `Imports` is good practice and recommended notably [when importing from packages with more than a dozen exports and especially from those written by others (so what they export can change in future)]{style="font-weight: bold; color: #043b67;"}.*" - [Specifying imports and exports](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Specifying-imports-and-exports). 
+[^r-ext-imports]: "*Using `importFrom` selectively rather than `Imports` is good practice and recommended notably [when importing from packages with more than a dozen exports and especially from those written by others (so what they export can change in future)]{style="font-weight: bold;"}.*" - [Specifying imports and exports](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Specifying-imports-and-exports). 
 
-[^r-pkgs-imports]: "*Specifically, we recommend that you [default to not importing anything from [add-on packages] into your namespace]{style="font-weight: bold; color: #043b67;"}. This makes it very easy to identify which functions live outside of your package, which is especially useful when you read your code in the future. This also eliminates any concerns about name conflicts between [add-on packages] and your package.*" - [R Packages, 2ed](https://r-pkgs.org/dependencies-in-practice.html#sec-dependencies-in-imports)
-
-[^use-import-from]: You can also consolidate all `@import` and `@importFrom` tags into a single package doc file (i.e., `R/[moviesApp]-package.R`) by calling `usethis::use_package_doc()`.
+[^r-pkgs-imports]: "*Specifically, we recommend that you [default to not importing anything from [add-on packages] into your namespace]{style="font-weight: bold;"}. This makes it very easy to identify which functions live outside of your package, which is especially useful when you read your code in the future. This also eliminates any concerns about name conflicts between [add-on packages] and your package.*" - [R Packages, 2ed](https://r-pkgs.org/dependencies-in-practice.html#sec-dependencies-in-imports)
 
 ***Where can I find more information about package namespaces and imports?***
 
@@ -1004,7 +1026,7 @@ I've provided a handful of useful tips on package imports below:
     
 [^advr-imports]: See the [Package environments and the search path](https://adv-r.hadley.nz/environments.html#search-path) of [Advanced R, 2ed](https://adv-r.hadley.nz/index.html)
 
-[^r-pkgs-fun-lookup]: See the [Function lookup inside a package](https://r-pkgs.org/dependencies-mindset-background.html#function-lookup-inside-a-package) Section of [R Packages, 2ed](https://r-pkgs.org/)
+[^r-pkgs-fun-lookup]: See the [Function lookup inside a package](https://r-pkgs.org/dependencies-mindset-background.html#function-lookup-inside-a-package) section of [R Packages, 2ed](https://r-pkgs.org/)
 
 In order for app-package to work, users needs to have access to any add-on packages that are called in the code below `R/`. Knowing when, why, how and what happens to imports helps you decide how to fit these habits into your package development workflow. 
 
