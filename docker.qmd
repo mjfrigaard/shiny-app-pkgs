@@ -14,11 +14,378 @@ library(testthat)
 #| results: asis
 #| eval: true
 co_box(
-  color = "r", 
+  color = "y", 
   look = "minimal",
-  header = "Alert",
-  contents = "The contents for section are being revised. Thank you for your patience."
+  header = "Caution",
+  contents = "The contents for section are being developed. Thank you for your patience."
 )
 ```
 
-## Docker
+[Docker](https://www.docker.com/) containers ensure your Shiny applications are deployed with the necessary tools and resources (dependencies, libraries, etc.) without significantly interfering with the native operating system or hardware.
+
+::: {layout="[50,-10,40]" layout-valign="center"}
+
+![Common problem when shipping apps](images/it-works-on-my-machine-meme.png){width=60% fig-align='right'}
+
+![Docker Whale](images/docker-icon.png){width=60% fig-align='right'}
+
+
+:::
+
+
+With Docker, each Shiny application runs in its own isolated *container*, which ensures your app works consistently, regardless of where it's deployed.[^docker-documentation]
+
+[^docker-documentation]: Read more about Docker in the [official documentation.](https://docs.docker.com/)
+
+## What is Docker?
+
+Imagine your computer as a building. In this building, your operating system (OS) is like a big kitchen where everyone cooks. If someone (a software application) needs the oven at a specific temperature or requires a particular ingredient, this can interfere with what someone else (i.e., other programs) wants to cook. This competition for resources is somewhat analogous to software conflicts on a computer, where different applications might have different requirements (dependencies, libraries, versions, etc.).
+
+Docker containers are like individual, self-contained mini-kitchens containing appliances, ingredients, and recipes. These mini-kitchens represent different software applications. Each mini-kitchen can operate independently in a building, regardless of what's happening in the others.[^docker-not-vm]
+
+[^docker-not-vm]: Docker containers are similar to virtual machine environments (like [VMware](https://www.vmware.com/)), but don't use a significant portion of the hardware system’s resources.
+
+## Installing Docker 
+
+Follow the instructions found on the [Docker website](https://docs.docker.com/get-docker/) to install Docker Desktop. I'll be demonstrating how to use Docker on a macOS (but it's available on most operating systems).
+
+After installation, Docker Desktop will initially show no active images/containers:[^initial-docker]
+
+[^initial-docker]: If you follow the Docker 'Walkthroughs' in the Learning Center, you might see the `welcome-to-docker` container listed.
+
+![Docker Desktop Containers (Mac)](images/docker_desktop.png){width=100% fig-align='center'}
+
+After installing Docker, the development process for your Shiny app-package doesn't change until you're ready to deploy your application. 
+
+
+## Containers and images
+
+Two terms to know when working with Docker are container and image. Containers and images work together but they serve different purposes in the Docker ecosystem.
+
+### Images
+
+A Docker image is a lightweight, standalone, and executable file that includes everything needed to run an application, including the code, runtime, system tools, libraries, and settings.
+
+### Containers
+
+A Docker container is a runtime instance of a Docker image. When you run an image, Docker creates a container from that image. A Docker image can exist without a container, but all containers must be instantiated from an image.
+
+### How they work
+
+Docker images are created through a `build` process, which uses a `Dockerfile` (a text file containing a series of instructions) to define how the image should be constructed. All of our application dependencies are stored inside the container, which ensures consistency across environments. The container also isolates the image (and the application) from the host system. 
+
+## The `Dockerfile`
+
+We'll be using the `moviesApp` example from the previous chapter as an example (the folder/file structure is below):
+
+```{r}
+#| label: git_box_15_docker
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  fig_pw = '50%', 
+  branch = "15_docker", 
+  repo = 'moviesApp')
+```
+
+
+```{bash}
+#| eval: false 
+#| code-fold: true
+#| code-summary: 'view app-package folder tree'
+├── DESCRIPTION
+├── NAMESPACE
+├── R
+│   ├── data.R
+│   ├── display_type.R
+│   ├── ggp2_movies_app.R
+│   ├── mod_scatter_display.R
+│   ├── mod_var_input.R
+│   ├── movies_app.R
+│   ├── movies_server.R
+│   ├── movies_ui.R
+│   ├── scatter_plot.R
+│   └── testthat.R
+├── README.md
+├── app.R
+├── data
+│   ├── movies.RData
+│   └── movies.rda
+├── data-raw
+│   └── tidy_movies.R
+├── inst
+│   ├── dev
+│   │   ├── app.R
+│   │   ├── imdb.png
+│   │   └── tidy_movies.fst
+│   ├── extdata
+│   │   └── movies.fst
+│   ├── prod
+│   │   └── app
+│   │       └── app.R
+│   └── www
+│       ├── bootstrap.png
+│       └── shiny.png
+├── man
+│   ├── display_type.Rd
+│   ├── ggp2_movies_app.Rd
+│   ├── mod_scatter_display_server.Rd
+│   ├── mod_scatter_display_ui.Rd
+│   ├── mod_var_input_server.Rd
+│   ├── mod_var_input_ui.Rd
+│   ├── movies.Rd
+│   ├── movies_app.Rd
+│   ├── movies_server.Rd
+│   ├── movies_ui.Rd
+│   ├── scatter_plot.Rd
+│   └── test_logger.Rd
+├── moviesApp.Rproj
+├── tests
+│   ├── testthat
+│   │   ├── fixtures
+│   │   │   ├── make-tidy_ggp2_movies.R
+│   │   │   └── tidy_ggp2_movies.rds
+│   │   ├── helper.R
+│   │   ├── setup-shinytest2.R
+│   │   ├── test-app-feature-01.R
+│   │   ├── test-ggp2_app-feature-01.R
+│   │   ├── test-mod_scatter_display.R
+│   │   ├── test-mod_var_input.R
+│   │   ├── test-scatter_plot.R
+│   │   └── test-shinytest2.R
+│   └── testthat.R
+└── vignettes
+    └── test-specs.Rmd
+
+15 directories, 49 files
+```
+
+
+When our application is ready to deploy, we'll create a `Dockerfile`, which is a plain-text file (no extension). `Dockerfile`s are a blend of commands, numeric values, and character strings with the following general conventions: 
+
+1. **Each line in the `Dockerfile` starts with an instruction**. These aren't case-sensitive, but it's common practice to capitalize each command.
+
+2. **Comments or explanatory notes begin with `#`**. These will be ignored by the Docker engine.
+
+Below are two lines from the `Dockerfile` found in the excellent post titled, [R Shiny Docker: How To Run Shiny Apps in a Docker Container](https://appsilon.com/r-shiny-docker-getting-started/). This is a great place to familiarize yourself with deploying a non-package Shiny application with Docker.[^appsilon-docker-intro]
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+# build image 
+FROM rocker/shiny
+
+# create location for app
+RUN mkdir /home/shiny-app
+```
+
+[^appsilon-docker-intro]: I've altered the comments of the original `Dockerfile`, so be sure to read the entire blog post before copying + pasting this into your workflow.
+
+As you can see, the `Dockerfile` combines instructions (`FROM`, `RUN`) with command-line arguments (`mkdir`). You don't have to be a command-line expert to write a Dockerfile (but knowing a few can get you out of a jam [^linuxize-resource]).
+
+[^linuxize-resource]: I love the help files on [https://linuxize.com/](https://linuxize.com/), and [this tutorial](https://command-line-tutorial.readthedocs.io/index.html) is a nice introduction to the command-line.
+
+### Create image 
+
+Docker files start by building an image. In our case, we want an image configured to run R, which has been provided for us by the generous folks at the [`rocker` project](https://rocker-project.org/).
+
+The Shiny `rocker` image is for Shiny apps: 
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+FROM rocker/shiny
+```
+
+We can also specify the version of R to include in the R image:
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+FROM rocker/verse:4.3.2
+```
+
+### Install dependencies 
+
+Use `RUN` and `R -e` to install dependencies for our app in the container from CRAN.[^remotes-install-local]
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+RUN R -e 'install.packages(c("rlang", "stringr", "shiny", "ggplot2", "remotes"))'
+```
+
+[^remotes-install-local]: We'll need remotes to install our app-package locally (i.e., with `remotes::install_local(upgrade="never")`).
+
+We could also use the `remotes` package to specify the version of each package:
+
+```{bash}
+#| eval: false 
+#| code-fold: true
+#| code-summary: 'View remotes::install_version()'
+RUN R -e 'install.packages("remotes")'
+RUN Rscript -e 'remotes::install_version("rlang",upgrade="never",version="1.1.2")'
+RUN Rscript -e 'remotes::install_version("stringr",upgrade="never",version="1.5.1")'
+RUN Rscript -e 'remotes::install_version("shiny",upgrade="never",version ="1.8.0")'
+RUN Rscript -e 'remotes::install_version("ggplot2",upgrade="never",version="3.4.4")'
+```
+
+#### Create location for app
+
+`RUN mkdir` creates a new `/deploy` directory in the container. `ADD . /deploy` copies the files from the current directory (on the host machine) into the `/deploy` directory inside the container. `WORKDIR /deploy` sets the `/deploy` directory as the working directory for any subsequent instructions.
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+RUN mkdir /deploy
+ADD . /deploy
+WORKDIR /deploy
+```
+
+#### Install app-package
+
+`remotes::install_local()` will the R package specified in the local directory (where our Shiny app-package lives), without upgrading dependencies.
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+RUN R -e 'remotes::install_local(upgrade="never")'
+```
+
+#### Clean up 
+
+`RUN rm -rf /deploy` cleans up and reduces the size of the container.
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+RUN rm -rf /deploy
+```
+
+#### Expose port 
+
+Make our Shiny app available on `EXPOSE 8180`.
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+EXPOSE 8180
+```
+
+#### Launch app (with options)
+
+When the container starts, set Shiny to listen on port `8180`, then launch the Shiny app from our `moviesApp` package.
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+CMD R -e "options('shiny.port'=8180,shiny.host='0.0.0.0');library(moviesApp);moviesApp::movies_app()"
+```
+
+## Build image
+
+The final `Dockerfile` we'll use to launch our application is below: 
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+FROM rocker/shiny
+RUN R -e 'install.packages(c("rlang", "stringr", "shiny", "ggplot2", "remotes"))'
+RUN mkdir /deploy
+ADD . /deploy
+WORKDIR /deploy
+RUN R -e 'remotes::install_local(upgrade="never")'
+RUN rm -rf /deploy
+EXPOSE 8180
+CMD R -e "options('shiny.port'=8180,shiny.host='0.0.0.0');library(moviesApp);moviesApp::movies_app()"
+```
+
+To build the Docker image and create a new container, run the `docker build` command in the Terminal with a tag (`-t`), a name for the image (`movies-app-docker-demo`), and the location (`.`): 
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+docker build -t movies-app-docker-demo .
+```
+
+As the docker image builds you'll see the output in the Terminal:
+
+![](images/docker_build.png){width=100% fig-align='center'}
+
+After the image is built, we'll see a new container listed in Docker desktop:
+
+![](images/docker_deployed_container.png){width=100% fig-align='center'}
+
+New Docker containers are named using a random combination of adjectives and famous scientists' surnames (unless the `--name` flag is added). Change the name of a Docker image  with `docker rename <old_name> <new_name>`:
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+docker rename great_yalow movies_app
+```
+
+### Running the container
+
+After building the image, we can run the new container using `docker run`
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+docker run -p 8180:8180 movies-app-docker-demo
+```
+
+In the Terminal, we'll see an R session initialize, and the R function calls from the last line of our `Dockerfile`:
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+R version 4.3.2 (2023-10-31) -- "Eye Holes"
+Copyright (C) 2023 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> options('shiny.port'=8180,shiny.host='0.0.0.0');library(moviesApp);moviesApp::movies_app()
+Loading required package: shiny
+
+Listening on http://0.0.0.0:8180
+```
+
+Copy the hyperlink above and place it in the browser to view the application: 
+
+![](images/docker_app_port.png){width=100% fig-align='center'}
+
+
+Each Docker container is created from the image (which is specified in the `Dockerfile`). The image serves as a blueprint for the containers, and we could create multiple containers from the same image:
+
+![Running and stopping Docker containers](images/docker_run_containers.png){width=100% fig-align='center'}
+
+
+
+## Recap
+
+This has been a brief overview of using Docker to deploy your Shiny App-Package. Docker files are used to build images, which define an environment for our Shiny application to run. The container is the actual running instance of that environment.
+
+- Docker images are immutable, meaning they do not change. Once an image is created, it remains unchanged inside a container.
+
+- Docker containers can be started, stopped, moved, and deleted, but each time a container is run, it's created from an image. 
+
+We'll also cover Docker again in the [`golem` chapter](golem.qmd). If you'd like to learn more, Appsilon has a great introduction to Docker (mentioned above).[^appsilon-docker-guide] I also found the Dockerizing shiny applications post helpful. [^dockerizing-shiny-post]
+
+[^dockerizing-shiny-post]: This is the [second post](https://hosting.analythium.io/dockerizing-shiny-applications/) in a series (see the first post [here](https://hosting.analythium.io/docker-basics-for-data-apps/)). 
+
+[^appsilon-docker-guide]: Appsilon has a few posts on Docker: '[R Shiny Docker: How To Run Shiny Apps in a Docker Container](https://appsilon.com/r-shiny-docker-getting-started/)' and '[Renv with Docker: How to Dockerize a Shiny Application with an Reproducible Environment](https://appsilon.com/renv-with-docker/)'
