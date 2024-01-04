@@ -50,7 +50,7 @@ co_box(
 )
 ```
 
-This chapter walks through building a version of the `moviesApp` with the [`golem` framework](https://thinkr-open.github.io/golem/). The resulting app-package (`gap`) is in the [`15_golem` branch](https://github.com/mjfrigaard/moviesApp/tree/15_golem).
+This chapter walks through building a version of the `moviesApp` with the [`golem` framework](https://thinkr-open.github.io/golem/). The resulting app-package (`gap`) is in the [`18_golem` branch](https://github.com/mjfrigaard/moviesApp/tree/18_golem).
 
 ```{r}
 #| eval: false
@@ -67,7 +67,7 @@ library(golem)
 git_margin_box(
   contents = "standard",
   fig_pw = '75%', 
-  branch = "15_golem", 
+  branch = "18_golem", 
   repo = 'moviesApp')
 ```
 
@@ -442,52 +442,54 @@ We covered this warning message in the [Launch](launch.qmd) chapter, and it's be
 
 ## Deployment
 
-When you're ready to deploy your `golem` app `dev/03_deploy.R` file contains a 'pre deployment checklist' and multiple options. 
+When you're ready to deploy your `golem` app `dev/03_deploy.R` file contains a 'pre deployment checklist' and multiple options for deploying your application.
 
-- **devtools**: `devtools::check()` and `devtools::build()` are called.[^golem-devtools-deploy]
+### Posit platforms
 
-- **RStudio related platforms**: `golem` has functions for RStudio Connect, shinyapps.io, and Shiny server.[^golem-deploy-posit-options]
+-   `devtools::check()` and `devtools::build()` are called.[^golem-devtools-deploy]
 
-- **Posit Connect**: arguments and options for deploying your application using `rsconnect::deployApp()`. [^golem-deploy-rsconnect-options]
+-   `golem` has functions for RStudio Connect, shinyapps.io, and Shiny server,[^golem-deploy-posit-options] as well as options for deploying your application using `rsconnect::deployApp()`. [^golem-deploy-rsconnect-options]
 
-- **Docker**: golem has multiple options for creating Docker files: 
+### Docker
 
-    -   `golem::add_dockerfile()` adds the following `Dockerfile`:
+`golem` has multiple options for creating Docker files: 
 
-        ```{bash}
-        #| eval: false 
-        #| code-fold: true
-        #| code-summary: 'show/hide Dockerfile'
-        #| include: true
-        FROM rocker/verse:4.3.2
-        RUN apt-get update && apt-get install -y  libcurl4-openssl-dev libicu-dev libssl-dev libxml2-dev make pandoc zlib1g-dev && rm -rf /var/lib/apt/lists/*
-        RUN mkdir -p /usr/local/lib/R/etc/ /usr/lib/R/etc/
-        RUN echo "options(repos = c(CRAN = 'https://cran.rstudio.com/'), download.file.method = 'libcurl', Ncpus = 4)" | tee /usr/local/lib/R/etc/Rprofile.site | tee /usr/lib/R/etc/Rprofile.site
-        RUN R -e 'install.packages("remotes")'
-        RUN Rscript -e 'remotes::install_version("glue",upgrade="never", version = "1.6.2")'
-        RUN Rscript -e 'remotes::install_version("rlang",upgrade="never", version = "1.1.2")'
-        RUN Rscript -e 'remotes::install_version("stringr",upgrade="never", version = "1.5.1")'
-        RUN Rscript -e 'remotes::install_version("knitr",upgrade="never", version = "1.45")'
-        RUN Rscript -e 'remotes::install_version("waldo",upgrade="never", version = "0.5.2")'
-        RUN Rscript -e 'remotes::install_version("shiny",upgrade="never", version = "1.8.0")'
-        RUN Rscript -e 'remotes::install_version("rmarkdown",upgrade="never", version = "2.25")'
-        RUN Rscript -e 'remotes::install_version("config",upgrade="never", version = "0.3.2")'
-        RUN Rscript -e 'remotes::install_version("spelling",upgrade="never", version = "2.2.1")'
-        RUN Rscript -e 'remotes::install_version("shinytest2",upgrade="never", version = "0.3.1")'
-        RUN Rscript -e 'remotes::install_version("ggplot2movies",upgrade="never", version = "0.0.1")'
-        RUN Rscript -e 'remotes::install_version("logger",upgrade="never", version = "0.2.2")'
-        RUN Rscript -e 'remotes::install_version("golem",upgrade="never", version = "0.4.1")'
-        RUN Rscript -e 'remotes::install_version("ggplot2",upgrade="never", version = "3.4.4")'
-        RUN Rscript -e 'remotes::install_github("rstudio/htmltools@a8a3559edbfd9dda78418251e69273fa9dfeb9bc")'
-        RUN Rscript -e 'remotes::install_github("r-lib/testthat@fe50a222c62cc8733b397690caf3b2a95856f902")'
-        RUN mkdir /build_zone
-        ADD . /build_zone
-        WORKDIR /build_zone
-        RUN R -e 'remotes::install_local(upgrade="never")'
-        RUN rm -rf /build_zone
-        EXPOSE 80
-        CMD R -e "options('shiny.port'=80,shiny.host='0.0.0.0');library(gap);gap::run_app()"
-        ```
+-   `golem::add_dockerfile()` adds the following `Dockerfile`:
+
+    ```{bash}
+    #| eval: false 
+    #| code-fold: true
+    #| code-summary: 'show/hide Dockerfile'
+    #| include: true
+    FROM rocker/verse:4.3.2
+    RUN apt-get update && apt-get install -y  libcurl4-openssl-dev libicu-dev libssl-dev libxml2-dev make pandoc zlib1g-dev && rm -rf /var/lib/apt/lists/*
+    RUN mkdir -p /usr/local/lib/R/etc/ /usr/lib/R/etc/
+    RUN echo "options(repos = c(CRAN = 'https://cran.rstudio.com/'), download.file.method = 'libcurl', Ncpus = 4)" | tee /usr/local/lib/R/etc/Rprofile.site | tee /usr/lib/R/etc/Rprofile.site
+    RUN R -e 'install.packages("remotes")'
+    RUN Rscript -e 'remotes::install_version("glue",upgrade="never", version = "1.6.2")'
+    RUN Rscript -e 'remotes::install_version("rlang",upgrade="never", version = "1.1.2")'
+    RUN Rscript -e 'remotes::install_version("stringr",upgrade="never", version = "1.5.1")'
+    RUN Rscript -e 'remotes::install_version("knitr",upgrade="never", version = "1.45")'
+    RUN Rscript -e 'remotes::install_version("waldo",upgrade="never", version = "0.5.2")'
+    RUN Rscript -e 'remotes::install_version("shiny",upgrade="never", version = "1.8.0")'
+    RUN Rscript -e 'remotes::install_version("rmarkdown",upgrade="never", version = "2.25")'
+    RUN Rscript -e 'remotes::install_version("config",upgrade="never", version = "0.3.2")'
+    RUN Rscript -e 'remotes::install_version("spelling",upgrade="never", version = "2.2.1")'
+    RUN Rscript -e 'remotes::install_version("shinytest2",upgrade="never", version = "0.3.1")'
+    RUN Rscript -e 'remotes::install_version("ggplot2movies",upgrade="never", version = "0.0.1")'
+    RUN Rscript -e 'remotes::install_version("logger",upgrade="never", version = "0.2.2")'
+    RUN Rscript -e 'remotes::install_version("golem",upgrade="never", version = "0.4.1")'
+    RUN Rscript -e 'remotes::install_version("ggplot2",upgrade="never", version = "3.4.4")'
+    RUN Rscript -e 'remotes::install_github("rstudio/htmltools@a8a3559edbfd9dda78418251e69273fa9dfeb9bc")'
+    RUN Rscript -e 'remotes::install_github("r-lib/testthat@fe50a222c62cc8733b397690caf3b2a95856f902")'
+    RUN mkdir /build_zone
+    ADD . /build_zone
+    WORKDIR /build_zone
+    RUN R -e 'remotes::install_local(upgrade="never")'
+    RUN rm -rf /build_zone
+    EXPOSE 80
+    CMD R -e "options('shiny.port'=80,shiny.host='0.0.0.0');library(gap);gap::run_app()"
+    ```
 
 -   `golem::add_dockerfile_with_renv()` creates a `tmp/deploy` folder and adds the following files: 
 
@@ -552,6 +554,7 @@ deploy/
     
 -   `gap_0.0.0.9000.tar.gz`: this is our app-package to deploy in the Docker container.
 
+You can read more details about deploying with Docker on the [Shiny Frameworks](https://mjfrigaard.github.io/sfw/) supplemental website.
 
 [^golem-devtools-deploy]: This also includes a call to `rhub::check_for_cran()`, which may or may not be of concern for your application. 
 
