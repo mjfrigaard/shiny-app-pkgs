@@ -1,8 +1,8 @@
 <h1 align="center">
 
-<a href="https://github.com/mjfrigaard/shinyap">
+<a href="https://github.com/mjfrigaard/shiny-app-pkgs">
 <!-- Please provide path to your logo here -->
-<img src="images/shinyap_logo.png" alt="Logo" width="50%" height="50%"/>
+<img src="images/shiny-app-pkgs_logo.png" alt="Logo" width="50%" height="50%"/>
 </a>
 
 </h1>
@@ -10,11 +10,11 @@
 <p align="center">
 Shiny App-Packages <br /> <a href="#about"><strong>Explore the screenshots
 »</strong></a> <br /> <br />
-<a href="https://github.com/mjfrigaard/shinyap/issues/new?assignees=&labels=bug&template=01_BUG_REPORT.md&title=bug%3A+">Report
+<a href="https://github.com/mjfrigaard/shiny-app-pkgs/issues/new?assignees=&labels=bug&template=01_BUG_REPORT.md&title=bug%3A+">Report
 a Bug</a> ·
-<a href="https://github.com/mjfrigaard/shinyap/issues/new?assignees=&labels=enhancement&template=02_FEATURE_REQUEST.md&title=feat%3A+">Request
+<a href="https://github.com/mjfrigaard/shiny-app-pkgs/issues/new?assignees=&labels=enhancement&template=02_FEATURE_REQUEST.md&title=feat%3A+">Request
 a Feature</a> .
-<a href="https://github.com/mjfrigaard/shinyap/issues/new?assignees=&labels=question&template=04_SUPPORT_QUESTION.md&title=support%3A+">Ask
+<a href="https://github.com/mjfrigaard/shiny-app-pkgs/issues/new?assignees=&labels=question&template=04_SUPPORT_QUESTION.md&title=support%3A+">Ask
 a Question</a>
 </p>
 
@@ -22,10 +22,10 @@ a Question</a>
 <br />
 
 [![Project
-license](https://img.shields.io/badge/LICENSE-MIT-blue)](https://github.com/mjfrigaard/shinyap/LICENSE.md)
+license](https://img.shields.io/badge/LICENSE-MIT-blue)](https://github.com/mjfrigaard/shiny-app-pkgs/LICENSE.md)
 
 [![Pull Requests
-welcome](https://img.shields.io/badge/PRs-welcome-ff69b4.svg?style=flat-square)](https://github.com/mjfrigaard/shinyap/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
+welcome](https://img.shields.io/badge/PRs-welcome-ff69b4.svg?style=flat-square)](https://github.com/mjfrigaard/shiny-app-pkgs/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 [![code with love by
 mjfrigaard](https://img.shields.io/badge/%3C%2F%3E%20with%20%E2%99%A5%20by-mjfrigaard-ff1414.svg?style=flat-square)](https://github.com/mjfrigaard)
 </p>
@@ -91,17 +91,17 @@ git checkout <branch>
 ## Issues 
 
 See the [open
-issues](https://github.com/mjfrigaard/shinyap/issues) for a list
+issues](https://github.com/mjfrigaard/shiny-app-pkgs/issues) for a list
 of proposed features (and known issues).
 
 -   [Top Feature
-    Requests](https://github.com/mjfrigaard/shinyap/issues?q=label%3Aenhancement+is%3Aopen+sort%3Areactions-%2B1-desc)
+    Requests](https://github.com/mjfrigaard/shiny-app-pkgs/issues?q=label%3Aenhancement+is%3Aopen+sort%3Areactions-%2B1-desc)
     (Add your votes using the 👍 reaction)
 -   [Top
-    Bugs](https://github.com/mjfrigaard/shinyap/issues?q=is%3Aissue+is%3Aopen+label%3Abug+sort%3Areactions-%2B1-desc)
+    Bugs](https://github.com/mjfrigaard/shiny-app-pkgs/issues?q=is%3Aissue+is%3Aopen+label%3Abug+sort%3Areactions-%2B1-desc)
     (Add your votes using the 👍 reaction)
 -   [Newest
-    Bugs](https://github.com/mjfrigaard/shinyap/issues?q=is%3Aopen+is%3Aissue+label%3Abug)
+    Bugs](https://github.com/mjfrigaard/shiny-app-pkgs/issues?q=is%3Aopen+is%3Aissue+label%3Abug)
 
 <!--
 > **\[?\]** Provide additional ways to contact the project
@@ -111,7 +111,7 @@ of proposed features (and known issues).
 Reach out to the maintainer at one of the following places:
 
 -   [GitHub
-    issues](https://github.com/mjfrigaard/shinyap/issues/new?assignees=&labels=question&template=04_SUPPORT_QUESTION.md&title=support%3A+)
+    issues](https://github.com/mjfrigaard/shiny-app-pkgs/issues/new?assignees=&labels=question&template=04_SUPPORT_QUESTION.md&title=support%3A+)
 -   Contact options listed on [this GitHub
     profile](https://github.com/mjfrigaard)
 
@@ -120,7 +120,7 @@ Reach out to the maintainer at one of the following places:
 If you want to say **thank you** or/and support active development of
 Shiny App-Packages:
 
--   Add a [GitHub Star](https://github.com/mjfrigaard/shinyap) to
+-   Add a [GitHub Star](https://github.com/mjfrigaard/shiny-app-pkgs) to
     the project.
 -   Tweet about the Shiny App-Packages.
 
@@ -139,7 +139,7 @@ The original setup of this repository is by
 [Martin Frigaard](https://github.com/mjfrigaard).
 
 For a full list of all authors and contributors, see [the contributors
-page](https://github.com/mjfrigaard/shinyap/contributors).
+page](https://github.com/mjfrigaard/shiny-app-pkgs/contributors).
 
 ## License 
 

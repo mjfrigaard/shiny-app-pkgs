@@ -192,15 +192,6 @@ The Shiny `rocker` image is for Shiny apps:
 FROM rocker/shiny
 ```
 
-We can also specify the version of R to include in the R image:
-
-```{bash}
-#| eval: false 
-#| code-fold: true
-#| code-summary: 'View R version build'
-FROM rocker/verse:4.3.2
-```
-
 ### Install dependencies 
 
 Use `RUN` and `R -e` to install dependencies for our app in the container from CRAN.[^remotes-install-local]
@@ -208,27 +199,19 @@ Use `RUN` and `R -e` to install dependencies for our app in the container from C
 ```{bash}
 #| eval: false 
 #| code-fold: false
+#| code-overflow: scroll
 RUN R -e 'install.packages(c("rlang", "stringr", "shiny", "ggplot2", "remotes"))'
 ```
 
 [^remotes-install-local]: We'll need remotes to install our app-package locally (i.e., with `remotes::install_local(upgrade="never")`).
 
-We could also use the `remotes` package to specify the `version` of each package and whether to `upgrade` (or not):
+### Create location for app
 
-```{bash}
-#| eval: false 
-#| code-fold: true
-#| code-summary: 'View remotes::install_version()'
-RUN R -e 'install.packages("remotes")'
-RUN Rscript -e 'remotes::install_version("rlang",upgrade="never",version="1.1.2")'
-RUN Rscript -e 'remotes::install_version("stringr",upgrade="never",version="1.5.1")'
-RUN Rscript -e 'remotes::install_version("shiny",upgrade="never",version ="1.8.0")'
-RUN Rscript -e 'remotes::install_version("ggplot2",upgrade="never",version="3.4.4")'
-```
+1. `RUN mkdir` creates a new `/deploy` directory in the container
 
-#### Create location for app
+2. `ADD . /deploy` copies the files from the current directory (on the host machine) into the `/deploy` directory inside the container
 
-`RUN mkdir` creates a new `/deploy` directory in the container. `ADD . /deploy` copies the files from the current directory (on the host machine) into the `/deploy` directory inside the container. `WORKDIR /deploy` sets the `/deploy` directory as the working directory for any subsequent instructions.
+3. `WORKDIR /deploy` sets the `/deploy` directory as the working directory for any subsequent instructions.
 
 ```{bash}
 #| eval: false 
@@ -238,7 +221,7 @@ ADD . /deploy
 WORKDIR /deploy
 ```
 
-#### Install app-package
+### Install app-package
 
 `remotes::install_local()` will the R package specified in the local directory (where our Shiny app-package lives), without upgrading dependencies.
 
@@ -248,7 +231,7 @@ WORKDIR /deploy
 RUN R -e 'remotes::install_local(upgrade="never")'
 ```
 
-#### Clean up 
+### Clean up 
 
 `RUN rm -rf /deploy` cleans up and reduces the size of the container.
 
@@ -258,7 +241,7 @@ RUN R -e 'remotes::install_local(upgrade="never")'
 RUN rm -rf /deploy
 ```
 
-#### Expose port 
+### Expose port 
 
 Make our Shiny app available on `EXPOSE 8180`.
 
@@ -268,13 +251,14 @@ Make our Shiny app available on `EXPOSE 8180`.
 EXPOSE 8180
 ```
 
-#### Launch app 
+### Launch app 
 
 When the container starts, set Shiny to listen on port `8180`, then launch the Shiny app from our `moviesApp` package. The port we exposed in the `Dockerfile` should match the `shiny.port` option.
 
 ```{bash}
 #| eval: false 
 #| code-fold: false
+#| code-overflow: scroll
 CMD R -e "options('shiny.port'=8180,shiny.host='0.0.0.0');library(moviesApp);moviesApp::movies_app()"
 ```
 
@@ -285,6 +269,7 @@ The final `Dockerfile` we'll use to launch our application is below:
 ```{bash}
 #| eval: false 
 #| code-fold: false
+#| code-overflow: scroll
 FROM rocker/shiny
 RUN R -e 'install.packages(c("rlang", "stringr", "shiny", "ggplot2", "remotes"))'
 RUN mkdir /deploy
@@ -335,6 +320,7 @@ In the Terminal, we'll see an R session initialize, and the R function calls fro
 ```{bash}
 #| eval: false 
 #| code-fold: false
+#| code-overflow: scroll
 R version 4.3.2 (2023-10-31) -- "Eye Holes"
 Copyright (C) 2023 The R Foundation for Statistical Computing
 Platform: x86_64-pc-linux-gnu (64-bit)
@@ -367,6 +353,87 @@ Copy the hyperlink above and place it in the browser to view the application:
 Each Docker container is created from the image (which is specified in the `Dockerfile`). The image serves as a blueprint for the containers, and we could create multiple containers from the same image:
 
 ![Running and stopping Docker containers](images/docker_run_containers.png){width=100% fig-align='center'}
+
+## Docker & `golem`
+
+The `golem` package has [multiple functions](https://thinkr-open.github.io/golem/reference/index.html#create-a-dockerfile) for building Docker files and images. There are a few notable points to make about some of the Docker images created with `golem`: 
+
+-   `golem`'s Docker functions can produce multiple Docker files (`golem::add_dockerfile_with_renv()` creates a `tmp/deploy` folder and adds the following files)
+
+    ```{bash}
+    #| eval: false 
+    #| code-fold: show
+    #| code-summary: 'View deploy/ folder'
+    deploy/
+      ├── Dockerfile
+      ├── Dockerfile_base
+      ├── README
+      ├── gap_0.0.0.9000.tar.gz
+      └── renv.lock.prod
+    ```
+
+-   `golem`'s Docker files typically use the R build from `rocker` (and include a version):
+
+    ```{bash}
+    #| eval: false 
+    #| code-fold: show
+    #| code-summary: 'View R version build'
+    FROM rocker/verse:4.3.2
+    ```
+
+-   `golem` Docker files might also include additional commands for installing/updating command-line (linux) tools for downloading/exchanging data: 
+
+    ```{bash}
+    #| eval: false 
+    #| code-fold: show
+    #| code-summary: 'View apt-get commands'
+    #| code-overflow: scroll
+    RUN apt-get update && apt-get install -y  libcurl4-openssl-dev libicu-dev libssl-dev libxml2-dev make pandoc zlib1g-dev
+    ```
+
+-   They also usually the `remotes` package to specify the `version` of each package and whether to `upgrade` (or not):
+
+    ```{bash}
+    #| eval: false 
+    #| code-fold: show
+    #| code-summary: 'View remotes::install_version()'
+    #| code-overflow: scroll
+    RUN R -e 'install.packages("remotes")'
+    RUN Rscript -e 'remotes::install_version("rlang",upgrade="never",version="1.1.2")'
+    RUN Rscript -e 'remotes::install_version("stringr",upgrade="never",version="1.5.1")'
+    RUN Rscript -e 'remotes::install_version("shiny",upgrade="never",version ="1.8.0")'
+    RUN Rscript -e 'remotes::install_version("ggplot2",upgrade="never",version="3.4.4")'
+    ```
+    
+```{r}
+#| label: co_box_run_e_rscript_comparison
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g", 
+  fold = FALSE,
+  look = "default", 
+  hsize = '1.15', 
+  size = '1.02',
+  header = "**`RUN R -e`** vs **`RUN Rscript -e`**",
+  contents = "
+Both `R -e` and `RUN Rscript -e` will execute R expressions from the command line. 
+  
+-  `R -e` is straightforward and typically used to evaluate a single expression (i.e., `install.packages()`)
+  
+- `RUN Rscript -e` is more commonly used for running scripts or more specialized commands: 
+  
+\`\`\`r
+pkgs <- c('glue', 'cli')
+install.packages(pkgs)
+\`\`\`
+
+  "
+)
+```
+    
+There are additional differences, but these are important if you want to include additional requirements or control the version of R (or a package dependency). `golem`'s Docker images are more (you guessed it) opinionated, but every time I've used one it works right "out of the box."
 
 ## Docker in app-packages
 
@@ -421,7 +488,7 @@ This has been a brief overview of using Docker to deploy your Shiny App-Package.
 
 - Docker containers can be started, stopped, moved, and deleted, but each time a container is run, it's created from an image. 
 
-We'll also cover Docker again in the [`golem` chapter](golem.qmd). If you'd like to learn more, Appsilon has a great introduction to Docker (mentioned above).[^appsilon-docker-guide] I also found the Dockerizing shiny applications post helpful. [^dockerizing-shiny-post]
+Docker is covered again in the [`golem` chapter](golem.qmd) and on the Shiny frameworks [supplemental website](https://mjfrigaard.github.io/sfw/golem.html#docker). If you'd like to learn more, Appsilon has a great introduction to Docker (mentioned above).[^appsilon-docker-guide] I also found the Dockerizing shiny applications post helpful. [^dockerizing-shiny-post]
 
 [^dockerizing-shiny-post]: This is the [second post](https://hosting.analythium.io/dockerizing-shiny-applications/) in a series (see the first post [here](https://hosting.analythium.io/docker-basics-for-data-apps/)). 
 

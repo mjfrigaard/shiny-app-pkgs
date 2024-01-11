@@ -461,6 +461,7 @@ When you're ready to deploy your `golem` app `dev/03_deploy.R` file contains a '
     #| code-fold: true
     #| code-summary: 'show/hide Dockerfile'
     #| include: true
+    #| code-overflow: scroll
     FROM rocker/verse:4.3.2
     RUN apt-get update && apt-get install -y  libcurl4-openssl-dev libicu-dev libssl-dev libxml2-dev make pandoc zlib1g-dev && rm -rf /var/lib/apt/lists/*
     RUN mkdir -p /usr/local/lib/R/etc/ /usr/lib/R/etc/
@@ -505,6 +506,19 @@ deploy/
   └── renv.lock.prod
 ```
 
+-   `README`
+
+    ```{bash}
+    #| eval: false 
+    #| code-fold: false
+    #| include: true
+    #| code-overflow: scroll
+    docker build -f Dockerfile_base --progress=plain -t gap_base .
+    docker build -f Dockerfile --progress=plain -t gap:latest .
+    docker run -p 80:80 gap:latest
+    # then go to 127.0.0.1:80
+    ```
+
 -   `Dockerfile`
 
     ```{bash}
@@ -512,6 +526,7 @@ deploy/
     #| code-fold: true
     #| code-summary: 'show/hide Dockerfile'
     #| include: true 
+    #| code-overflow: scroll
     FROM gap_base
     COPY renv.lock.prod renv.lock
     RUN R -e 'renv::restore()'
@@ -522,13 +537,14 @@ deploy/
     CMD R -e "options('shiny.port'=80,shiny.host='0.0.0.0');library(gap);gap::run_app()"
     ```
 
--   `Dockerfile_base`:
+-   `Dockerfile_base`
 
     ```{bash}
     #| eval: false 
     #| code-fold: true
     #| code-summary: 'show/hide Dockerfile_base'
     #| include: true 
+    #| code-overflow: scroll
     FROM rocker/verse:4.3.2
     RUN apt-get update -y && apt-get install -y  make zlib1g-dev git libicu-dev && rm -rf /var/lib/apt/lists/*
     RUN mkdir -p /usr/local/lib/R/etc/ /usr/lib/R/etc/
@@ -539,20 +555,10 @@ deploy/
     RUN R -e 'renv::restore()'
     
     ```
-
--   `README`
-
-    ```{bash}
-    #| eval: false 
-    #| code-fold: false
-    #| include: true
-    docker build -f Dockerfile_base --progress=plain -t gap_base .
-    docker build -f Dockerfile --progress=plain -t gap:latest .
-    docker run -p 80:80 gap:latest
-    # then go to 127.0.0.1:80
-    ```
     
--   `gap_0.0.0.9000.tar.gz`: this is our app-package to deploy in the Docker container.
+-   `gap_0.0.0.9000.tar.gz` is a compressed version of our app-package to deploy in the Docker container.
+
+-   `renv.lock.prod` is a JSON file with a list of packages used in our app-package.
 
 You can read more details about deploying with Docker on the [Shiny Frameworks](https://mjfrigaard.github.io/sfw/) supplemental website.
 

@@ -428,8 +428,6 @@ tests
 
 ### Debugging
 
-Read the tests chapter [here](https://mjfrigaard.github.io/shinyap/debugging.html).
-
 #### 18a_debugging
 
 [`18a_debugging`](https://github.com/mjfrigaard/moviesApp/tree/18a_debugging)
