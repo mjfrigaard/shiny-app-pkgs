@@ -73,18 +73,18 @@ co_box <- function(color, header, contents = "Your text", size = "1.05", hsize =
   )
 }
 
-git_margin_box <- function(contents = "standard", fig_pw = '70%', branch = 'main', repo = 'shinyap') {
+git_margin_box <- function(contents = "standard", fig_pw = '70%', branch = 'main', repo = 'shinypak') {
   switch(contents,
   install = cat(paste0(
       "\n",
       "::::{.column-margin}\n\n",
       # ":::{style='font-size: 1.10em;'}\n\n",
-      "Install the [`shinyap` package](https://mjfrigaard.github.io/shinyap/articles/getting-started.html) to easily launch the applications:\n\n",
+      "Install the [`shinypak` package](https://mjfrigaard.github.io/shinypak/articles/getting-started.html) to easily launch the applications:\n\n",
       ":::{style='font-size: 0.65rem;'}\n",
       "\`\`\`r \n",
       "install.packages('pak')\n",
       "library(pak)\n",
-      "pak('mjfrigaard/shinyap')\n",
+      "pak('mjfrigaard/shinypak')\n",
       "\`\`\`\n",
       ":::\n\n",
     
@@ -96,7 +96,7 @@ git_margin_box <- function(contents = "standard", fig_pw = '70%', branch = 'main
       ":::: {.column-margin}\n\n",
     
       # ":::{style='font-size: 1.10em;'}\n\n",
-      "Launch app with the [`shinyap` package](https://mjfrigaard.github.io/shinyap/articles/getting-started.html):\n\n",
+      "Launch app with the [`shinypak` package](https://mjfrigaard.github.io/shinypak/articles/getting-started.html):\n\n",
       # ":::\n\n",
     
       ":::{style='font-size: 0.65rem;'}\n",
