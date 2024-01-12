@@ -1,0 +1,259 @@
+# Rhino CI/CD {#sec-rhino-cicd}
+
+```{r}
+#| eval: true 
+#| echo: false 
+#| include: false
+source("_common.R")
+library(testthat)
+```
+
+```{r}
+#| label: co_box_dev
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "o", 
+  look = "minimal",
+  header = "Alert",
+  contents = "The contents for section are being developed. Thank you for your patience."
+)
+```
+
+The `rhino` framework includes the following GitHub Actions workflow file with new apps: 
+
+<details>
+
+<summary>.github/workflows/rhino-test.yml</summary>
+
+```yaml
+name: Rhino branch test, 20_rhino
+name: Rhino Test
+on: push
+permissions:
+  contents: read
+  
+jobs:
+  main:
+    name: Run linters and tests
+    runs-on: ubuntu-20.04
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      - name: Extract R version from lockfile
+        run: printf 'R_VERSION=%s\n' "$(jq --raw-output .R.Version renv.lock)" >> $GITHUB_ENV
+
+      - name: Setup R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ env.R_VERSION }}
+
+      - name: Setup system dependencies
+        run: >
+          sudo apt-get update && sudo apt-get install --yes
+          libcurl4-openssl-dev
+
+      - name: Restore renv from cache
+        uses: actions/cache@v2
+        env:
+          CACHE_KEY: renv-${{ runner.arch }}-${{ runner.os }}-${{ env.R_VERSION }}
+        with:
+          path: renv/library
+          key: ${{ env.CACHE_KEY }}-${{ hashFiles('renv.lock') }}
+          restore-keys: ${{ env.CACHE_KEY }}-
+
+      - name: Sync renv with lockfile
+        shell: Rscript {0}
+        run: |
+          options(renv.config.cache.symlinks = FALSE)
+          renv::restore(clean = TRUE)
+
+      - name: Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16
+
+      - name: Lint R
+        if: always()
+        shell: Rscript {0}
+        run: rhino::lint_r()
+
+      - name: Lint JavaScript
+        if: always()
+        shell: Rscript {0}
+        run: rhino::lint_js()
+
+      - name: Lint Sass
+        if: always()
+        shell: Rscript {0}
+        run: rhino::lint_sass()
+
+      - name: Build JavaScript
+        if: always()
+        shell: Rscript {0}
+        run: rhino::build_js()
+
+      - name: Build Sass
+        if: always()
+        shell: Rscript {0}
+        run: rhino::build_sass()
+
+      - name: Run R unit tests
+        if: always()
+        shell: Rscript {0}
+        run: rhino::test_r()
+
+      - name: Run Cypress end-to-end tests
+        if: always()
+        uses: cypress-io/github-action@v5
+        with:
+          working-directory: .rhino # Created by earlier commands which use Node.js
+          start: npm run run-app
+          project: ../tests
+          wait-on: 'http://localhost:3333/'
+          wait-on-timeout: 60
+```
+
+</details>
+
+The sections are described below:
+
+## Trigger 
+
+The `.github/workflows/rhino-test.yml` file runs on pushes to the repo containing a `rhino` app.
+   
+```yml
+name: Rhino Test
+on: push
+```
+
+## Permissions
+
+The workflow only has `read` permission for the repository. Read more about setting permissions [here](https://docs.github.com/en/actions/using-jobs/assigning-permissions-to-jobs#defining-access-for-the-github_token-scopes).
+
+```yml
+permissions:
+  contents: read
+```
+
+## Jobs
+
+`rhino-test.yml` contains a single job named `main` with the following `steps`:
+
+```yml
+jobs:
+  main:
+    name: Run linters and tests
+    runs-on: ubuntu-20.04
+    env:
+      R_VERSION: '4.1.0'
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+```
+
+
+### Step: Checkout Code, R version, Dependencies
+
+Checks out the code using `actions/checkout@v2`, extracts the R version from a lockfile (`renv.lock`) and sets it as an environment variable (`env.R_VERSION`), and uses `apt-get` to install system dependencie (`libcurl4-openssl-dev`)
+
+```yml
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      - name: Setup R
+        uses: r-lib/actions/setup-r@v1
+        with:
+          r-version: ${{ env.R_VERSION }}
+
+      - name: Setup system dependencies
+        run: >
+          sudo apt-get update && sudo apt-get install --yes
+          libcurl4-openssl-dev
+```
+
+### Step: Restore and sync `renv`
+
+The R dependencies in `renv.lock` are restored from cache with `actions/cache@v2`, then the R environment is synchronized with the lockfile (ensuring all necessary R packages are installed).
+
+```yml
+
+      - name: Restore renv from cache
+        uses: actions/cache@v2
+        env:
+          CACHE_KEY: renv-${{ runner.arch }}-${{ runner.os }}-${{ env.R_VERSION }}
+        with:
+          path: renv/library
+          key: ${{ env.CACHE_KEY }}-${{ hashFiles('renv.lock') }}
+          restore-keys: ${{ env.CACHE_KEY }}-
+          
+      - name: Sync renv with lockfile
+        shell: Rscript {0}
+        run: |
+          options(renv.config.cache.symlinks = FALSE)
+          renv::restore(clean = TRUE)
+```
+
+### Step: Node.js
+
+The Node.js environment is set up with version 16.
+
+```yml
+      - name: Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16
+```
+
+### Step: Linters
+
+Lints R (`rhino::lint_r()`), JavaScript (`rhino::lint_js()`), and Sass (`rhino::lint_sass()`) code for quality and style consistency.
+
+```yml
+      - name: Lint R
+        if: always()
+        shell: Rscript {0}
+        run: rhino::lint_r()
+
+      - name: Lint JavaScript
+        if: always()
+        shell: Rscript {0}
+        run: rhino::lint_js()
+
+      - name: Lint Sass
+        if: always()
+        shell: Rscript {0}
+        run: rhino::lint_sass()
+```
+
+### Step: Unit Tests
+
+Executes `testthat` unit tests written in R (`rhino::test_r()`)
+
+
+```yml
+      - name: Run R unit tests
+        if: always()
+        shell: Rscript {0}
+        run: rhino::test_r()
+```
+
+### Step: Cypress End-to-End Tests
+
+Specifies the working directory `.rhino/`, starting command for the application (`npm run run-app`), project directory for tests (`../tests`), URL to wait for (`'http://localhost:3333/'`), and a timeout for waiting (`60`) for Cypress to run end-to-end tests.
+
+```yml
+      - name: Run Cypress end-to-end tests
+        if: always()
+        uses: cypress-io/github-action@v5
+        with:
+          working-directory: .rhino # Created by earlier commands which use Node.js
+          start: npm run run-app
+          project: ../tests
+          wait-on: 'http://localhost:3333/'
+          wait-on-timeout: 60
+
+```
