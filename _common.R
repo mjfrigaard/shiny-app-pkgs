@@ -1,6 +1,7 @@
+# upgrade pak
+# pak::pak('mjfrigaard/shinypak', ask = FALSE, upgrade = TRUE)
 
-options(width = 50L,
-  pillar.width = 50L)
+options(width = 50L, pillar.width = 50L)
 
 co_box <- function(color, header, contents = "Your text", size = "1.05", hsize = "1.10", fold = FALSE, look = "default") {
   
@@ -158,11 +159,6 @@ git_margin_box <- function(contents = "standard", fig_pw = '70%', branch = 'main
     stop("Invalid `type`", call. = FALSE)
   )
 }
-
-git_margin_box(contents = "alt",
-  fig_pw = '75%', 
-  branch = "main", 
-  repo = 'moviesApp')
 
 hot_key <- function(fun = "L") {
   if (fun == "all") {
