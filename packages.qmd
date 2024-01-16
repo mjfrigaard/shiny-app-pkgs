@@ -13,20 +13,13 @@ source("_common.R")
 #| results: asis
 #| eval: true
 co_box(
-  color = "o", look = "minimal",
-  header = "Caution",
+  color = "y", size = "0.90", hsize = "0.95",
+  look = "minimal",
+  header = "Status",
   contents = "This chapter is under review.",
   fold = FALSE
 )
 ```
-
-::: {layout="[80, 20]" layout-valign="top"}
-
-This chapter covers the 'necessary ingredients' of R packages. We'll start by exploring the differences between Shiny projects, R packages, and Shiny app-packages. Then, we'll dive into the requirements for 1) creating new Shiny app-packages, and 2) converting Shiny app projects into Shiny app-packages.
-
-![](images/rpkg_icon.png){fig-align="right"}
-
-:::
 
 ```{r}
 #| label: co_box_tldr
@@ -35,11 +28,11 @@ This chapter covers the 'necessary ingredients' of R packages. We'll start by ex
 #| eval: true
 co_box(
   color = "b", look = "minimal",
-  header = "![](images/rpkg_icon.png){width='10%'} &emsp; TLDR", 
+  header = "![](images/rpkg_icon.png){width='10%'} &emsp; (TLDR)", 
   fold = TRUE,
   contents = "
   
-#####
+<br>
   
 Functional packages require three things:
   
@@ -72,19 +65,68 @@ Functional packages require three things:
 )
 ```
 
+::: {layout="[80, 20]" layout-valign="top"}
+
+This chapter covers the 'necessary ingredients' of R packages. We'll start by exploring the differences between Shiny projects, R packages, and Shiny app-packages. Then, we'll dive into the requirements for 1) creating new Shiny app-packages, and 2) converting Shiny app projects into Shiny app-packages.
+
+![](images/rpkg_icon.png){fig-align="right"}
+
+:::
+
+
+
+:::: {.callout-tip collapse='true' appearance='minimal'}
+
+## [Accessing the code examples]{style='font-weight: bold; font-size: 1.15em;'}
+
+::: {style='font-size: 0.95em; color: #282b2d;'}
+
+I've created the [`shinypak` R package](https://mjfrigaard.github.io/shinypak/) In an effort to make each section accessible and easy to follow:
+  
+Install `shinypak` using `pak` (or `remotes`):
+
 ```{r}
-#| label: git_box_install
-#| echo: false
-#| results: asis
-#| eval: true
-git_margin_box(
-  contents = "install")
+#| code-fold: false 
+#| message: false
+#| warning: false
+#| eval: false
+# install.packages('pak')
+pak::pak('mjfrigaard/shinypak')
 ```
 
+Review the chapters in each section:
+  
+```{r}
+#| code-fold: false 
+#| message: false
+#| warning: false
+#| collapse: true
+library(shinypak)
+list_apps(regex = '^03')
+```
 
-## Projects, packages, and app-packages
+Launch an app: 
+
+```{r}
+#| code-fold: false 
+#| eval: false
+launch(app = "03.3_create-package")
+```
+
+::: 
+
+::::
+
 
 Before we start, we should establish some operational definitions of what is meant by the terms 'project', 'package', and 'app-package'. 
+
+
+
+-   **Shiny** [Projects]{style="font-weight: bold; color: #00916e"}: I consider a Shiny app [project]{style="font-weight: bold; color: #00916e"} to be any directory of files requiring R (the binary downloaded from [CRAN](https://cran.r-project.org/) with a version number and neat names like, '*R 4.3.1 "Beagle Scouts" released on ...*') to execute with an RStudio/Posit workbench project file (`.Rproj`) and an application (contained in an `app.R` file or `ui.R`/`server.R` files).
+
+-   **R** [Packages]{style='font-weight: bold; color: #ad343e;'}: I'll use the term R [package]{style='font-weight: bold; color: #ad343e;'} to describe a directory of functions, documentation, or data that can be installed and loaded into an R session. An R [package]{style='font-weight: bold; color: #ad343e;'} includes the necessary dependency management (`NAMESPACE`) and metadata files (`DESCRIPTION`) *and* has access to the package development tools in RStudio/Posit Workbench.
+
+-   **Shiny** [app-packages]{style="font-weight: bold; color: #00a6ed;"}: A Shiny [app-package]{style="font-weight: bold; color: #00a6ed;"} (which you have probably already guessed) is an R [package]{style='font-weight: bold; color: #ad343e;'} containing a Shiny [app]{style="font-weight: bold; color: #00a6ed"}lication. Shiny [app-packages]{style="font-weight: bold; color: #00a6ed"} have all of the functionality of a standard R [Package]{style='font-weight: bold; color: #ad343e;'} but also contain the files and folders required to successfully develop, run, and deploy a Shiny app.
 
 :::{.column-margin}
 
@@ -101,12 +143,6 @@ rgb <- c(
 I'll use color to differentiate Shiny app [projects]{style="font-weight: bold; color: #00916e"}, R [packages]{style='font-weight: bold; color: #ad343e;'}, and Shiny [app-packages]{style="font-weight: bold; color: #00a6ed"}
 
 :::
-
--   **Shiny** [Projects]{style="font-weight: bold; color: #00916e"}: I consider a Shiny app [project]{style="font-weight: bold; color: #00916e"} to be any directory of files requiring R (the binary downloaded from [CRAN](https://cran.r-project.org/) with a version number and neat names like, '*R 4.3.1 "Beagle Scouts" released on ...*') to execute with an RStudio/Posit workbench project file (`.Rproj`) and an application (contained in an `app.R` file or `ui.R`/`server.R` files).
-
--   **R** [Packages]{style='font-weight: bold; color: #ad343e;'}: I'll use the term R [package]{style='font-weight: bold; color: #ad343e;'} to describe a directory of functions, documentation, or data that can be installed and loaded into an R session. An R [package]{style='font-weight: bold; color: #ad343e;'} includes the necessary dependency management (`NAMESPACE`) and metadata files (`DESCRIPTION`) *and* has access to the package development tools in RStudio/Posit Workbench.
-
--   **Shiny** [app-packages]{style="font-weight: bold; color: #00a6ed;"}: A Shiny [app-package]{style="font-weight: bold; color: #00a6ed;"} (which you have probably already guessed) is an R [package]{style='font-weight: bold; color: #ad343e;'} containing a Shiny [app]{style="font-weight: bold; color: #00a6ed"}lication. Shiny [app-packages]{style="font-weight: bold; color: #00a6ed"} have all of the functionality of a standard R [Package]{style='font-weight: bold; color: #ad343e;'} but also contain the files and folders required to successfully develop, run, and deploy a Shiny app.
 
 There are multiple reasons for deciding to develop a Shiny [app-package]{style="font-weight: bold; color: #00a6ed"}, but if you're reading this book, you've likely found yourself in one of two circumstances:
 
@@ -146,9 +182,21 @@ It’s also possible to use many of the development workflow functions we’ll c
 )
 ```
 
-## R packages
+## R [packages]{style='font-weight: bold; color: #ad343e;'}
 
 R [packages]{style='font-weight: bold; color: #ad343e;'} can be easily shared, reused, and reproduced because they all have a familiar structure, and each folder and file plays an essential role in extending R’s capabilities.[^pkgs-folder-trees]
+
+```{r}
+#| label: git_box_3.1_description
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  fig_pw = '75%', 
+  branch = "03.1_description", 
+  repo = 'moviesApp')
+```
 
 Below are folder trees with some of the typical files and folders found in R [packages]{style='font-weight: bold; color: #ad343e;'} (on the left) and the files that currently exist in `moviesApp` (on the right), our Shiny app [project]{style='font-weight: bold; color: #00916e;'}. 
 
@@ -207,7 +255,7 @@ moviesApp/
 
 This chapter will cover the minimum requirements for an R [package]{style='font-weight: bold; color: #ad343e;'}, so you can handle both creating new Shiny [app-packages]{style="font-weight: bold; color: #00a6ed"} and converting existing Shiny [ projects]{style="font-weight: bold; color: #00916e;"} into Shiny [app-packages]{style="font-weight: bold; color: #00a6ed"}.
 
-### What makes an R [package]{style='font-weight: bold; color: #ad343e;'}?
+### *Functional* R [packages]{style='font-weight: bold; color: #ad343e;'} {#sec-packages-essential-ingredients}
 
 If you've done some research on R [packages]{style='font-weight: bold; color: #ad343e;'}, you've probably encountered one (or both) of the following statements, 
 
@@ -260,24 +308,12 @@ The **Build** pane is normally between **Connections** and **Git**.
 
 As we've just learned, the presence of the `DESCRIPTION` file and an `R/` folder are insufficient to turn a Shiny app [project]{style='font-weight: bold; color: #00916e;'} into a *functioning* R [package]{style='font-weight: bold; color: #ad343e;'} that can be installed and loaded into an R session *and* has access to the **Build** pane in the IDE.
 
-## *Functional* R [packages]{style='font-weight: bold; color: #ad343e;'} {#sec-packages-essential-ingredients}
 
 > "*A project needs **a `DESCRIPTION` file with specific fields**, a directory of `R/` files, and **a properly configured `.Rproj` file** to be a **functioning** R package.*"
 
 Let's see how each of these requirements work together to convert the contents of `moviesApp` from a Shiny [project]{style="font-weight: bold; color: #00916e"} into a Shiny [app-package]{style='font-weight: bold; color: #00a6ed;'}.
 
-### [`DESCRIPTION`]{style="font-size: 0.95em"} fields
-
-```{r}
-#| label: git_box_3.1_description
-#| echo: false
-#| results: asis
-#| eval: true
-git_margin_box(
-  fig_pw = '75%', 
-  branch = "03.1_description", 
-  repo = 'moviesApp')
-```
+### The [`DESCRIPTION`]{style="font-size: 0.95em"}
 
 The official R documentation[^pkgs-9] lists the following required fields for the `DESCRIPTION` in R [packages]{style='font-weight: bold; color: #ad343e;'}:
 
@@ -339,7 +375,7 @@ After adding the mandatory fields to the `DESCRIPTION` file, `devtools::load_all
 ::::
 
 
-### [Project]{style="font-weight: bold; color: #00916e"} Options
+## [Project]{style="font-weight: bold; color: #00916e"} Options
 
 [(i.e., the [`.Rproj`]{style="font-size: 1.10em"} file)]{style="font-style: italic; font-size: 1.30em"}
 
@@ -488,7 +524,7 @@ I should see the following in the **Console**:
 
 There you have it--`moviesApp` is a functional [**R package**]{style="color: #ad343e"}!
 
-## R [packages]{style='font-weight: bold; color: #ad343e;'} Recap
+### R [packages]{style='font-weight: bold; color: #ad343e;'} Recap
 
 :::: {.column-body-outset-right}
 
@@ -510,18 +546,8 @@ Think of the two items above as a two-part process: the `DESCRIPTION` requires s
 
 [^pkgs-13]: The [mandatory fields](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#The-DESCRIPTION-file) prevent the `devtools` error we encountered above.
 
-```{r}
-#| label: git_box_launch_03.2_rproj
-#| echo: false
-#| results: asis
-#| eval: true
-git_margin_box(
-  contents = "launch",
-  branch = "03.2_rproj")
-```
 
-
-## Creating Shiny [app-packages]{style='font-weight: bold; color: #00a6ed;'} with [`create_package()`]{style="font-size: 0.95em"}
+## Create Shiny [app-packages]{style='font-weight: bold; color: #00a6ed;'}
 
 The Posit documentation lists the following way(s) to create R [packages]{style='font-weight: bold; color: #ad343e;'}:[^pkgs-15a] 
 
@@ -531,6 +557,17 @@ The Posit documentation lists the following way(s) to create R [packages]{style=
 > 
 
 [^pkgs-15a]: This information comes from the [Writing R Packages](https://docs.posit.co/ide/user/ide/guide/pkg-devel/writing-packages.html) documentation for Posit Workbench.
+
+```{r}
+#| label: git_box_03.3_create-package
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  fig_pw = '75%', 
+  branch = "03.3_create-package", 
+  repo = 'moviesApp')
+```
 
 `create_package()` is a great option if you're looking for a way to quickly create or convert your Shiny [project]{style="font-weight: bold; color: #00916e"} into a Shiny [app-package]{style='font-weight: bold; color: #00a6ed;'}. In the following sections I'll cover some suggestions for using `create_package()`.[^pkgs-16]
 
@@ -629,17 +666,6 @@ newApp/
 You're now free to develop `newApp`. Store and document any `.R` files in the `R/` folder, edit the `DESCRIPTION` file with details about the application, read through  [R Packages](https://r-pkgs.org/) and [Mastering Shiny](https://mastering-Shiny.org/), and add the Shiny code to complete your Shiny [app-package]{style="font-weight: bold; color: #00a6ed;"}.
 
 ### Converting existing Shiny [projects]{style="font-weight: bold; color: #00916e"} {#sec-convert-shiny-app-packages}
-
-```{r}
-#| label: git_box_03.3_create-package
-#| echo: false
-#| results: asis
-#| eval: true
-git_margin_box(
-  fig_pw = '75%', 
-  branch = "03.3_create-package", 
-  repo = 'moviesApp')
-```
 
 If you already have a Shiny app [project]{style='font-weight: bold; color: #00916e;'} that needs to be converted into a Shiny [app-package]{style="font-weight: bold; color: #00a6ed;"} (like the app files stored in the [`02b_proj-app` branch](https://github.com/mjfrigaard/moviesApp/tree/02b_proj-app)), you can also use `create_package(path = getwd())` in your root folder, but I recommend using the following arguments:
 
