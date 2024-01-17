@@ -19,8 +19,9 @@ library(shiny)
 #| results: asis
 #| eval: true
 co_box(
-  color = "o", look = "minimal",
-  header = "Caution",
+  color = "y", size = "0.90", hsize = "0.95",
+  look = "minimal",
+  header = "Status",
   contents = "This chapter is under review.",
   fold = FALSE
 )
@@ -30,7 +31,48 @@ This chapter introduces tools to help write clean and efficient tests. These fil
 
 [^test_tools-documentation]: The three chapters in R Packages, 2ed, dedicated to testing are [Testing basics](https://r-pkgs.org/testing-basics.html), [Designing your test suite](https://r-pkgs.org/testing-design.html), and [Advanced testing techniques](https://r-pkgs.org/testing-advanced.html)
 
-## Test scope
+
+:::: {.callout-tip collapse='true' appearance='minimal'}
+
+## [Accessing the code examples]{style='font-weight: bold; font-size: 1.15em;'}
+
+::: {style='font-size: 0.95em; color: #282b2d;'}
+
+I've created the [`shinypak` R package](https://mjfrigaard.github.io/shinypak/) In an effort to make each section accessible and easy to follow:
+  
+Install `shinypak` using `pak` (or `remotes`):
+
+```{r}
+#| code-fold: false 
+#| message: false
+#| warning: false
+#| eval: false
+# install.packages('pak')
+pak::pak('mjfrigaard/shinypak')
+```
+
+Review the chapters in each section:
+  
+```{r}
+#| code-fold: false 
+#| message: false
+#| warning: false
+#| collapse: true
+library(shinypak)
+list_apps(regex = '12')
+```
+
+Launch an app: 
+
+```{r}
+#| code-fold: false 
+#| eval: false
+launch(app = "12.1_tests-fixtures")
+```
+
+::: 
+
+::::
 
 One of the recent updates to the `testthat` package (version 3.2.0) emphasizes limiting code that exists outside of our tests.[^test_tools-testthat-recent-changes]
 
@@ -48,8 +90,6 @@ Strategies for reducing or removing the code outside of `test_that()` tests incl
 
 Code outside of `test_that()` usually serves a specific purpose (load or manipulate data, set options, create folders or files, etc). The topics in this chapter will demonstrate how to include these behaviors in our tests without placing code outside of the test scope.
 
-### Using BDD functions
-
 If you decide to adopt the BDD functions in your test suite, I highly recommend creating code snippets to reduce the typing/copying and pasting.[^tests-tools-snippets] 
 
 [^tests-tools-snippets]: Read more about creating code snippets on the [Posit website.](https://docs.posit.co/ide/user/ide/guide/productivity/snippets.html)
@@ -58,7 +98,7 @@ You can edit keyboard shortcuts by selecting **Tools** > **Edit Code Snippets...
 
 ::: {layout="[49, -2, 49]"}
 
-#### Snippets
+#### Snippets {.unnumbered}
 
 ```{bash}
 #| eval: false 
@@ -104,7 +144,7 @@ snippet bddtemp
 	})
 ```
 
-#### Templates
+#### Templates {.unnumbered}
 
 ```{r}
 #| eval: false 
@@ -159,22 +199,23 @@ Snippets also work well with tab completion in the Posit Workbench IDE:
 
 ## Fixtures {#sec-test-fixtures}
 
-```{r}
-#| label: git_box_12b_tests-fixtures
-#| echo: false
-#| results: asis
-#| eval: true
-git_margin_box(
-  fig_pw = '65%', 
-  branch = "12a_tests-fixtures", 
-  repo = 'moviesApp')
-```
-
 <!-- https://www.tidyverse.org/blog/2020/04/self-cleaning-test-fixtures/ -->
 
 Test fixtures can be anything used to create repeatable test conditions (data, file paths, functions, etc.). Good test fixtures provide a consistent, well-defined test environment, and then are removed/destroyed when the test is executed. This ensures any changes made during the test don't persist or interfere with future tests.[^test_tools-5]
 
 [^test_tools-5]: For a concrete example, see [this article](https://www.tidyverse.org/blog/2020/04/self-cleaning-test-fixtures/) on self-cleaning tests.
+
+```{r}
+#| label: git_box_12.1_tests-fixtures
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  fig_pw = '65%', 
+  branch = "12.1_tests-fixtures", 
+  repo = 'moviesApp')
+```
 
 In R packages, test fixtures are stored in the `tests/testthat/fixtures/` folder:[^tests-fixtures-folder-name]
 
@@ -284,6 +325,18 @@ If the data `tidy_ggp2_movies.rds` in `tests/testthat/fixtures/` are going to be
 <!-- https://r-pkgs.org/testing-design.html#testthat-helper-files -->
 
 > "*Helper files are a mighty weapon in the battle to eliminate code floating around at the top-level of test files.*" Testthat helper files, [R Packages, 2ed](https://r-pkgs.org/testing-design.html#testthat-helper-files)
+
+```{r}
+#| label: git_box_12.2_tests-helpers
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  fig_pw = '65%', 
+  branch = "12.2_tests-helpers", 
+  repo = 'moviesApp')
+```
 
 Test helpers reduce repeated/duplicated test code. In general, objects or values that aren't large enough to justify storing as static test fixtures can be created with helper functions. Helper functions are stored in `tests/testthat/helper.R`, which is automatically loaded with `devtools::load_all()`:
 
@@ -442,18 +495,7 @@ It’s more important that test code is obvious than DRY, because it’s more li
 )
 ```
 
-#### Test logger
-
-```{r}
-#| label: git_box_12c_tests-helpers
-#| echo: false
-#| results: asis
-#| eval: true
-git_margin_box(
-  fig_pw = '65%', 
-  branch = "12b_tests-helpers", 
-  repo = 'moviesApp')
-```
+### Test logger {.unnumbered}
 
 I prefer test outputs to be verbose, so I usually create a `test_logger()` helper function that allows me to give more context and information with each test:
 
@@ -488,7 +530,7 @@ I tend to use functions like `test_logger()` enough to justify placing them in a
 
 [^test_tools-helpers-r-dir]: Placing common files for testing below `R/` is covered in [R Packages, 2ed](https://r-pkgs.org/testing-design.html#hiding-in-plain-sight-files-below-r)
 
-#### Test development 
+### Test development {.unnumbered}
 
 While developing, using keyboard shortcuts makes it easier to iterate between building fixtures, writing and running tests, and checking code coverage.
 
@@ -531,18 +573,7 @@ devtools:::test_coverage_active_file()
 ![Test coverage on active file](img/11_tests_coverage_scatter_plot.png){width="100%" fig-align="center"}
 
 
-### Example: snapshots
-
-```{r}
-#| label: git_box_12g_tests-snapshots
-#| echo: false
-#| results: asis
-#| eval: true
-git_margin_box(
-  fig_pw = '65%', 
-  branch = "20_tests-snapshots", 
-  repo = 'moviesApp')
-```
+### Example: snapshots 
 
 Writing tests for UI outputs can be difficult because their "correctness" is somewhat subjective and requires human judgment. If the expected output we're interesting in testing is cumbersome to describe programmatically, we can consider using a snapshot tests. Examples of this include UI elements (which are mostly HTML created by Shiny's UI layout and input/output functions) and data visualizations.[^test_tools-graph-snapshots]
 
@@ -749,22 +780,22 @@ Click **Accept**: `Accepting snapshot: 'tests/testthat/_snaps/text_logo.md'`
 
 [^test_tools-shinytest2-snaps-prelude]: We'll encounter this folder again in the @sec-tests-system on system tests with `shinytest2`. 
 
-## Recap
-
 ```{r}
-#| label: co_box_Mocking
+#| label: co_box_mocking
 #| echo: false
 #| results: asis
 #| eval: true
 co_box(
   color = "b", fold = TRUE, 
-  size = "1.05", look = "simple",
+  size = "1.05", look = "minimal",
   header = "Mocking",
   contents = "
 Test mocks are covered in [Special Topics](test_mocks.qmd), because the example isn't from our app-package (it comes from the package development masterclass given at [posit::conf(2023)](https://github.com/posit-conf-2023/pkg-dev-masterclass)). 
 "
 )
 ```
+
+## Recap {.unnumbered}
 
 ```{r}
 #| label: co_box_app_recap
