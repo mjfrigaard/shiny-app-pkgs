@@ -13,21 +13,75 @@ source("_common.R")
 #| results: asis
 #| eval: true
 co_box(
-  color = "o", 
+  color = "y", size = "0.90", hsize = "0.95",
   look = "minimal",
-  header = "Caution",
+  header = "Status",
   contents = "This chapter is under review.",
   fold = FALSE
 )
 ```
 
-> "*...this is the business of keystrokes and neurons*"
+> ["*on the business of keystrokes and neurons*"]{style="font-size: 1.25em; font-weight: bold; font-style: italic;"}
+
+:::: {.callout-tip collapse='true' appearance='minimal'}
+
+## [Accessing the code examples]{style='font-weight: bold; font-size: 1.15em;'}
+
+::: {style='font-size: 0.95em; color: #282b2d;'}
+
+I've created the [`shinypak` R package](https://mjfrigaard.github.io/shinypak/) In an effort to make each section accessible and easy to follow:
+  
+Install `shinypak` using `pak` (or `remotes`):
+
+```{r}
+#| code-fold: false 
+#| message: false
+#| warning: false
+#| eval: false
+# install.packages('pak')
+pak::pak('mjfrigaard/shinypak')
+```
+
+Review the chapters in each section:
+  
+```{r}
+#| code-fold: false 
+#| message: false
+#| warning: false
+#| collapse: true
+library(shinypak)
+list_apps(regex = '^17')
+```
+
+Launch an app: 
+
+```{r}
+#| code-fold: false 
+#| eval: false
+launch(app = "17_code-tools")
+```
+
+::: 
+
+::::
 
 ## Code style and formatting
 
-During development, it can be challenging to keep the code-base looking clean and perfect. Fortunately, the R ecosystem has some excellent tools for keeping your code formatted and easy to read.
+During development, it can be challenging to keep the code in your app-package clean and perfectly formatted. Fortunately, the R ecosystem has some excellent tools for making your code functional and easy to read.
 
 The [`lintr`](https://lintr.r-lib.org/) and [`styler`](https://styler.r-lib.org/) packages in R serve related but distinct purposes and have different focuses in their functionality. The primary difference between `lintr` and `styler` is that `styler` can automatically fix any stylistic issues it identifies in your code (rather than just reporting them). 
+
+```{r}
+#| label: git_box_17_code-tools
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  fig_pw = '50%', 
+  branch = "17_code-tools", 
+  repo = 'moviesApp')
+```
 
 ### `lintr`
 
@@ -63,7 +117,7 @@ Writing NAMESPACE
 [+] 6 package(s) added: cli, tools, fst, ggplot2movies, glue, waldo.
 ```
 
-`attachment::att_amend_desc()` will automatically create a `dev/` folder and adds the following configuration file:
+`attachment::att_amend_desc()` will automatically create a [`dev/` folder](https://github.com/mjfrigaard/moviesApp/tree/17_code-tools/dev) with a YAML configuration file:
 
 ```bash
 dev
@@ -103,7 +157,7 @@ sinew::pretty_namespace(con = "app.R")
 
 ## `DESCRIPTION` files 
 
-The [`desc` package](https://github.com/r-lib/desc) provides functions for creating, reading, writing, and manipulating `DESCRIPTION` files.
+The [`desc` package](https://github.com/r-lib/desc) provides functions for creating, reading, writing, and manipulating `DESCRIPTION` files. You can include additional dependencies to your DESCRIPTION using the `desc_set_dep()` function. 
 
 ```r
 library(desc)
@@ -124,5 +178,106 @@ Imports:
     shinythemes,
     stringr,
     tools
+```
+
+## Checking your code 
+
+I've [previously mentioned](@sec-dev-check) running `devtools::check()` can be overkill for your app-package (especially if it's not destined for CRAN). A nice alternative to `check()` is the [`goodpractice` package.](https://mangothecat.github.io/goodpractice/).
+
+`goodpractice::gp()` inspects your package and prints any areas that might need 'good practice' advice: 
+
+```{r}
+#| eval: false
+#| code-fold: false
+library(goodpractice)
+pkg_checks <- gp(path = ".")
+pkg_checks
+```
+
+
+```{verbatim}
+Preparing: description
+Preparing: lintr
+  |====================================================================| 100%
+Preparing: namespace
+Preparing: rcmdcheck
+── GP moviesApp ───────────────────────────────────────────────────────
+
+It is good practice to
+
+  ✖ add a "URL" field to DESCRIPTION. It helps users find information about your
+    package online. If your package does not have a homepage, add an URL to 
+    GitHub, or the CRAN package package page.
+  ✖ add a "BugReports" field to DESCRIPTION, and point it to a bug tracker. 
+    Many online code hosting services provide bug trackers for free, 
+    https://github.com, https://gitlab.com, etc.
+  ✖ avoid long code lines, it is bad for readability. Also, many people prefer 
+    editor windows that are about 80 characters wide. Try make your lines 
+    shorter than 80 characters
+
+    data-raw/tidy_movies.R:49:81
+    R/data.R:4:81
+    R/data.R:7:81
+    R/data.R:17:81
+    R/data.R:21:81
+    ... and 13 more lines
+
+  ✖ not import packages as a whole, as this can cause name clashes between the 
+    imported packages. Instead, import only the specific functions you need.
+  ✖ fix this R CMD check NOTE: display_type: no visible binding for global 
+    variable
+    ‘.rs.invokeShinyPaneViewer’ display_type: no visible binding for global 
+    variable
+    ‘.rs.invokeShinyWindowExternal’ display_type: no visible binding for global
+    variable
+    ‘.rs.invokeShinyWindowViewer’ mod_scatter_display_server : <anonymous>: no 
+    visible binding for global
+    variable ‘movies’ Undefined global functions or variables: 
+    .rs.invokeShinyPaneViewer 
+    .rs.invokeShinyWindowExternal 
+    .rs.invokeShinyWindowViewer 
+    movies
+```
+
+We can also check specific components of our package by looking up the available checks in `all_checks()`:
+
+```{r}
+#| eval: false
+#| code-fold: false
+grep("import", x = all_checks(), value = TRUE)
+```
+
+```{bash}
+#| eval: false
+#| code-fold: false
+[1] "no_import_package_as_a_whole"                 
+[2] "rcmdcheck_undeclared_imports"                 
+[3] "rcmdcheck_imports_not_imported_from"          
+[4] "rcmdcheck_depends_not_imported_from"          
+[5] "rcmdcheck_triple_colon_imported_objects_exist"
+[6] "rcmdcheck_unexported_base_objects_imported"   
+[7] "rcmdcheck_unexported_objects_imported"        
+[8] "rcmdcheck_empty_importfrom_in_namespace"  
+```
+
+Then passing the vector to the `gp()` function:
+
+```{r}
+#| eval: false
+#| code-fold: false
+gp(path = ".", checks = 'no_import_package_as_a_whole')
+```
+
+```{bash}
+#| eval: false
+#| code-fold: false
+── GP moviesApp ───────────────────────────────────────────────────
+
+It is good practice to
+
+  ✖ not import packages as a whole, as this can cause name clashes between
+    the imported packages. Instead, import only the specific functions you need.
+
+───────────────────────────────────────────────────────────────────
 ```
 
