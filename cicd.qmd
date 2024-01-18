@@ -884,7 +884,7 @@ When it's finished, we can see the deployment log from the workflow looks simila
 
 ## A Shiny/Docker workflow
 
-In the previous chapter we covered Docker, which builds and application in an image and containerizes the deployment. We can combine Docker and GitHub Actions to automated the deployment lifecycle of your app, which minimizes any risks of environmental discrepancies (avoiding the "it works on my machine" problem) and manual deployment processes (if something goes wrong after a workflow run, rolling back to a previous version in Git is straightforward). 
+In the previous chapter we covered Docker, which builds and application in an image and containerizes the deployment. We can combine Docker and GitHub Actions to automate the deployment of an app, which minimizes any risks of environmental discrepancies (avoiding the "it works on my machine" problem) and manual deployment processes (if something goes wrong after a workflow run, rolling back to a previous version in Git is straightforward). 
 
 ```{r}
 #| label: git_box_16.3_cicd-docker
@@ -904,7 +904,7 @@ Most of the steps below are covered in the excellent blog post by [Nicola Rennie
 
 [^post-automatically-deploying-a-shiny-app]: Automatically deploying a Shiny app for browsing #RStats tweets with GitHub Actions. Nicola Rennie. October 3, 2022. https://nrennie.rbind.io/blog/2022-10-05-automatically-deploying-a-shiny-app-for-browsing-rstats-tweets-with-github-actions/
 
-To make sure our RSCONNECT_USER, RSCONNECT_TOKEN, and RSCONNECT_SECRET travels with our `Dockerfile`, we can store these as environmental variables with `Sys.setenv()`:
+To make sure our `RSCONNECT_USER`, `RSCONNECT_TOKEN`, and `RSCONNECT_SECRET` travels with our `Dockerfile`, we can store these as environmental variables with `Sys.setenv()`:
 
 ```{r}
 #| eval: false
@@ -916,10 +916,9 @@ Sys.setenv(RSCONNECT_USER = '<username>',
 
 These will be passed to `rsconnect::setAccountInfo()` in our `deploy.R` file.
 
-
 ### [`deploy.R`]{style="font-size: 0.95em; font-weight: bold;"}
 
-`deploy.R` contains the calls to `rsconnectL::setAccountInfo()` and `rsconnect::deployApp()` we had in our previous workflow file. `Sys.getenv()` will retrieve the username, token, and secret stored with `Sys.setenv()`:
+`deploy.R` contains the calls to `rsconnect::setAccountInfo()` and `rsconnect::deployApp()` we had in our previous workflow file. `Sys.getenv()` will retrieve the username, token, and secret stored with `Sys.setenv()`:
 
 ```{r}
 #| eval: false
@@ -940,18 +939,18 @@ The `deploy.R` script should be placed in the root folder of `moviesApp`.
 
 The `Dockerfile` will look similar to the example in the [Docker](docker.qmd) chapter, but with a few important changes: 
 
-1. We'll include `rsconnect` and `bslib` in the list of packages to install 
-2. The `/home/moviesAppDockerCiCd` directory is not only the image location we'll be launching the application from, it's also the URL for the deployed app: 
+1. The `/home/moviesAppDockerCiCd` directory is not only the image location we'll be launching the application from, it's also the URL for the deployed app: 
     -   `https://` **`username`** `.shinyapps.io/moviesAppDockerCiCd/`
-3. The final command runs the application from `deploy.R`  
+2. We'll include `rsconnect` and `bslib` in the list of packages to install.   
+3. The final command runs the application from the `deploy.R` file
 
 
 ```bash
 FROM rocker/shiny
-RUN R -e 'install.packages(c("rlang", "stringr", "shiny", "ggplot2", "remotes", "rsconnect", "bslib"))'
 RUN mkdir /home/moviesAppDockerCiCd
 ADD . /home/moviesAppDockerCiCd
 WORKDIR /home/moviesAppDockerCiCd
+RUN R -e 'install.packages(c("rlang", "stringr", "shiny", "ggplot2", "remotes", "rsconnect", "bslib"))'
 RUN R -e 'remotes::install_local(upgrade="never")'
 EXPOSE 8180
 CMD Rscript deploy.R
@@ -1000,45 +999,46 @@ The final `execute` step is runs docker run and passes our environment variables
        
 ```
 
-### Tip: Check app dependencies 
+### App dependencies 
 
-`rsconnect` has a handy `appDependencies()` function (available with `rsconnect:::`) that returns a `data.frame` of the dependencies for an application: 
+`rsconnect` has a handy `appDependencies()` function that returns a `data.frame` of packages, versions, and repositories for your application: 
 
 ```{r}
 #| eval: false
 #| code-fold: false
-rsconnect:::appDependencies(appDir = ".")
+head(rsconnect:::appDependencies(appDir = "."))
 ```
 
 ```{r}
 #| eval: false
 #| code-fold: false
-#        Package  Version Source                                  Repository
-# 1  AsioHeaders 1.22.1-2   CRAN https://packagemanager.posit.co/cran/latest
-# 2         MASS   7.3-60   CRAN https://packagemanager.posit.co/cran/latest
-# 3       Matrix    1.6-4   CRAN https://packagemanager.posit.co/cran/latest
-# 4           R6    2.5.1   CRAN https://packagemanager.posit.co/cran/latest
-# 5 RColorBrewer    1.1-3   CRAN https://packagemanager.posit.co/cran/latest
-# 6         Rcpp   1.0.11   CRAN https://packagemanager.posit.co/cran/latest
+#>        Package  Version Source               Repository
+#> 1  AsioHeaders 1.22.1-2   CRAN https://cran.rstudio.com
+#> 2         MASS   7.3-60   CRAN https://cran.rstudio.com
+#> 3       Matrix    1.6-4   CRAN https://cran.rstudio.com
+#> 4           R6    2.5.1   CRAN https://cran.rstudio.com
+#> 5 RColorBrewer    1.1-3   CRAN https://cran.rstudio.com
+#> 6         Rcpp   1.0.12   CRAN https://cran.rstudio.com
 ```
 
 Passing `appDependencies()` function in your app-package directory will tell you if any packages have missing `Source` or `Repository` values (this can cause the deployment to fail).
 
 I also recommend running `attachment::att_amend_desc()` to capture all the dependencies in the `DESCRIPTION`. For example, `att_amend_desc()` added the following packages to the `Suggests` field in the `DESCRIPTION`:[^attachment-dev]
 
-[^attachment-dev]: `att_amend_desc()` adds a `dev` folder with a YAML config file (but this can be removed before building/deploying).
+[^attachment-dev]: `att_amend_desc()` adds a `dev` folder with a YAML config file, but you can be remove this before building/deploying.
 
 
 ```bash
-[+] 9 package(s) added: cli, tools, dplyr, ggplot2movies, glue, purrr, tibble,
-tidyr, waldo.
+[+] 4 package(s) added: fst, shinytest2, testthat, tidyr.
 ```
 
-When the workflow runs, we see a message about these packages not being installed, but this does not interfere with the application launching (the packages listed are used in `vignettes/`, `data-raw/`, and `tests/`). 
+In the Shiny workflow example we captured our application dependencies using `renv`, but when we used Docker with Github Actions, we didn't create a `renv.lock` file (or `renv` folder). When the workflow runs and `renv` is used to capture our dependencies (line 13 in the output below), we see a message about the packages listed in the `Suggests` field or our `DESCRIPTION`:  
 
 ![Docker deploy log ](images/gh_docker_deploy.png){width='100%' fig-align='center'}
 
+Not having these packages installed doesn't interfere with the application deploying because the packages listed in `Suggests` are used in `vignettes/`, `data-raw/`, and `tests/`.
 
+View the deployed application [here](https://mjfrigaard.shinyapps.io/moviesAppDockerCiCd/).
 
 ## Recap
 
