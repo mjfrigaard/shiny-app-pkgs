@@ -3,7 +3,14 @@
 
 options(width = 50L, pillar.width = 50L)
 
-co_box <- function(color, header, contents = "Your text", size = "1.05", hsize = "1.10", fold = FALSE, look = "default") {
+co_box <- function(
+  color = "b",
+  header = "header",
+  contents = "Your text",
+  size = "1.05",
+  hsize = "1.10",
+  fold = FALSE,
+  look = "default") {
   
   if (look == "simple") {
     look <- "simple"
@@ -24,6 +31,7 @@ co_box <- function(color, header, contents = "Your text", size = "1.05", hsize =
     y = "caution",
     stop("Invalid `type`", call. = FALSE)
   )
+  
   switch(color,
     b = cat(paste0(
       "\n\n",
@@ -72,6 +80,36 @@ co_box <- function(color, header, contents = "Your text", size = "1.05", hsize =
     )),
     stop("Invalid `type`", call. = FALSE)
   )
+}
+
+git_co_box <- function(
+                repo = 'shiny-app-pkgs', 
+                header = "Contribute",
+                contents = "See a typo, error, or something missing? Please open an issue on ",
+                size = "0.95",
+                hsize = "1.10",
+                fold = TRUE) {
+  
+  git_repo_root <- "https://github.com/mjfrigaard/"
+  new_issue <- "/issues/new"
+  
+  gh_repo_link <- paste0("[GitHub]", "(", git_repo_root, repo, new_issue, ")")
+  gh_repo_link
+  
+  cat(paste0(
+        "\n\n",
+        ":::: {.callout-note", " collapse='", fold, "'", " appearance='minimal'}", "\n\n",
+        "## [", header, "]{style='font-weight: bold; font-size: ", hsize, "em;'}\n\n",
+        "::: {style='font-size: ", size, "em; color: #282b2d;'}\n\n",
+        "\n", 
+        glue::glue_collapse(contents), 
+        gh_repo_link,
+        "\n\n",
+        "::: \n\n",
+        "::::", "\n"
+      ))
+  
+  
 }
 
 git_margin_box <- function(contents = "standard", fig_pw = '70%', branch = 'main', repo = 'shinypak') {

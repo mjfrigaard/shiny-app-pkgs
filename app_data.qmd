@@ -1,0 +1,761 @@
+# App data {#sec-app-data}
+
+<!--
+https://shiny.posit.co/r/articles/improve/debugging/
+https://debruine.github.io/shinyintro/debugging.html
+-->
+
+```{r}
+#| label: _common
+#| eval: true 
+#| echo: false 
+#| include: false
+source("_common.R")
+library(lobstr)
+library(shiny)
+```
+
+```{r}
+#| label: co_box_dev
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "o", 
+  look = "minimal",
+  header = "Caution",
+  contents = "This chapter is under review.",
+  fold = FALSE
+)
+```
+
+This chapter covers using `session$userData` vs. `reactiveValues()` in your application to store values and objects. Whether to use `session$userData` or `reactiveValues()` will depend on the purpose you want them to serve (and what you want to store/access) in your application.
+
+## `reactiveValues()`  {#sec-reactiveValues}
+
+```{r}
+#| label: git_box_22.1_reactive-values
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  fig_pw = '65%', 
+  branch = "22.1_reactive-values", 
+  repo = 'moviesApp')
+```
+
+Calling `reactiveValues()` creates *"an object for storing reactive values."* We've been storing the reactive values returned from the `var_input` module in the `selected_vars` object, then passing these values into the `scatter_display` module. [^reactive-values-intro]
+
+[^reactive-values-intro]: Mastering Shiny also has a [great section](https://mastering-shiny.org/reactivity-objects.html#reactive-values) on `reactiveVal()` and `reactiveValues()`
+
+```{r}
+#| eval: false 
+#| code-fold: false
+movies_server <- function(input, output, session) {
+
+      selected_vars <- mod_var_input_server("vars") # <1> 
+
+      mod_scatter_display_server("plot", var_inputs = selected_vars) # <2>
+      
+}
+```
+1. reactive values returned from `var_input` module  
+2. reactive values passed to `scatter_display` module  
+
+
+In the steps below we'll walk through an example of using `reactiveValues()` to capture the `selected_vars` values returned from the `var_input` module and passed to the `scatter_display` module.
+
+You should note a series of changes made to `movies_server()` in this branch: 
+
+-   `reactiveValues()` is used to create `rVals`
+
+-   Instead of creating the `selected_vars`, the output from `mod_var_input_server()` is assigned to `rVals` as `inputs`
+
+-   `rVals` is then passed as an input argument to `mod_scatter_display_server()`
+
+-   `.dev` arguments have been added to both module server functions (and have been set to `FALSE`)
+
+```{r}
+#| eval: false 
+#| code-fold: false
+# assign inputs to rVals
+movies_server <- function(input, output, session) {
+  
+    # create reactive values
+    rVals <- reactiveValues() # <1>
+
+    # assign inputs to rVals
+    rVals$inputs <- mod_var_input_server("vars", .dev = FALSE) # <2>
+    
+    # view output in the UI
+    # output$vals <- renderPrint({ # <3>
+    #   str(rVals)
+    #   # str(rVals$inputs())
+    # }) # <3>
+
+    # pass reactive values to display
+    mod_scatter_display_server("plot", rVals = rVals, .dev = FALSE) # <4>
+      
+}
+```
+1. New `reactiveValues()` object   
+2. Returned values from `mod_var_input_server()` assigned to `rVals$inputs`   
+3. `renderPrint()` for `str(rVals)` and `str(rVals$inputs())` (commented)   
+4. `rVals` object passed to `mod_scatter_display_server()`   
+
+In the steps below, we'll view the structure and function of `rVals` and the reactive values in the application using methods covered in the [Debugging chapter](debugging.qmd).
+
+### Step 1
+
+Change `.dev` in `mod_var_input_server()` to `TRUE` in `movies_server()`, then load and run the application. The updated `movies_server()` function should look like this:
+
+
+```{r}
+#| eval: false 
+#| code-fold: false
+# assign inputs to rVals
+movies_server <- function(input, output, session) {
+  
+    # create reactive values
+    rVals <- reactiveValues()
+
+    # assign inputs to rVals
+    rVals$inputs <- mod_var_input_server("vars", .dev = TRUE) # <1>
+    
+    # view output in the UI
+    # output$vals <- renderPrint({
+    #   str(rVals)
+    #   # str(rVals$inputs())
+    # })
+
+    # pass reactive values to display
+    mod_scatter_display_server("plot", rVals = rVals, .dev = FALSE)
+      
+}
+```
+1. Set `.dev` to `TRUE`
+
+When the application launches, you should see the following:[^reactives-debugging-ref]
+
+[^reactives-debugging-ref]: The methods used in this chapter can be found in the chapter on [Debugging](debugging.qmd) 
+
+::::{.column-body-outset-right}
+
+:::{#fig-reactive_values_input_dev}
+
+![`.dev = TRUE` in `mod_var_input_server()`](images/reactive_values_input_dev.png){#fig-reactive_values_input_dev width='100%' align='center'}
+
+ reactive values from `mod_var_input_server()`
+:::
+
+::::
+
+The output in the sidebar are the reactive values from the variable input module:
+
+`mod_var_input_server()` has been simplified to return the output from `reactiveValuesToList()`. 
+
+-   The same output is also being rendered in the sidebar when `.dev` is set to `TRUE`:
+    ```{r}
+    #| eval: false 
+    #| code-fold: false
+    mod_var_input_server <- function(id, .dev = TRUE) {
+    
+      moduleServer(id, function(input, output, session) {
+        
+        if (.dev) {
+          # view output in the UI
+          output$vals <- renderPrint({
+            x <- reactiveValuesToList(input, all.names = TRUE)
+            str(x)
+          })
+        }
+        
+        # return reactives
+        return(
+          reactive({
+            reactiveValuesToList(input, all.names = TRUE)
+          })
+        )
+    
+      })
+    }
+    ```
+
+### Step 2
+
+Remove the comments from the `renderPrint()` lines in `movies_server()` to view the structure of `rVals`, then load and run the application. The new `movies_server()` function should now look like this:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+# assign inputs to rVals
+movies_server <- function(input, output, session) {
+  
+    # create reactive values
+    rVals <- reactiveValues()
+
+    # assign inputs to rVals
+    rVals$inputs <- mod_var_input_server("vars", .dev = TRUE) # <1> 
+    
+    # view output in the UI
+    output$vals <- renderPrint({  # <2> 
+      str(rVals)
+      # str(rVals$inputs())
+    }) # <2>
+
+    # pass reactive values to display
+    mod_scatter_display_server("plot", rVals = rVals, .dev = FALSE)
+      
+}
+```
+1. Set `.dev` to `TRUE`
+2. Remove comments from `str(rVals)`
+
+::::{.column-body-outset-right}
+
+:::{#fig-reactive_values_input_server_dev_01}
+
+![`str(rVals) `from `movies_server()`](images/reactive_values_input_server_dev_01.png){#fig-reactive_values_input_server_dev_01 width='100%' align='center'}
+
+
+`rVals$inputs()` from `movies_server()`
+:::
+
+::::
+
+
+#### What is `reactiveValues()`?
+
+> *"When you read a value from it, the calling reactive expression takes a reactive dependency on that value, and when you write to it, it notifies any reactive functions that depend on that value. **Note that values taken from the `reactiveValues()` object are reactive, but the `reactiveValues()` object itself is not**."* [Shiny Documentation](https://shiny.posit.co/r/reference/shiny/1.7.2/session.html)
+
+I've added emphasis to the quote above because it's important to remember that any object assign to `reactiveValue()` should be treated like any reactive object (i.e., and `inputId` or object returned from `reactive()` or `observe()`).[^reactives-shiny-doc-reactive-values] 
+
+[^reactives-shiny-doc-reactive-values]: Read more in the [Shiny documentation.](https://shiny.posit.co/r/reference/shiny/0.11/reactivevalues)
+
+For example, if we try to access the input values as a list outside the a `movies_server()` or module function, we see the following error:[^reactives-isolate] 
+
+[^reactives-isolate]: We *can* access the values by wrapping the assigned object in `isolate()`. Read more in the [documentation on `reactiveValues()`](https://shiny.posit.co/r/reference/shiny/1.7.2/session.html).
+
+```{r}
+#| eval: false 
+#| error: true 
+#| code-fold: false
+#| collapse: true
+x <- reactiveValues(
+  inputs = list(x = "imdb_rating",
+                y = "audience_score",
+                z = "mpaa_rating",
+                alpha = 0.5,
+                size = 2,
+                plot_title = "Enter Plot Title")
+  )
+x$inputs()
+```
+
+```{r}
+#| eval: false 
+#| code-fold: false
+## Error in `x$inputs`:
+## ! Can't access reactive value 'inputs' outside of reactive consumer.
+## ℹ Do you need to wrap inside reactive() or observe()?
+```
+
+
+
+### Step 3
+
+Now let's remove the commented lines from `renderPrint()` to view the structure of `rVals$inputs()`, then load and run the application. The new `movies_server()` function should now look like this:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+# assign inputs to rVals
+movies_server <- function(input, output, session) {
+  
+    # create reactive values
+    rVals <- reactiveValues()
+
+    # assign inputs to rVals
+    rVals$inputs <- mod_var_input_server("vars", .dev = TRUE) # <1> 
+    
+    # view output in the UI
+    output$vals <- renderPrint({  # <2> 
+      # str(rVals)
+      str(rVals$inputs())
+    }) # <2>
+
+    # pass reactive values to display
+    mod_scatter_display_server("plot", rVals = rVals, .dev = FALSE)
+      
+}
+```
+1. Set `.dev` to `TRUE`
+2. Remove comments from `str(rVals$inputs())`
+
+::::{.column-body-outset-right}
+
+:::{#fig-reactive_values_input_server_dev_02}
+
+![`str(rVals) `from `movies_server()`](images/reactive_values_input_server_dev_02.png){#fig-reactive_values_input_server_dev_02 width='100%' align='center'}
+
+
+`rVals$inputs()` from `movies_server()`
+:::
+
+::::
+
+The `rVals$inputs()` being rendered in `movies_server()` are the returned values from the variable input module (and they're identical to the value in the sidebar).
+
+When `rVals` is passed to `mod_scatter_display_server()`, the reactive `inputs()` object inside the function can be built using `rVals$inputs()`:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+inputs <- reactive({
+  plot_title <- tools::toTitleCase(rVals$inputs()[['plot_title']])
+    list(
+      x = rVals$inputs()[['x']],
+      y = rVals$inputs()[['y']],
+      z = rVals$inputs()[['z']],
+      alpha = rVals$inputs()[['alpha']],
+      size = rVals$inputs()[['size']],
+      plot_title = plot_title
+    )
+})
+```
+
+The `.dev` argument displays the structure of `rVals$inputs()` inside `mod_scatter_display_server()` if it's set to `TRUE`:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+    if (.dev) {
+      # view output in the UI
+      output$display_vals <- renderPrint({
+        str(
+          rVals$inputs()
+          )
+      })
+    }
+
+```
+
+### Step 4
+
+Set `.dev` to `TRUE` in `mod_scatter_display_server()`, then load and run the application. The final `movies_server()` function should now look like this:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+# assign inputs to rVals
+movies_server <- function(input, output, session) {
+  
+    # create reactive values
+    rVals <- reactiveValues()
+
+    # assign inputs to rVals
+    rVals$inputs <- mod_var_input_server("vars", .dev = TRUE) # <1> 
+    
+    # view output in the UI
+    output$vals <- renderPrint({  # <2> 
+      # str(rVals)
+      str(rVals$inputs())
+    }) # <2>
+
+    # pass reactive values to display
+    mod_scatter_display_server("plot", rVals = rVals, .dev = TRUE) # <3>
+      
+}
+```
+1. Set `.dev` to `TRUE`
+2. Remove comments  
+3. Set `.dev` to `TRUE`
+
+
+::::{.column-body-outset-right}
+
+:::{#fig-reactive_values_input_server_dev}
+
+![`.dev` set to `TRUE` and reactive values from `movies_server()`](images/reactive_values_all_dev.png){#fig-reactive_values_input_server_dev width='100%' align='center'}
+
+
+Both module `.dev` arguments set to `TRUE` and `rVals$inputs()` from `movies_server()` 
+:::
+
+::::
+
+An important thing to note is that we can only reference `rVals$inputs()` in a **reactive consumer** (i.e., using `reactive()`, `observe()`, etc.). That's why when we change any of the UI inputs, the values change in `rVals$inputs()` and in the `inputs()` object inside the display module.
+
+You can also view these outputs using `movies_app(run = 'b', bslib = TRUE)`.
+
+```{r}
+#| label: git_box_22.2_user-data
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  fig_pw = '65%', 
+  branch = "22.2_user-data", 
+  repo = 'moviesApp')
+```
+
+## `session$userData`
+
+Objects stored in `session$userData` are not inherently reactive, which makes it ideal for storing persistent values or data that don't require (or trigger) reactivity. Below is a demonstration of using `session$userData` to store a non-reactive function to be used in the `inst/dev/` application.
+
+### Non-reactive objects 
+
+Assume I have an object that I want to pass inside the server (and modules), but I don't need it to update or change. The example I'll use below is a function (`make_dev_ggp2_movies()`) that prepares the `ggplot2movies::movies` for the application:
+
+```{r}
+#| eval: false 
+#| code-fold: true  
+#| code-summary: 'View make_dev_ggp2_movies() function'
+make_dev_ggp2_movies <- function(con) {
+  movies_data <- read.csv(file = con)
+  # specify genre columns
+  genre_cols <- c(
+    "Action", "Animation",
+    "Comedy", "Drama",
+    "Documentary", "Romance",
+    "Short"
+  )
+  # calculate row sum for genres
+  movies_data$genre_count <- rowSums(movies_data[, genre_cols])
+  # create aggregate 'genres' for multiple categories
+  movies_data$genres <- apply(
+    X = movies_data[, genre_cols],
+    MARGIN = 1,
+    FUN = function(row) {
+      genres <- names(row[row == 1])
+      if (length(genres) > 0) {
+        return(paste(genres, collapse = ", "))
+      } else {
+        return(NA)
+      }
+    }
+  )
+  # format variables
+  movies_data$genre_count <- as.integer(movies_data$genre_count)
+  movies_data$genre <- ifelse(test = movies_data$genre_count > 1,
+    yes = "Multiple genres",
+    no = movies_data$genres
+  )
+  movies_data$genre <- as.factor(movies_data$genre)
+  movies_data$mpaa <- factor(movies_data$mpaa,
+    levels = c("G", "PG", "PG-13", "R", "NC-17"),
+    labels = c("G", "PG", "PG-13", "R", "NC-17")
+  )
+
+  # reduce columns to only those in graph
+  movies_data[, c(
+    "title", "year", "length", "budget",
+    "rating", "votes", "mpaa", "genre_count",
+    "genres", "genre"
+  )]
+}
+```
+
+This function is designed to take a path or URL (i.e., a `con`nection) as an input and returns a dataset that can be used in the `inst/dev/` application. 
+
+In the `inst/dev/app.R` file, the following changes have been made to `devServer()`:
+
+  -   `session$userData` stores the contents of `make_dev_ggp2_movies()`   
+
+  -   `reactiveValues()` is used to create `rVals` [^userdata-rVals]
+  
+  -   The values returned from `mod_var_input_server()` is assigned to `rVals` as `inputs`
+  
+  -   `dev_mod_scatter_server()` as been updated to include arguments for `rVals`, `userData`, `con`, and `.dev`
+  
+[^userdata-rVals]: We'll cover how `reactiveValues()` works in @sec-reactiveValues below.
+  
+```{r}
+#| eval: false 
+#| code-fold: false
+devServer <- function(input, output, session) {
+  
+  session$userData$make_dev_ggp2_movies <- make_dev_ggp2_movies # <1>
+  
+  rVals <- reactiveValues() # <2>
+  
+  rVals$inputs <- moviesApp::mod_var_input_server("vars", .dev = TRUE) # <3>
+  
+  # # view output in the UI
+  # output$vals <- renderPrint({
+  #   # str(session)
+  # })
+
+  dev_mod_scatter_server("plot", # <4>
+    rVals = rVals,
+    data_fun = session$userData$make_dev_ggp2_movies, 
+    con = "https://bit.ly/3FQYR8j",
+    .dev = FALSE
+  ) # <4>
+
+}
+```
+1. Create `userData$make_dev_ggp2_movies` that holds `make_dev_ggp2_movies()`
+2. Create `rVals`
+3. Assign output from `mod_var_input_server()` to `rVals$inputs`
+4. Updated `dev_mod_scatter_server()` function 
+  
+### Step 1
+  
+To view what's happening with `session$userData`, we'll run the application using the **Run App** button at the top of `app.R`
+
+:::{.column-margin}
+
+![](images/Run_App.png){width='50%' fig-align='right'}
+
+:::
+
+::::{.column-body-outset-right}
+
+:::{#fig-reactive_values_dev_step1}
+
+![Initial app in `dev/inst/app.R`](images/reactive_values_dev_step1.png){#fig-reactive_values_dev_step1 width='100%' align='center'}
+
+
+The reactive values from `mod_var_input_server()` in the sidebar
+:::
+
+::::
+
+We're using a previous version of `mod_var_input_server()` that includes a `.dev` argument, so we know it's displaying the contents from `reactiveValuesToList()` in the sidebar.
+
+### Step 2 
+
+In `devServer()`, un-comment the `renderPrint()` call so it renders `str(session)` and run the app:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+  # view output in the UI
+  output$vals <- renderPrint({ # <1>
+    str(session)
+  }) # <1>
+```
+1. Remove comments from `renderPrint()`
+
+::::{.column-body-outset-right}
+
+:::{#fig-reactive_values_dev_step3}
+
+![`str(session)` `dev/inst/app.R`](images/reactive_values_dev_step3.png){#fig-reactive_values_dev_step3 width='100%' align='center'}
+
+
+The `str(session)` from `devServer()`
+:::
+
+::::
+
+[**Notice `session` has `:Classes 'ShinySession', 'R6'`**]{style="font-size: 1.10em;"}
+
+#### What is `session`?
+
+Each time the app launches, the `session` list is created and tied to that particular 'session.'
+
+> *"An environment for app authors and module/package authors to store whatever session-specific data they want."* [Shiny Documentation](https://shiny.posit.co/r/reference/shiny/1.7.2/session.html)
+
+`session$userData` can store objects that should persist across different reactive contexts, but don't need reactive updating (and won't trigger reactivity). On the other hand, `reactiveValues()` creates objects stored in a reactive 'state', which will trigger reactive updates in the UI. 
+
+We'll use both `reactiveValues()` and `session$userData` in the module below:
+
+`dev_mod_scatter_server()` includes arguments for `rVals`, `data_fun`, `con`, and `.dev`.
+
+  -   `rVals` is the `reactiveValues()` object with our input values  
+
+  -   `data_fun` is `session$userData$make_dev_ggp2_movies` 
+
+  -   `con` is the path or URL to the `data_fun` in `session$userData` [^userdata-con]
+  
+
+[^userdata-con]: In this case, `con` is a URL for a .csv version of `ggplot2movies::movies`)
+
+```{r}
+#| eval: false 
+#| code-fold: false
+
+dev_mod_scatter_server("plot",
+  
+  rVals = rVals, # <1> 
+  
+  data_fun = session$userData$make_dev_ggp2_movies, # <2> 
+  
+  con = "https://bit.ly/3FQYR8j", # <3> 
+  
+  .dev = FALSE) # <4> 
+
+```
+1. pass reactive values 
+2. pass `session$userData` with `make_dev_ggp2_movies()`
+3. pass value for non-reactive object
+4. view `userData` value in module
+
+-   Inside `dev_mod_scatter_server()`, all_data is created from `data_fun()`:
+
+    ```{r}
+    #| eval: false 
+    #| code-fold: false
+    # use data_fun() function on con
+    all_data <- data_fun(con)
+    ```
+
+    -   The `inputs()` list and plot output are very similar to `mod_scatter_display_server()`:
+
+    ```{r}
+    #| eval: false 
+    #| code-fold: false
+    inputs <- reactive({
+      plot_title <- tools::toTitleCase(rVals$inputs()[["plot_title"]])
+      list(
+        x = rVals$inputs()[["x"]],
+        y = rVals$inputs()[["y"]],
+        z = rVals$inputs()[["z"]],
+        alpha = rVals$inputs()[["alpha"]],
+        size = rVals$inputs()[["size"]],
+        plot_title = plot_title
+      )
+    })
+    ```
+
+    -   The structure of `data_fun` will be printed to the UI if the `.dev` argument is set to `TRUE`
+
+    ```{r}
+    #| eval: false 
+    #| code-fold: false
+    # view output in the UI
+    output$data <- renderPrint({
+        data_fun
+    })
+    ```
+
+### Step 4
+
+Change `.dev` in `dev_mod_scatter_server()` to `TRUE` and run the app: 
+
+::::{.column-body-outset-right}
+
+:::{#fig-reactive_values_dev_step4}
+
+![`data_fun` `dev_mod_scatter_server()`](images/reactive_values_dev_step4.png){#fig-reactive_values_dev_step4 width='100%' align='center'}
+
+
+The `data_fun` argument from `dev_mod_scatter_server()` is not reactive
+:::
+
+::::
+
+Here we can see `data_fun()` is not a reactive (it's a standard function).
+
+## Tests 
+
+If you decide to use `reactiveValues()` or `session$userData`, you'll need to confirm these objects in your tests.
+
+### Example: testing `reactiveValues()` {#sec-testing-reactive-values}
+
+The module tests for `test-mod_scatter_display.R` had to be redesigned to handle the `reactiveValues()` input. You can view the full test file in [this branch](https://github.com/mjfrigaard/moviesApp/blob/19a_reactive-values/tests/testthat/test-mod_scatter_display.R), but to briefly summarize: 
+
+-   `args = list()` in `testServer()` now takes the output from helper functions (stored in `tests/testthat/helper.R` and `R/testthat.R`). [^reactives-test-helpers]
+
+    ```{r}
+    #| eval: true 
+    #| code-fold: false
+    make_initial_rVals_inputs <- function() {
+      rVals <- reactiveValues(
+        inputs =
+          reactive(list(
+            x = "imdb_rating",
+            y = "audience_score",
+            z = "mpaa_rating",
+            alpha = 0.5,
+            size = 2,
+            plot_title = "Enter Plot Title"
+          ))
+      )
+      return(rVals)
+    }
+    ```
+
+    -   This creates a `reaciveValues()` list that can be used in the test:
+
+    ```{r}
+    #| eval: true 
+    #| code-fold: false
+    #| collapse: true
+    rVals <- make_initial_rVals_inputs()
+    rVals
+    ```
+
+    -   We can view it's contents by wrapping it in `isolate()`. 
+
+    ```{r}
+    #| eval: true 
+    #| code-fold: false
+    #| collapse: true
+    isolate(rVals$inputs())
+    ```
+    
+    -   When `make_initial_rVals_inputs()` is passed to the `args` in `testServer()`, it looks like this: 
+    
+    ```{r}
+    #| eval: false 
+    #| code-fold: false
+        shiny::testServer(app = mod_scatter_display_server,
+          args = list(rVals = make_initial_rVals_inputs()), expr = {
+            testthat::expect_equal(
+              object = rVals$inputs(),
+              expected = list(
+                    x = "imdb_rating",
+                    y = "audience_score",
+                    z = "mpaa_rating",
+                    alpha = 0.5,
+                    size = 2,
+                    plot_title = "Enter Plot Title"
+                )
+            )
+          })
+    ```
+    
+
+[^reactives-test-helpers]: I resorted to both locations because the `tests/testthat/helper.R` file wasn't loading with `devtools::load_all()`
+
+Tests are more difficult for modules using `session$userData`, because these values are created when a Shiny app object is created (and exist inside the reactive context). This point is covered in more detail in [this blog post](https://appsilon.com/super-solutions-for-shiny-architecture-1-of-5-using-session-data/). 
+
+> *"reusing objects passed through `session` violates module independence – there is code inside the module that uses external objects without stating them explicitly as server arguments."*
+
+## Recap 
+
+```{r}
+#| label: co_box_recap_reactiveValues
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b", size = '1.05', hsize = '1.10',
+  look = "default",
+  header = "Recap: reactiveValues() & session$userData",
+  contents = "
+  
+[`session$userData`]{style='font-size: 1.30em; font-weight: bold;'}
+  
+- `session$userData` is best used with values or objects that persist across actions or navigation inside the app (i.e., maintaining values or data across pages of a multi-page app). `session$userData` can react to changes, but we'd need to explicitly create these reactive expressions or observers.
+  
+[`reactiveValues()`]{style='font-size: 1.30em; font-weight: bold;'}
+
+- An object created with `reactiveValues()` is designed to be reactive, so changing values will trigger reactivity in any observers and/or reactives that depend on those values. Remember that '*values taken from the `reactiveValues()` object are reactive, but the `reactiveValues()` object itself is not.*'
+  
+  ",
+  fold = FALSE
+)
+```
+
+
+
+
+
+
+
+
+

@@ -8,21 +8,16 @@ source("_common.R")
 ```
 
 ```{r}
-#| label: co_box_dev
+#| label: git_co_box
 #| echo: false
 #| results: asis
 #| eval: true
-co_box(
-  color = "r", 
-  look = "minimal",
-  header = "Alert",
-  contents = "The contents for section are being revised. Thank you for your patience."
-)
+git_co_box()
 ```
 
 Comparisons are the backbone of testing. Exploring the mechanics of how tests perform these comparisons (i.e., the underlying package(s)) can save you from surprising results. 
 
-For example, `testthat::expect_equal()` compares whatever is passed to the `observed` and `expected` arguments with the [`waldo` package](https://www.tidyverse.org/blog/2021/08/waldo-0-3-0/), with some help from [`diffobj`](https://github.com/brodieG/diffobj).
+For example, `expect_equal()` compares whatever is passed to the `observed` and `expected` arguments with the [`waldo` package](https://www.tidyverse.org/blog/2021/08/waldo-0-3-0/), with some help from [`diffobj`](https://github.com/brodieG/diffobj).
 
 ```{r}
 #| eval: true 
@@ -35,11 +30,11 @@ library(diffobj)
 library(tibble)
 ```
 
-### [`waldo`]{style="font-size: 1.05em;"}
+### [`waldo::compare()`]{style="font-size: 1.05em;"}
 
-If you'd like a preview of a comparison before writing a formal test, you can pass the your `observed` and `expected` objects to `waldo::compare()`[^waldo-compare-args] 
+If you'd like a preview of a comparison before writing a formal test, you can pass the your `observed` and `expected` objects to `compare()`[^waldo-compare-args] 
 
-[^waldo-compare-args]: Be mindful of the difference in arguments between expectation functions (i.e., `expect_equal()`) and `waldo::compare()`
+[^waldo-compare-args]: Be mindful of the difference in arguments between expectation functions (i.e., `expect_equal()`) and `compare()`
 
 ```{r}
 #| eval: true 
@@ -61,25 +56,35 @@ new <- data.frame(
 )
 ```
 
-For example, suppose we have two objects: `old` and `new`
 
-```{r}
-#| eval: true 
-#| code-fold: false
-#| collapse: true
+For example, suppose we have two objects: 
+
+::::{layout="[50, 50]"}
+
+```r
 old
+## # A tibble: 3 × 3
+##   chr     num fct  
+##   <chr> <dbl> <ord>
+## 1 B         1 L    
+## 2 C         2 M    
+## 3 D         3 H
 ```
 
-```{r}
-#| eval: true 
-#| code-fold: false
-#| collapse: true
+```r
 new
+## # A tibble: 3 × 3
+##   CHR     num fct  
+##   <chr> <int> <fct>
+## 1 B         1 low  
+## 2 C         2 med  
+## 3 D         3 high
 ```
+
+::::
 
 The outputs below are example outputs from `waldo::compare()`:
 
-::: {layout="[[30,70]]"}
 
 ```{r}
 #| eval: true 
@@ -102,44 +107,40 @@ compare(
 ```
 1. Comparing different objects
 
-:::
 
 `compare()` displays the differences in classes, names, and any individual value differences. 
 
-### [`diffobj`]{style="font-size: 1.05em;"}
+### [`diffobj::diffObj()`]{style="font-size: 1.05em;"}
 
 If you're using Posit Workbench, the [`diffobj` package](https://github.com/brodieG/diffobj) has a colorful display for making comparisons in the IDE. 
 
 The differences can be displayed vertically with `diffobj::diffObj()`:
 
-::: {layout="[[30,70]]"}
+:::: {layout="[30, 70]"}
 
-```{r}
-#| eval: false 
-#| code-fold: false
+```r
 diffObj(
   old, 
   new)
 ```
 
-![Viewer ouput from `diffobj::diffObj()`](img/08_tests_diffobj.png){#fig-08_tests_diffobj width='85%' align='center'}
+![Viewer ouput from `diffobj::diffObj()`](img/08_tests_diffobj.png){#fig-08_tests_diffobj width='100%' align='left'}
 
-:::
+::::
 
 If you want to view the structure (`str()`) differences, you can use `diffobj::diffStr()`:
 
-::: {layout="[[30, 70]]"}
+:::: {layout="[30, 70]"}
 
-```{r}
-#| eval: false 
-#| code-fold: false
+```r
 diffStr(
   old, 
   new)
 ```
 
 ![Viewer ouput from `diffobj::diffStr()`](img/08_tests_diffstr.png){#fig-08_tests_diffobj width='100%' align='center'}
-:::
+
+::::
 
 After viewing the `old` vs `new` comparisons with `waldo` and `diffobj`, you should notice similarities and differences in the results from `testthat`[^compare-tolerance]
 
