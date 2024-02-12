@@ -8,17 +8,11 @@ source("_common.R")
 ```
 
 ```{r}
-#| label: co_box_dev
+#| label: git_co_box
 #| echo: false
 #| results: asis
 #| eval: true
-co_box(
-  color = "y", size = "0.90", hsize = "0.95",
-  look = "minimal",
-  header = "Status",
-  contents = "This chapter is under review.",
-  fold = FALSE
-)
+git_co_box()
 ```
 
 During development, we either launch apps using the **Run App** button at the top of the `app.R` file, or by calling the standalone app function in the **Console**. This chapter covers some additional functions you might want to include in the `app.R` file, the differences between shiny's `shinyApp()`, `runApp()`, and `shinyAppDir()` functions, and other options for launching an app (or apps) in your app-package.
@@ -29,7 +23,8 @@ During development, we either launch apps using the **Run App** button at the to
 #| results: asis
 #| eval: true
 co_box(
-  color = "b", look = "minimal", size = '1.05', hsize = '1.15',
+  color = "b", 
+  look = "simple", hsize = "1.15", size = "1.10",
   header = "TLDR: Launching your app", fold = TRUE,
   contents = "
 **Launching Apps:** 
@@ -47,7 +42,7 @@ co_box(
 )
 ```
 
-:::: {.callout-tip collapse='true' appearance='minimal'}
+:::: {.callout-tip collapse='true' appearance='simple'}
 
 ## [Accessing the code examples]{style='font-weight: bold; font-size: 1.15em;'}
 
@@ -92,21 +87,6 @@ launch(app = "08_launch-app")
 In the current branch of `moviesApp`, the `app.R` file loads our package and runs the standalone app function:
 
 ```{r}
-#| label: co_box_launch
-#| echo: false
-#| results: asis
-#| eval: true
-co_box(
-  color = "b", 
-  look = 'default',
-  header = "Terminology",
-  contents = "
-I'll be using the term 'launch' to differentiate successfully running an application locally (either in the IDE window, viewer pane, or browser) from clicking on the **Run App** icon or calling `runApp()` and deploying an application to shinyapps.io.",
-  fold = FALSE
-)
-```
-
-```{r}
 #| label: git_margin_box_06.2_pkg-imports
 #| echo: false
 #| results: asis
@@ -147,6 +127,21 @@ As we can see in the image below, the **Run App** icon is available in the **Sou
 
 **Run App** icon in `app.R` of `main` branch
 :::
+
+```{r}
+#| label: co_box_launch
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g", 
+  look = "simple", hsize = "1.15", size = "1.10",
+  header = "Terminology",
+  contents = "
+I'll be using the term 'launch' to differentiate successfully running an application locally (either in the IDE window, viewer pane, or browser) from clicking on the **Run App** icon or calling `runApp()` and deploying an application to shinyapps.io.",
+  fold = TRUE
+)
+```
 
 If we load the code in `R/` with `load_all()`, then click on **Run App**, we see this calls `runApp()` in the **Console**, but this also produces a warning: 
 
@@ -217,33 +212,40 @@ Calling `runApp()` in the **Console** of `05_roxygen2` branch
 
 This behavior might be surprising to you--`runApp()` can launch the application in `moviesApp`, even without the standalone app function exported from the package namespace (but it still produces the `loadSupport()` warning).
 
-:::: {.callout-important collapse="true" title="Warning in loadSupport"}
-
-::: {style='font-size: 1.05em; color: #696969;'}
 
 ```{r}
-#| eval: false 
-#| code-fold: false
+#| label: co_box_load_support_warn
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "r", 
+  look = "simple", hsize = "1.15", size = "1.10", fold = TRUE,
+  header = "`loadSupport()` warning",
+  contents = "
+<br>
+When you run this:
+  
+\`\`\`r
 shiny::runApp()
-```
+\`\`\`
+  
+...and see this:
 
-```{bash}
-#| eval: false 
-#| code-fold: false
-#| code-overflow: wrap
+\`\`\`bash
 Warning in loadSupport(appDir, renv = sharedEnv, globalrenv = NULL):
   Loading R/ subdirectory for Shiny application, but this directory 
   appears to contain an R package. 
   Sourcing files in R/ may cause unexpected behavior.
-```
-
-::: 
-
-::::
-
+\`\`\`
+  
 The warning in the **Console** is telling us `loadSupport()` has detected that `moviesApp` is a package, but it's still sourcing the `R/` subdirectory.[^load-support-shiny-chap]
 
 [^load-support-shiny-chap]: If you recall, we covered the  [`loadSupport()`](https://shiny.posit.co/r/reference/shiny/1.5.0/loadsupport) function in [Chapter 2](shiny.qmd).
+
+")
+```
+
 
 The examples above demonstrate the differences between calling `shinyApp()` and `runApp()`, and the tensions between having a standalone app function in an R package vs. having an `app.R` file in a Shiny project.
 
@@ -267,7 +269,7 @@ Let's review what happens when we call `shinyApp()`, `shinyAppDir()`, and `runAp
 
 ### [`shinyApp()`]{style="font-size: 0.95em"} {#sec-launch-shiny-app}
 
-:::: {.callout-note collapse="true" title="`shinyApp()`"}
+:::: {.callout-note collapse="false" appearance="simple"}
 
 ::: {style='font-size: 1.05em; color: #696969;'}
 
@@ -275,9 +277,7 @@ Let's review what happens when we call `shinyApp()`, `shinyAppDir()`, and `runAp
 
 [`shinyApp()`]{style="font-size: 0.95em"}: Creates and launches an app defined inline within the call itself (or with UI and server functions passed as arguments).
 
-```{r}
-#| eval: false 
-#| code-fold: false
+```r
 shinyApp(
   ui = fluidPage(
     # UI elements
@@ -326,7 +326,7 @@ This is why `runApp()` works with any `.R` file creating a shiny app object.
 
 ### [`shinyAppDir()`]{style="font-size: 0.95em"} {#sec-launch-shiny-app-dir}
 
-:::: {.callout-note collapse="true" title="`shinyAppDir()`"}
+:::: {.callout-note collapse="true" appearance="simple"}
 
 ::: {style='font-size: 1.05em; color: #696969;'}
 
@@ -334,9 +334,7 @@ This is why `runApp()` works with any `.R` file creating a shiny app object.
 
 [`shinyAppDir()`]{style="font-size: 0.95em"}: Launches an app from a directory (with an `app.R` or `ui.R`/`server.R` files).
 
-```{r}
-#| eval: false 
-#| code-fold: false
+```r
 shinyAppDir(
   appDir = "path/to/app/", 
   options = list())
@@ -381,7 +379,7 @@ shinyAppDir(
 
 ### [`runApp()`]{style="font-size: 0.95em"} {#sec-launch-run-app}
 
-:::: {.callout-note collapse="true" title="`runApp()`"}
+:::: {.callout-note collapse="true" appearance="simple"}
 
 ::: {style='font-size: 1.05em; color: #696969;'}
 
@@ -389,9 +387,7 @@ shinyAppDir(
 
 [`runApp()`]{style="font-size: 0.95em"}: A generalized way to launch your app--it can run apps defined inline, or from a directory.
 
-```{r}
-#| eval: false 
-#| code-fold: false
+```r
 runApp(
   appDir = "path/to/app/",
   test.mode = TRUE/FALSE)
@@ -413,9 +409,7 @@ Can launch an app from a directory (i.e., from `ui.R`/`server.R`, or a `app.R`):
 
 #### [In `moviesApp`]{style="font-size: 0.85em"} {.unnumbered}
 
-```{r}
-#| eval: false 
-#| code-fold: false
+```r
 # In console
 runApp()
 ```
@@ -424,17 +418,13 @@ Works with a path to an `.R` file that creates a `shiny.appobj`:[^launch-run-app
 
 [^launch-run-app-shiny-examples]: Shiny's examples are run [using `runApp()`](https://github.com/rstudio/shiny/blob/9ebcbf8a2dec7045f609624d5f339e9a3e29de5f/R/runapp.R#L436)
 
-```{r}
-#| eval: false 
-#| code-fold: false
+```r
 runApp(appDir = "path/to/moviesApp")
 ```
 
 Can also use a `shiny.appobj` directly:
 
-```{r}
-#| eval: false 
-#| code-fold: false
+```r
 app <- shinyApp(
         ui = movies_ui,
         server = movies_server)
@@ -566,12 +556,13 @@ The `roxygen2` documentation for `display_type()` is below:
 #| results: asis
 #| eval: true
 co_box(
-  color = "o", look = 'minimal',
+  color = "o", 
+  look = "simple", hsize = "1.15", size = "1.10",
+  fold = TRUE,
   header = "New dependency!",
   contents = "
 The `cli` package is imported as part the `devtools`/`usethis` workflow, otherwise we'd want to add it the `Imports` field of the `DESCRIPTION` with `usethis::use_package('cli')`.
-  ",
-  fold = TRUE
+  "
 )
 ```
 
@@ -685,12 +676,13 @@ Written this way, in a non-interactive R session, `app.R` will re-direct the err
 #| results: asis
 #| eval: true
 co_box(
-  color = "o", look = 'minimal',
+  color = "o", 
+  look = "simple", hsize = "1.15", size = "1.10",
+  fold = TRUE,
   header = "New dependency!",
   contents = "
 The `pkgload` package is imported as part the `devtools`/`usethis` workflow, otherwise we'd want to add it the `Imports` field of the `DESCRIPTION` with `usethis::use_package('pkgload')`.
-  ",
-  fold = TRUE
+  "
 )
 ```
 
@@ -722,12 +714,13 @@ if (!interactive()) {
 #| results: asis
 #| eval: true
 co_box(
-  color = "o", look = 'minimal',
-  header = "Dependency watch!",
+  color = "o", 
+  look = "simple", hsize = "1.15", size = "1.10",
+  fold = TRUE,
+  header = "New dependency!",
   contents = "
 The `withr` package is imported as part the `devtools`/`usethis` workflow, otherwise we'd want to add it the `Imports` field of the `DESCRIPTION` with `usethis::use_package('withr')`.
-  ",
-  fold = TRUE
+  "
 )
 ```
 
@@ -812,14 +805,15 @@ The application is launched without the `loadSupport()` warning
 #| eval: true
 co_box(
   color = "g",
+  look = "simple", hsize = "1.15", size = "1.10",
+  fold = TRUE,
   header = "`R/_disable_autoload.R`",
   contents = "
 In the documentation for `loadSupport()`, you'll find a second option for removing the `R/` directory sourcing behavior: placing a `_disable_autoload.R` file in the `R/` directory (this is also one of the behaviors of the [`golem` framework](https://github.com/ThinkR-open/golem/blob/365a5cc303b189973abab0dd375c64be79bcf74a/R/disable_autoload.R), which we will cover in the following chapters).
   
 Both methods work--this chapter demonstrates a way to remove the `loadSupport()` warning without having to add this file.
   
-  ",
-  fold = TRUE
+  "
 )
 ```
 
@@ -930,6 +924,8 @@ This chapter has covered some options for launching your app within your app-pac
 co_box(
   color = "b",
   header = "Recap: launching your app",
+  look = "simple", hsize = "1.15", size = "1.10",
+  fold = FALSE,
   contents = "
 
 **`shinyApp()`**: 
@@ -956,8 +952,7 @@ co_box(
   
 -   Clicking on **Run App** will run the application with `runApp()` if is detects a file (or files) that creates a shiny object.
   
-  ", 
-  fold = FALSE
+  "
 )
 ```
 
