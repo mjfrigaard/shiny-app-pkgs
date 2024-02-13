@@ -15,22 +15,66 @@ library(lobstr)
 ```
 
 ```{r}
-#| label: co_box_dev
+#| label: git_co_box
 #| echo: false
 #| results: asis
 #| eval: true
-co_box(
-  color = "o", 
-  look = "minimal",
-  header = "Caution",
-  contents = "This chapter is under review.",
-  fold = FALSE
-)
+git_co_box()
 ```
 
 Debugging is an essential skill for any programmer, and it's not restricted to fixing errors or broken code. When used as an exploratory tool, the debugger allows us to ‘look inside’ functions and break down their execution line-by-line. Posit Workbench's debugging tools are covered elsewhere, so this chapter will focus on debugging Shiny code and functions inside an R package.[^debug-other-resources]
 
 ## Debugging Shiny Apps
+
+:::: {.callout-tip collapse='true' appearance='simple'}
+
+## [Accessing applications]{style='font-weight: bold; font-size: 1.15em;'}
+
+::: {style='font-size: 0.95em; color: #282b2d;'}
+
+I've created the [`shinypak` R package](https://mjfrigaard.github.io/shinypak/) In an effort to make each section accessible and easy to follow:
+  
+Install `shinypak` using `pak` (or `remotes`):
+
+```{r}
+#| code-fold: false 
+#| message: false
+#| warning: false
+#| eval: false
+# install.packages('pak')
+pak::pak('mjfrigaard/shinypak')
+```
+
+Review the chapters in each section:
+  
+```{r}
+#| code-fold: false 
+#| message: false
+#| warning: false
+#| collapse: true
+library(shinypak)
+list_apps(regex = 'debug')
+```
+
+Launch the app: 
+
+```{r}
+#| code-fold: false 
+#| eval: false
+launch(app = "23.1_debug-error")
+```
+
+Download the app: 
+
+```{r}
+#| code-fold: false 
+#| eval: false
+get_app(app = "23.1_debug-error")
+```
+
+::: 
+
+::::
 
 During regular development, Posit Workbench's interactive debugger lets us inspect variables and expressions and execute the code line-by-line. In Shiny functions, the debugger lets us track the execution of reactive expressions and observers, which allows us to unravel reactivity-related issues that are often difficult to diagnose.
 
@@ -42,7 +86,7 @@ During regular development, Posit Workbench's interactive debugger lets us inspe
 git_margin_box(
   contents = "launch",
   fig_pw = '65%', 
-  branch = "21.1_debug-error", 
+  branch = "23.1_debug-error", 
   repo = 'moviesApp')
 ```
 
@@ -161,26 +205,24 @@ devtools::load_all('.')
 
 ## Debugging modules
 
-The contents of your Shiny app-package can quickly become a complicated and intertwined combination of functions: utility, modules, UI, server, etc. I like to display the relationship between the functions with an abstract folder tree using the [`lobstr` package](https://lobstr.r-lib.org/):[^debug-lobstr] 
+The contents of your Shiny app-package can quickly become a complicated and intertwined combination of functions: utility, modules, UI, server, etc. I like to display the relationship between the functions with abstract syntax trees:[^debug-lobstr] 
 
-[^debug-lobstr]: Create abstract folder trees with the [`ast()` function](https://lobstr.r-lib.org/reference/ast.html) from the [`lobstr` package](https://lobstr.r-lib.org/). 
+[^debug-lobstr]: Create abstract syntax trees with the [`ast()` function](https://lobstr.r-lib.org/reference/ast.html) from the [`lobstr` package](https://lobstr.r-lib.org/). 
 
 :::{layout="[50,50]" layout-valign="top"}
 
 For example, we know `scatter_plot()` is called from *within* the scatter plot display module function: 
 
-```{bash}
-#| eval: false
-#| code-fold: false
+``` bash
 █─mod_scatter_display_server 
 └─█─scatter_plot
 ```
 
+:::
+
 ```{r}
 #| eval: false
-#| code-fold: true
-#| code-summary: 'show/hide abstract folder tree code'
-#| echo: true 
+#| include: false 
 lobstr::ast(
   mod_scatter_display_server(
     scatter_plot()
@@ -188,26 +230,22 @@ lobstr::ast(
   )
 ```
 
-:::
-
 :::{layout="[50,50]" layout-valign="top"}
 
 And `mod_scatter_display_server()` is called within `movies_server()`: 
 
-```{bash}
-#| eval: false
-#| code-fold: false
+``` bash
 █─movies_server 
 ├─█─mod_scatter_display_server 
 │ └─█─scatter_plot 
 └─█─mod_var_input_server 
 ```
 
+:::
+
 ```{r}
 #| eval: false
-#| code-fold: true
-#| code-summary: 'show/hide abstract folder tree code'
-#| echo: true
+#| include: false 
 lobstr::ast(
     movies_server(
       mod_scatter_display_server(
@@ -218,15 +256,11 @@ lobstr::ast(
 )
 ```
 
-:::
-
 :::{layout="[50,50]" layout-valign="top"}
 
 Which is called from inside `moviesApp()`:
 
-```{bash}
-#| eval: false
-#| code-fold: false
+``` bash
 █─movies_app 
 ├─█─movies_ui 
 │ ├─█─mod_var_input_ui 
@@ -237,11 +271,11 @@ Which is called from inside `moviesApp()`:
   └─█─mod_var_input_server
 ```
 
+:::
+
 ```{r}
 #| eval: false
-#| code-fold: true
-#| code-summary: 'show/hide abstract folder tree code'
-#| echo: true 
+#| include: false 
 lobstr::ast(
   movies_app( 
     movies_ui(
@@ -258,8 +292,6 @@ lobstr::ast(
   )
 ```
 
-:::
-
 I find these abstract folder trees helpful when I'm debugging or testing Shiny functions. I can use them to try and anticipate the application call stack (especially when I end up with multiple utility functions or nested modules).
 
 We'll add `browser()` and `observe()` in the `movies_server()` function to capture the behaviors of both modules: 
@@ -271,7 +303,7 @@ We'll add `browser()` and `observe()` in the `movies_server()` function to captu
 #| eval: true
 git_margin_box(contents = "launch",
   fig_pw = '65%', 
-  branch = "21.2_debug-selected_vars", 
+  branch = "23.2_debug-selected_vars", 
   repo = 'moviesApp')
 ```
 
@@ -375,19 +407,17 @@ When we inspect `selected_vars` in the debugger console (*without parentheses*) 
 
 ::: {layout="[35, 65]" layout-valign="top"}
 
-```{r}
-#| eval: false 
-#| code-fold: false 
+``` r
 Browse[2]> selected_vars
 ```
 
-```{verbatim}
-#| eval: false 
-#| code-fold: false 
+``` bash
 reactive({
-    list(y = input$y, x = input$x, z = input$z, alpha = input$alpha, 
-        size = input$size, plot_title = input$plot_title)
-}) 
+    list(y = input$y, x = input$x,
+         z = input$z, alpha = input$alpha, 
+         size = input$size, 
+         plot_title = input$plot_title)
+})
 ```
 
 :::
@@ -396,15 +426,11 @@ If we check `selected_vars()` (*with parentheses*) in the debugger, we see this 
 
 ::: {layout="[35, 65]" layout-valign="top"}
 
-```{r}
-#| eval: false 
-#| code-fold: false 
+``` r 
 Browse[2]> selected_vars()
 ```
 
-```{verbatim}
-#| eval: false 
-#| code-fold: false
+``` bash
 $y
 [1] "audience_score"
 
@@ -438,7 +464,7 @@ These two steps confirm that the UI values are being collected by the variable i
 git_margin_box(
   contents = "launch",
   fig_pw = '65%', 
-  branch = "21.3_debug-var_inputs",
+  branch = "23.3_debug-var_inputs",
   repo = 'moviesApp')
 ```
 
@@ -495,15 +521,11 @@ Inside the module, we want to confirm `var_inputs()` is being created correctly 
 
 ::: {layout="[35, 65]" layout-valign="top"}
 
-```{r}
-#| eval: false 
-#| code-fold: false 
+``` r
 Browse[2]> var_inputs()
 ```
 
-```{verbatim}
-#| eval: false 
-#| code-fold: false 
+``` bash 
 $y
 [1] "audience_score"
 
@@ -560,15 +582,11 @@ Use `n` in the debugger or click **Next** to progress through the function
 
 ::: {layout="[35, 65]" layout-valign="top"}
 
-```{r}
-#| eval: false 
-#| code-fold: false 
+``` r
 Browse[2]> inputs()
 ```
 
-```{verbatim}
-#| eval: false 
-#| code-fold: false
+``` bash
 $x
 [1] "imdb_rating"
 
@@ -622,7 +640,7 @@ If a module or standalone app function is producing a bug (i.e., failing to rend
 git_margin_box(
   contents = "launch",
   fig_pw = '65%', 
-  branch = "21.4_debug-scatter_plot", 
+  branch = "23.4_debug-scatter_plot", 
   repo = 'moviesApp')
 ```
 
@@ -668,15 +686,11 @@ Inside `renderPlot()`, we can progress to the creation of the `plot` object:
 
 ::: {layout="[35, 65]" layout-valign="top"}
 
-```{r}
-#| eval: false 
-#| code-fold: false 
+``` r
 Browse[1]> n
 ```
 
-```{bash}
-#| eval: false 
-#| code-fold: false
+``` bash
 debug at moviesApp/R/mod_scatter_display.R#68: 
   plot <- scatter_plot(
     df = movies, 
@@ -767,7 +781,7 @@ plot <- scatter_plot(
 git_margin_box(
   contents = "launch",
   fig_pw = '65%', 
-  branch = "21.5_debug-print", 
+  branch = "23.5_debug-print", 
   repo = 'moviesApp')
 ```
 
@@ -988,17 +1002,13 @@ First we'll proceed through the code until `tidy_movies.fst` is loaded, then con
 
 ::: {layout="[35, 65]" layout-valign="top"}
 
-```{r}
-#| eval: false
-#| code-fold: false
+``` r
 Browse[2]> n
 Browse[2]> n
 Browse[2]> str(all_data)
 ```
 
-```{bash}
-#| eval: false
-#| code-fold: false
+``` bash
 'data.frame':	46002 obs. of  8 variables: 
  $ title     : chr  "'Til There Was You" ...
  $ length    : int  113 97 98 98 102 120 ...
@@ -1022,15 +1032,11 @@ After loading `all_data`, the module creates a reactive `graph_data()`. We can s
 
 ::: {layout="[35, 65]" layout-valign="top"}
 
-```{r}
-#| eval: false
-#| code-fold: false
+``` r
 Browse[2]> input$missing
 ```
 
-```{verbatim}
-#| eval: false
-#| code-fold: false
+``` bash
 [1] TRUE
 ```
 
@@ -1041,16 +1047,12 @@ This tells us '*Remove missing*' has been selected, and we can verify the missin
 ::: {layout="[35, 65]" layout-valign="top"}
 
 
-```{r}
-#| eval: false
-#| code-fold: false
+``` r
 Browse[2]> n
 Browse[2]> str(graph_data())
 ```
 
-```{bash}
-#| eval: false
-#| code-fold: false
+``` bash
 'data.frame':	1608 obs. of  8 variables: 
  $ title     : chr  "'Til There Was You" ...
  $ length    : int  113 97 98 98 102 120 ...
@@ -1070,15 +1072,11 @@ Next we'll confirm the `var_inputs()` list of graph values from our `dev` variab
 
 ::: {layout="[35, 65]" layout-valign="top"}
 
-```{r}
-#| eval: false
-#| code-fold: false
+``` r
 Browse[2]> str(var_inputs())
 ```
 
-```{bash}
-#| eval: false
-#| code-fold: false
+``` bash
 List of 6
  $ x         : chr "year"
  $ y         : chr "budget"
@@ -1097,16 +1095,12 @@ List of 6
 
 ::: {layout="[35, 65]" layout-valign="top"}
 
-```{r}
-#| eval: false
-#| code-fold: false
+``` r
 Browse[2]> n
 Browse[2]> str(inputs())
 ```
 
-```{bash}
-#| eval: false
-#| code-fold: false
+``` bash
 List of 6
  $ x         : chr "year"
  $ y         : chr "budget"
@@ -1124,9 +1118,7 @@ Now that we have an understanding of the reactive flow inside the app, we'll ren
 
 ::: {layout="[35, 65]" layout-valign="top"}
 
-```{r}
-#| eval: false
-#| code-fold: false
+``` r
 Browse[2]> n
 ```
 
