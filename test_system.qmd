@@ -65,7 +65,7 @@ Review the chapters in each section:
 #| warning: false
 #| collapse: true
 library(shinypak)
-list_apps(regex = 'tests')
+list_apps(regex = 'system')
 ```
 
 Launch an app: 
@@ -165,7 +165,7 @@ Duration: 1.4 s
 ```
 
 
-### [`shinytest2`]{style="font-size: 1.05em;"}
+### [`shinytest2`]{style="font-size: 1.05em;"} {#sec-tests-system-shinytest2}
 
 `shinytest2` requires a few steps to get up and running (most notably the [`chromote` package](https://rstudio.github.io/chromote/)), but you'll find excellent documentation on the [package website](https://rstudio.github.io/shinytest2/index.html).[^shinytest2-start] 
 
@@ -210,7 +210,7 @@ b$view()
 A new `Chromote` session
 :::
 
-## Recording tests
+## Record a test {#sec-tests-system-recording-tests}
 
 If we launch the test recorder with `shinytest2::record_test()`, change the inputs in our application, click on **Expect Shiny values** and **Save test and exit**, a test is recorded to a new test file: `tests/testthat/test-shinytest2.R`
 
@@ -449,7 +449,7 @@ File saved in `tests/testthat/_snaps/ggp2movies_app-feature-01-001_.png'`
 :::
 
 
-## [`test.mode`]{style="font-size: 1.05em;"}
+## [`test.mode`]{style="font-size: 1.05em;"} {#sec-tests-system-test-mode}
 
 If you recall, we've included an argument in both of our standalone app functions to allow for `options` to be passed to `shinyApp()`. 
 
@@ -578,79 +578,3 @@ co_box(
 )
 ```
 
-<!--
-
-> Consider setting up a CI pipeline using services like GitHub Actions, GitLab CI, or Travis CI to automate the running of these tests.
-
-> By implementing these various levels of tests, you can build confidence that your R package and Shiny app are robust, reliable, and ready for deployment.
-
-
-Testing an R package with a Shiny application can be challenging due to the various components and layers of interactivity. Here's a general strategy to approach this:
-
-## Test files 
-
-Up to this point, I've been storing the tests in test files named for each function: 
-
-```{bash}
-#| eval: false 
-#| code-fold: false
-tests
-└── testthat/
-    ├── test-mod_scatter_display.R
-    ├── test-mod_var_input.R
-    └── test-scatter_plot.R
-```
-
-This is the recommendations in [R Packages, 2ed](https://r-pkgs.org/code.html#sec-code-organising), and gives us the ability to programmatically compare test results with the traceability matrix. For example, we can add the following code to the [`test-specs` vignette](https://github.com/mjfrigaard/moviesApp/blob/10e_tests-system/vignettes/test-specs.Rmd) and capture our test results in a `tibble` display:
-
-```{r}
-#| eval: false 
-#| code-fold: false
-pkg_tests <- testthat::test_local("../", 
-  reporter = testthat::SilentReporter$new()) |> 
-  tibble::as_tibble() |> 
-  tidyr::pivot_longer(cols = c(passed, skipped, 
-                               warning, error, failed), 
-                    names_to = 'status', 
-                    values_to = "value") |> 
-  dplyr::filter(value > 0) |> 
-  dplyr::select(
-    `Test File` = file,
-    Test = test,
-    `Test Status` = status)
-```
-
-:::{#fig-11_tests_trace_matrix_pkg_tests}
-
-![Traceability matrix & `testthat::test_local()` output](img/11_tests_trace_matrix_pkg_tests.png){#fig-11_tests_trace_matrix_pkg_tests width='100%' align='center'}
-
-Package vignette with with traceability matrix and test results 
-:::
-
-The goal of any shiny application should be to create something that helps drive data-driven decisions. I've found building a traceability matrix and using `testthat` to scope tests forces me ask myself, "*do the tests address all of the user's needs?*" (which saves me from developing a feature no one asked for).
-
-Placing the test number in each call to `testthat::it()` will make it easier to link the tests back to the original functional requirements, features and specifications.
-
-#### [`withr`]{style="font-size: 1.05em;"}
-
-The date/time output from `test_logger()` doesn't provide the level of precision we want to monitor our unit tests (they're supposed to be fast). The R option to change this setting is `options(digits.secs)`, but we don't want to include this options in our test file (we just need it whenever we use `test_logger()`).[^tests-message2]
-
-We can add `withr::local_options()` inside `test_logger()` to make sure this option only applies to the test environment it's called from. Subsequent tests will pass without a warning and provide a more precise date/time message:
-
-[^tests-message2]: This example is similar to the `message2()` function on the [`testthat` website](https://testthat.r-lib.org/articles/test-fixtures.html#test-fixtures), but calls `withr` *inside* the helper function.
-
-Back in the **Console**, I can see the output from `Sys.time()` doesn't include the `test_logger()` option:
-
-```{r}
-#| eval: false 
-#| code-fold: false
-Sys.time()
-```
-
-```{verbatim}
-#| eval: false 
-#| code-fold: false
-[1] "2023-09-23 14:16:30 PDT"
-```
-
--->
