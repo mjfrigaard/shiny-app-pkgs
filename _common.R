@@ -82,16 +82,18 @@ co_box <- function(
   )
 }
 
-git_co_box <- function(
+git_contrib_box <- function(
                 repo = 'shiny-app-pkgs', 
-                header = "Contribute",
-                contents = "See a typo, error, or something missing? Please open an issue on ",
+                header = "See a typo, error, or something missing?",
+                contents = "Please open an issue on ",
                 size = "0.95",
                 hsize = "1.10",
                 fold = TRUE) {
   
   git_repo_root <- "https://github.com/mjfrigaard/"
   new_issue <- "/issues/new"
+  
+  fold <- tolower(fold)
   
   gh_repo_link <- paste0("[GitHub]", "(", git_repo_root, repo, new_issue, ")")
   gh_repo_link
