@@ -120,7 +120,7 @@ git_margin_box <- function(contents = "standard", fig_pw = '70%', branch = 'main
       "\n",
       "::::{.column-margin}\n\n",
       # ":::{style='font-size: 1.10em;'}\n\n",
-      "Install the [`shinypak` package](https://mjfrigaard.github.io/shinypak/articles/getting-started.html) to easily launch the applications:\n\n",
+      "Easily launch the applications with the\n\n[`shinypak` package](https://mjfrigaard.github.io/shinypak/articles/getting-started.html):\n\n",
       ":::{style='font-size: 0.65rem;'}\n",
       "\`\`\`r \n",
       "install.packages('pak')\n",
