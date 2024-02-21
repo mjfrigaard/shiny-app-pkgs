@@ -1,11 +1,46 @@
 # Testing modules {#sec-tests-mods}
 
+---
+
+[Integration Testing For Smooth Operations]{style="font-size: 1.40em; font-style: italic; color: #02577A;"}
+
 ```{r}
 #| eval: true 
 #| echo: false 
 #| include: false
 source("_common.R")
 ```
+
+```{r}
+#| label: co_box_tldr
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b",
+  header = "TLDR: Testing Modules",
+  fold = TRUE,
+  look = "default", hsize = "1.15", size = "1.10",
+  contents = "
+
+<br>
+  
+<h5>**Testing modules**</h5>
+
+- Use `session$returned()` to check server function outputs, ensuring modules respond correctly to inputs.
+  
+- Apply `session$flushReact()` to test reactive elements immediately, verifying reactive behavior within modules.
+  
+- Parameterize with `args = list()` for flexible testing, simulating various user scenarios and inputs efficiently.
+  
+- Aim for efficient module test coverage, identifying and testing critical functionality paths to guarantee module reliability.
+
+  
+  "
+)
+```
+
+In the previous chapters we added fixtures and helpers to our test suite and how to use them while running unit tests. In this chapter, we're going briefly discuss some tips for testing modules with `testServer()`--specifically, how to verify modules are transferring values correctly.
 
 :::: {.callout-tip collapse='true' appearance='simple'}
 
@@ -49,18 +84,28 @@ launch(app = "13_tests-modules")
 
 ::::
 
-In the previous chapters we added fixtures and helpers to our test suite and how to use them while running unit tests. In this chapter, we're going briefly discuss some tips for testing modules with `testServer()`--specifically, how to verify modules are transferring values correctly.
-
 ## Integration tests 
 
-Integration tests verify that functions and components work together, and often involves instantiating multiple objects to interact with each other in a single test. 
+Integration tests verify that functions and components work together, and often involves instantiating multiple objects to interact with each other in a single test.
+
+```{r}
+#| label: git_box_13_tests-modules
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  fig_pw = '65%',
+  branch = "13_tests-modules", 
+  repo = 'moviesApp')
+```
 
 We can combine the BDD functions with `testServer()` to test *reactive interactions* between modules. For example, to confirm that the drop-down feature requirement is working (i.e., that user-inputs are updating in the application), we need to test two changes:
 
 1. Values passed to the UI are returned from `mod_var_input_server()`  
 2. The reactive values returned from `mod_var_input_server()` are passed into `mod_scatter_display_server()` and available as the reactive object `inputs()`
 
-::: {.callout-note collapse="true" appearance="minimal"}
+::: {.callout-note collapse="true" appearance="default"}
 
 ### [BDD refresher: features & scenarios]{style="font-size: 1.10em;"}
 
@@ -383,7 +428,7 @@ shiny::testServer(
 
 I've included the example above because it's not included on the `testServer()` [documentation](https://shiny.posit.co/r/articles/improve/server-function-testing/), and I've found this method works well if you want to confirm two modules are communicating (i.e., returning and collecting outputs). System test with `shinytest2` are a better option if we're trying to capture a more comprehensive execution path (i.e., user scenario) in the application. 
 
-### Module test coverage {#sec-tests-mods-coverage}
+## Module test coverage {#sec-tests-mods-coverage}
 
 When we check the code coverage for the test above, we can see it confirms `var_inputs` is communicating the reactive values to `inputs()` in  `mod_scatter_display_server()`, but this test doesn't execute the call to `scatter_plot()`:
 
@@ -401,7 +446,7 @@ hot_key(fun = 'cf')
 devtools:::test_coverage_active_file()
 ```
 
-![](img/11_tests_code_coverage_module_01.png){width="85%" fig-aligh='center'}
+![](img/11_tests_code_coverage_module_01.png){width="90%" fig-align='center'}
 
 ### Testing [`output$`]{style="font-size: 0.95em;"}s {#sec-tests-mods-outputs}
 
@@ -450,25 +495,15 @@ It's also possible to build the graph *inside* the test using the same code from
 
 This executes the code used build the graph in `mod_scatter_display_server()`:
 
-![](img/11_tests_code_coverage_module_02.png){width="85%" fig-aligh='center'}
+![](img/11_tests_code_coverage_module_02.png){width="90%" fig-align='center'}
 
 If we're still skeptical this test is confirming the plot is being built correctly, we can pass `plot` to `print()` in the test and the plot will appear in the **Plots** pane. 
 
 
-![Passing `plot` to `print()` will send the graph to the **Plots** pane](img/11_tests_print_plot_module.png){width="85%" fig-aligh='center'}
+![Passing `plot` to `print()` will send the graph to the **Plots** pane](img/11_tests_print_plot_module.png){width="90%" fig-align='center'}
 
-```{r}
-#| label: git_box_13_tests-modules
-#| echo: false
-#| results: asis
-#| eval: true
-git_margin_box(
-  contents = "launch",
-  fig_pw = '65%',
-  branch = "13_tests-modules", 
-  repo = 'moviesApp')
-```
 
+## Recap {.unnumbered}
 
 ```{r}
 #| label: co_box_app_recap
@@ -484,8 +519,19 @@ co_box(
 
 <br>
   
-**Testing modules**
+<h5>**Testing modules**</h5>
   
+This chapter delves into the intricacies of testing Shiny modules. Let's briefly recap the key points covered:
+
+- `session$returned()`: allows us to capture and examine the values returned by server-side functions, which is essential for validating the behavior of modules in response to user inputs and server-side processing.
+
+- `session$flushReact()` is crucial for testing reactive expressions and observers. 
+  - Using `session$flushReact()` forces the reactive system to execute, enabling us to test the outcomes of reactive expressions and observe their effects within the context of the module's functionality.
+
+- `args = list(`): We discussed the importance of parameterizing module server functions using `args = list()` to facilitate more flexible and comprehensive testing. 
+  - parameterizing modules can easily simulate various scenarios and inputs, enhancing test coverage and the robustness of each module's functionality.
+
+- Module Test Coverage: we outlined strategies for identifying critical paths through our module's functionality, testing a range of inputs and user interactions, and ensuring that tests are efficient and maintainable.
 
   
   "

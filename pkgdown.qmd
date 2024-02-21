@@ -1,6 +1,8 @@
 # pkgdown {#sec-pkgdown}
 
-[Building a website for your app-package]{style="font-size: 1.40em; font-style: italic"}
+---
+
+[Building A Website For Your New App-Package]{style="font-size: 1.40em; font-style: italic; color: #02577A;"}
 
 ```{r}
 #| eval: true 
@@ -52,6 +54,556 @@ co_box(
 )
 ```
 
+In this chapter, we will delve into how to set up a `pkgdown` website for our app-package, from installation and initial setup to customization and deployment with GitHub Actions. `pkgdown` automatically generates pages for the function documentation, vignettes, and more, using the existing documentation files in our app-package.
+
+:::: {.callout-tip collapse='true' appearance='simple'}
+
+## [Accessing the code examples]{style='font-weight: bold; font-size: 1.15em;'}
+
+::: {style='font-size: 0.95em; color: #282b2d;'}
+
+I've created the [`shinypak` R package](https://mjfrigaard.github.io/shinypak/) In an effort to make each section accessible and easy to follow:
+  
+Install `shinypak` using `pak` (or `remotes`):
+
+```{r}
+#| code-fold: false 
+#| message: false
+#| warning: false
+#| eval: false
+# install.packages('pak')
+pak::pak('mjfrigaard/shinypak')
+```
+
+Review the chapters in each section:
+  
+```{r}
+#| code-fold: false 
+#| message: false
+#| warning: false
+#| collapse: true
+library(shinypak)
+list_apps(regex = 'pkgdown')
+```
+
+Launch an app: 
+
+```{r}
+#| code-fold: false 
+#| eval: false
+launch(app = "17_pkgdown")
+```
+
+::: 
+
+::::
+
+## Setup
+
+A `pkgdown` website makes our Shiny app and its accompanying package more accessible to potential users by providing them with a central location for any information they need (app features, updates, etc.).
+
+```{r}
+#| label: git_box_17_pkgdown
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  fig_pw = '75%', 
+  branch = "17_pkgdown", 
+  repo = 'moviesApp')
+```
+
+``` r
+install.packages("pkgdown")
+```
+
+`pkgdown` has a `usethis` function similar to `testthat` for setup: 
+
+``` r
+usethis::use_pkgdown_github_pages()
+```
+
+`use_pkgdown_github_pages()` automates much of the setup, but we'll break down the major steps below (I've replaced my GitHub username with `<username>` and the name of the app-package/repository with `<pkgName>`):
+
+### `_pkgdown.yml`
+
+``` bash
+✔ Setting active project to '/Users/<username>/projects/<pkgName>'
+✔ Adding '^_pkgdown\\.yml$', '^docs$', '^pkgdown$' to '.Rbuildignore'
+✔ Adding 'docs' to '.gitignore'
+✔ Writing '_pkgdown.yml'
+• Modify '_pkgdown.yml'
+✔ Recording 'https://<username>.github.io/<pkgName>/' as site's url in '_pkgdown.yml'
+✔ Adding 'https://<username>.github.io/<pkgName>/' to URL
+✔ Setting 'https://<username>.github.io/<pkgName>/' as homepage of GitHub repo '<username>/<pkgName>'
+```
+
+When `_pkgdown.yml` is initially created, it's contents are sparse, but this file will ultimately determine how our app-package's website will be built, structured, and styled.
+
+The initial pre-populated fields in `_pkgdown.yml` are the `url`, `template`, and `bootstrap` version:
+
+``` yml
+url: https://<username>.github.io/<pkgName>/
+template:
+  bootstrap: 5
+
+```
+
+### `gh-pages`
+
+`use_pkgdown_github_pages()` sets up publishing your app-package website using an '*orphan branch from GitHub pages*':
+
+``` bash
+✔ Initializing empty, orphan 'gh-pages' branch in GitHub repo '<username>/<pkgName>'
+✔ GitHub Pages is publishing from:
+• URL: 'https://<username>.github.io/<pkgName>/'
+• Branch: 'gh-pages'
+```
+
+An orphan branch is a new Git branch with no commit history, effectively starting a new `"root"` in our project's development history. For our app-package, the `gh-pages` branch serves as a new line of development, completely separated from the all the other branches. 
+
+We're also told GitHub pages will be publishing our app-package website at the following URL: `https://<username>.github.io/<pkgName>/`
+
+### `.github/workflows/`
+
+The GitHub Action workflow folder (`.github/workflows/`) and `pkgdown` YAML file is created (`.github/workflows/pkgdown.yaml`). We're told these contents are copied from the [r-lib/actions repository](https://github.com/r-lib/actions) (which we've covered previously in @sec-docker and @sec-cicd).
+
+``` bash
+• Path: '/'
+✔ Creating '.github/'
+✔ Adding '^\\.github$' to '.Rbuildignore'
+✔ Adding '*.html' to '.github/.gitignore'
+✔ Creating '.github/workflows/'
+✔ Saving 'r-lib/actions/examples/pkgdown.yaml@v2' to '.github/workflows/pkgdown.yaml'
+• Learn more at <https://github.com/r-lib/actions/blob/v2/examples/README.md>.
+```
+
+## Site contents 
+
+Now that we're set up to automate the build/deploy process for our website, we're going to cover how the files and folders in our app-package are used to create the content for the site.
+
+###  README >> `index.html`
+
+The `README` file in our root folder will be used to create the landing page (`index.html`) for our site. If you'd like a boilerplate `README` for an R package, you can use `usethis::use_readme_rmd()`:
+
+```{r}
+#| eval: false
+#| code-fold: false
+usethis::use_readme_rmd()
+```
+
+``` bash
+✔ Setting active project to '/Users/<username>/projects/<pkgName>'
+✔ Writing 'README.Rmd'
+✔ Adding '^README\\.Rmd$' to '.Rbuildignore'
+• Modify 'README.Rmd'
+✔ Writing '.git/hooks/pre-commit'
+```
+
+When I use this method, I tend to remove the `.git/hooks/pre-commit` (so it doesn't interfere with my personal add/commit/push process).
+
+```{r}
+#| eval: false
+#| code-fold: false
+unlink('.git/hooks/pre-commit')
+```
+
+The `README` should include: 
+
+1. The purpose/goal of your app-package  
+2. Instructions for installation   
+3. Links to a deployed version (if applicable)  
+4. Supporting packages  
+
+Long-form documentation can link to articles (which we'll cover below). 
+
+### `R/` >> Function Reference
+
+The exported functions from our app-package with make up the function **Reference** menu item. If we've been thorough in documenting our utility functions, modules, UI/server/standalone app functions, the `@seealso` and `@family` tags will create hyperlinks so visitors to our site can navigate the internals of our application.
+
+### `vignettes` >> Articles
+
+## Layouts 
+
+We can customize the look of our `pkgdown` site by editing the contents of `_pkgdown.yml`. 
+
+### Themes, colors and fonts
+
+Below are some examples of the fields that control the site theme, code syntax highlighting, colors, and fonts:
+
+``` yml
+url: https://<username>.github.io/<pkgName>/
+template:
+  bootstrap: 5
+  bootswatch: <SITE THEME>
+  theme: <CODE HIGHLIGHTING THEME>
+  bslib:
+    primary: "<COLOR HEX>"
+    code-color: "<COLOR HEX>"
+    code-bg: "<COLOR HEX>"
+    base_font:
+      google: <FONT NAME>
+    heading_font:
+      google: <FONT NAME>
+    code_font:
+      google: <FONT NAME>
+```
+
+### Documentation
+
+The Navbar components can also be customized with titles, sections, and article names.
+
+``` yml
+navbar:
+ components:
+   articles:
+    text: < display name >
+    menu:
+    - text: "< section title >"
+    - text: < article 1 title >
+      href: articles/<article-01>.html
+    - text: -------
+    - text: "< section title >"
+    - text: < article 2 title >
+      href: articles/<article-01>.html
+```
+
+## Deploy
+
+The `pkgdown.yaml` file automates building and deploying a `pkgdown` website for our app-package. This workflow file is configured to be triggered by specific GitHub events, build the website using the standard package contents, then deploy it to GitHub Pages. Below we'll breakdown the components and their functions:
+
+### Triggers
+
+::::{layout="[50, 50]"  layout-valign="center"}
+
+1.  [Set to trigger **`on`** `push`es or `pull_request`s made to the `main` or `master` branches (__we'll change these to only trigger on the `21_pkgdown` branch__).]{style="font-size: 0.90rem;"}
+
+
+``` yml
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+```
+
+::::
+
+::::{layout="[-3, 47, 50]"  layout-valign="center"}
+
+   a.  [Also triggers when a `release` is published, allowing the website to showcase the latest version of the package.[^releases]]{style="font-size: 0.90rem;"}
+  
+[^releases]: ["You can create releases to bundle and deliver iterations of a project to users."](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository#creating-a-release)
+
+``` yml
+  release:
+    types: [published]
+```
+
+::::
+
+::::{layout="[-3, 47, 50]"  layout-valign="center"}
+
+   b.  [`workflow_dispatch`  allows the workflow to be manually triggered from the GitHub Actions web interface (for ad-hoc updates).[^manual-runs]]{style="font-size: 0.90rem;"}
+  
+[^manual-runs]: ["To enable a workflow to be triggered manually, you need to configure the `workflow_dispatch` event."](https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#workflow_dispatch)
+
+``` yml
+  workflow_dispatch:
+```
+
+::::
+
+### Jobs
+
+::::{layout="[50, 50]"  layout-valign="center"}
+
+2.  [**`name`** defines a single job with the ID `pkgdown`.]{style="font-size: 0.90rem;"}
+
+``` yml
+name: pkgdown
+```
+
+::::
+
+::::{layout="[50, 50]"  layout-valign="center"}
+
+3.  [**`jobs`** specifies the job ID (`pkgdown`) and runs the job on the latest Ubuntu runner provided by GitHub Actions.]{style="font-size: 0.90rem;"}
+
+``` yml
+jobs:
+  pkgdown:
+    runs-on: ubuntu-latest
+```
+
+::::
+
+4.  [The comment *`# Only restrict concurrency for non-PR jobs`* refers to the **`concurrency`** field, which prevents *concurrent* runs of the job for non-pull request events (avoiding conflicts or redundant deployments).[^concurrency]]{style="font-size: 0.90rem;"}
+    a. [`group` uses a dynamic expression to differentiate between `pull_request` events and `github.event_name`, using the run ID (`github.run_id`) for pull requests to allow concurrency.[^group]]{style="font-size: 0.90rem;"}
+
+[^concurrency]: ["Use concurrency to ensure that only a single job or workflow using the same concurrency group will run at a time."](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#concurrency)
+    
+[^group]: ["Concurrency groups provide a way to manage and limit the execution of workflow runs or jobs that share the same concurrency key."](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#example-concurrency-groups)
+
+``` yml
+    concurrency:
+      group: pkgdown-${{ github.event_name != 'pull_request' || github.run_id }}
+```
+
+5.  [**`env`** sets the `GITHUB_PAT` environment variable using the GitHub token (`secrets.GITHUB_TOKEN`), allowing the workflow to authenticate and perform operations within the repository.]{style="font-size: 0.90rem;"}
+
+``` yml
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+```
+
+6.  [**`permissions`** explicitly grants the workflow `write` permissions to the repository, enabling it to push changes (like an updated website).]{style="font-size: 0.90rem;"}
+
+``` yml
+    permissions:
+      contents: write
+```
+
+### Steps
+
+:::: {layout="[50, 50]" layout-valign="center"}
+
+[7.  Checks out the repository's code, making it available to subsequent steps.]{style="font-size: 0.90rem;"}
+
+``` yml
+  steps:
+    - uses: actions/checkout@v4
+```
+
+::::
+
+:::: {layout="[50, 50]" layout-valign="center"}
+
+[8. Installs Pandoc, which is necessary for rendering markdown documents and vignettes within our `pkgdown` site.]{style="font-size: 0.90rem;"}
+
+``` yml
+    - uses: r-lib/actions/setup-pandoc@v2
+```
+
+::::
+
+:::: {layout="[50, 50]" layout-valign="center"}
+
+[9. Sets up the R environment and configures it to use the public RSPM (RStudio Package Manager) for faster package installations.]{style="font-size: 0.90rem;"}
+
+``` yml
+    - uses: r-lib/actions/setup-r@v2
+      with:
+        use-public-rspm: true
+```
+
+::::
+
+:::: {layout="[50, 50]" layout-valign="center"}
+
+[10. Installs dependencies required by our app-package and `pkgdown`.]{style="font-size: 0.90rem;"}
+
+``` yml
+    - uses: r-lib/actions/setup-r-dependencies@v2
+```
+
+::::
+
+:::: {layout="[-3, 47, 50]" layout-valign="center"}
+
+   [a. `extra-packages` specifies installing `any::`thing from `pkgdown` and the `local::` package (our app-package).[^needs]]{style="font-size: 0.90rem;"}
+
+[^needs]: The `needs: website` part might be a placeholder? I'm unaware of the `needs` keyword applied within a `with` clause for setting up dependencies. This also could be intended as a comment or note for future adjustments...
+
+``` yml
+      with:
+        extra-packages: any::pkgdown, local::.
+        needs: website
+```
+
+::::
+
+[11.  Executes `pkgdown::build_site_github_pages()` within an R script shell to build the **pkgdown** website. It's configured not to start a new R process for the build and not to install our app-package (assuming dependencies are already handled in step 10).]{style="font-size: 0.90rem;"}
+
+``` yml
+    - name: Build site
+      run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE)
+      shell: Rscript {0}
+```
+
+[12.  Uses `JamesIves/github-pages-deploy-action@v4.5.0` to deploy the site to GitHub Pages (only if the event is not a pull request).]{style="font-size: 0.90rem;"}
+
+``` yml
+    - name: Deploy to GitHub pages 🚀
+      if: github.event_name != 'pull_request'
+      uses: JamesIves/github-pages-deploy-action@v4.5.0
+```
+
+:::: {layout="[-3, 47, 50]" layout-valign="center"}
+
+[a. Specifies not to clean the deployment branch, deploys it to the `gh-pages` branch, and sets the site content source folder as the `docs` directory.]{style="font-size: 0.90rem;"}
+
+``` yml
+      with:
+        clean: false
+        branch: gh-pages
+        folder: docs
+```
+
+::::
+
+
+`pkgdown.yml` allows us to maintain and showcase up-to-date package documentation for users, contributors, and collaborators.
+
+### Dependencies 
+
+### `build_site_github_pages()`
+
+``` r
+pkgdown::build_site_github_pages()
+```
+
+``` bash
+11 Cleaning files from old site 11111111111111111111111111111111111111111111111
+== Building pkgdown site ======================================================
+Reading from: '/Users/<username>/<pkgName>'
+Writing to:   '/Users/<username>/<pkgName>/docs'
+```
+
+``` bash
+-- Initialising site ----------------------------------------------------------
+Copying '../../..pkgdown/BS3/assets/bootstrap-toc.css' to 'bootstrap-toc.css'
+Copying '../../..pkgdown/BS3/assets/bootstrap-toc.js' to 'bootstrap-toc.js'
+Copying '../../..pkgdown/BS3/assets/docsearch.css' to 'docsearch.css'
+Copying '../../..pkgdown/BS3/assets/docsearch.js' to 'docsearch.js'
+Copying '../../..pkgdown/BS3/assets/link.svg' to 'link.svg'
+Copying '../../..pkgdown/BS3/assets/pkgdown.css' to 'pkgdown.css'
+Copying '../../..pkgdown/BS3/assets/pkgdown.js' to 'pkgdown.js'
+```
+
+``` bash
+-- Building home --------------------------------------------------------------
+Writing 'authors.html'
+Writing '404.html'
+```
+
+``` bash
+-- Building function reference ------------------------------------------------
+Writing 'reference/index.html'
+Reading 'man/display_type.Rd'
+Writing 'reference/display_type.html'
+Reading 'man/ggp2_movies_app.Rd'
+Writing 'reference/ggp2_movies_app.html'
+Reading 'man/mod_scatter_display_server.Rd'
+Writing 'reference/mod_scatter_display_server.html'
+Reading 'man/mod_scatter_display_ui.Rd'
+Writing 'reference/mod_scatter_display_ui.html'
+Reading 'man/mod_var_input_server.Rd'
+Writing 'reference/mod_var_input_server.html'
+Reading 'man/mod_var_input_ui.Rd'
+Writing 'reference/mod_var_input_ui.html'
+Reading 'man/movies.Rd'
+Writing 'reference/movies.html'
+Reading 'man/movies_app.Rd'
+Writing 'reference/movies_app.html'
+Reading 'man/movies_server.Rd'
+Writing 'reference/movies_server.html'
+Reading 'man/movies_ui.Rd'
+Writing 'reference/movies_ui.html'
+Reading 'man/scatter_plot.Rd'
+Writing 'reference/scatter_plot.html'
+Reading 'man/test_logger.Rd'
+Writing 'reference/test_logger.html'
+```
+
+``` bash
+-- Building articles ----------------------------------------------------------
+Writing 'articles/index.html'
+Reading 'vignettes/test-specs.Rmd'
+Writing 'articles/test-specs.html'
+Writing 'sitemap.xml'
+== DONE ======================================================================
+```
+
+``` bash
+-- Extra files for GitHub pages ----------------------------------------------
+```
+
+### GitHub
+
+
+
+``` bash
+    ╭━━━╮╭╮╭╮╱╭╮╱╱╭╮╱╱╭━━━╮
+    ┃╭━╮┣╯╰┫┃╱┃┃╱╱┃┃╱╱┃╭━╮┃
+    ┃┃╱╰╋╮╭┫╰━╯┣╮╭┫╰━╮┃╰━╯┣━━┳━━┳━━┳━━╮
+    ┃┃╭━╋┫┃┃╭━╮┃┃┃┃╭╮┃┃╭━━┫╭╮┃╭╮┃┃━┫━━┫
+    ┃╰┻━┃┃╰┫┃╱┃┃╰╯┃╰╯┃┃┃╱╱┃╭╮┃╰╯┃┃━╋━━┃
+    ╰━━━┻┻━┻╯╱╰┻━━┻━━╯╰╯╱╱╰╯╰┻━╮┣━━┻━━╯
+    ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭━╯┃
+    ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╰━━╯
+    ╭━━━╮╱╱╱╱╱╭╮╱╱╱╱╱╱╱╱╭━━━╮╱╱╭╮
+    ╰╮╭╮┃╱╱╱╱╱┃┃╱╱╱╱╱╱╱╱┃╭━╮┃╱╭╯╰╮
+    ╱┃┃┃┣━━┳━━┫┃╭━━┳╮╱╭╮┃┃╱┃┣━┻╮╭╋┳━━┳━╮
+    ╱┃┃┃┃┃━┫╭╮┃┃┃╭╮┃┃╱┃┃┃╰━╯┃╭━┫┃┣┫╭╮┃╭╮╮
+    ╭╯╰╯┃┃━┫╰╯┃╰┫╰╯┃╰━╯┃┃╭━╮┃╰━┫╰┫┃╰╯┃┃┃┃
+    ╰━━━┻━━┫╭━┻━┻━━┻━╮╭╯╰╯╱╰┻━━┻━┻┻━━┻╯╰╯
+    ╱╱╱╱╱╱╱┃┃╱╱╱╱╱╱╭━╯┃
+    ╱╱╱╱╱╱╱╰╯╱╱╱╱╱╱╰━━╯
+    
+    💖 Support: https://github.com/sponsors/JamesIves
+    📣 Maintained by James Ives: https://jamesiv.es
+    🚀 Getting Started Guide: https://github.com/JamesIves/github-pages-deploy-action
+    ❓ Discussions / Q&A: https://github.com/JamesIves/github-pages-deploy-action/discussions
+    🔧 Report a Bug: https://github.com/JamesIves/github-pages-deploy-action/issues
+```
+
+``` bash
+Checking configuration and starting deployment… 🚦
+Deploying using Deploy Token… 🔑
+Configuring git…
+/usr/bin/git config --global --add safe.directory /home/runner/work/<pkgName>/<pkgName>
+/usr/bin/git config user.name <username>
+/usr/bin/git config user.email <username>@pm.me
+/usr/bin/git config core.ignorecase false
+/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+/usr/bin/git remote rm origin
+/usr/bin/git remote add origin ***github.com/<username>/<pkgName>.git
+Git configured… 🔧
+Starting to commit changes…
+/usr/bin/git ls-remote --heads ***github.com/<username>/<pkgName>.git refs/heads/gh-pages
+7cac1013e4a324d943d2b33ed6d52f0cf6b243a6	refs/heads/gh-pages
+Creating worktree…
+/usr/bin/git fetch --no-recurse-submodules --depth=1 origin gh-pages
+From https://github.com/<username>/<pkgName>
+ * branch            gh-pages   -> FETCH_HEAD
+ * [new branch]      gh-pages   -> origin/gh-pages
+/usr/bin/git worktree add --no-checkout --detach github-pages-deploy-action-temp-deployment-folder
+Preparing worktree (detached HEAD 742bb18)
+/usr/bin/git checkout -B gh-pages origin/gh-pages
+Previous HEAD position was 742bb18 pkgdown build
+Switched to a new branch 'gh-pages'
+branch 'gh-pages' set up to track 'origin/gh-pages'.
+/usr/bin/chmod -R +rw /home/runner/work/<pkgName>/<pkgName>/docs
+/usr/bin/rsync -q -av --checksum --progress /home/runner/work/<pkgName>/<pkgName>/docs/. github-pages-deploy-action-temp-deployment-folder --exclude .ssh --exclude .git --exclude .github
+Checking if there are files to commit…
+/usr/bin/git add --all .
+/usr/bin/git checkout -b github-pages-deploy-action/kpvxdgnej
+Switched to a new branch 'github-pages-deploy-action/kpvxdgnej'
+/usr/bin/git commit -m Deploying to gh-pages from @ <username>/<pkgName>@742bb18e236034c3ce28743171f7a04cc53be96c 🚀 --quiet --no-verify
+Force-pushing changes...
+/usr/bin/git push --force ***github.com/<username>/<pkgName>.git github-pages-deploy-action/kpvxdgnej:gh-pages
+To https://github.com/<username>/<pkgName>.git
+   7cac101..aab5105  github-pages-deploy-action/kpvxdgnej -> gh-pages
+Changes committed to the gh-pages branch… 📦
+Running post deployment cleanup jobs… 🗑️
+/usr/bin/git checkout -B github-pages-deploy-action/kpvxdgnej
+Reset branch 'github-pages-deploy-action/kpvxdgnej'
+/usr/bin/chmod -R +rw github-pages-deploy-action-temp-deployment-folder
+/usr/bin/git worktree remove github-pages-deploy-action-temp-deployment-folder --force
+Completed deployment successfully! ✅
+```
 
 
 ```{r}
