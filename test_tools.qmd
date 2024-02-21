@@ -1,5 +1,9 @@
 # Test tools {#sec-tests-tools}
 
+---
+
+[Improve Tests With Fixtures, Helpers, and Snapshots]{style="font-size: 1.40em; font-style: italic; color: #02577A;"}
+
 <!---
 https://www.freecodecamp.org/news/clean-coding-for-beginners/
 -->
@@ -27,11 +31,50 @@ co_box(
 
 <br>
 
-**Test fixtures**\n
+<h5>**Test tools**</h5>
+
+- Use test fixtures to set up consistent environments for each test, ensuring reliability and simplifying setup/teardown processes.
   
-**Test helpers**\n
+    \`\`\` bash
+    tests/testthat/fixtures/
+    ├── make-tidy_ggp2_movies.R
+    └── tidy_ggp2_movies.rds
+    
+    1 directory, 2 files
+    \`\`\`
   
-**Test mocks**\n
+- Implement test helpers to streamline your tests by reusing common code, making tests cleaner and maintenance easier.
+  
+    \`\`\` bash
+    tests/testthat/
+    ├── _snaps/
+    ├── fixtures/
+    └── helper.R
+    
+    6 directories, 1 file
+    \`\`\`
+  
+- Leverage test snapshots for comparing UI/output states over time, catching unintended changes quickly.
+  
+    \`\`\` bash
+    tests/testthat/_snaps/
+    ├── app-feature-01
+    │   ├── feature-01-senario-a-001.json
+    │   ├── feature-01-senario-a-001_.png
+    │   ├── feature-01-senario-b-001.json
+    │   └── feature-01-senario-b-001_.png
+    ├── ggp2_app-feature-01
+    │   ├── ggp2movies_app-feature-01-001.json
+    │   ├── ggp2movies_app-feature-01-001_.new.png
+    │   └── ggp2movies_app-feature-01-001_.png
+    └── shinytest2
+        ├── feature-01-001.json
+        └── feature-01-001_.png
+    
+    4 directories, 9 files
+    \`\`\`
+
+By integrating fixtures, helpers, and snapshots from `testthat` into your Shiny app testing workflow, you boost test efficiency and application quality. 
 
   "
 )
@@ -477,18 +520,69 @@ devtools:::test_coverage_active_file()
 
 ### Example: snapshots 
 
+```{r}
+#| label: git_box_12.3_tests-snapshots
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  fig_pw = '65%', 
+  branch = "12.3_tests-snapshots", 
+  repo = 'moviesApp')
+```
+
+
 Writing tests for UI outputs can be difficult because their "correctness" is somewhat subjective and requires human judgment. If the expected output we're interesting in testing is cumbersome to describe programmatically, we can consider using a snapshot tests. Examples of this include UI elements (which are mostly HTML created by Shiny's UI layout and input/output functions) and data visualizations.[^test_tools-graph-snapshots]
 
 [^test_tools-graph-snapshots]: Graph snapshots are covered in @sec-tests-snapshots-vdiffr.
+
+```{r}
+#| label: co_box_mocking
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b", fold = TRUE, 
+  look = "default", hsize = "1.15", size = "1.10",
+  header = "Mocking",
+  contents = "
+Test mocks are covered in @sec-tests-mocks-snapshots, but the example isn't from our app-package (it comes from the package development masterclass given at [posit::conf(2023)](https://github.com/posit-conf-2023/pkg-dev-masterclass)). 
+"
+)
+```
 
 I've included a small UI function (`text_logo()`) in the `R/` folder of `moviesApp`: 
 
 ```{r}
 #| eval: true 
-#| code-fold: false
+#| code-fold: show 
+#| code-summary: 'show/hide text_logo()'
+#' Create a Text-based Logo in HTML
+#'
+#' `text_logo()` generates a text-based logo enclosed within HTML tags, allowing
+#' for the specification of the heading size (h1 through h6). The logo features
+#' a stylized representation of a face within arrows, using ASCII characters.
+#'
+#' @param size A character string specifying the heading size for the logo. 
+#' Valid options include "h1", "h2", "h3", "h4", "h5", and "h6". 
+#' Defaults to "h3".
+#'
+#' @return An HTML object containing the logo. This object can be directly used
+#' in R Markdown documents or Shiny applications to render the logo in a web page.
+#'
+#' @examples
+#' # Generate a logo with default size h3
+#' text_logo()
+#'
+#' # Generate a logo with size h1
+#' text_logo(size = "h1")
+#'
+#'
+#' @export
 text_logo <- function(size = 'h3') {
   if (any(size %in% c("h1", "h2", "h3", "h4", "h5", "h6"))) {
-  HTML(
+  htmltools::HTML(
     paste0(
     "<span>\n", 
       paste0("  <", size, ">", collapse = ""), "\n",
@@ -676,20 +770,7 @@ Click **Accept**: `Accepting snapshot: 'tests/testthat/_snaps/text_logo.md'`
 
 [^test_tools-shinytest2-snaps-prelude]: We'll encounter this folder again in the @sec-tests-system on system tests with `shinytest2`. 
 
-```{r}
-#| label: co_box_mocking
-#| echo: false
-#| results: asis
-#| eval: true
-co_box(
-  color = "g", fold = TRUE, 
-  look = "default", hsize = "1.15", size = "1.10",
-  header = "Mocking",
-  contents = "
-Test mocks are covered in [Mocks and snapshots](test_snapshots_mocks.qmd), because the example isn't from our app-package (it comes from the package development masterclass given at [posit::conf(2023)](https://github.com/posit-conf-2023/pkg-dev-masterclass)). 
-"
-)
-```
+For examples of snapshot tests for graphical outputs, review the examples in @sec-tests-mocks-snapshots.
 
 ## Recap {.unnumbered}
 
@@ -707,13 +788,18 @@ co_box(
 
 <br>
   
-**Shiny app-packages test tools**
+<h5>**Test tools**</h5>
   
-- **Fixtures**: Fixtures prepare the test environment and the initial state. The `tidy_ggp2_movies.rds` data is a test fixture, and it creates the `tidy_ggp2_movies` data within the test scope. 
+In this chapter, we've covered powerful testing tools provided by the `testthat` package. Let's briefly recep what we've learned:
+  
+  - **Test Fixtures**: We've seen how test fixtures are reliable for setting up a consistent testing environment. Using fixtures to load test data ensures that each test runs under uniform conditions. This approach enhances our tests' reliability and simplifies the testing process by abstracting standard setup and teardown tasks.
+    - Fixtures prepare the test environment and the initial state. The `tidy_ggp2_movies.rds` data is a test fixture, and it creates the `tidy_ggp2_movies` data within the test scope. 
+  
+  - **Test Helpers**: Helpers allow us to encapsulate repetitive tasks or setup configurations, making our tests cleaner, more readable, and easier to maintain. Whether it's a custom function to create mock Shiny sessions or a utility for simulating user input, helpers streamline the testing workflow significantly.
+    - If find yourself writing small, reusable pieces of code to perform specific tasks inside your tests, consider converting them into a function in `tests/testthat/helper.R`.
 
-- **Helpers**: If find yourself writing small, reusable pieces of code to perform specific tasks inside your tests, consider converting them into a function in `tests/testthat/helper.R`.
-  
-- **Snapshots**: Test complex outputs using snapshots, but cautiously. Snapshots are susceptibile to failure with small (sometimes inconsequential) changes, which produce false negatives test failures. 
+  - **Test Snapshots**: Snapshot testing introduces the `tests/testthat/_snaps` folder for capturing and comparing the Shiny application state over time. Snapshot testing helps ensure that changes to the application do not unintentionally alter its behavior or appearance, and snapshot files allow us to quickly identify and address regressions by automatically detecting differences between the expected and actual snapshots.
+    - Test complex outputs using snapshots, but cautiously. Snapshots are susceptibile to failure with small (sometimes inconsequential) changes, which produce false negatives test failures. 
   
   "
 )
