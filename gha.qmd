@@ -1,0 +1,1209 @@
+# GitHub Actions {#sec-gha}
+
+[Automating your workflow]{style="font-size: 1.25em; font-style: italic; color: #02577A;"}
+
+```{r}
+#| eval: true 
+#| echo: false 
+#| include: false
+source("_common.R")
+library(testthat)
+```
+
+```{r}
+#| label: co_box_tldr
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b",
+  look = "default", hsize = "1.15", size = "1.10",
+  header = "TLDR &emsp; ![](images/gha.png){width='50' height='55'}",
+  fold = TRUE,
+  contents = "
+
+<br>
+  
+**CI/CD**
+
+  "
+)
+```
+
+---
+
+:::: {layout="[70, 30]"}
+
+::: {style='color: #000000;'}
+
+Continuous Integration (CI) and Continuous Deployment (CD) help automate software development tasks, especially testing and deployment. In the context of a Shiny app-package, CI/CD usually refers to GitHub Actions or Travis CI.[^no-travis-ci]
+
+[^no-travis-ci]: This chapter will only cover CI/CD with GitHub Actions. Travis-CI has been around longer than GitHub Actions, and if you'd like to compare the two, I recommend [this article.](https://talent500.co/blog/github-actions-vs-travis-ci-weighing-pros-cons-and-selecting-the-ideal-platform/)
+
+:::
+
+![](images/gha_shinyap_icon.png){class="cover" width="800" fig-align='right'}
+
+::::
+
+:::: {.callout-tip collapse='true' appearance='simple'}
+
+## [Accessing the code examples]{style='font-weight: bold; font-size: 1.15em;'}
+
+::: {style='font-size: 0.95em; color: #282b2d;'}
+
+I've created the [`shinypak` R package](https://mjfrigaard.github.io/shinypak/) In an effort to make each section accessible and easy to follow:
+  
+Install `shinypak` using `pak` (or `remotes`):
+
+```{r}
+#| code-fold: false 
+#| message: false
+#| warning: false
+#| eval: false
+# install.packages('pak')
+pak::pak('mjfrigaard/shinypak')
+```
+
+Review the chapters in each section:
+  
+```{r}
+#| code-fold: false 
+#| message: false
+#| warning: false
+#| collapse: true
+library(shinypak)
+list_apps(regex = '^16')
+```
+
+Launch an app: 
+
+```{r}
+#| code-fold: false 
+#| eval: false
+launch(app = "16.1_gha-style")
+```
+
+::: 
+
+::::
+
+
+[**Continuous integration**]{style="font-size: 1.30em;"}
+
+1. **Automated Testing**: CI can automate the tests (`testthat` and `shinytest2`) for the code in your app-package, which is helpful when pushing a new feature or bug fix. 
+
+2. **Quality Assurance**: CI helps maintain the code quality by running a series of 'checks and balances' to confirm updates and changes don't break anything. Should something go wrong, CI will alert developers so they can fix it promptly.
+
+3. **Change Management**: CI systems work hand-in-hand with version control systems (like Git), which makes it possible to track all the changes within a project. This makes sure every modification is checked and is safe to be included to the `main` app-package.
+
+[**Continuous deployment**]{style="font-size: 1.30em;"}
+
+1. **Automated Deployment**: Once CI confirms the changes are safe, CD can automatically deploy your updated Shiny app-package to a package management system or Shiny server, which means that the updated version becomes available to users without any manual intervention.
+
+2. **Consistent Updating**: CD ensures that users experience new features and fixes much faster. Improvements are deployed as soon as they are made and tested, which leads to a more responsive development process.
+
+3. **Streamlined Development**: CI and CD streamline the software development process so developers can focus more on building and less on testing and deploying. 
+
+Properly implemented CI/CD is like a well-oiled machine, where each part works seamlessly with the others, which saves time, reduces errors, and makes the process efficient and reliable.
+
+## GitHub Actions {#sec-gha}
+
+:::: {layout="[80, 20]"}
+
+::: {style='color: #000000;'}
+
+[GitHub Actions](https://github.com/features/actions) (or Actions, for short) is a feature provided by GitHub that enables automation of various development workflows. These workflows are defined in YAML files and can automate some of the repetitive tasks in the development lifecycle, right within a GitHub repository. 
+
+:::
+
+![GitHub Actions](images/gha_icon.png){width=50% fig-align='left'}
+
+::::
+
+
+
+
+
+Actions allow us to create custom workflows to automatically build, test, and deploy our code. Workflows can be triggered by a push to a branch, a pull request, a specific time schedule, or another GitHub event. 
+
+```{r}
+#| label: git_box_16.1_gha-style
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  fig_pw = '75%', 
+  branch = "16.1_gha-style", 
+  repo = 'moviesApp')
+```
+
+### Workflow fields
+
+The YAML workflow file configures and defines the automated tasks run in a GitHub repository. Workflows typically include fields for building, testing, and deploying code, and are structured into several key sections:
+
+#### [`on`]{style="font-size: 1.05em; font-weight: bold; font-style: italic;"}
+
+> *"An event is a specific activity in a repository that triggers a workflow run."*
+
+:::: {layout="[50,50]" layout-valign="center"}
+
+``` yaml
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+```
+
+1. [**`on`** defines the [event(s) that trigger](https://docs.github.com/en/actions/learn-github-actions/understanding-github-actions#events) the workflow.]{style="font-size: 0.95rem;"}[^triggers]
+
+[^triggers]: Triggers can be `push` and/or `pull` events to specific branches, creating a release, commenting on an issue, or even configured to run at scheduled times.
+
+::::
+
+#### [`name`]{style="font-size: 1.05em; font-weight: bold; font-style: italic;"}
+
+:::: {layout="[50,50]" layout-valign="center"}
+
+
+```yaml
+name: shiny
+```
+
+2. [`name` is an optional field to identify a workflow in the Actions tab of the GitHub repository.]{style="font-size: 0.95rem;"}[^cicd-name]
+
+[^cicd-name]: If `name` is not provided, GitHub will use the file path
+
+::::
+
+#### [`jobs`]{style="font-size: 1.05em; font-weight: bold; font-style: italic;"}
+
+> *"A job is a set of steps in a workflow that is executed on the same runner."*
+
+:::: {layout="[50,50]" layout-valign="center"}
+
+```yaml
+jobs:
+  check:
+    runs-on: ubuntu-latest
+```
+
+3. [The [**`job`**](https://docs.github.com/en/actions/using-jobs) and it's [identifier](https://docs.github.com/en/actions/using-jobs/using-jobs-in-a-workflow#setting-an-id-for-a-job) (`check`) are used to reference the runner, in this example it's `ubuntu-latest`.]{style="font-size: 0.95rem;"}
+
+
+::::
+
+
+:::: {layout="[50,50]" layout-valign="center"}
+
+``` yaml
+jobs:
+  check:
+    runs-on: ${{ matrix.config.os }}
+    
+```
+
+4. [[**`matrix`**](https://docs.github.com/en/actions/using-jobs/using-a-matrix-for-your-jobs#using-a-matrix-strategy) runs jobs across different operating systems, programming language versions, etc.]{style="font-size: 0.95rem;"}
+
+::::
+
+:::: {layout="[50,50]" layout-valign="center"}
+
+``` yaml
+    name: ${{ matrix.config.os }} (${{ matrix.config.r }})
+    
+```
+
+::::
+
+:::: {layout="[50,50]" layout-valign="center"}
+
+``` yaml
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - {os: macos-latest,   r: 'release'}
+          - {os: windows-latest, r: 'release'}
+          - {os: ubuntu-latest,   r: 'release'}
+```
+
+
+
+5. [**`fail-fast: false`** means the workflow will continue running even if one of the `matrix` jobs fails.]{style="font-size: 0.95rem;"}
+
+::::
+
+#### [`steps`]{style="font-size: 1.05em; font-weight: bold; font-style: italic;"}
+
+> *"Steps can run commands, run setup tasks, or run an action in your repository, a public repository, or an action published in a Docker registry. Not all steps run actions, but all actions run as a step."*
+
+:::: {layout="[50,50]" layout-valign="center"}
+
+``` yaml
+steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up R
+      uses: r-lib/actions/setup-r@v2
+
+    - name: Install package
+      run: |
+        install.packages('remotes')
+        remotes::install_local('.')
+      shell: Rscript {0}
+      
+```
+
+6. [`steps` define a series of [tasks or actions](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idsteps) that the `job` will execute. These `steps` check out the code, set up an R environment, and installs a local package]{style="font-size: 0.95rem;"}
+
+::::
+
+```{r}
+#| label: co_box_run_e_rscript_comparison
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g", 
+  look = "default", hsize = "1.15", size = "1.10",
+  fold = TRUE,
+  header = "What is **`shell: Rscript {0}`**?",
+  contents = "
+  
+\`\`\`yaml
+  name: Install packages
+  run: |
+    pkgs <- c('glue', 'cli')
+    install.packages(pkgs)
+  shell: Rscript {0}
+\`\`\`
+  
+The command `install.packages(pkgs)` is run as an R script:
+  
+- `shell` specifies which command-line interpreter (`bash`, `pwsh`, `python`, or `Rscript`) to use for the `run` commands
+  
+- `Rscript` is the command-line tool provided by R to execute R scripts and commands in a non-interactive environment. 
+
+- `{0}` is a placeholder for the R commands written in the `run` section. 
+
+"
+)
+```
+
+#### Comments 
+
+Lines beginning with `#` will not be executed. It's common to provide 1) a reference to the workflow source ([`r-lib/actions`](https://github.com/r-lib/actions/) in this case) and 2) a link for help with debugging build failures.
+
+
+```yaml
+# Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
+# Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
+```
+
+### Workflow permissions
+
+In order for workflows to run, we'll need to make sure Actions have read and write permissions. We can do this by clicking on the repository's **Settings** tab, then expand the **Actions** menu and select **General**:
+
+![Repository Action settings](images/gh_action_settings.png){width='100%'}
+
+In the **General** settings, we want to confirm the workflow has **Read and write permissions** permissions (if this needs to be been changed, be sure to click **Save**). 
+
+![Workflow permissions](images/gh_action_permissions.png){width='100%'}
+
+Now our workflows can commit and push changes to the repository.
+
+### [`use_github_action()`]{style="font-size: 0.95em;"}
+
+In R packages, we can set up the GitHub Action infrastructure with `usethis::use_github_action()`. The `name` can be any of the workflow files available at [r-lib/actions](https://github.com/r-lib/actions/?tab=readme-ov-file#list-of-actions). The first workflow we'll be demonstrating can be used to automate the [code style in an app-package](https://github.com/r-lib/actions/tree/v2/examples#style-package).
+
+```{r}
+#| code-fold: false
+#| eval: false
+usethis::use_github_action("style")
+```
+
+```{bash}
+#| code-fold: false
+#| eval: false
+#| code-overflow: scroll
+✔ Setting active project to '/projects/apps/moviesApp'
+✔ Creating '.github/'
+✔ Adding '*.html' to '.github/.gitignore'
+✔ Creating '.github/workflows/'
+✔ Saving 'r-lib/actions/examples/style.yaml@v2' to '.github/workflows/style.yaml'
+```
+
+The output tells us a local `.github/workflows/style.yaml` file has been copied from the [`r-lib/actions/examples/style.yaml@v2`](https://github.com/r-lib/actions/blob/v2/examples/style.yml) into the `.github/workflows` folder: 
+
+```{bash}
+#| code-fold: false
+#| eval: false
+.github/
+  └── workflows
+    └── style.yaml
+
+2 directories, 1 file
+```
+
+
+
+The documentation for the `style.yaml@v2` file tells us this workflow,
+
+> "*styles the R code in a package, then commits and pushes the changes to the same branch."* 
+
+The code styling in this workflow is handled by the [`styler` package](https://styler.r-lib.org/), which "*formats your code according to the tidyverse style guide.*"
+
+Three functions in the `16.1_gha-style` branch have altered to have zero style (`R/display_type.R`, `R/mod_var_input.R`, and `R/test_logger.R`). You can copy the code for these functions in the chunk below:[^style-coverage]
+
+```{r}
+#| eval: false 
+#| code-fold: true 
+#| code-summary: 'show/hide no-style code'
+# display_type ----
+display_type <- function(run = "w") {
+  
+  if (run == "p") {
+    
+    options(shiny.launch.browser = .rs.invokeShinyPaneViewer)
+    
+  } else if (run == "b") {
+    
+    options(shiny.launch.browser = .rs.invokeShinyWindowExternal)
+    
+  } else if (run == "w") {
+    
+    options(shiny.launch.browser = .rs.invokeShinyWindowViewer)
+    
+  } else {
+    
+    options(shiny.launch.browser = NULL)
+    
+  }
+
+  shinyViewerType <- getOption("shiny.launch.browser") |>
+    attributes() |> unlist() |> unname()
+
+  cli::cli_alert_info("shinyViewerType set to {shinyViewerType}")
+}
+
+# mod_var_input_ui ----
+mod_var_input_ui <- function(id) {
+  ns <- NS(id)
+  tagList(
+    selectInput(
+      inputId = ns("y"),
+      label = "Y-axis:",
+      choices = c("IMDB rating" = "imdb_rating",
+        "IMDB number of votes" = "imdb_num_votes",
+        "Critics Score" = "critics_score",
+        "Audience Score" = "audience_score",
+        "Runtime" = "runtime"), selected = "audience_score"
+    ),
+    selectInput(inputId = ns("x"),
+      label = "X-axis:",
+      choices = c("IMDB rating" = "imdb_rating",
+        "IMDB number of votes" = "imdb_num_votes",
+        "Critics Score" = "critics_score",
+        "Audience Score" = "audience_score",
+        "Runtime" = "runtime"), selected = "imdb_rating"
+    ),
+    selectInput(inputId = ns("z"),
+      label = "Color by:",
+      choices = c("Title Type" = "title_type",
+        "Genre" = "genre",
+        "MPAA Rating" = "mpaa_rating",
+        "Critics Rating" = "critics_rating",
+        "Audience Rating" = "audience_rating"), selected = "mpaa_rating"
+    ),
+    sliderInput(inputId = ns("alpha"),
+      label = "Alpha:",
+      min = 0, max = 1, step = 0.1, value = 0.5
+    ),
+    sliderInput(
+      inputId = ns("size"),
+      label = "Size:", min = 0, max = 5, value = 2
+    ),
+    textInput(inputId = ns("plot_title"),
+      label = "Plot title",
+      placeholder = "Enter plot title"
+    )
+  )
+}
+# test_logger ----
+test_logger <- function(start = NULL, end = NULL, msg) {
+  
+  if (is.null(start) & is.null(end)) {
+    
+    cat("\n")
+    
+    logger::log_info("{msg}")
+    
+    } else if (!is.null(start) & is.null(end)) {
+    
+    cat("\n")
+    
+    logger::log_info("\n[ START {start} = {msg}]")
+  
+    } else if (is.null(start) & !is.null(end)) {
+      
+    cat("\n")
+      
+    logger::log_info("\n[ END {end} = {msg}]")
+    
+    } else {
+      
+    cat("\n")
+      
+    logger::log_info("\n[ START {start} = {msg}]")
+    
+    cat("\n")
+    
+    logger::log_info("\n[ END {end} = {msg}]")
+    
+    }
+  
+}
+```
+
+
+[^style-coverage]: We'll be covering code styling in the [Style](style.qmd) chapter.
+
+We'll make one small change to `style.yaml` before pushing it to GitHub. **Instead of having the workflow automatically commit and push the styled code changes to the same branch, we'll limit the code styling to the `16.1_gha-style` branch:**
+
+
+```yaml
+on:
+  push:
+    branches: [16.1_gha-style]
+    paths: ["**.[rR]", "**.[qrR]md", "**.[rR]markdown", "**.[rR]nw", "**.[rR]profile"]
+```
+
+This change ensures our `style` workflow will be triggered only for pushes to the specified `branches` (and when changes are made to files with the specified extensions in `path`). 
+
+After saving these changes to [`.github/workflows/style.yaml`](https://github.com/mjfrigaard/moviesApp/blob/16.1_gha-style/.github/workflows/style.yaml), we'll add, commit, and push the changes to GitHub, 
+
+```{bash}
+#| eval: false 
+#| code-fold: false 
+git add .
+git commit -m "updates to style workflow"
+```
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+[16.1_gha-style 899bd38] updates to style workflow
+ 4 files changed, 43 insertions(+), 45 deletions(-)
+```
+
+```{bash}
+#| eval: false 
+#| code-fold: false 
+git push
+```
+
+```{bash}
+#| eval: false 
+#| code-fold: false 
+Enumerating objects: 17, done.
+Counting objects: 100% (17/17), done.
+Delta compression using up to 12 threads
+Compressing objects: 100% (8/8), done.
+Writing objects: 100% (9/9), 950 bytes | 25.00 KiB/s, done.
+Total 9 (delta 6), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (6/6), completed with 6 local objects.
+To https://github.com/mjfrigaard/moviesApp.git
+   d366e0f..899bd38  16.1_gha-style -> 16.1_gha-style
+```
+
+If we view the **Actions** tab, we'll see the workflow listed with the name of our commit message: 
+
+![Currently running workflows](images/gh_action_tab.png){width='100%'}
+
+Clicking on the workflow reveals the following: 
+
+![name of running workflow](images/gh_action_details.png){width='100%'}
+
+The **style** widget contains each step in the workflow file. If we click on it we can see each step executed in real-time. Below we can see the dependencies installed from the `pak` lockfile:
+
+::: {layout="[50,50]" layout-valign="top"}
+
+![Click on the **style** widget](images/gha_style_widget.png){width='100%'}
+
+![View the **Install dependencies** workflow step running](images/gha_install_dependencies.png){width='100%'}
+
+:::
+
+The actual styling comes is in the **Style** step: 
+
+![**Style** workflow step running](images/gh_action_style_output.png){width='100%'}
+
+When the workflow has finished, we can pull the style changes to our local branch and view the styled files:[^rlib-actions-examples] 
+
+[^rlib-actions-examples]: You can find more examples of common GitHub Actions for R packages in [r-lib/actions/examples](https://github.com/r-lib/actions/tree/v2/examples#readme).
+
+```{bash}
+#| eval: false 
+#| code-fold: false 
+git pull
+```
+
+```{bash}
+#| eval: false 
+#| code-fold: false 
+remote: Enumerating objects: 4, done.
+remote: Counting objects: 100% (4/4), done.
+remote: Total 4 (delta 3), reused 4 (delta 3), pack-reused 0
+Unpacking objects: 100% (4/4), 450 bytes | 56.00 KiB/s, done.
+From https://github.com/mjfrigaard/moviesApp
+   899bd38..0ad97cf  16.1_gha-style -> origin/16.1_gha-style
+Updating 899bd38..0ad97cf
+Fast-forward
+ R/display_type.R  | 13 +++----------
+ R/mod_var_input.R | 30 ++++++++++++++++++++----------
+ R/test_logger.R   | 30 ++++++++++--------------------
+ 3 files changed, 33 insertions(+), 40 deletions(-)
+```
+
+
+## A Shiny workflow
+
+We'll be adapting the example GitHub Action workflow file for [deploying a Shiny application](https://github.com/r-lib/actions/blob/v2/examples/shiny-deploy.yaml). Before we get to the workflow file, we need to address a few settings and configurations that need to take place *outside* of the workflow file. 
+
+```{r}
+#| label: git_box_16.2_gha-shiny
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  fig_pw = '75%', 
+  branch = "16.2_gha-shiny", 
+  repo = 'moviesApp')
+```
+
+### Creating repository secrets
+
+We need to make sure our `rsconnect` secrets are stored with the GitHub repository (so we can access them from within the workflow file). To do this, we're going to return to the **Settings** tab on the `moviesApp` repository, expand **Secrets and variables** under **Security**, and select **Actions**:[^repo-secrets]
+
+[^repo-secrets]: GitHub secrets should be specified by the user following the instructions in the [Creating secrets for a repository](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions#creating-secrets-for-a-repository) article.
+
+![**Secrets and variables** for `moviesApp` repository](images/gh_action_secrets_repo.png){width='80%' fig-align='center'}
+
+Use **New repository secret** to create three new secrets: **RSCONNECT_USER**, **RSCONNECT_TOKEN**, and **RSCONNECT_SECRET**. You can access these in your shinyapps.io account:
+
+![**Token** and **Secret** from shinyapps.io](images/gh_action_shinyapps_secrets_token.png){width='100%' fig-align='center'}
+
+When you're finished, should see the following three **Repository secrets**:
+
+![**Repository secrets** in `moviesApp`](images/gh_action_all_repo_secrets.png){width='95%' fig-align='center'}
+
+### Enable private repositories 
+
+We also need to make sure our shinyapps.io account allows us to install from private GitHub repositories during a workflow deployment. We can do this in the **Profile** menu item in our dashboard:
+
+![**Update Authentication** in shinyapps.io profile](images/gh_action_shinyapps_auth.png){width='85%' fig-align='center'}
+
+Clicking **Update Authentication** will open your Posit profile settings, where you can enable private repositories. 
+
+![**Private repo access also enabled**](images/gh_action_shinyapps_private_repos.png){width='95%' fig-align='center'}
+
+### Generate [`renv.lock`]{style="font-size: 0.95em; font-weight: bold;"}
+
+The documentation for 'Shiny App Deployment' indicates we need to create a `renv` lockfile in the `16.2_gha-shiny` branch.[^renv-lockfile] 
+
+[^renv-lockfile]: "*This action assumes you have an `renv` lockfile in your repository that describes the R packages and versions required for your Shiny application.*" - [Shiny App Deployment](https://github.com/r-lib/actions/tree/v2/examples#shiny-app-deployment)
+
+We can create the lockfile with the code below:
+
+```{r}
+#| eval: false
+#| code-fold: false
+install.packages('renv')
+renv::init(force = TRUE)
+```
+
+```{bash}
+#| eval: false
+#| code-fold: false
+This project contains a DESCRIPTION file.
+Which files should renv use for dependency discovery in this project? 
+
+1: Use only the DESCRIPTION file. (explicit mode)
+2: Use all files in this project. (implicit mode)
+```
+
+We're going to use the `explicit mode`, because the dependencies in the `DESCRIPTION` should be all that's needed to run and deploy the application.
+
+```{bash}
+#| eval: false
+#| code-fold: false
+Selection: 1
+```
+
+```{bash}
+#| eval: false
+#| code-fold: false
+- Using 'explicit' snapshot type. Please see `?renv::snapshot` for more details.
+
+This project already has a private library. What would you like to do? 
+
+1: Activate the project and use the existing library.
+2: Re-initialize the project with a new library.
+3: Abort project initialization.
+```
+
+We will start fresh and create a new project library:
+
+```{bash}
+#| eval: false
+#| code-fold: false
+Selection: 2
+- Resolving missing dependencies ...
+```
+
+After `renv` has discovered and installed the dependencies, the R session will restart and we'll see the following new folder/files: 
+
+```{bash}
+#| eval: false
+#| code-fold: false
+├── .Rprofile # <1>
+├── renv/
+│   ├── activate.R
+│   └── settings.json # <2>
+└── renv.lock # <3>
+```
+1. `.Rprofile` contains a call to `source("renv/activate.R")`, which manages the project-level dependencies   
+2. `renv` settings   
+3. `renv` lockfile
+
+When using `renv` in package development, we want to be sure to run `renv::install()` and `renv::update()`: 
+
+```{r}
+#| eval: false
+#| code-fold: false
+renv::install()
+```
+
+```{bash}
+#| eval: false
+#| code-fold: false
+- There are no packages to install.
+```
+
+```{r}
+#| eval: false
+#| code-fold: false
+renv::update()
+```
+
+```{bash}
+#| eval: false
+#| code-fold: false
+- Checking for updated packages ... Done!
+- All packages appear to be up-to-date.
+```
+
+### [`shiny-deploy.yaml`]{style="font-size: 0.90em; font-weight: bold;"}
+
+We can include the 'Shiny App Deployment' workflow file in `moviesApp` with `usethis::use_github_action("shiny-deploy")`:[^shiny-depoy]
+
+[^shiny-depoy]: Instructions for the GitHub Action Shiny deployment can be found [here](https://github.com/r-lib/actions/tree/v2/examples#shiny-app-deployment)
+
+```{r}
+#| eval: false 
+#| code-fold: false
+usethis::use_github_action("shiny-deploy")
+```
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+✔ Creating '.github/'
+✔ Adding '^\\.github$' to '.Rbuildignore'
+✔ Adding '*.html' to '.github/.gitignore'
+✔ Creating '.github/workflows/'
+✔ Saving 'r-lib/actions/examples/shiny-deploy.yaml@v2' to '.github/workflows/shiny-deploy.yaml'
+```
+
+This example workflow file is designed to deploy a Shiny application to a server. We're going to make a few changes to `shiny-deploy.yaml` so it will deploy the application stored in the [`16.2_gha-shiny`](https://github.com/mjfrigaard/moviesApp/tree/16.2_gha-shiny) branch.
+
+The example shiny workflow includes calls to `rsconnect::setAccountInfo()` and `rsconnect::deployApp()`. We'll perform a sanity check and confirm we can deploy the application using the information we've collected:
+
+-   Start by entering your rsconnect info: 
+
+    ```{r}
+    #| eval: false 
+    #| code-fold: false
+    install.packages('rsconnect')
+    rsconnect::setAccountInfo(
+      name = "mjfrigaard",
+      token = "YOUR TOKEN", 
+      secret = "YOUR SECRET")
+    ```
+    
+    -   Then try to deploy the application using `rsconnect::deployApp()`:
+
+    ```{r}
+    #| eval: false 
+    #| code-fold: false
+    library(moviesApp)
+    rsconnect::deployApp(
+      appName = "moviesAppCICD",
+      account = "mjfrigaard",
+      server = "shinyapps.io",
+      forceUpdate = TRUE)
+    ```
+
+    -   Reading the deployment log will tells us if the secret, token, configuration, and lockfile are all working:
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+── Preparing for deployment ──────────────────────────────────────────────────
+✔ Deploying "moviesAppCICD" using "server: shinyapps.io / username: mjfrigaard"
+ℹ Bundling 50 files: .github/workflows/shiny-deploy.yaml, .Rbuildignore, ..., 
+tests/testthat.R, and vignettes/test-specs.Rmd
+ℹ Capturing R dependencies with renv
+✔ Found 99 dependencies
+✔ Created 2,431,325b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 8130675
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1372980209
+  building: Processing bundle: 8130675
+  building: Building image: 9770352
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 9770352
+  deploying: Starting instances
+  unstaging: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://mjfrigaard.shinyapps.io/moviesAppCICD/>
+```
+
+Making sure my application will deploy locally with the code I plan on putting in a workflow file makes me confident it run when it's triggered. Below we'll adapt the `.github/workflows/shiny-deploy.yaml` file to deploy `moviesApp`. 
+
+#### Trigger
+
+::: {layout="[50,50]" layout-valign="center"}
+
+```YAML
+on:
+  push:
+    branches: [16.2_gha-shiny]
+    
+name: shiny
+```
+
+
+
+1.   [The event we want the workflow triggered **`on`** is a `push` to the `16.2_gha-shiny` branch]{style="font-size: 0.90rem;"}    
+2.   [We'll change the **`name`** to `shiny`]{style="font-size: 0.90rem;"}
+
+
+:::
+
+
+
+#### Jobs 
+
+::: {layout="[50,50]" layout-valign="center"}
+
+```yaml
+jobs:
+  shiny-deploy:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+```
+
+
+3.   [**`jobs`** remains unchanged, but the identifier should match the **`name`**.]{style="font-size: 0.90rem;"} [^jobs-shiny]
+
+[^jobs-shiny]: `run-on` is the latest Ubuntu runner and `env` is the `GITHUB_PAT` environment variable is your GitHub personal access token (access a secret with `secrets.<SECRET_NAME>`) 
+
+:::
+
+#### Steps 
+
+::: {layout="[50,50]" layout-valign="center"}
+
+``` yaml
+    steps:
+      - uses: actions/checkout@v3
+```
+
+4.   [Check out the repository code]{style="font-size: 0.90rem;"} 
+
+:::
+
+::: {layout="[50,50]" layout-valign="center"}
+
+``` yaml
+      - uses: r-lib/actions/setup-pandoc@v2
+```
+
+5.   [Set up Pandoc for document conversions]{style="font-size: 0.90rem;"} 
+
+:::
+
+::: {layout="[50,50]" layout-valign="center"}
+
+``` yaml
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+```
+
+6.   [Set up R environment]{style="font-size: 0.90rem;"}     
+    a.   [`use-public-rspm` is the public RStudio package manager]{style="font-size: 0.90rem;"}      
+
+:::
+
+::: {layout="[50,50]" layout-valign="center"}
+
+``` yaml
+      - uses: r-lib/actions/setup-renv@v2
+```
+
+7.   [Set up `renv` to manage the project-specific dependencies captured in `renv.lock`]{style="font-size: 0.90rem;"} 
+
+:::
+
+::: {layout="[50,50]" layout-valign="center"}
+
+``` yaml
+      - name: Install rsconnect
+        run: install.packages("rsconnect")
+        shell: Rscript {0}
+```
+
+8.   [`Install rsconnect` the step to deploy our app to the Shiny server]{style="font-size: 0.90rem;"}       
+    a.   [`run` installs the `rsconnect` package]{style="font-size: 0.90rem;"} 
+
+:::
+
+In the following steps, we'll provide our account username (`ACCOUNT`) and a name for our app (`moviesAppCICD`). This will deploy an application at `https://<ACCOUNT>.shinyapps.io/<APPNAME>/`
+        
+::: {layout="[50,50]" layout-valign="center"}
+
+    
+```yaml
+    - name: Authorize and deploy app
+      env: 
+        APPNAME: moviesAppCICD
+        ACCOUNT: mjfrigaard
+        SERVER: shinyapps.io 
+```
+
+9.   [`Authorize and deploy app` defines the step to deploy our Shiny app]{style="font-size: 0.90rem;"}      
+10.   [`env` sets up the environment variables `APPNAME`, `ACCOUNT`, and `SERVER`]{style="font-size: 0.90rem;"}  
+        
+:::
+
+
+The final `run` step sets the account information using `rsconnect::setAccountInfo()` and deploys the app to the specified server using `rsconnect::deployApp()`:
+
+    
+```yaml
+    run: |
+      rsconnect::setAccountInfo("${{ secrets.RSCONNECT_USER }}", "${{ secrets.RSCONNECT_TOKEN }}", "${{ secrets.RSCONNECT_SECRET }}")
+      rsconnect::deployApp(appName = "${{ env.APPNAME }}", account = "${{ env.ACCOUNT }}", server = "${{ env.SERVER }}", forceUpdate = TRUE)
+    shell: Rscript {0}
+```
+
+When we add, commit, and push the changes to the repo, we see the following deployment log:
+
+```{bash}
+#| eval: false
+#| code-fold: false
+git add .
+git commit -m "shiny deploy workflow"
+git push
+```
+
+```{bash}
+#| eval: false
+#| code-fold: false
+[16.2_gha-shiny 7953a5c] shiny deploy workflow
+ 10 files changed, 2130 insertions(+)
+ create mode 100644 .Rprofile
+ create mode 100644 .github/.gitignore
+ create mode 100644 .github/workflows/shiny-deploy.yaml
+ create mode 100644 renv.lock
+ create mode 100644 renv/.gitignore
+ create mode 100644 renv/activate.R
+ create mode 100644 renv/settings.json
+ create mode 100644 rsconnect/shinyapps.io/mjfrigaard/moviesAppCICD.dcf
+```
+
+We can see the workflow running on the **Actions** tab of the `moviesApp` repository: 
+
+![shiny deploy workflow running](images/gh_action_shiny_tab.png){width='100%' fig-align='center'}
+
+When it's finished, we can see the deployment log from the workflow looks similar to the log we saw locally:
+
+![deploy log from workflow](images/gh_action_shiny_deploy.png){width='100%' fig-align='center'}
+
+## A Shiny/Docker workflow
+
+In the previous chapter we covered Docker, which builds and application in an image and containerizes the deployment. We can combine Docker and GitHub Actions to automate the deployment of an app, which minimizes any risks of environmental discrepancies (avoiding the "it works on my machine" problem) and manual deployment processes (if something goes wrong after a workflow run, rolling back to a previous version in Git is straightforward). 
+
+```{r}
+#| label: git_box_16.3_gha-docker
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  fig_pw = '75%', 
+  branch = "16.3_gha-docker", 
+  repo = 'moviesApp')
+```
+
+### Secrets and tokens
+
+Most of the steps below are covered in the excellent blog post by [Nicola Rennie](https://nrennie.rbind.io/)[^post-automatically-deploying-a-shiny-app] I've updated the contents to work with a Shiny app-package.
+
+[^post-automatically-deploying-a-shiny-app]: Automatically deploying a Shiny app for browsing #RStats tweets with GitHub Actions. Nicola Rennie. October 3, 2022. https://nrennie.rbind.io/blog/2022-10-05-automatically-deploying-a-shiny-app-for-browsing-rstats-tweets-with-github-actions/
+
+To make sure our `RSCONNECT_USER`, `RSCONNECT_TOKEN`, and `RSCONNECT_SECRET` travels with our `Dockerfile`, we can store these as environmental variables with `Sys.setenv()`:
+
+```{r}
+#| eval: false
+#| code-fold: false
+Sys.setenv(RSCONNECT_USER = '<username>', 
+  RSCONNECT_TOKEN = '<token>', 
+  RSCONNECT_SECRET = '<secret>')
+```
+
+These will be passed to `rsconnect::setAccountInfo()` in our `deploy.R` file.
+
+### [`deploy.R`]{style="font-size: 0.95em; font-weight: bold;"}
+
+`deploy.R` contains the calls to `rsconnect::setAccountInfo()` and `rsconnect::deployApp()` we had in our previous workflow file. `Sys.getenv()` will retrieve the username, token, and secret stored with `Sys.setenv()`:
+
+```{r}
+#| eval: false
+#| code-fold: false
+setAccountInfo(name = Sys.getenv("RSCONNECT_USER"),
+               token = Sys.getenv("RSCONNECT_TOKEN"),
+               secret = Sys.getenv("RSCONNECT_SECRET"))
+deployApp(appDir = ".", 
+  appName = "moviesAppDockerCiCd", 
+  account = "mjfrigaard", 
+	server = "shinyapps.io", 
+	forceUpdate = TRUE)
+```
+
+The `deploy.R` script should be placed in the root folder of `moviesApp`. By default, this will deploy the application launched with `app.R`. We'll change this to the application launched with `ggp2_movies_app()` by changing the contents of app.R to the following: 
+
+```{r}
+#| eval: false
+#| code-fold: show 
+#| code-summary: 'show/hide updated app.R'
+# set option to turn off loadSupport() ----
+withr::with_options(new = list(shiny.autoload.r = FALSE), code = {
+  if (!interactive()) {
+    sink(stderr(), type = "output")
+    tryCatch(
+      expr = {
+        library(moviesApp)
+      },
+      error = function(e) {
+        pkgload::load_all()
+      }
+    )
+    # create shiny object from dev/ ----
+    shinyAppDir(appDir = 
+                system.file("dev", package = "moviesApp"))
+  } else {
+    pkgload::load_all()
+  }
+  moviesApp::ggp2_movies_app()
+})
+```
+
+
+### [`Dockerfile`]{style="font-size: 0.95em; font-weight: bold;"}
+
+The `Dockerfile` will look similar to the example in the [Docker](docker.qmd) chapter, but with a few important changes: 
+
+1. The `/home/moviesAppDockerCiCd` directory is not only the image location we'll be launching the application from, it's also the URL for the deployed app: 
+    -   `https://` **`username`** `.shinyapps.io/moviesAppDockerCiCd/`
+2. We'll include `rsconnect` and `bslib` in the list of packages to install.   
+3. The final command runs the application from the `deploy.R` file
+
+
+```bash
+FROM rocker/shiny
+RUN mkdir /home/moviesAppDockerCiCd
+ADD . /home/moviesAppDockerCiCd
+WORKDIR /home/moviesAppDockerCiCd
+RUN R -e 'install.packages(c("rlang", "stringr", "shiny", "ggplot2", "remotes", "rsconnect", "bslib"))'
+RUN R -e 'remotes::install_local(upgrade="never")'
+EXPOSE 8180
+CMD Rscript deploy.R
+```
+
+### [`docker.yml`]{style="font-size: 0.95em; font-weight: bold;"}
+
+::: {layout="[50,50]" layout-valign="top"}
+
+``` yaml
+name: docker-shiny, moviesapp
+
+on:
+  push:
+    branches: [ 16.3_gha-docker ]
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build image
+        run: docker build -t moviesapp . 
+```
+
+1.   [Add a `name` for the Docker/Shiny workflow]{style="font-size: 0.90rem;"}   
+
+2.   [Specify the triggering event the workflow will run **`on`**]{style="font-size: 0.90rem;"} 
+
+3.   [The **`job`** will run on `ubuntu-latest` (with **`docker`** id)]{style="font-size: 0.90rem;"}  
+
+4.   [Checkout the code]{style="font-size: 0.90rem;"}
+
+5.   [Build the docker image with `docker build`]{style="font-size: 0.90rem;"}
+
+:::
+
+The final `execute` step is runs docker run and passes our environment variables to the secrets we have stored in GitHub (i.e., with `secrets.<SECRET_NAME>`):
+
+```yaml
+      - name: execute
+        run: >
+          docker run -e RSCONNECT_USER=${{ secrets.RSCONNECT_USER }} -e RSCONNECT_TOKEN=${{ secrets.RSCONNECT_TOKEN }}  -e RSCONNECT_SECRET=${{ secrets.RSCONNECT_SECRET }} moviesapp  
+       
+```
+
+### App dependencies 
+
+`rsconnect` has a handy `appDependencies()` function that returns a `data.frame` of packages, versions, and repositories for your application: 
+
+```{r}
+#| eval: false
+#| code-fold: false
+head(rsconnect:::appDependencies(appDir = "."))
+```
+
+```{r}
+#| eval: false
+#| code-fold: false
+#>        Package  Version Source               Repository
+#> 1  AsioHeaders 1.22.1-2   CRAN https://cran.rstudio.com
+#> 2         MASS   7.3-60   CRAN https://cran.rstudio.com
+#> 3       Matrix    1.6-4   CRAN https://cran.rstudio.com
+#> 4           R6    2.5.1   CRAN https://cran.rstudio.com
+#> 5 RColorBrewer    1.1-3   CRAN https://cran.rstudio.com
+#> 6         Rcpp   1.0.12   CRAN https://cran.rstudio.com
+```
+
+Passing `appDependencies()` function in your app-package directory will tell you if any packages have missing `Source` or `Repository` values (this can cause the deployment to fail).
+
+I also recommend running `attachment::att_amend_desc()` to capture all the dependencies in the `DESCRIPTION`. For example, `att_amend_desc()` added the following packages to the `Suggests` field in the `DESCRIPTION`:[^attachment-dev]
+
+[^attachment-dev]: `att_amend_desc()` adds a `dev` folder with a YAML config file, but you can remove this before building/deploying.
+
+
+``` bash
+[+] 2 package(s) added: shinytest2, testthat.
+```
+
+### Docker build 
+
+In the `docker` workflow log, we can see the commands from our `Dockerfile` executed to install the necessary packages:
+
+![Installing R packages from `Dockerfile`](images/gha_docker_build_image.png){width='100%'}
+
+After the dependencies, the `moviesApp.tar.gz` is installed from `*source*`:
+
+![Building our app-package from `*source*`](images/gha_docker_shiny_build.png){width='100%'}
+
+The output above should look familiar--it's very similar to what we see when we run `devtools::load_all()`.
+
+
+```{r}
+#| label: co_box_app_depends
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "r",
+  look = "default", hsize = "1.15", size = "1.10",
+  header = "Capturing and recording dependencies with `renv`",
+  fold = FALSE,
+  contents = "
+In the Shiny workflow example above we captured our application dependencies the `renv.lock` file and `renv/` folder, but when we used Docker *and* Shiny with Github Actions, we didn't activate `renv`. 
+  
+We get away with this because when the workflow runs, we can see `renv` is still used to capture our dependencies (line 13 in the output below), we see a message about the packages listed in the `Suggests` field or our `DESCRIPTION`:  
+  
+![Docker dependencies](images/gh_docker_dependencies.png){width='100%' fig-align='center'}
+  
+Not having these packages installed doesn't interfere with the application deploying because the packages listed in `Suggests` are used in`tests/`.
+  
+  ")
+```
+
+
+After installing the dependencies, we can see the Shiny deployment log execute in the workflow: 
+
+![Docker deploy log](images/gh_docker_deploy.png){width='100%' fig-align='center'}
+
+View the deployed application [here](https://mjfrigaard.shinyapps.io/moviesAppDockerCiCd/).
+
+## Recap {.unnumbered}
+
+
+```{r}
+#| label: co_box_recap
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g", 
+  fold = FALSE,
+  look = "default", hsize = "1.15", size = "1.10", 
+  header = "Recap: GitHub Actions",
+  contents = "
+<br>
+  
+- GitHub Actions can be used to set up the necessary R environment and dependencies required to deploy the application from your app-package, while allowing secure account credentials stored in GitHub secrets. 
+  
+- The workflows in this chapter are only triggered by changes to the `16.1_gha-style`, `16.2_gha-shiny`, and `16.3_gha-docker` branches of the `moviesApp` repository.
+  
+- GitHub Actions can streamline a secure deployment process, which allows you to focus more on developing your application.
+  
+- Read about GitHub Actions in the `rhino` framework in [this appendix section](rhino_cicd.qmd)")
+```
+
+
+```{r}
+#| label: git_contrib_box
+#| echo: false
+#| results: asis
+#| eval: true
+git_contrib_box()
+```
+
+
+
+<!-- https://github.com/pharmaverse/admiralci/blob/main/.github/workflows/code-coverage.yml --> 
+

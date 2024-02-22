@@ -19,7 +19,7 @@ co_box(
   color = "y", 
   look = "default",
   header = "Caution",
-  contents = "The contents for section are being revised. Thank you for your patience."
+  contents = "The contents for this section are being developed. Thank you for your patience."
 )
 ```
 
@@ -45,7 +45,7 @@ co_box(
 
 ---
 
-In this chapter, we will delve into how to set up a `pkgdown` website for our app-package, from installation and initial setup to customization and deployment with GitHub Actions. `pkgdown` automatically generates pages for the function documentation, vignettes, and more, using the existing documentation files in our app-package.
+In this chapter, we will delve into how to set up a `pkgdown` website for our app-package, from installation and initial setup to customization and deployment with GitHub Actions. `pkgdown` can be configured to automatically generate a beautiful website using the existing documentation files in our app-package.
 
 :::: {.callout-tip collapse='true' appearance='simple'}
 
@@ -158,7 +158,7 @@ We're also told GitHub pages will be publishing our app-package website at the f
 
 ### `.github/workflows/`
 
-The GitHub Action workflow folder (`.github/workflows/`) and `pkgdown` YAML file is created (`.github/workflows/pkgdown.yaml`). We're told these contents are copied from the [r-lib/actions repository](https://github.com/r-lib/actions) (which we've covered previously in @sec-docker and @sec-cicd).
+The GitHub Action workflow folder (`.github/workflows/`) and `pkgdown` YAML file is created (`.github/workflows/pkgdown.yaml`). We're told these contents are copied from the [r-lib/actions repository](https://github.com/r-lib/actions) (which we've covered previously in @sec-docker and @sec-gha).
 
 ``` bash
 • Path: '/'
@@ -221,14 +221,38 @@ We can customize the look of our `pkgdown` site by editing the contents of `_pkg
 
 ### Themes, colors and fonts
 
-Below are some examples of the fields that control the site theme, code syntax highlighting, colors, and fonts:
+Below are some examples of the fields that control the site theme, code syntax highlighting:
+
+:::: {layout="[50, 50]"  layout-valign="top"}
+
+#### Fields {.unnumbered}
 
 ``` yml
-url: https://<username>.github.io/<pkgName>/
 template:
   bootstrap: 5
   bootswatch: <SITE THEME>
   theme: <CODE HIGHLIGHTING THEME>
+
+```
+
+#### In `_pkgdown.yml` {.unnumbered}
+
+``` yml
+template:
+  bootstrap: 5
+  bootswatch: united
+  theme: atom-one-light
+```
+
+::::
+
+We can use `bslib` fields to control the fonts and colors to our theme.
+
+:::: {layout="[50, 50]"  layout-valign="top"}
+
+#### Fields {.unnumbered}
+
+``` yml
   bslib:
     primary: "<COLOR HEX>"
     code-color: "<COLOR HEX>"
@@ -241,28 +265,137 @@ template:
       google: <FONT NAME>
 ```
 
-### Documentation
+#### In `_pkgdown.yml` {.unnumbered}
+
+``` yml
+  bslib:
+    primary: "#007987"
+    secondary: "#f5feff"
+    base_font:
+      google: Ubuntu
+    heading_font:
+      google: Fira Sans Condensed
+    code_font:
+      google: Ubuntu Mono
+```
+
+::::
+
+### Articles
 
 The Navbar components can also be customized with titles, sections, and article names.
+
+:::: {layout="[50, 50]"  layout-valign="top"}
+
+#### Fields {.unnumbered}
 
 ``` yml
 navbar:
  components:
    articles:
-    text: < display name >
+    text: <MENU ITEM>
     menu:
-    - text: "< section title >"
-    - text: < article 1 title >
-      href: articles/<article-01>.html
-    - text: -------
-    - text: "< section title >"
-    - text: < article 2 title >
+    - text: "<SECTION TITLE>"
+    - text: <ARTICLE 1 TITLE>
       href: articles/<article-01>.html
 ```
 
+#### In `_pkgdown.yml` {.unnumbered}
+
+``` yml
+navbar:
+ components:
+   articles:
+    text: Articles
+    menu:
+    - text: "Specs"
+    - text: App Specifications
+      href: articles/specs.html
+```
+
+::::
+
+:::: {layout="[50, 50]"  layout-valign="top"}
+
+#### Fields {.unnumbered}
+
+``` yml
+navbar:
+ components:
+   articles:
+    text: <MENU ITEM>
+    menu:
+    - text: "<SECTION TITLE>"
+    - text: <ARTICLE 1 TITLE>
+      href: articles/<article-01>.html
+    - text: -------
+    - text: "<SECTION TITLE>"
+    - text: <ARTICLE 2 TITLE>
+      href: articles/<article-01>.html
+```
+
+#### In `_pkgdown.yml` {.unnumbered}
+
+``` yml
+navbar:
+ components:
+   articles:
+    text: Articles
+    menu:
+    - text: "Specs"
+    - text: App Specifications
+      href: articles/specs.html
+    - text: -------
+    - text: "Features"
+    - text: Application features
+      href: articles/features.html
+```
+
+::::
+
+### Functions 
+
+`pkgdown` will automatically generate a **Reference** section for all of the exported functions from our app-package, but we can also customize the section titles, descriptions, and order of the functions.  
+
+:::: {layout="[50, 50]"  layout-valign="top"}
+
+#### Fields {.unnumbered}
+
+``` yml
+reference:
+- title: "<TITLE>"
+  desc: >
+    <DESCRIPTION>
+  contents:
+  - <FUN>
+  - starts_with(<*STRING*>)
+  - ends_with(<*STRING*>)
+```
+
+#### In `_pkgdown.yml` {.unnumbered}
+
+``` yml
+reference:
+- title: "Modules"
+  desc: >
+    Application modules
+  contents:
+  - starts_with("mod")
+- title: "App functions"
+  desc: "UI, server and standalone app functions"
+  contents:
+  - starts_with("movies")
+```
+
+::::
+
 ## Deploy
 
-The `pkgdown.yaml` file automates building and deploying a `pkgdown` website for our app-package. This workflow file is configured to be triggered by specific GitHub events, build the website using the standard package contents, then deploy it to GitHub Pages. Below we'll breakdown the components and their functions:
+Below we can see our previous workflows: 
+
+![](images/gha_all_workflows.png){width='100%'}
+
+The `.github/workflows/pkgdown.yaml` file automates building and deploying our app-package's `pkgdown` site. This workflow file is configured to be triggered by specific GitHub events, build the website using the standard package files, then deploys it to GitHub Pages. Below we'll breakdown the fields and values of the workflow (and their functions):
 
 ### Triggers
 
