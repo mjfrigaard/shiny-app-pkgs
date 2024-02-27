@@ -35,7 +35,7 @@ co_box <- function(
   switch(color,
     b = cat(paste0(
       "\n\n",
-      ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "'}", "\n\n",
+      ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "' icon=false}", "\n\n",
       "## [", header, "]{style='font-weight: bold; font-size: ", hsize, "em;'}\n\n",
       "::: {style='font-size: ", size, "em; color: #282b2d;'}\n\n",
       "\n", glue::glue_collapse(contents), "\n\n",
@@ -44,7 +44,7 @@ co_box <- function(
     )),
     g = cat(paste0(
       "\n\n",
-      ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "'}", "\n\n",
+      ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "' icon=false}", "\n\n",
       "## [", header, "]{style='font-weight: bold; font-size: ", hsize, "em;'}\n\n",
       "::: {style='font-size: ", size, "em; color: #282b2d;'}\n\n",
       "\n", glue::glue_collapse(contents), "\n\n",
@@ -53,7 +53,7 @@ co_box <- function(
     )),
     y = cat(paste0(
       "\n\n",
-      ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "'}", "\n\n",
+      ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "' icon=false}", "\n\n",
       "## [", header, "]{style='font-weight: bold; font-size: ", hsize, "em;'}\n\n",
       "::: {style='font-size: ", size, "em; color: #282b2d;'}\n\n",
       "\n", glue::glue_collapse(contents), "\n\n",
@@ -62,7 +62,7 @@ co_box <- function(
     )),
     o = cat(paste0(
       "\n\n",
-      ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "'}", "\n\n",
+      ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "' icon=false}", "\n\n",
       "## [", header, "]{style='font-weight: bold; font-size: ", hsize, "em;'}\n\n",
       "::: {style='font-size: ", size, "em; color: #282b2d;'}\n\n",
       "\n", glue::glue_collapse(contents), "\n\n",
@@ -71,7 +71,7 @@ co_box <- function(
     )),
     r = cat(paste0(
       "\n\n",
-      ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "'}", "\n\n",
+      ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "' icon=false}", "\n\n",
       "## [", header, "]{style='font-weight: bold; font-size: ", hsize, "em;'}\n\n",
       "::: {style='font-size: ", size, "em; color: #282b2d;'}\n\n",
       "\n", glue::glue_collapse(contents), "\n\n",
@@ -100,7 +100,7 @@ git_contrib_box <- function(
   
   cat(paste0(
         "\n\n",
-        ":::: {.callout-note", " collapse='", fold, "'", " appearance='minimal'}", "\n\n",
+        ":::: {.callout-note", " collapse='", fold, "'", " appearance='default' icon=false}", "\n\n",
         "## [", header, "]{style='font-weight: bold; font-size: ", hsize, "em;'}\n\n",
         "::: {style='font-size: ", size, "em; color: #282b2d;'}\n\n",
         "\n", 
@@ -156,7 +156,7 @@ git_margin_box <- function(contents = "standard", fig_pw = '70%', branch = 'main
       ":::\n\n",
       
       ":::{style='font-size: 1.05em;'}\n\n",
-      "\nThis section's code is in the [`", branch, 
+      "\nSee the [`", branch, 
       "`](https://github.com/mjfrigaard/", repo, "/tree/", branch, ")
       branch of [`", repo, "`](https://github.com/mjfrigaard/", 
       repo, ").\n\n",
@@ -170,7 +170,7 @@ git_margin_box <- function(contents = "standard", fig_pw = '70%', branch = 'main
       "::: {style='font-size: 1.05em;'}\n\n",
       "![](img/new_branch_ico.png){width='", fig_pw, 
       "' fig-align='center'}\n\n",
-      "\nThis section's code is in the [`", branch, 
+      "\nThe [`", branch, 
       "`](https://github.com/mjfrigaard/", repo, "/tree/", branch, ")
       branch of [`", repo, "`](https://github.com/mjfrigaard/", repo, ").\n\n",
       "::: \n",

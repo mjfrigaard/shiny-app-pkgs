@@ -37,7 +37,30 @@ co_box(
 
 <br>
   
-**`pkgdown`**
+**`pkgdown`** is handy for creating beautiful, functional websites for your app-package. Package sites help share your app-package with others in a more engaging and informative way.
+  
+  - **Installation**:
+  
+    \`\`\` r
+    install.packages('pkgdown)`
+    \`\`\`
+
+  - **Setup**: create a configuration file that `pkgdown` will use to build your site with one of the `usethis` functions below: 
+  
+    \`\`\` r
+    usethis::use_pkgdown() 
+    # or
+    usethis::use_pkgdown_github_pages()
+    \`\`\`
+  
+    - These create a `_pkgdown.yml` file that lets us customize how our site looks and which parts of our app-package are diplayed/highlighted.
+
+  - **Building Your Site**: You can build a site with `pkgdown::build_site()` or . This command tells pkgdown to go through your R package, including the documentation, vignettes, and examples (like your Shiny app), and assemble them into a coherent, navigable website.
+
+Customization: pkgdown allows for significant customization. You can choose themes, organize your navigation bar, and even add custom pages. This means you can create a landing page for your Shiny app, provide detailed examples of how it works, and link to any additional resources or documentation.
+
+Deployment: After building your site, you'll need to deploy it so others can visit. Often, this involves uploading the generated website files to a web server or using services like GitHub Pages, which can host your package website directly from your GitHub repository.
+  
 
   "
 )
@@ -47,7 +70,7 @@ co_box(
 
 In this chapter, we will delve into how to set up a `pkgdown` website for our app-package, from installation and initial setup to customization and deployment with GitHub Actions. `pkgdown` can be configured to automatically generate a beautiful website using the existing documentation files in our app-package.
 
-:::: {.callout-tip collapse='true' appearance='simple'}
+:::: {.callout-tip collapse='true' appearance='default' icon=false}
 
 ## [Accessing the code examples]{style='font-weight: bold; font-size: 1.15em;'}
 
@@ -89,35 +112,29 @@ launch(app = "17_pkgdown")
 
 ::::
 
-## Setup
+## Setup {#sec-pkgdown-setup}
 
 A `pkgdown` website makes our Shiny app and its accompanying package more accessible to potential users by providing them with a central location for any information they need (app features, updates, etc.).
-
-```{r}
-#| label: git_box_17_pkgdown
-#| echo: false
-#| results: asis
-#| eval: true
-git_margin_box(
-  contents = "launch",
-  fig_pw = '75%', 
-  branch = "17_pkgdown", 
-  repo = 'moviesApp')
-```
 
 ``` r
 install.packages("pkgdown")
 ```
 
-`pkgdown` has a `usethis` function similar to `testthat` for setup: 
+`pkgdown` has a `usethis` function similar to `testthat` for setup:[^use-pkgdown-github-pages]
+
+[^use-pkgdown-github-pages]: `usethis` also has a generic function for using `pkgdown` (`use_pkgdown()`), but we're going to cover building and deploying our app-package site using GitHub pages. Read more about `use_pkgdown()` in the [`usethis` documentation](https://usethis.r-lib.org/reference/use_pkgdown.html).
 
 ``` r
 usethis::use_pkgdown_github_pages()
 ```
 
-`use_pkgdown_github_pages()` automates much of the setup, but we'll break down the major steps below (I've replaced my GitHub username with `<username>` and the name of the app-package/repository with `<pkgName>`):
+`use_pkgdown_github_pages()` takes care of (most of) the setup for our app-package website, but we'll break down the steps below.[^read-more-use-pkgdown-github_pages] I've replaced my GitHub username with `<username>` and the name of the app-package/repository with `<pkgName>`):
+
+[^read-more-use-pkgdown-github_pages]: Internally, this function calls [`usethis::use_pkgdown()`](https://usethis.r-lib.org/reference/use_pkgdown.html), [`usethis::use_github_pages()`](https://usethis.r-lib.org/reference/use_github_pages.html), and [`usethis::use_github_action("pkgdown")`](https://usethis.r-lib.org/reference/use_github_action.html). Read more in the [`usethis` documentation.](https://usethis.r-lib.org/reference/index.html)
 
 ### `_pkgdown.yml`
+
+The initial output after running `use_pkgdown_github_pages()` looks something like the following:
 
 ``` bash
 ✔ Setting active project to '/Users/<username>/projects/<pkgName>'
@@ -130,9 +147,7 @@ usethis::use_pkgdown_github_pages()
 ✔ Setting 'https://<username>.github.io/<pkgName>/' as homepage of GitHub repo '<username>/<pkgName>'
 ```
 
-When `_pkgdown.yml` is initially created, it's contents are sparse, but this file will ultimately determine how our app-package's website will be built, structured, and styled.
-
-The initial pre-populated fields in `_pkgdown.yml` are the `url`, `template`, and `bootstrap` version:
+`_pkgdown.yml` is initially created with only the `url`, `template`, and `bootstrap` version:
 
 ``` yml
 url: https://<username>.github.io/<pkgName>/
@@ -141,9 +156,11 @@ template:
 
 ```
 
-### `gh-pages`
+These fields are all that's required to launch your pkgdown site, but in the following sections we'll cover how to edit `_pkgdown.yml` to customize the fonts, colors, contents, and layout of our site.
 
-`use_pkgdown_github_pages()` sets up publishing your app-package website using an '*orphan branch from GitHub pages*':
+### `gh-pages` branch
+
+`use_pkgdown_github_pages()` sets up publishing our app-package site from an '*orphan branch from GitHub pages*':
 
 ``` bash
 ✔ Initializing empty, orphan 'gh-pages' branch in GitHub repo '<username>/<pkgName>'
@@ -152,13 +169,29 @@ template:
 • Branch: 'gh-pages'
 ```
 
-An orphan branch is a new Git branch with no commit history, effectively starting a new `"root"` in our project's development history. For our app-package, the `gh-pages` branch serves as a new line of development, completely separated from the all the other branches. 
+```{r}
+#| label: co_box_orphan_branch
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g",
+  look = "default", hsize = "1.15", size = "1.10",
+  header = "![](images/github.jpg){width='35' height='35'} Orphan branches",
+  fold = TRUE,
+  contents = "
+An orphan branch is a new Git branch with no commit history, effectively starting a new '`root`' in our project's development history. For our app-package, the `gh-pages` branch serves as a new line of development, completely separated from the all the other branches. 
+  "
+)
+```
+
+
 
 We're also told GitHub pages will be publishing our app-package website at the following URL: `https://<username>.github.io/<pkgName>/`
 
 ### `.github/workflows/`
 
-The GitHub Action workflow folder (`.github/workflows/`) and `pkgdown` YAML file is created (`.github/workflows/pkgdown.yaml`). We're told these contents are copied from the [r-lib/actions repository](https://github.com/r-lib/actions) (which we've covered previously in @sec-docker and @sec-gha).
+`use_pkgdown_github_pages()` creates a GitHub Action workflow folder (`.github/workflows/`) with a  YAML file (`pkgdown.yaml`):
 
 ``` bash
 • Path: '/'
@@ -170,58 +203,174 @@ The GitHub Action workflow folder (`.github/workflows/`) and `pkgdown` YAML file
 • Learn more at <https://github.com/r-lib/actions/blob/v2/examples/README.md>.
 ```
 
-## Site contents 
+We're also told the contents in this file are copied from the [r-lib/actions repository](https://github.com/r-lib/actions) (which we've covered previously in @sec-docker and @sec-gha).
 
-Now that we're set up to automate the build/deploy process for our website, we're going to cover how the files and folders in our app-package are used to create the content for the site.
+## Build {#sec-pkgdown-site-contents}
 
-###  README >> `index.html`
+`usethis` has two functions for building your pkgdown site: `build_site()` and `build_site_github_pages()`. Since we used `usethis::use_pkgdown_github_pages()` to configure our site, we'll use `build_site_github_pages()` to build our site. 
 
-The `README` file in our root folder will be used to create the landing page (`index.html`) for our site. If you'd like a boilerplate `README` for an R package, you can use `usethis::use_readme_rmd()`:
-
-```{r}
-#| eval: false
-#| code-fold: false
-usethis::use_readme_rmd()
+``` r
+pkgdown::build_site_github_pages()
 ```
 
+In the following sections, we'll take a look at how the files and folders in our app-package are used to create the site's contents. The great thing about `pkgdown` sites is that they use our existing package structure to build a beautiful site that's easy to navigate (with minimal changes).
+
+### `docs/`
+
+The `docs/` folder contains the .html files for our website (that's why `^docs$` was added to the `.Rbuildignore` and `docs` was added to the `.gitignore`):
+
 ``` bash
+== Building pkgdown site ======================================================
+Reading from: '/Users/<username>/<pkgName>'
+Writing to:   '/Users/<username>/<pkgName>/docs'
+```
+
+After creating a home for our site contents, the site initialization files are copied from the local `pkgdown` installation into `docs/`:
+
+``` bash
+-- Initialising site ----------------------------------------------------------
+Copying 'local/library/pkgdown/BS3/assets/bootstrap-toc.css' to 'bootstrap-toc.css'
+Copying 'local/library/pkgdown/BS3/assets/bootstrap-toc.js' to 'bootstrap-toc.js'
+Copying 'local/library/pkgdown/BS3/assets/docsearch.css' to 'docsearch.css'
+Copying 'local/library/pkgdown/BS3/assets/docsearch.js' to 'docsearch.js'
+Copying 'local/library/pkgdown/BS3/assets/link.svg' to 'link.svg'
+Copying 'local/library/pkgdown/BS3/assets/pkgdown.css' to 'pkgdown.css'
+Copying 'local/library/pkgdown/BS3/assets/pkgdown.js' to 'pkgdown.js'
+```
+
+We won't be interacting with these files directly, but it's helpful to know this step is performed each time the build function is run.
+
+###  `README.md` > [index.html](https://mjfrigaard.github.io/moviesApp/index.html)
+
+``` bash
+-- Building home --------------------------------------------------------------
+Writing 'authors.html'
+Writing '404.html'
+```
+
+The `authors.html` is built from the `Author` and `Maintainer` fields in the `DESCRIPTION` file. The `README.md` file in our root folder will be used to create the landing page (`https://<username>.github.io/<pkgName>/index.html`) for our site. 
+
+Long-form documentation can be stored in vignettes (@sec-use-vignette) which will be converted into articles (covered below). 
+
+```{r}
+#| label: co_box_use_readme_rmd
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g",
+  look = "default", hsize = "1.15", size = "1.10",
+  header = "Standard README for your app-package",
+  fold = TRUE,
+  contents = 
+"
+If you'd like a boilerplate `README.md` for an R package, you can use `usethis::use_readme_rmd()`:
+
+\`\`\` r
+usethis::use_readme_rmd()
+\`\`\`
+
+\`\`\` bash
 ✔ Setting active project to '/Users/<username>/projects/<pkgName>'
 ✔ Writing 'README.Rmd'
 ✔ Adding '^README\\.Rmd$' to '.Rbuildignore'
 • Modify 'README.Rmd'
 ✔ Writing '.git/hooks/pre-commit'
-```
-
-When I use this method, I tend to remove the `.git/hooks/pre-commit` (so it doesn't interfere with my personal add/commit/push process).
-
-```{r}
-#| eval: false
-#| code-fold: false
-unlink('.git/hooks/pre-commit')
-```
-
-The `README` should include: 
+\`\`\`
+  
+At minimum, the `README.Rmd` should include: 
 
 1. The purpose/goal of your app-package  
 2. Instructions for installation   
 3. Links to a deployed version (if applicable)  
-4. Supporting packages  
+4. Supporting packages 
 
-Long-form documentation can link to articles (which we'll cover below). 
+If I chose to use this `README.md` file, I usually remove the `.git/hooks/pre-commit` (so they don't interfere with my personal add/commit/push process).
 
-### `R/` >> Function Reference
+\`\`\` r
+unlink('.git/hooks/pre-commit')
+\`\`\`
+")
+```
 
-The exported functions from our app-package with make up the function **Reference** menu item. If we've been thorough in documenting our utility functions, modules, UI/server/standalone app functions, the `@seealso` and `@family` tags will create hyperlinks so visitors to our site can navigate the internals of our application.
+### `man/` > [Reference](https://mjfrigaard.github.io/moviesApp/reference/index.html)
 
-### `vignettes` >> Articles
+The functions from our app-package are converted into a **Reference** menu item (@sec-doc):
 
-## Layouts 
+``` bash
+-- Building function reference ------------------------------------------------
+Writing 'reference/index.html'
+Reading 'man/display_type.Rd'
+Writing 'reference/display_type.html'
+Reading 'man/ggp2_movies_app.Rd'
+Writing 'reference/ggp2_movies_app.html'
+Reading 'man/mod_scatter_display_server.Rd'
+Writing 'reference/mod_scatter_display_server.html'
+Reading 'man/mod_scatter_display_ui.Rd'
+Writing 'reference/mod_scatter_display_ui.html'
+Reading 'man/mod_var_input_server.Rd'
+Writing 'reference/mod_var_input_server.html'
+Reading 'man/mod_var_input_ui.Rd'
+Writing 'reference/mod_var_input_ui.html'
+Reading 'man/movies.Rd'
+Writing 'reference/movies.html'
+Reading 'man/movies_app.Rd'
+Writing 'reference/movies_app.html'
+Reading 'man/movies_server.Rd'
+Writing 'reference/movies_server.html'
+Reading 'man/movies_ui.Rd'
+Writing 'reference/movies_ui.html'
+Reading 'man/scatter_plot.Rd'
+Writing 'reference/scatter_plot.html'
+Reading 'man/test_logger.Rd'
+Writing 'reference/test_logger.html'
+```
+
+- Functions will only be included in the **Reference** if they've been exported (see @sec-depends-exports) 
+
+- If we've been thorough in documenting, the `@seealso` and `@family` tags will create hyperlinks between our utility functions, modules, UI/server/standalone app functions (see @sec-document-app-functions)
+
+- The `@examples` will be run and displayed (@sec-doc-examples)
+
+### `vignettes` >> [Articles](https://mjfrigaard.github.io/moviesApp/articles/moviesApp.html)
+
+Any of the `.Rmd` in the `vignettes` folder will be rendered as HTML articles under the **Articles** menu item. The exception to this is any vignettes with the same name as our app-package (which will automatically be listed under a menu dropdown titled "Get Started"):[^get-started-vignette]
+
+``` bash
+-- Building articles ----------------------------------------------------------
+Writing 'articles/index.html'
+Reading 'vignettes/moviesApp.Rmd'
+Writing 'articles/moviesApp.html'
+Reading 'vignettes/specs.Rmd'
+Writing 'articles/specs.html'
+Writing 'sitemap.xml'
+== DONE ======================================================================
+```
+
+``` bash
+vignettes/
+  ├── moviesApp.Rmd
+  └── specs.Rmd
+
+1 directory, 2 files
+```
+
+[^get-started-vignette]: I created this vignette with `usethis::use_vignette("moviesApp")` and included instructions for launching the various apps in `moviesApp`.
+
+The final step in the build process is to add a `.nojekyll` file in the repository (this hidden file is necessary for `pkgdown` sites configured to deploy from GitHub pages).
+
+``` bash
+-- Extra files for GitHub pages ----------------------------------------------
+Writing '.nojekyll'
+```
+
+## Layouts {#sec-pkgdown-layouts}
 
 We can customize the look of our `pkgdown` site by editing the contents of `_pkgdown.yml`. 
 
 ### Themes, colors and fonts
 
-Below are some examples of the fields that control the site theme, code syntax highlighting:
+Below are some examples of the fields that control the [bootswatch theme](https://bootswatch.com/) (`<THEME>`), [code syntax highlighting](https://pkgdown.r-lib.org/articles/customise.html#syntax-highlighting)(`<HIGHLIGHTING>`):
 
 :::: {layout="[50, 50]"  layout-valign="top"}
 
@@ -230,8 +379,8 @@ Below are some examples of the fields that control the site theme, code syntax h
 ``` yml
 template:
   bootstrap: 5
-  bootswatch: <SITE THEME>
-  theme: <CODE HIGHLIGHTING THEME>
+  bootswatch: <THEME>
+  theme: <HIGHLIGHTING>
 
 ```
 
@@ -246,7 +395,9 @@ template:
 
 ::::
 
-We can use `bslib` fields to control the fonts and colors to our theme.
+We can use the [`bslib` package](https://rstudio.github.io/bslib/articles/any-project/index.html) for additional control over the fonts and colors on our site. The `<COLOR>` should be replaced with a color hex, and `<FONT>` can include any freely available [Google fonts](https://fonts.google.com/).[^read-more-bslib]
+
+[^read-more-bslib]: Read more about `bslib` in `pkgdown` sites in the [documentation.](https://pkgdown.r-lib.org/articles/customise.html#bslib-variables)
 
 :::: {layout="[50, 50]"  layout-valign="top"}
 
@@ -254,15 +405,15 @@ We can use `bslib` fields to control the fonts and colors to our theme.
 
 ``` yml
   bslib:
-    primary: "<COLOR HEX>"
-    code-color: "<COLOR HEX>"
-    code-bg: "<COLOR HEX>"
+    primary: "<COLOR>"
+    code-color: "<COLOR>"
+    code-bg: "<COLOR>"
     base_font:
-      google: <FONT NAME>
+      google: <FONT>
     heading_font:
-      google: <FONT NAME>
+      google: <FONT>
     code_font:
-      google: <FONT NAME>
+      google: <FONT>
 ```
 
 #### In `_pkgdown.yml` {.unnumbered}
@@ -276,14 +427,14 @@ We can use `bslib` fields to control the fonts and colors to our theme.
     heading_font:
       google: Fira Sans Condensed
     code_font:
-      google: Ubuntu Mono
+      google: Inconsolata
 ```
 
 ::::
 
 ### Articles
 
-The Navbar components can also be customized with titles, sections, and article names.
+The `navbar` components can also be customized with titles, sections, and article names. In `_pkgdown.yml`, the `articles` are listed under `components`, with a `text` title (`<TITLE>`):
 
 :::: {layout="[50, 50]"  layout-valign="top"}
 
@@ -293,11 +444,7 @@ The Navbar components can also be customized with titles, sections, and article 
 navbar:
  components:
    articles:
-    text: <MENU ITEM>
-    menu:
-    - text: "<SECTION TITLE>"
-    - text: <ARTICLE 1 TITLE>
-      href: articles/<article-01>.html
+    text: <TITLE>
 ```
 
 #### In `_pkgdown.yml` {.unnumbered}
@@ -306,60 +453,89 @@ navbar:
 navbar:
  components:
    articles:
-    text: Articles
+    text: Docs
+```
+
+::::
+
+Section and article titles are placed in `text` fields, listed under the `menu` (note the indentation), with a path to the `html` file:
+
+#### Fields {.unnumbered}
+
+``` yml
+    text: <TITLE>
+    menu:
+    - text: "<SECTION>"
+    - text: <ARTICLE>
+      href: articles/<NAME>.html
+```
+
+Below I've listed the `App Specifications` vignette under a `"Specs"` section (see @sec-tests-specs), and linked to `articles/specs.html`: 
+
+#### In `_pkgdown.yml` {.unnumbered}
+
+``` yml
+    text: Docs
     menu:
     - text: "Specs"
     - text: App Specifications
       href: articles/specs.html
 ```
 
-::::
 
-:::: {layout="[50, 50]"  layout-valign="top"}
+Use `-------` with a `text` field to create horizontal separators between sections  (without a corresponding `href`).
+
+:::: {layout="[50, -50]"  layout-valign="top"}
 
 #### Fields {.unnumbered}
 
 ``` yml
-navbar:
- components:
-   articles:
-    text: <MENU ITEM>
     menu:
-    - text: "<SECTION TITLE>"
-    - text: <ARTICLE 1 TITLE>
-      href: articles/<article-01>.html
+    - text: "<SECTION>"
+    - text: <ARTICLE>
+      href: articles/<NAME>.html
     - text: -------
-    - text: "<SECTION TITLE>"
-    - text: <ARTICLE 2 TITLE>
-      href: articles/<article-01>.html
+    - text: "<SECTION>"
+    - text: <ARTICLE>
+      href: articles/<NAME>.html
 ```
+
+::::
+
+I've added a `Features` section and a `Application Features` vignette (stored in `vignettes/features.Rmd` and published to `articles/features.html`):
+
+:::: {layout="[-50, 50]"  layout-valign="top"}
 
 #### In `_pkgdown.yml` {.unnumbered}
 
 ``` yml
-navbar:
- components:
-   articles:
-    text: Articles
+    text: Docs
     menu:
     - text: "Specs"
     - text: App Specifications
       href: articles/specs.html
     - text: -------
     - text: "Features"
-    - text: Application features
+    - text: App Features
       href: articles/features.html
 ```
 
 ::::
 
-### Functions 
+The rendered output is below:
 
-`pkgdown` will automatically generate a **Reference** section for all of the exported functions from our app-package, but we can also customize the section titles, descriptions, and order of the functions.  
+#### Rendered {.unnumbered}
 
-:::: {layout="[50, 50]"  layout-valign="top"}
+![](images/pkgdown_menu_separator.png){width='70%' fig-align='center'}
 
-#### Fields {.unnumbered}
+
+### Reference {#sec-pkgdown-referece}
+
+`pkgdown` will automatically generate a **Reference** section for any object with an `.Rd` file in the `man/` folder. This includes functions we've explicitly exported with (i.e., with `@export`) *and* functions we've documented with `@keywords internal`.[^exported-funs]
+
+[^exported-funs]: Functions with `@keywords internal` aren't listed in the package index, but can be accessed with `pkg:::fun()` (like the `test_logger()` function in `moviesApp`).
+
+By default, the function are sorted alphabetically, but we can customize them into sections with titles and descriptions using the fields below in `_pkgdown.yml`:
 
 ``` yml
 reference:
@@ -368,9 +544,46 @@ reference:
     <DESCRIPTION>
   contents:
   - <FUN>
-  - starts_with(<*STRING*>)
-  - ends_with(<*STRING*>)
 ```
+
+For example, we can include a section for the modules we're exporting from our app-package:
+
+:::: {layout="[50, 50]"  layout-valign="top"}
+
+#### In `_pkgdown.yml` {.unnumbered}
+
+``` yml
+reference:
+- title: "Modules"
+  desc: >
+    App modules
+```
+
+#### Rendered {.unnumbered}
+
+![](images/pkgdown_fun_title_desc_mods.png){width='100%' fig-align='center'}
+
+::::
+
+The `_pkgdown.yml` file **must include all exported functions if you customize the `reference` field**. If not, you'll see an error when you try to build your site:
+
+``` bash
+-- Building function reference ------------------------------------
+Error in `check_missing_topics()`:
+! All topics must be included in reference index
+✖ Missing topics: <FUN>
+ℹ Either add to _pkgdown.yml or use @keywords internal
+```
+
+To help organize and display the functions in your app-package, we can use `tidyselect` helpers[^tidyselect] in the bullets below `contents`. 
+
+For example, we can list modules with `starts_with("mod")`:[^prefix-names]
+
+[^prefix-names]: Using the `mod_` as a prefix for module functions is a habit I've adopted from the [`golem` package](https://thinkr-open.github.io/golem/) (specifically, the [`add_module()` function](https://thinkr-open.github.io/golem/reference/add_module.html)).
+
+[^tidyselect]: Read more about how to build the function reference [here](https://pkgdown.r-lib.org/articles/pkgdown.html#reference)
+
+:::: {layout="[50, 50]"  layout-valign="top"}
 
 #### In `_pkgdown.yml` {.unnumbered}
 
@@ -381,19 +594,60 @@ reference:
     Application modules
   contents:
   - starts_with("mod")
-- title: "App functions"
-  desc: "UI, server and standalone app functions"
-  contents:
-  - starts_with("movies")
 ```
+
+#### Rendered {.unnumbered}
+
+![](images/pkgdown_fun_ref_mods.png){width='100%' fig-align='center'}
 
 ::::
 
-## Deploy
+The UI, server, and app functions can be captured with `contains("movies")`, but doing this places the development `ggp2_movies_app()` function above the primary standalone app function (`movies_app()`):
 
-Below we can see our previous workflows: 
+:::: {layout="[50, 50]"  layout-valign="top"}
 
-![](images/gha_all_workflows.png){width='100%'}
+#### In `_pkgdown.yml` {.unnumbered}
+
+``` yml
+- title: "App functions"
+  desc: "UI, server & app functions"
+  contents:
+  - contains("movies")
+```
+
+#### Rendered {.unnumbered}
+
+![](images/pkgdown_fun_ref_apps.png){width='100%' fig-align='center'}
+
+::::
+
+
+We have a few options here: 1) we can remove the `ggp2_movies_app()` function from the **Reference** by removing the `@export` or `@keywords internal` tags in  `R/ggp2_movies_app.R` (see @sec-depends-exports), 2) we can create a new section for this (and any other) development functions, or 3) we can reorganize the functions in this section by placing `ggp2_movies_app` (no parentheses) below the `tidyselect` helper.[^ggp2-movies-app-location]
+
+[^ggp2-movies-app-location]: This is the option I went with (see [here](https://mjfrigaard.github.io/moviesApp/reference/index.html#app-functions)).
+
+We can also use `_pkgdown.yml` to list any datasets (@sec-data) we're using (and documenting (see @sec-document-data)) in our app-package. 
+
+:::: {layout="[50, 50]"  layout-valign="top"}
+
+#### In `_pkgdown.yml` {.unnumbered}
+
+``` yml
+- title: "Data"
+  desc: "App data"
+  contents:
+  - movies
+```
+
+#### Rendered {.unnumbered}
+
+![](images/pkgdown_fun_ref_data.png){width='100%' fig-align='center'}
+
+
+::::
+
+## Deploy {#sec-pkgdown-deploy}
+
 
 The `.github/workflows/pkgdown.yaml` file automates building and deploying our app-package's `pkgdown` site. This workflow file is configured to be triggered by specific GitHub events, build the website using the standard package files, then deploys it to GitHub Pages. Below we'll breakdown the fields and values of the workflow (and their functions):
 
@@ -580,82 +834,25 @@ jobs:
 
 `pkgdown.yml` allows us to maintain and showcase up-to-date package documentation for users, contributors, and collaborators.
 
-### Dependencies 
-
-### `build_site_github_pages()`
-
-``` r
-pkgdown::build_site_github_pages()
-```
-
-``` bash
-11 Cleaning files from old site 11111111111111111111111111111111111111111111111
-== Building pkgdown site ======================================================
-Reading from: '/Users/<username>/<pkgName>'
-Writing to:   '/Users/<username>/<pkgName>/docs'
-```
-
-``` bash
--- Initialising site ----------------------------------------------------------
-Copying '../../..pkgdown/BS3/assets/bootstrap-toc.css' to 'bootstrap-toc.css'
-Copying '../../..pkgdown/BS3/assets/bootstrap-toc.js' to 'bootstrap-toc.js'
-Copying '../../..pkgdown/BS3/assets/docsearch.css' to 'docsearch.css'
-Copying '../../..pkgdown/BS3/assets/docsearch.js' to 'docsearch.js'
-Copying '../../..pkgdown/BS3/assets/link.svg' to 'link.svg'
-Copying '../../..pkgdown/BS3/assets/pkgdown.css' to 'pkgdown.css'
-Copying '../../..pkgdown/BS3/assets/pkgdown.js' to 'pkgdown.js'
-```
-
-``` bash
--- Building home --------------------------------------------------------------
-Writing 'authors.html'
-Writing '404.html'
-```
-
-``` bash
--- Building function reference ------------------------------------------------
-Writing 'reference/index.html'
-Reading 'man/display_type.Rd'
-Writing 'reference/display_type.html'
-Reading 'man/ggp2_movies_app.Rd'
-Writing 'reference/ggp2_movies_app.html'
-Reading 'man/mod_scatter_display_server.Rd'
-Writing 'reference/mod_scatter_display_server.html'
-Reading 'man/mod_scatter_display_ui.Rd'
-Writing 'reference/mod_scatter_display_ui.html'
-Reading 'man/mod_var_input_server.Rd'
-Writing 'reference/mod_var_input_server.html'
-Reading 'man/mod_var_input_ui.Rd'
-Writing 'reference/mod_var_input_ui.html'
-Reading 'man/movies.Rd'
-Writing 'reference/movies.html'
-Reading 'man/movies_app.Rd'
-Writing 'reference/movies_app.html'
-Reading 'man/movies_server.Rd'
-Writing 'reference/movies_server.html'
-Reading 'man/movies_ui.Rd'
-Writing 'reference/movies_ui.html'
-Reading 'man/scatter_plot.Rd'
-Writing 'reference/scatter_plot.html'
-Reading 'man/test_logger.Rd'
-Writing 'reference/test_logger.html'
-```
-
-``` bash
--- Building articles ----------------------------------------------------------
-Writing 'articles/index.html'
-Reading 'vignettes/test-specs.Rmd'
-Writing 'articles/test-specs.html'
-Writing 'sitemap.xml'
-== DONE ======================================================================
-```
-
-``` bash
--- Extra files for GitHub pages ----------------------------------------------
-Writing '.nojekyll'
-```
 
 ### GitHub
+
+Below we can see our previous workflows from @sec-gha-style, @sec-gha-shiny, and @sec-gha-shiny-docker: 
+
+![](images/gha_all_workflows.png){width='100%'}
+
+
+```{r}
+#| label: git_box_17_pkgdown
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  fig_pw = '75%', 
+  branch = "17_pkgdown", 
+  repo = 'moviesApp')
+```
 
 
 
