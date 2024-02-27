@@ -37,7 +37,7 @@ Managing dependencies:
 
 The previous chapter showed how to document the functions with `roxygen2`. In this chapter we'll cover how to manage dependencies in your new app-package.
 
-:::: {.callout-tip collapse='true' appearance='simple'}
+:::: {.callout-tip collapse='true' appearance='default'}
 
 ## [Accessing the code examples]{style='font-weight: bold; font-size: 1.15em;'}
 
@@ -439,6 +439,49 @@ The `movies_app()` is now part of the `moviesApp` namespace
 ::::
 
 
+```{r}
+#| label: co_box_keywords_internal
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g",
+  look = "default", hsize = "1.15", size = "1.10", 
+  header = "Low-key exports with `@keywords internal`",
+  contents = "
+  
+If you'd like a function to be exported, but not listed in your app-package index, you can use `@export` in combination with `@keywords internal`:
+  
+\`\`\` r
+#' @export
+#' 
+#' @keywords internal
+\`\`\`
+  
+For example, adding `@export` and `@keywords internal` to `R/scatter_plot.R` will make the function accessible to users: 
+  
+![](img/keywords_internal_namespace.png){width='80%' fig-align='center'}
+  
+And generate a help file:
+  
+![](img/keywords_internal_rd.png){width='80%' fig-align='center'}
+  
+But if a user were to click on the **Index** for `moviesApp` (at the bottom of the help file):
+  
+![](img/pkg_index.png){width='65%' fig-align='center'}
+  
+`scatter_plot` would not be listed:
+  
+![](img/shinyAppPkg_index.png){width='80%' fig-align='center'}
+  
+Using `@keywords internal` *without* `@export` will result in a helpfile, but the function will only be accessible using `pkg:::fun()` (three colons, not two!).
+  
+  ", 
+  fold = TRUE
+)
+```
+
+
 ### What [`@export`]{style="font-size: 1.05em;"} does
 
 We'll pause here to notice a few things about what `@export` does. After loading, documenting, and installing `moviesApp`, the `NAMESPACE` is updated with `export(movies_app)`, and the **Console** automatically calls `library(moviesApp)`.
@@ -526,7 +569,7 @@ ggplot2::ggplot(data = mtcars,
 :::
 
 ```{r}
-#| label: co_box_exports
+#| label: co_box_accessing_exports
 #| echo: false
 #| results: asis
 #| eval: true
@@ -535,8 +578,7 @@ co_box(
   look = "default", hsize = "1.15", size = "1.10", 
   header = "Accessing add-on package functions",
   contents = "
-
-<br>
+***What happens to add-on/third party functions that are exported from `moviesApp`?***
   
 When a user loads `moviesApp` with `library(moviesApp)`, any add-on/third party package functions used in exports are available to users if they use `pkg::fun()` (or if they load the package themselves with `library()`).", 
   fold = TRUE
@@ -676,8 +718,6 @@ co_box(
   fold = TRUE,
   header = "Accessing non-exported functions", 
   contents = "
-<br>
-
 ***What about functions that _aren't_ exported from `moviesApp`?***
   
 Functions that are not exported (i.e., do not include the `@export` tag) are still accessible after installing and loading a package using the `pkg:::fun()`
@@ -698,52 +738,6 @@ In app-packages, I take the following general approach:
 -   Selectively export modules and/or functions that perform distinct tasks with potentially reusable functionality (i.e., generate specific UI components, perform data processing tasks, etc.).
 
 You'll rarely want to export everything, but it might be helpful if the primary audience for your app-package is other developers within your organization. See the **Low-key `@export`s with `@keywords internal`** box below for exporting functions without including them in your package index.
-
-
-```{r}
-#| label: co_box_keywords_internal
-#| echo: false
-#| results: asis
-#| eval: true
-co_box(
-  color = "g",
-  look = "default", hsize = "1.15", size = "1.10", 
-  header = "Low-key exports with `@keywords internal`",
-  contents = "
-  
-<br>
-
-  
-  If you'd like function to be exported, but not listed in the package index, you can combine `@export` with `@keywords internal`. These should be used in combination, 
-  
-  \`\`\` r
-  #' @export
-  #' 
-  #' @keywords internal
-  \`\`\`
-  
-  For example, adding `@export` and `@keywords internal` to `R/scatter_plot.R` will make the function accessible to users: 
-  
-  ![](img/keywords_internal_namespace.png){width='80%' fig-align='center'}
-  
-  And include the help file:
-  
-  ![](img/keywords_internal_rd.png){width='80%' fig-align='center'}
-  
-  However, if a user were to click on the **Index** for `moviesApp` (at the bottom of the help file)
-  
-  ![](img/pkg_index.png){width='65%' fig-align='center'}
-  
-  `scatter_plot` is not listed:
-  
-  ![](img/shinyAppPkg_index.png){width='80%' fig-align='center'}
-  
-  
-  
-  ", 
-  fold = TRUE
-)
-```
 
 ## Imports {#sec-depends-imports}
 
