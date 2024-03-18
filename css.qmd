@@ -10,20 +10,29 @@ source("_common.R")
 ```
 
 ```{r}
-#| label: co_box_dev
+#| label: co_box_tldr
 #| echo: false
 #| results: asis
 #| eval: true
 co_box(
-  color = "y", 
-  header = "Caution",
-  contents = "The contents for section are being revised. Thank you for your patience."
+  color = "b",
+  look = "default", 
+  hsize = "1.15", 
+  size = "1.10",
+  header = "TLDR &emsp; CSS...",
+  fold = TRUE,
+  contents = "
+  
+CSS...
+  
+
+  "
 )
 ```
 
 ---
 
-Cascading Style Sheets (CSS) is the stylesheet language for describing the presentation of HTML or XML documents. CSS defines how 'elements' should be displayed (layouts, colors, fonts, etc.). In Shiny app-packages, CSS can play a crucial role in customizing the appearance and enhancing the UI of an applications.
+Cascading Style Sheets (CSS) is a stylesheet language that serves as the backbone of web design, providing the tools to make your Shiny applications functional and visually engaging. This introduction aims to demystify CSS, guiding you through its fundamentals and illustrating how it can enhance the aesthetics and user experience of your Shiny apps embedded in R packages.
 
 :::: {.callout-tip collapse='true' appearance='default'}
 
@@ -52,7 +61,7 @@ Review the chapters in each section:
 #| warning: false
 #| collapse: true
 library(shinypak)
-list_apps(regex = 'css')
+list_apps(regex = '^18')
 ```
 
 Launch an app with `launch()`
@@ -60,7 +69,7 @@ Launch an app with `launch()`
 ```{r}
 #| code-fold: false 
 #| eval: false
-launch(app = "18_css")
+launch(app = "18.1_css-inline")
 ```
 
 Download an app with `get_app()`
@@ -68,12 +77,425 @@ Download an app with `get_app()`
 ```{r}
 #| code-fold: false 
 #| eval: false
-get_app(app = "18_css")
+get_app(app = "18.1_css-inline")
 ```
 
 ::: 
 
 ::::
+
+## What is CSS? {.unnumbered}
+
+CSS is a powerful tool used to define the presentation of a web document written in HTML or XML (including various XML languages like SVG or XHTML). CSS describes how elements should be rendered on screen, paper, speech, or other media, which is particularly relevant to Shiny apps, as Shiny utilizes HTML to render UI elements. 
+
+```{r}
+#| label: co_box_css
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b",
+  look = "default", hsize = "1.15", size = "1.10", 
+  header = "The problem CSS solved", fold = TRUE,
+  contents = "
+Originally, HTML was designed solely to describe web content, not to format pages. However, the introduction of formatting tags and attributes in HTML 3.2 complicated web development, making the creation of large websites costly and time-consuming. To address this, the W3C introduced CSS to separate style from HTML content.
+  ")
+```
+
+CSS syntax is typically a series of statements comprised of **selectors** and **declarations**. The **selectors** tell the HTML what to style and include names similar to HTML tags (`h1`, `h2`) but can also include more complex classes (i.e., `custom-sidebar`). The **declaration** includes **properties** and **values**: **properties** are style attributes like `color`, `text-align`, or `margin`, and the **values** are the settings for each property.
+
+With CSS, you can control your Shiny app's layout, color, font, and overall visual appearance, making it an indispensable tool for developers looking to customize their applications.
+
+### Why use CSS in app-packages? {.unnumbered}
+
+App-packages are essentially bundles of various components, including UI elements, server logic, and data. The inclusion of CSS in these packages serves several purposes:
+
+- **Customization**: CSS allows you to go beyond the default styles provided by Shiny, offering the freedom to personalize your app’s look and feel.
+
+- **Consistency**: Using CSS, you can maintain visual consistency across different parts of your app or multiple apps within the same package.
+
+- **Efficiency**: CSS can help reduce the complexity of your app's UI code by separating content (HTML) from presentation (CSS). This separation makes your code cleaner and easier to maintain.
+
+### Incorporating CSS {.unnumbered}
+
+There are three ways to include CSS in your Shiny apps:
+
+1. **Inline**: inline CSS can be used directly within the HTML elements using the `style` attribute and is suitable for quick, small-scale styling.
+
+2. **Internal**: This method uses the `tags$style()` function within the app's UI definition and is ideal for app-specific styles that won't be reused.
+
+3. **External Files**: This approach references external CSS files stored within the R package. A CSS file is best for extensive styling that applies to multiple apps or for sharing styles across different projects.
+
+We'll demonstrate each of these methods in the application launched with the `movies_app()` function.
+
+## Inline CSS
+
+Lets start at the top of the UI and work our way down. The shiny package exports a collection of HTML tags in the `shiny::tags` list:
+
+```{r}
+#| label: git_launch_18.1_css-inline
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  branch = "18.1_css-inline")
+```
+
+```{r}
+#| code-fold: true 
+#| code-summary: 'show/hide HTML tags'
+#| collapse: true
+names(shiny::tags)
+```
+
+All of the objects in the `shiny::tags` list are functions that generate HTML: 
+
+```{r}
+#| code-fold: false 
+#| code-summary: 'show/hide div tags'
+#| eval: false
+shiny::tags$div()
+```
+
+``` bash
+<div></div>
+```
+
+
+We'll use `tags$h2()` inside our app's `titlePanel()` to add the following CSS directly to the `style` argument:
+
+```{r}
+#| code-fold: false
+#| eval: false
+tags$h2( # <1>
+  style = "color: #02577A; text-align: center;", # <2>
+  "Welcome to moviesApp!") # <3>
+```
+1. `h2` selector defined with `shiny::tags`   
+2. CSS styling with `style` argument   
+3. Text to be styled   
+
+In this example, the `h2` text elements within the call to `tags$h2()` will have their color set to `#02577A` and be `center`-aligned. If we pass this function to the **Console**, we see the following HTML: 
+
+```HTML
+<h2 style="color: #02577A; text-align: center;"Welcome to moviesApp!</h2>
+```
+
+The CSS statement above consists of a single selector and declaration with two properties and accompanying values:[^img-external]
+
+![CSS Syntax](images/css_diagram.png){width='80%' fig-align='center'}
+
+As we can see, the `<h2>` HTML tag includes the `style` argument with the declaration properties and values. The updated text in our UI title panel is below:
+
+[^img-external]: I've also included the Shiny icon using `shiny::img()`, `addResourcePath()`, and `system.file()` we covered back in @sec-external-add-resource-path. 
+
+![Rendered inline CSS for `tags$h2()`](images/css_inline.png){width='90%' fig-align='center'}
+
+
+## Internal CSS
+
+If we'd like to include more complicated styling, we can add this syntax internally using `tags$style()`. Anything you define within `tags$style()` will be applied as CSS styling rules to the HTML elements of your app. 
+
+```{r}
+#| label: git_launch_18.2_css-internal
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  branch = "18.2_css-internal")
+```
+
+We'll define a custom style for a few elements in a new `custom-sidebar` class selector. **Class selectors are used to apply the same styling rules to any HTML element that includes the specified class name in its class attribute.**
+
+We'll define and set the background color to a light blue, gray text, and add a comfortable amount of space around the content in `custom-sidebar` below:
+
+:::{layout="[60,40]" layout-valign="center"}
+
+- **`.custom-sidebar`**: The period (`.`) before the name indicates that it is a class selector in CSS. 
+
+``` r
+tags$style("
+    .custom-sidebar
+  ")
+```
+
+:::
+
+:::{layout="[60,40]" layout-valign="center"}
+
+- **`{ ... }`**: Inside the style block, we define a CSS rule for elements that have a class attribute of `custom-sidebar`. 
+
+``` r
+tags$style("
+    .custom-sidebar {
+      ...
+    }")
+```
+
+:::
+
+:::{layout="[60,40]" layout-valign="center"}
+
+- **`background-color: #ecfafd;`**: This CSS property sets the background color of the `.custom-sidebar` elements using a hexadecimal code (`#ecfafd`), which is a light blue in this case.[^hex-codes]
+
+``` r
+tags$style("
+    .custom-sidebar {
+      background-color: #ecfafd;
+    }")
+```
+
+:::
+
+[^hex-codes]: [Hex codes](https://en.wikipedia.org/wiki/Web_colors) are a way of specifying colors in web design and can represent millions of colors by combining different levels of red, green, and blue.
+
+:::{layout="[60,40]" layout-valign="center"}
+
+- **`color: #696969;`**: This property sets the `color` of the text inside the `.custom-sidebar` elements to a shade of gray.
+
+``` r
+tags$style("
+    .custom-sidebar {
+      background-color: #ecfafd;
+      color: #696969;
+    }")
+```
+
+:::
+
+:::{layout="[60,40]" layout-valign="center"}
+
+- **`padding: 10px;`**: Padding is the breathing room between the content of the `.custom-sidebar` element and its border (10 pixels on all sides). 
+
+``` r
+tags$style("
+    .custom-sidebar {
+      background-color: #ecfafd;
+      color: #696969;
+      padding: 10px;
+    }")
+```
+
+:::
+
+When we want to use the `.custom-sidebar` styling, we can specify it's name in the class argument of the UI function (like `sidebarPanel()` below):
+
+```{r}
+#| code-fold: false
+#| eval: false
+sidebarLayout(
+    sidebarPanel(
+        class = "custom-sidebar", # <1>
+        mod_var_input_ui("vars")
+      ),
+      mainPanel(
+        mod_scatter_display_ui("plot")
+    )
+)
+```
+1. Use the CSS styling from `tags$style()`
+
+After loading our package and launching our app, we see the updated sidebar in the UI:
+
+![Internal CSS in the UI with `tags$style()`](images/internal_css.png)
+
+## External CSS files
+
+**In app-packages, it's generally better to use external CSS files for reproducibility and ease of maintenance.** We'll create a file named `my_styles.css` to hold all the custom styles we want to apply to our app and store in the `inst/www` folder (along with any images and external resources).
+
+```{r}
+#| label: git_launch_18.3_css-file
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  branch = "18.3_css-file")
+```
+
+
+``` bash
+moviesApp/
+  inst/
+    └── www
+        ├── bootstrap.png
+        ├── my_styles.css
+        └── shiny.png
+```
+
+The contents of `my_styles.css` are described below:
+
+#### Header 
+
+In the previous section, the image tag had CSS styling for the `margin`[^margin] property *inside* the `titlePanel()`. We can move this into the `.custom-header` selector class and set the margins (along with other properties like `font-size` and `font-weight`). 
+
+[^margin]: `margin: 10px 10px;` if two values are listed for `margin`, this translates to '*top/bottom margins are `10px`, right/left margins are `10px`*.'
+
+:::{layout="[60,40]" layout-valign="top"}
+
+```CSS
+.custom-header {
+    background-color: #8000ff;
+    color: #f0ff07;
+    padding: 10px;
+    text-align: center;
+    font-size: 32px;
+    font-weight: bold;
+    margin: 10px 10px;
+}
+```
+
+
+``` r
+div(class = "custom-header",
+  img(
+    src = "www/shiny.png",
+    height = 70,
+    width = 65,
+    align = "center"
+  ),
+  "Welcome to moviesApp!"
+)
+```
+
+:::
+
+Creating a `custom-header` class selectors removes the need to use the `titlePanel()`--we can replace it with a `div()`. Inside `img()`, we can still position and size attributes.
+
+![CSS custom header](images/css_header.png){width='90%'}
+
+#### Text
+
+:::{layout="[60,40]" layout-valign="top"}
+
+If we have HTML elements that we'd like to style with more than one class selector, we can provide multiple items to the `class` argument. For example, suppose `custom-text` has properties and values we'd like to use in future class selectors.
+
+```CSS
+.custom-text {
+    font-size: 18px;
+    word-spacing: 1.5px;
+    font-weight: bold;
+}
+```
+
+:::
+
+#### Sidebar  
+
+In the sidebar, we'll change the background and text color, but also provide the styling from both `custom-sidebar` and `custom-text`:
+
+:::{layout="[60,40]" layout-valign="top"}
+
+```CSS
+.custom-sidebar {
+    background-color: #ff00a9;
+    color: #a5ff0b;
+    padding: 10px;
+}
+```
+
+
+``` r
+sidebarLayout(
+  sidebarPanel(
+      class = c("custom-sidebar", 
+                "custom-text"),
+      mod_var_input_ui("vars")
+  )
+```
+
+:::
+
+![CSS custom](images/css_sidebar.png){width='90%'}
+
+#### Main
+
+The main panel will also have custom colors, but we can provide additional text properties (along with `custom-text`).
+
+:::{layout="[60,40]" layout-valign="top"}
+
+```CSS
+.custom-main {
+    background-color: #00ddff;
+    color: #ffffff;
+    font-style: italic;
+    padding: 15px;
+}
+```
+
+
+``` r
+mainPanel(
+    class = c("custom-main", 
+              "custom-text"),
+    mod_scatter_display_ui("plot")
+)
+```
+
+:::
+
+
+![CSS external file](images/external_file_css.png){width='90%'}
+
+
+## Referencing CSS files
+
+In your Shiny application's UI definition, reference the CSS file using the `addResourcePath()` and `tags$link()` functions.[^inst-ref]
+
+In `movies_ui()`, this looks like:
+
+``` r
+movies_ui <- function(bslib = FALSE) {
+addResourcePath(
+    prefix = "www",
+    directoryPath = system.file("www", package = "moviesApp")
+    # The rest of the UI app function goes here
+```
+
+``` r
+tagList(
+    fluidPage(
+      tags$link(
+        rel = "stylesheet", 
+        type = "text/css", 
+        href = "www/my_styles.css"
+        )
+        # The rest of the UI app function goes here
+```
+
+[^inst-ref]: We covered using the `inst/` folder with `system.file()` in the @sec-external-files chapter. 
+
+Since the app is inside an R package, the `system.file()` function will build a path to the installed version of your package when the application is run/deployed.
+
+## Recap {.unnumbered}
+
+Integrating CSS into your R packages containing Shiny apps opens a world of possibilities for customization and enhancement. By understanding the basics of CSS and applying best practices, you can significantly improve the visual appeal and user experience of your Shiny applications. Remember, the goal is not just to make your apps work well but also to make them look great and provide an engaging experience for the end-user.
+
+```{r}
+#| label: co_box_css_tips
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g",
+  look = "default", hsize = "1.15", size = "1.10",
+  fold = FALSE,
+  header = "Tips when using CSS in your Shiny apps",
+  contents = "
+
+* **Keep it organized**: Whether you're using inline, internal, or external CSS, keeping your styles organized is crucial for maintenance and future updates.
+
+* **Use meaningful names**: When naming CSS classes or IDs, use names that reflect the purpose or content of the elements they style.
+
+* **Optimize for readability**: Ensure your CSS is easily read using comments, consistent indentation, and spacing.
+
+* **Test across browsers**: Different web browsers can render CSS differently. Test your Shiny app across multiple browsers to ensure a consistent appearance.
+
+")
+```
+
 
 <!--
 https://www.w3schools.com/css/css_intro.asp
