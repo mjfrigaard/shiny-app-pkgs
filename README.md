@@ -2,7 +2,7 @@
 
 <a href="https://github.com/mjfrigaard/shiny-app-pkgs">
 <!-- Please provide path to your logo here -->
-<img src="images/shiny-app-pkgs_logo.png" alt="Logo" width="50%" height="50%"/>
+<img src="images/sap_icon.png" alt="Logo" width="50%" height="50%"/>
 </a>
 
 </h1>
@@ -43,7 +43,7 @@ Shiny App-Packages covers how to create a Shiny application as an R package.
 > questions -- just the ones relevant to your project.
 -->
 
-<details>
+<details open>
 
 <summary>Screenshots</summary>
 
@@ -55,9 +55,9 @@ Shiny App-Packages covers how to create a Shiny application as an R package.
 -->
  
 
-|     Developing apps in inst/       |      Handling dependencies         |
+|     Testing Shiny apps             |      Shiny frameworks              |
 |:----------------------------------:|:----------------------------------:|
-| <img src="images/screen_shot_01.png" title="Developing apps in inst/" width="100%"/> | <img src="images/screen_shot_02.png" title="Handling dependencies" width="100%"/> |
+| <img src="images/screen_shot_01.png" title="Developing apps in inst/" width="100%"/> | <img src="images/screen_shot_02.png" title="golem app-packages" width="100%"/> |
 
 </details>
 
@@ -137,6 +137,22 @@ else and are **greatly appreciated**.
 
 The original setup of this repository is by
 [Martin Frigaard](https://github.com/mjfrigaard).
+
+### Acknowledgments
+
+This book is the result of multiple discussions with 1) Shiny developers who were new to writing R packages, 2) R package authors who were learning Shiny development and testing, and 3) new R users who wanted to build a robust and scalable application. Shiny App-Packages wouldn't have been possible without the contributors below (and I am deeply grateful for all of their help!). 
+
+- [Henry Bernreuter](https://github.com/HenryBernreuter) & [Elizabeth Marshallsay](https://www.youtube.com/@lilybuguk) for the initial discussions that created the outline for this book  
+- [Andrew Bates](https://github.com/asbates) for being an exemplary developer and professional, quietly building outstanding UIs, applications, and packages 
+- [Eric Simms](https://github.com/esimms999) for asking so many great questions, reviewing chapters, and giving phenomenal feedback  
+- [Eric Nantz](https://github.com/rpodcast)[^nantz-linkedin] for his [R podcast](https://r-podcast.org/), [Shiny developer series](https://shinydevseries.com/), [workshops](https://posit-conf-2023.github.io/shiny-r-prod/), and everything else he does for the Shiny community   
+- [Philip Bowsher](https://github.com/philbowsher) for everything he does for the R/Pharma conference and community  
+- [Ted Laderas](https://github.com/laderast) for his excellent [gRadual intRoduction to Shiny](https://laderast.github.io/gradual_shiny/) course and insightful blog posts  
+- [Jennifer Bryan](https://github.com/jennybc) and [Hadley Wickham](https://github.com/hadley) for their posit::conf(23) [package development masterclass workshop.](https://github.com/posit-conf-2023/pkg-dev-masterclass) 
+- [Maya Gans](https://github.com/MayaGans) for having multiple conversations and Shiny modules and package dependencies
+- [Leon Samson](https://github.com/LDSamson) for his feedback on the testing chapters
+
+[^nantz-linkedin]: Eric's [LinkedIn](https://www.linkedin.com/in/eric-nantz-6621617)
 
 For a full list of all authors and contributors, see [the contributors
 page](https://github.com/mjfrigaard/shiny-app-pkgs/contributors).
