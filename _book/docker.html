@@ -2,13 +2,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.4.549">
+<meta name="generator" content="quarto-1.5.28">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="description" content="Getting your app into an R package">
 
-<title>Shiny App-Packages - 15&nbsp; Docker</title>
+<title>Shiny App-Packages – 15&nbsp; Docker</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -582,7 +582,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
 <div class="quarto-figure quarto-figure-right">
 <figure class="figure">
-<p><img src="images/it-works-on-my-machine-meme.png" class="img-fluid quarto-figure quarto-figure-right figure-img" style="width:60.0%"></p>
+<p><img src="images/it-works-on-my-machine-meme.png" class="img-fluid figure-img" style="width:60.0%"></p>
 <figcaption>Common problem when shipping apps</figcaption>
 </figure>
 </div>
@@ -593,7 +593,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="quarto-layout-cell" style="flex-basis: 40.0%;justify-content: flex-start;">
 <div class="quarto-figure quarto-figure-right">
 <figure class="figure">
-<p><img src="images/docker-icon.png" class="img-fluid quarto-figure quarto-figure-right figure-img" style="width:60.0%"></p>
+<p><img src="images/docker-icon.png" class="img-fluid figure-img" style="width:60.0%"></p>
 <figcaption>Docker Whale</figcaption>
 </figure>
 </div>
@@ -619,7 +619,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>After installation, Docker Desktop will initially show no active images/containers:<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a></p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="images/docker_desktop.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%"></p>
+<p><img src="images/docker_desktop.png" class="img-fluid figure-img" style="width:100.0%"></p>
 <figcaption>Docker Desktop Containers (Mac)</figcaption>
 </figure>
 </div>
@@ -849,7 +849,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Each Docker container is created from the image (which is specified in the <code>Dockerfile</code>). The image serves as a blueprint for the containers, and we could create multiple containers from the same image:</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="images/docker_run_containers.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%"></p>
+<p><img src="images/docker_run_containers.png" class="img-fluid figure-img" style="width:100.0%"></p>
 <figcaption>Running and stopping Docker containers</figcaption>
 </figure>
 </div>
@@ -1053,18 +1053,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }
     return false;
   }
-  const clipboard = new window.ClipboardJS('.code-copy-button', {
-    text: function(trigger) {
-      const codeEl = trigger.previousElementSibling.cloneNode(true);
-      for (const childEl of codeEl.children) {
-        if (isCodeAnnotation(childEl)) {
-          childEl.remove();
-        }
-      }
-      return codeEl.innerText;
-    }
-  });
-  clipboard.on('success', function(e) {
+  const onCopySuccess = function(e) {
     // button target
     const button = e.trigger;
     // don't keep focus
@@ -1096,7 +1085,47 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }, 1000);
     // clear code selection
     e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
   });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp("https:\/\/mjfrigaard\.github\.io\/shiny-app-pkgs\/");
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
   function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
     const config = {
       allowHTML: true,
@@ -1131,7 +1160,11 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       try { href = new URL(href).hash; } catch {}
       const id = href.replace(/^#\/?/, "");
       const note = window.document.getElementById(id);
-      return note.innerHTML;
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
     });
   }
   const xrefs = window.document.querySelectorAll('a.quarto-xref');
@@ -1446,12 +1479,12 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./deploy.html" class="pagination-link  aria-label=" deploy"="">
+      <a href="./deploy.html" class="pagination-link" aria-label="Deploy">
         <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Deploy</span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./gha.html" class="pagination-link" aria-label="<span class='chapter-number'>16</span>&nbsp; <span class='chapter-title'>GitHub Actions</span>">
+      <a href="./gha.html" class="pagination-link" aria-label="GitHub Actions">
         <span class="nav-page-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">GitHub Actions</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
