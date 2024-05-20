@@ -21,7 +21,46 @@ co_box(
 )
 ```
 
-This chapter will cover how to include JavaScript code in your Shiny app-package. If you'd like to learn JavaScript, I recommend [JavaScript for R](https://book.javascript-for-r.com/) and [JavaScript for Data Science](https://third-bit.com/js4ds/). If you're looking for Shiny-focused intro to JavaScript, I recommend [Outstanding User Interfaces with Shiny](https://unleash-shiny.rinterface.com/).
+This chapter will cover how to include JavaScript in your Shiny app-package. Learning a little JavaScript is the quickest way to improve the quality of your Shiny apps (most of the code in a rendered Shiny app _is_ JavaScript). We'll only cover a few examples here, but I've included links for more resources in the callout box below. 
+
+```{r}
+#| label: co_box_js
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b", 
+  header = "JavaScript Resources", fold = TRUE,
+  contents = "
+Beginners:
+  
++ [JavaScript Basics](https://developer.mozilla.org/en-US/docs/Learn/Getting_started_with_the_web/JavaScript_basics) course from MDN web docs
+  
+R-flavored JavaScript:
+  
+  + [JavaScript for R](https://book.javascript-for-r.com/)
+  + [JavaScript for Data Science](https://third-bit.com/js4ds/) 
+  
+Shiny-focused JavaScript:
+  
+  + [Outstanding User Interfaces with Shiny](https://unleash-shiny.rinterface.com/).")
+```
+
+## R & JavaScript {.unnumbered}
+
+R and JavaScript have different strengths--R is more accessible for anyone familiar with statistics and math, while JavaScript's syntax will be more recognizable to those with experience programming in languages like Java and C. JavaScript has unique behaviors (like [asynchronous programming](https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Asynchronous/Introducing) and [dynamic typing](https://developer.mozilla.org/en-US/docs/Glossary/Dynamic_typing)) which can make it challenging, but it's widely taught due to its essential role in web technologies.
+
+R tends to be on the slower end when compared to other languages, but it works well for stats and it can be sped up with packages (and external languages like C++). JavaScript is fast, especially in web browsers and [Node.js](https://nodejs.org/en), thanks to advanced optimization in modern JavaScript engines like [V8](https://v8.dev/). 
+
+Both languages have strong communities and ecosystems. R is popular among academics and data professionals [^r-ecosystem], while JavaScript has a massive developer community due to its role in web development and supported by many frameworks and libraries.[^js-ecosystem]
+
+R is often developed in IDEs like [Posit Workbench](https://posit.co/products/enterprise/workbench/) or [Jupyter Notebooks](https://jupyter.org/), while JavaScript is commonly used with text editors such as [Visual Studio Code](https://code.visualstudio.com/), [WebStorm](https://www.jetbrains.com/webstorm/), and along with tools like [Babel](https://babeljs.io/) and [Webpack](https://webpack.js.org/) for modern JS development.
+
+To recap: R is well suited for statistical analysis and data science, while JavaScript is used for both client and server-side web development, making it useful for creating interactive web pages, as well as mobile and desktop applications.
+
+[^r-ecosystem]: R is favored in academic circles and among data professionals, and it has many packages, such as [`ggplot2`](https://ggplot2.tidyverse.org/) for data visualization and [`dplyr`](https://dplyr.tidyverse.org/) for data manipulation.
+
+[^js-ecosystem]: JavaScript commands a massive developer community due to its pivotal role in web development, supported by numerous frameworks and libraries like [React](https://react.dev/), [Angular](https://angularjs.org/), and [Vue.js](https://vuejs.org/) that facilitate web development tasks.
 
 :::: {.callout-tip collapse='true' appearance='default'}
 
@@ -58,7 +97,7 @@ Launch an app with `launch()`
 ```{r}
 #| code-fold: false 
 #| eval: false
-launch(app = "19_js")
+launch(app = "19.1_js-htmltools")
 ```
 
 Download an app with `get_app()`
@@ -73,9 +112,456 @@ get_app(app = "19_js")
 
 ::::
 
-## Syntax 
+## JavaScript & `htmltools`
 
-- **R**: [R's](https://en.wikipedia.org/wiki/R_(programming_language)) object-oriented, functional programming syntax is designed for analysis and statistics with a focus on ease of use for graphics and data manipulation. Functions like `lm()` (linear modeling), `ggplot()` (graphics), and those found in other `tidyverse` packages (`dplyr`, `tidyr`, etc.) support *vectorized operations*, meaning they're operations are applied to an entire vector (or columns in a dataset) succinctly, which is ideal for numerical computations and analysis or tabular data.
+The first example we'll use is covered in the Shiny documentation and uses the `htmlDependency()` function from the `htmltools` package.[^shiny-js-html-depends] `htmltools` is maintained by Posit/RStudio, and it's one of the underlying workhorses of Shiny, containing "*tools for creating, manipulating, and writing HTML from R.*"
 
-- **JavaScript**: [JavaScript](https://en.wikipedia.org/wiki/JavaScript) follows the [ECMAScript](https://tc39.es/ecma262/) standard and supports object-oriented, imperative, and functional programming paradigms. Its syntax allows for complex application development, including closures, callbacks, promises (for asynchronous operations), and, more recently, async/await for better syntax in asynchronous code. JavaScript's dynamic typing and first-class functions make it highly flexible for various programming tasks beyond web development.
+`htmlDependency()` is typically used within a function and included in the standalone app function with the following arguments: 
+
+:::{layout="[50,50]" layout-valign="top"}
+
+`name`
+
+The name of JavaScript library.
+
+:::
+
+:::{layout="[50,50]" layout-valign="top"}
+
+`version`
+
+The version of the library or resource we are including.
+
+:::
+
+
+:::{layout="[50,50]" layout-valign="top"}
+
+`src`
+
+The location of the JavaScript script (in the `inst/` folder).
+
+:::
+
+
+:::{layout="[50,50]" layout-valign="top"}
+
+`script` 
+
+The name of the script file (or files).
+
+:::
+
+### Alerts {.unnumbered}
+
+We'll define a simple JavaScript file below, `alert.js`:
+
+```{js}
+#| eval: false
+#| code-fold: false
+document.addEventListener("DOMContentLoaded", function() {
+  alert("Shiny App with JavaScript!");
+});
+```
+
+```{r}
+#| label: git_box_19.1_js-htmltools
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(contents = "launch",
+  fig_pw = '65%', 
+  branch = "19.1_js-htmltools", 
+  repo = 'moviesApp')
+```
+
+Below is a `createJsDependency()` function with the arguments described above: 
+
+```{r}
+#| eval: false
+#| code-fold: false
+#' Create JavaScript Dependency for Shiny App
+#'
+#' This function creates an `htmltools` dependency object that includes a 
+#' JavaScript file. 
+#' 
+#' @return A dependency object that can be included in a Shiny app's UI.
+#'
+#' @export
+#' 
+createJsDependency <- function() {
+  htmltools::htmlDependency(
+    name = "my-js",
+    version = "1.0",
+    src = c(file = system.file("js", package = "moviesApp")),
+    script = "alert.js"
+  )
+}
+```
+
+Note the `name` and `version` values are arbitrary and are chosen for illustrative purposes. The `createJsDependency()` is placed in `R/` with the other package functions and `alert.js` is placed in `inst/js`:
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+├── R
+│   └── createJsDependency.R
+└── inst/
+     └── js/
+          └── alert.js
+```
+
+We can use `createJsDependency()` inside the `fluidPage()` function in `movies_ui()`: 
+
+``` r
+  fluidPage(
+    theme = shinythemes::shinytheme("spacelab"),
+    # Include the JavaScript dependency
+    createJsDependency(),
+    titlePanel(
+```
+
+After loading, documenting, and building our app-package, we'll launch to check the new functionality:
+
+```{r}
+#| label: hot_key_intro
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key(fun = "all")
+```
+
+
+```{r}
+#| eval: false 
+#| code-fold: false
+library(moviesApp)
+movies_app(run = 'b')
+```
+
+
+![JavaScript alert](img/js_alert.png){fig-align='center' width='80%'}
+
+This setup encapsulates the dependency definition with the app's UI definition, ensuring the JavaScript is loaded every time the app is started.
+
+### Bookmarking {.unnumbered}
+
+Our next example has been adapted from the Shiny examples GitHub repo.[^shiny-examples] We're going to use `reactR` package to add bookmarking functionality to our Movies app. I've placed a small development version of this application in the `inst/` folder:
+
+```{bash}
+#| eval: false 
+#| echo: true
+#| code-fold: false
+inst/
+  └──js-app/
+        ├── R/
+        │   ├── mod_text_input.R
+        │   ├── mod_text_output.R
+        │   └── simpleTextInput.R
+        ├── app.R
+        └── js/
+            └── input.js
+
+3 directories, 5 files
+```
+
+```{r}
+#| label: git_box_19.2_js-react
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(contents = "launch",
+  fig_pw = '65%', 
+  branch = "19.2_js-react", 
+  repo = 'moviesApp')
+```
+
+The js-app folder contains two modules (`mod_text_input` and `mod_text_output`):
+
+```{r}
+#| code-summary: 'js-app modules'
+#| eval: false
+# Text Input Module UI ----
+mod_text_input_ui <- function(id) {
+  ns <- NS(id)
+  tags$p(simpleTextInput(ns("simpleTextInput")))
+}
+
+# Text Input Module Server ----
+mod_text_input_server <- function(id) {
+  moduleServer(id, function(input, output, session) {
+    return(
+      reactive(input$simpleTextInput)
+      )
+  })
+}
+# Text Output Module UI ----
+mod_text_output_ui <- function(id) {
+  ns <- NS(id)
+  textOutput(ns("simpleTextOutput"))
+}
+
+# Text Output Module Server ----
+mod_text_output_server <- function(id, text) {
+  moduleServer(id, function(input, output, session) {
+    output$simpleTextOutput <- renderText(text())
+  })
+}
+```
+
+The modules communicate with a utility function, `simpleTextInput()`:
+
+```{r}
+#| code-summary: 'js-app utility function'
+#| eval: false
+simpleTextInput <- function(inputId, default = "") {
+  createReactShinyInput(
+    inputId = inputId,
+    class = 'simple-text-input',
+    dependencies = htmltools::htmlDependency(
+      'simple-text-input',
+      '1.0.0',
+      src = file.path(getwd(), "js"), # <1> 
+      script = 'input.js',
+      all_files = FALSE
+    ),
+    default = default,
+    container = tags$span
+  )
+}
+```
+1. note we aren't using `system.file()` here because we're referencing this script locally
+
+`simpleTextInput` utilizes the React component by calling `createReactShinyInput`. It specifies the input ID, the CSS class, and the dependencies with `htmltools::htmlDependency()` (including the path to the `input.js` script) to return a React component embedded within Shiny's UI framework.
+
+The `js/` folder contains the `input.js` script, which we'll describe next.
+
+#### Defining a React Component {.unnumbered}
+
+Let's examine how these files work together to create the bookmarking functionality. The `input.js` JavaScript file contains a function designed to integrate React components into an R Shiny application. It utilizes the `reactR` package, which bridges R and React.js by enabling the use of React components as Shiny inputs.
+
+The JavaScript function `SimpleTextInput` in `input.js` is defined to create a simple text input field. This functional React component receives `props` (properties) from the parent component or from Shiny:
+
+``` js
+(function() {
+  function SimpleTextInput(props) {
+  }
+}
+```
+   
+#### Create React Element {.unnumbered}
+
+**React Component Structure**: The component uses `React.createElement` to create an `<input>` element. This method takes at least three arguments:
+   
+- The type of the element (`'input'` in this case).
+
+    ``` js
+    (function() {
+      function SimpleTextInput(props) {
+        return React.createElement('input', {
+    
+        });
+      }
+    ```
+
+- Properties (`props`) of the element, which include:
+
+  - `value` is the current value of the input, which is provided by `props.value`.
+  
+    ``` js
+    (function() {
+      function SimpleTextInput(props) {
+        return React.createElement('input', {
+          value: props.value,
+    
+        });
+      }
+    ```
+ 
+  - `onChange`is a function that updates the state (in Shiny) whenever the `input` changes. This function captures the new value from the `input` field and passes it back to Shiny via `props.setValue`.
+       
+    ``` js
+    (function() {
+      function SimpleTextInput(props) {
+        return React.createElement('input', {
+          value: props.value,
+          onChange: function(e) {
+            props.setValue(e.target.value);
+          }
+        });
+      }
+    ```
+   
+#### Integration with Shiny {.unnumbered}
+
+The `reactR.reactShinyInput` method is called to bind the `SimpleTextInput` React component to Shiny. This binding process includes:
+   
+  - A CSS selector (`'.simple-text-input'`) that identifies the HTML element in the Shiny UI to be replaced by this React component.
+  
+    ``` js
+      reactR.reactShinyInput('.simple-text-input');
+    ```
+  
+  - A namespace (`'shiny.examples'`), typically used for managing JavaScript namespaces in larger applications.
+  
+    ``` js
+      reactR.reactShinyInput('.simple-text-input', 'shiny.examples');
+    ```
+     
+  - Passing the `SimpleTextInput` function itself, which defines the behavior and structure of the React component.
+    
+    ``` js
+      reactR.reactShinyInput('.simple-text-input', 'shiny.examples', SimpleTextInput);
+    ))();
+    ```
+    
+The final `input.js` script in `inst/js-app/` is below: 
+
+``` js
+(function() {
+  function SimpleTextInput(props) {
+    return React.createElement('input', {
+      value: props.value,
+      onChange: function(e) {
+        props.setValue(e.target.value);
+      }
+    });
+  }
+  reactR.reactShinyInput('.simple-text-input', 'shiny.examples', SimpleTextInput);
+})();
+```
+
+#### Usage in `app.R` {.unnumbered}
+
+In the R Shiny application (`app.R`), we include the `bookmarkButton()` in the `bslib::sidebar()` with the input module, and place the output module in the `bslib::card()`:
+
+```{r}
+#| code-summary: 'js-app app.R file'
+#| code-fold: show
+#| eval: false
+# packages
+library(shiny)
+library(reactR)
+library(htmltools)
+library(bslib)
+  
+# app ui
+ui <- function(request) {
+  bslib::page_fillable(
+    h1("MoviesApp Bookmark Demo"),
+    bslib::layout_sidebar(
+      sidebar =
+        bslib::sidebar(
+          tags$h3("Text Input"),
+          mod_text_input_ui("txt_in"), # <1>
+          tags$p(
+            bookmarkButton()
+            )
+        ),
+      bslib::card(
+        full_screen = TRUE,
+        bslib::card_header(
+          tags$h3("Text Output")
+        ),
+        mod_text_output_ui("txt_out"),
+        bslib::card_footer(
+          tags$em(
+            "Adapted from ",
+            tags$a(
+              href = "https://github.com/rstudio/shiny-examples/tree/main/151-reactr-input",
+              "Shiny-examples"
+            )
+          )
+        )
+      )
+    )
+  )
+}
+  
+# app server
+server <- function(input, output, session) {
+  
+  text_val <- mod_text_input_server("txt_in") # <2>
+  
+  mod_text_output_server("txt_out", text_val) # <3>
+  
+}
+
+shinyApp(ui, server, enableBookmarking = "url")
+```
+1. `simpleTextInput()` is used within `mod_text_input_ui()` to define a text input element in the ui layout.
+2. The text entered into `mod_text_input_ui()` is captured reactively via Shiny through `mod_text_input_server()`...
+3. ...where it can be used in the server logic and displayed the text output module (`mod_text_output_server()`)
+
+
+[^shiny-examples]: [Shiny examples](https://github.com/rstudio/shiny-examples/) contains over 100 applications demonstrating various features, layout, functionalities, etc.
+
+<!--
+In practice, the `name` and `version` fields in `htmlDependency()` should be chosen to accurately reflect the content and versioning of the dependency we're including:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+htmltools::htmlDependency(
+  name = "d3",
+  version = "6.2.0",
+  src = c(file = system.file("js", package = "moviesApp")),
+  script = "d3.v6.2.0.min.js"
+)
+```
+
+In the example above, `"d3"` identifies the library, and `"6.2.0"` accurately reflects the version of [D3.js](https://d3js.org/). "`d3.v6.2.0.min.js`" contains the 'minified JavaScript' code of the D3.js library at version 6.2.0. Minified files reduce the JavaScript file size, but make the code more difficult to read.[^min-js] 
+
+[^min-js]: `min.js` file contain all the functionality of the D3.js library, but without the unnecessary characters (whitespace, newlines, comments, etc.) and transformed to use shorter variable names.
+
+-->
+
+## JS App-Packages with `charpente`
+
+This example comes from the [`charpente`](https://rinterface.github.io/charpente/index.html) package.[^user-shiny-interface]
+
+[^user-shiny-interface]: The `charpente` package is also covered in [Outstanding User Interfaces with Shiny](https://unleash-shiny.rinterface.com/workflow-charpente.html)
+
+[^shiny-js-html-depends]: See the article section titled, [`htmlDependency` object](https://shiny.posit.co/r/articles/build/packaging-javascript/#htmldependency-object)
+
+
+<!--
+:::{layout="[50,50]" layout-valign="top"}
+
+`meta` 
+
+:::
+
+:::{layout="[50,50]" layout-valign="top"}
+
+`stylesheet` 
+
+:::
+
+:::{layout="[50,50]" layout-valign="top"}
+
+`head` 
+
+:::
+
+:::{layout="[50,50]" layout-valign="top"}
+
+`attachment` 
+
+:::
+
+:::{layout="[50,50]" layout-valign="top"}
+
+`package` 
+
+:::
+
+:::{layout="[50,50]" layout-valign="top"}
+
+`all_files = TRUE`
+
+:::
+-->
+
+
 
