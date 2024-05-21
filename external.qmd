@@ -1,7 +1,5 @@
 # External files {#sec-inst}
 
-[Where does **this** go (and how do I use it)?]{style="font-size: 1.25em; font-style: italic; color: #02577A;"}
-
 ```{r}
 #| eval: true 
 #| echo: false 
@@ -109,11 +107,7 @@ movies_app(run = 'p')
 
 :::: {.column-body-outset-right}
 
-::: {#fig-external_initial_movies_app}
-![`movies_app()` without logo](images/external_initial_movies_app.png){#fig-external_initial_movies_app width='100%' fig-align='center'}
-
-`www/shiny.png` is not accessible when we launch the app
-:::
+![`www/shiny.png` is not accessible when we launch the app](images/external_initial_movies_app.png){width='100%' fig-align='center'}
 
 ::::
 
@@ -125,12 +119,7 @@ The `shiny.png` logo in `www/` is not being loaded into the UI when the applicat
 
 While developing, we are used to interacting with our app-package from the **Files** pane:
 
-::: {#fig-external_files_pane}
-
-!['Source' files `moviesApp` in **Files** pane](images/external_files_pane.png){#fig-external_files_pane width='80%'}
-
-The working directory of `moviesApp`
-:::
+!['Source' files `moviesApp` in **Files** pane](images/external_files_pane.png){width='80%'}
 
 However, when we run `install()` (or use [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>B</kbd>]{style="font-weight: bold; font-size: 0.80em"}), the output in the **Build** pane gives us the location of our *installed* package:
 
@@ -167,9 +156,7 @@ If we were to `moviesApp` to the path above, we'd see the files and folders in o
 
 :::{style="font-size: 0.90em;"} 
 
-```{bash}
-#| eval: false 
-#| code-fold: false
+``` sh
 source/moviesApp/
 ├── DESCRIPTION
 ├── NAMESPACE
@@ -210,9 +197,7 @@ source/moviesApp/
 
 :::{style="font-size: 0.90em;"} 
 
-```{bash}
-#| eval: false 
-#| code-fold: false
+``` sh
 installed/moviesApp/
 ├── DESCRIPTION
 ├── INDEX
@@ -399,23 +384,16 @@ movies_app(run = 'p')
 
 :::: {.column-body-outset-right}
 
-::: {#fig-external_www_movies_app}
-![`movies_app()` with logo](images/external_www_movies_app.png){#fig-external_www_movies_app width='100%' fig-align='center'}
-
-`inst/www` accessible with `addResourcePath()`
-:::
+![`inst/www` accessible with `addResourcePath()`](images/external_www_movies_app.png){width='100%' fig-align='center'}
 
 ::::
 
 
-
-[**Apps in `inst/`**]{style="font-size: 1.50em;"} 
-
 The `inst/` folder can also be used to store files we're using in alternate versions of our application. This can include alternate images, CSS styling, JS scripts, data files, or even entirely different apps!
 
-## [`bslib`]{style="font-size: 0.95em;"} layouts {#sec-external-inst-bslib}
+## [`bslib`]{style="font-size: 0.95em;"} themes {#sec-external-inst-bslib}
 
-We can use `inst/` to store alternative files and configure our UI function to test different layouts. In the example below, I've included a second optional UI layout from the [`bslib` package](https://rstudio.github.io/bslib/index.html) in `movies_ui()`.
+We can use `inst/` to store alternative files and configure our UI function to test different layouts. In the example below, I've included a second optional UI layout that uses a [`bslib`](https://rstudio.github.io/bslib/index.html) theme in `movies_ui()`.
 
 ```{r}
 #| label: git_launch_09.2_inst-bslib
@@ -456,25 +434,39 @@ movies_ui <- function(bslib = FALSE) {
     directoryPath = system.file('www', package = 'moviesApp')) # <1>
   if (isFALSE(bslib)) {
   tagList( # <2>
-    fluidPage(
-      theme = shinythemes::shinytheme("spacelab"),
-      titlePanel(
-        div(
-          img(
-            src = "www/shiny.png",
-            height = 60,
-            width = 55,
-            style = "margin:10px 10px"
-            ), 
-         "Movie Reviews"
-        )
-      ),
-      sidebarLayout(
-        sidebarPanel(
-          mod_var_input_ui("vars")
-        ),
-        mainPanel(
-          mod_scatter_display_ui("plot")
+    bslib::page_fillable(
+      h1("Movie Reviews"),
+      bslib::layout_sidebar(
+        sidebar =
+          bslib::sidebar(
+            title = tags$h4("Sidebar inputs"),
+            img(
+              src = "shiny.png",
+              height = 60,
+              width = 55,
+              style = "margin:10px 10px"
+            ),
+            mod_var_input_ui("vars")
+          ),
+        bslib::card(
+          full_screen = TRUE,
+          bslib::card_header(
+            tags$h4("Scatter Plot")
+          ),
+          mod_scatter_display_ui("plot"),
+          bslib::card_footer(
+            tags$blockquote(
+              tags$em(
+                tags$p(
+                  "The data for this application comes from the ",
+                  tags$a("Building web applications with Shiny",
+                    href = "https://rstudio-education.github.io/shiny-course/"
+                  ),
+                  "tutorial"
+                )
+              )
+            )
+          )
         )
       )
     )
@@ -551,9 +543,9 @@ movies_app(run = 'p', bslib = TRUE)
 
 The example above was a simple, but using `inst/` to hold alternate features (i.e., images or custom `.html`, `.css`, `.sass`, `.js` code) that can be easily displayed with an optional argument is a great tool for demonstrating features to users and stakeholders. 
  
-## [`dev`]{style="font-size: 0.95em;"} data {#sec-external-inst-dev}
+## [`dev`]{style="font-size: 0.95em;"} data app {#sec-external-inst-dev}
 
-It's not uncommon to be working on multiple 'development' versions of an application in the same package. In these situations, we might want to store the development files in the `inst/dev` folder:
+It's not uncommon to be working on multiple 'development' versions of an application in the same package. In these situations, we might want to store the development files in the `inst/dev` folder.
 
 ```{r}
 #| label: git_launch_09.3_inst-dev
@@ -565,17 +557,6 @@ git_margin_box(
   branch = "09.3_inst-dev")
 ```
 
-```{bash}
-#| eval: false 
-#| code-fold: false
-inst/dev/
-  ├── app.R
-  ├── tidy_movies.fst
-  └── imdb.png
-
-1 directory, 3 files
-```
-
 ### [`tidy_movies` data]{style="font-size: 0.95em;"} 
 
 The 'development' application in `moviesApp` uses a tidy version of the [`ggplot2movies::movies` data](https://cran.r-project.org/web/packages/ggplot2movies/index.html), which we created in the [`data-raw/tidy_movies.R`](https://github.com/mjfrigaard/moviesApp/blob/09.3_inst-dev/data-raw/tidy_movies.R) file.[^raw-data-5]
@@ -584,291 +565,85 @@ The 'development' application in `moviesApp` uses a tidy version of the [`ggplot
 #| eval: false 
 #| code-fold: true 
 #| code-summary: 'show/hide data-raw/tidy_movies.R'
-## code to prepare `ggp2movies` dataset goes here
-# pkgs <- c('ggplot2movies', 'tidyr', 'dplyr', 'stringr', 'fst')
-# install.packages(pkgs, quiet = TRUE)
-
+## code to prepare the `tidy_movies` dataset goes here
 # load packages --------------------
-library(tidyr)
-library(dplyr)
-library(stringr)
 library(fst)
 
-# tidy_movies
-tidy_movies <- ggplot2movies::movies |>
-  tidyr::pivot_longer(c(Action:Short),
-    names_to = "genre_key",
-    values_to = "genre_value"
-  ) |>
-  dplyr::mutate(genre_value = as.logical(genre_value)) |>
-  dplyr::select(
-    title, genre_key, genre_value, length,
-    year, budget, avg_rating = rating, votes, mpaa
-  ) |>
-  dplyr::filter(genre_value == TRUE) |>
-  dplyr::group_by(title) |>
-  dplyr:::mutate(
-    genres = paste0(genre_key, collapse = ", ")
-  ) |>
-  dplyr::select(
-    title, genres, length, year,
-    budget, avg_rating, votes, mpaa
-  ) |>
-  dplyr::ungroup() |>
-  dplyr::distinct(.keep_all = TRUE) |>
-  dplyr::mutate(
-    genres = dplyr::na_if(x = genres, ""),
-    genre = dplyr::case_when(
-                stringr::str_detect(genres, ",") ~ 'Multiple genres',
-                TRUE ~ genres),
-    genre = factor(genre),
-    mpaa = dplyr::na_if(x = mpaa, y = ""),
-    mpaa = factor(mpaa,
-      levels = c("G", "PG", "PG-13", "R", "NC-17"),
-      labels = c("G", "PG", "PG-13", "R", "NC-17"))
-    ) |> 
-  dplyr::select(-genres)
+make_tidy_ggp2_movies <- function(movies_data_url) {
+  movies_data <- read.csv(file = movies_data_url)
+  # specify genre columns
+  genre_cols <- c(
+    "Action", "Animation",
+    "Comedy", "Drama",
+    "Documentary", "Romance",
+    "Short"
+  )
+  # calculate row sum for genres
+  movies_data$genre_count <- rowSums(movies_data[, genre_cols])
+  # create aggregate 'genres' for multiple categories
+  movies_data$genres <- apply(
+    X = movies_data[, genre_cols],
+    MARGIN = 1,
+    FUN = function(row) {
+      genres <- names(row[row == 1])
+      if (length(genres) > 0) {
+        return(paste(genres, collapse = ", "))
+      } else {
+        return(NA)
+      }
+    }
+  )
+  # format variables
+  movies_data$genre_count <- as.integer(movies_data$genre_count)
+  movies_data$genre <- ifelse(test = movies_data$genre_count > 1,
+    yes = "Multiple genres",
+    no = movies_data$genres
+  )
+  movies_data$genre <- as.factor(movies_data$genre)
+  movies_data$mpaa <- factor(movies_data$mpaa,
+    levels = c("G", "PG", "PG-13", "R", "NC-17"),
+    labels = c("G", "PG", "PG-13", "R", "NC-17")
+  )
+
+  # reduce columns to only those in graph
+  movies_data[, c(
+    "title", "year", "length", "budget",
+    "rating", "votes", "mpaa", "genre_count",
+    "genres", "genre"
+  )]
+}
+
+tidy_movies <- make_tidy_ggp2_movies("https://raw.githubusercontent.com/hadley/ggplot2movies/master/data-raw/movies.csv")
+
 # save to inst/dev/
 fst::write_fst(x = tidy_movies, path = "inst/dev/tidy_movies.fst")
 ```
 
 [^raw-data-5]: We covered the `data-raw/` folder in the [Data chapter](data.qmd), and you can read more about it [here in R packages, 2ed](https://r-pkgs.org/data.html#sec-data-data-raw.)
 
-### [`dev` code]{style="font-size: 0.95em;"}
+### [`inst/dev/R`]{style="font-size: 0.95em;"}
 
-In `inst/dev/`, we've placed the application modules in an [`app.R` file](https://github.com/mjfrigaard/moviesApp/blob/09c_inst-dev/inst/dev/app.R). Any of the functions from `moviesApp` can be used in the `dev/` modules with explicit namespacing (i.e., `moviesApp::scatter_plot()`).
+We can place the application modules, UI, and server functions in [`inst/dev/R`](https://github.com/mjfrigaard/moviesApp/tree/09.3_inst-dev/inst/dev/R). Both functions in the `dev/` display module has been re-written to add functionality for importing the `tidy_movies.fst` data file and an option to removing missing values from the graph.  
 
-`dev_mod_vars_ui()` contains choices for the names in the `tidy_movies` data, but there's no need to re-write the `mod_var_input_server()` function.
-  
-```{r}
-#| eval: false 
-#| code-fold: show 
-#| code-summary: 'show/hide dev_mod_vars_ui()'
-dev_mod_vars_ui <- function(id) {
-      ns <- NS(id)
-      tagList(
-        textInput(
-          inputId = ns("plot_title"),
-          label = "Plot title",
-          placeholder = "Enter plot title"
-        ),
-        selectInput(
-          inputId = ns("y"),
-          label = "Y-axis:",
-          choices = c(
-            "Year" = "year",
-            "Length" = "length",
-            "Budget" = "budget",
-            "Rating" = "avg_rating",
-            "Votes" = "votes"
-          ),
-          selected = "budget"
-        ),
-        selectInput(
-          inputId = ns("x"),
-          label = "X-axis:",
-          choices = c(
-            "Year" = "year",
-            "Length" = "length",
-            "Budget" = "budget",
-            "Rating" = "avg_rating",
-            "Votes" = "votes"
-          ),
-          selected = "year"
-        ),
-        selectInput(
-          inputId = ns("z"),
-          label = "Color by:",
-          choices = c(
-            "MPAA" = "mpaa",
-            "Genre" = "genre"
-          ),
-          selected = "mpaa"
-        ),
-        sliderInput(
-          inputId = ns("alpha"),
-          label = "Alpha:",
-          min = 0, max = 1, step = 0.1,
-          value = 0.4
-        ),
-        sliderInput(
-          inputId = ns("size"),
-          label = "Size:",
-          min = 0, max = 5, step = 0.5,
-          value = 2.5
-        )
-      )
-  }
-```
-      
-Both functions in the `dev/` display module has been re-written to add functionality for importing the `tidy_movies.fst` data file and an option to removing missing values from the graph. 
-  
-```{r}
-#| eval: false 
-#| code-fold: show 
-#| code-summary: 'show/hide dev_mod_scatter_ui()'
-dev_mod_scatter_ui <- function(id) {
-  ns <- NS(id)
-  tagList(
-    tags$br(),
-    tags$blockquote(
-      tags$em(
-        tags$h6(
-        "The data for this application comes from the ",  # <1> 
-          tags$a("ggplot2movies",  # <1> 
-          href = "https://github.com/hadley/ggplot2movies"  # <1> 
-          ),
-          "package"
-        )
-      )
-    ),
-    tags$div(
-      checkboxInput( # <2> 
-        inputId = ns("missing"), # <2> 
-        label = "Remove missing", # <2> 
-        value = TRUE # <2> 
-      ), # <2> 
-      plotOutput(outputId = ns("scatterplot"))
-      )
-    )
-}
-```
-1. Alternate help text for `ggplot2movies` data  
-2. Check-box to remove missing values  
-
-```{r}
-#| eval: false 
-#| code-fold: show 
-#| code-summary: 'show/hide dev_mod_scatter_server()'
-dev_mod_scatter_server <- function(id, var_inputs) {
-    moduleServer(id, function(input, output, session) {
-      # load alternate data
-      all_data <- fst::read_fst("tidy_movies.fst")
-  
-      
-      graph_data <- reactive({ # <1> 
-        if (input$missing) { # <1> 
-          graph_data <- tidyr::drop_na(data = all_data)  # <1> 
-        } else {  # <1> 
-          graph_data <- all_data  # <1> 
-        }   # <1> 
-      }) |>  # <2> 
-        bindEvent(input$missing)  # <2> 
-  
-      inputs <- reactive({
-        plot_title <- tools::toTitleCase(var_inputs()$plot_title)
-        list(
-          x = var_inputs()$x,
-          y = var_inputs()$y,
-          z = var_inputs()$z,
-          alpha = var_inputs()$alpha,
-          size = var_inputs()$size,
-          plot_title = plot_title
-        )
-      })
-  
-      observe({ # <3>
-        output$scatterplot <- renderPlot({
-          plot <- moviesApp::scatter_plot(
-            df = graph_data(),
-            x_var = inputs()$x,
-            y_var = inputs()$y,
-            col_var = inputs()$z,
-            alpha_var = inputs()$alpha,
-            size_var = inputs()$size
-          )
-          plot +
-            ggplot2::labs(
-              title = inputs()$plot_title,
-              x = stringr::str_replace_all(
-                        tools::toTitleCase(inputs()$x), "_", " "),
-              y = stringr::str_replace_all(
-                        tools::toTitleCase(inputs()$y), "_", " ")
-            ) +
-            ggplot2::theme_minimal() +
-            ggplot2::theme(legend.position = "bottom")
-        })
-      }) |> # <5>
-        bindEvent(graph_data(), inputs()) # <3>
-    })
-  }
-```
-1. Build reactive data based on missing checkbox input    
-2. Bind `missing` input to update when UI changes   
-3. Bind plot output to update with variable inputs and 'missing' checkbox output  
-
-`app.R` also contains development app UI and server functions. 
-
-In `devUI()`, development modules are paired with package modules (`dev_mod_vars_ui()` and `moviesApp::mod_var_input_server()`), and we've include an alternate image (`bootstrap.png`).[^export-modules-6]
+Any of the functions from `moviesApp` can be used in the `dev/` modules with explicit namespacing (i.e., `moviesApp::fun()`). For example, `dev_mod_vars_ui()` contains choices for the columns in the `tidy_movies` data, but there's no need to re-write the `mod_var_input_server()` function.[^export-modules-6]
 
 [^export-modules-6]: This requires exporting `mod_var_input_server()` with `@export` in the `R/` folder.
 
-```{r}
-#| eval: false 
-#| code-fold: show 
-#| code-summary: 'show/hide devUI()'
-devUI <- function() {
-    addResourcePath( # <1>
-      prefix = "dev", # <1>
-      directoryPath = system.file("dev", # <1>
-                                  package = "moviesApp") # <1>
-    ) # <1>
-  tagList(
-    bslib::page_fillable(
-      title = "Movie Reviews (ggplot2movies)",
-      theme = bslib::bs_theme(
-        bg = "#043b67",
-        fg = "#ffffff",
-        primary = "#ffcf22",
-        secondary = "#38B44A",
-        success = "#32E0C4",
-        base_font = sass::font_google("Ubuntu"),
-        heading_font = sass::font_google("Ubuntu")
-      ),
-      bslib::layout_sidebar(
-        sidebar = bslib::sidebar(
-          dev_mod_vars_ui("vars") # <2>
-        ),
-        bslib::card(
-          full_screen = TRUE,
-          bslib::card_header(
-              tags$div(
-                tags$img(
-                  src = "dev/imdb.png", # <3>
-                  height = 80,
-                  width = 110,
-                  style = "margin:10px 10px"
-                )
-              )
-            ),
-          bslib::card_body(
-            dev_mod_scatter_ui("plot") # <4>
-          )
-        )
-      )
-    )
-  )
-}
-```
-1. Add alternate path to include image file 
-2. Development variable input module (UI)   
-3. Refer to alternate image   
-4. Development scatter-plot display module (UI)   
+The [`app.R` file](https://github.com/mjfrigaard/moviesApp/blob/09c_inst-dev/inst/dev/app.R) will contain the call to `shinyApp()`, and any other packages we'll need to launch the application. The data and alternative image file can be placed in the root folder (with the `app.R` file):
 
-```{r}
-#| eval: false 
-#| code-fold: show 
-#| code-summary: 'show/hide devServer()'
-devServer <- function(input, output, session) {
-  
-  selected_vars <- moviesApp::mod_var_input_server("vars") # <1>
+``` sh
+inst/dev
+├── R
+│   ├── devServer.R
+│   ├── devUI.R
+│   ├── dev_mod_scatter.R
+│   └── dev_mod_vars.R
+├── app.R
+├── imdb.png
+└── tidy_movies.fst
 
-  dev_mod_scatter_server("plot", var_inputs = selected_vars) # <2>
-  
-}
+2 directories, 7 files
 ```
-1. `mod_var_input_server()` exported from `moviesApp`'s `R/` folder 
-2. Defined in `dev/inst/app.R`
 
 ### Launch [`dev`]{style="font-size: 0.95em;"} {#sec-inst-dev-launch}
 
@@ -1093,7 +868,7 @@ You can explore the structure of other installed packages to see how they work '
   
 - For example, the `inst/extdata/` folder in the [`readr` package](https://readr.tidyverse.org/) holds a variety of datasets:
   
-    \`\`\`
+    \`\`\` sh
     /path/to/install/Library/R/x86_64/4.2/library/readr/
       
     extdata/
@@ -1118,7 +893,7 @@ You can explore the structure of other installed packages to see how they work '
   
 - These files are used in [`readr::readr_example()`](https://github.com/tidyverse/readr/blob/5ac729aa9a70fef297a634d2332ff8ff1af874fb/R/example.R)): 
   
-    \`\`\`r
+    \`\`\` r
     #' Get path to readr example
     #'
     #' readr comes bundled with a number of sample files in its `inst/extdata`

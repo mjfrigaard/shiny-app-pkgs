@@ -228,23 +228,20 @@ A new `Chromote` session
 If we launch the test recorder with `shinytest2::record_test()`, change the inputs in our application, click on **Expect Shiny values** and **Save test and exit**, a test is recorded to a new test file: `tests/testthat/test-shinytest2.R`
 
 
-:::{#fig-tests_sys_record_test}
+![Creating a test with `shinytest2::record_test()`](images/tests_sys_record_test.png){width='100%' align='center'}
 
-![Test recorder](images/tests_sys_record_test.png){#fig-tests_sys_record_test width='100%' align='center'}
-
-Creating a test with `shinytest2::record_test()`
-:::
 
 The test runs and saves the PNG snapshot and test values to the `tests/testthat/_snaps/` folder: 
 
-```{verbatim}
+``` sh
 [ FAIL 0 | WARN 2 | SKIP 0 | PASS 1 ]
 
-── Warning (test-shinytest2.R:11:3): {shinytest2} recording: feature-01 ──
-Adding new file snapshot: 'tests/testthat/_snaps/feature-01-001_.png'
+Warning (test-shinytest2.R:23:3): {shinytest2} recording: moviesApp-feature-01
+Adding new file snapshot: 'tests/testthat/_snaps/moviesApp-feature-01-001_.png'
 
-── Warning (test-shinytest2.R:11:3): {shinytest2} recording: feature-01 ──
-Adding new file snapshot: 'tests/testthat/_snaps/feature-01-001.json'
+Warning (test-shinytest2.R:23:3): {shinytest2} recording: moviesApp-feature-01
+Adding new file snapshot: 'tests/testthat/_snaps/moviesApp-feature-01-001.json'
+
 [ FAIL 0 | WARN 2 | SKIP 0 | PASS 1 ]
 ```
 
@@ -274,27 +271,23 @@ We covered this warning message in the [Launch](launch.qmd) chapter, and it's be
 )
 ```
 
-The contents of the new `test-shinytest2.R` test file are below:
+If we view the contents `test-shinytest2.R` we find each action we performed in the test recorder has a corresponding call in the test:
 
 ```{r}
 #| eval: false 
 #| code-fold: false
 library(shinytest2)
-test_that("{shinytest2} recording: feature-01", {
-  app <- AppDriver$new(name = "feature-01", 
-                       height = 800, width = 1173)
-  app$set_inputs(`vars-y` = "imdb_num_votes")
-  app$set_inputs(`vars-x` = "critics_score")
-  app$set_inputs(`vars-z` = "genre")
-  app$set_inputs(`vars-alpha` = 0.7)
-  app$set_inputs(`vars-size` = 3)
-  app$set_inputs(`vars-plot_title` = "New plot title")
-  app$expect_values()
+test_that("{shinytest2} recording: moviesApp-feature-01", {
+  app <- AppDriver$new(name = "moviesApp-feature-01", height = 887, width = 1241) # <1>
+  app$set_inputs(`vars-y` = "imdb_num_votes") # <2>
+  app$set_inputs(`vars-x` = "critics_score") # <3>
+  app$set_inputs(`vars-z` = "genre") # <4>
+  app$set_inputs(`vars-alpha` = 0.7) # <5>
+  app$set_inputs(`vars-size` = 3) # <6>
+  app$set_inputs(`vars-plot_title` = "New plot title") # <7>
+  app$expect_values() # <8>
 })
 ```
-
-As we can see, each action in the test recorder has a corresponding call in the test: 
-
 1. Initialize the `AppDriver$new()` with the name of the test and the dimensions of the Chromium browser.  
 2. Change the y axis (`vars-y`) to 'IMBD number of votes' (`imdb_num_votes`)   
 3. Change the x axis (`vars-x`) to 'Critics Score' (`critics_score`)   
@@ -302,6 +295,7 @@ As we can see, each action in the test recorder has a corresponding call in the 
 5. Change the point opacity (`vars-alpha`) to '0.7'    
 6. Change the point size (`vars-alpha`) to '3'    
 7. Change the plot title to (`vars-plot_title`) to 'New plot title' 
+8. Export the test values 
 
 We'll use this initial test as a template for writing the steps in our test `Scenario`s. 
 
@@ -369,7 +363,7 @@ describe("Feature 1: Scatter plot data visualization dropdowns
         it("Then the scatter plot should show [ ] on the x-axis
              And the scatter plot should show [ ] on the y-axis
              And the points on the scatter plot should be colored by [ ]", {
-              app <- AppDriver$new(name = "feature-01-senario-a", 
+              app <- AppDriver$new(name = "feature-01-senario-a",  # <1>
                                      height = 800, width = 1173)
                 app$set_inputs(`vars-y` = "imdb_num_votes")
                 app$set_inputs(`vars-x` = "critics_score")
@@ -386,7 +380,7 @@ describe("Feature 1: Scatter plot data visualization dropdowns
          it("Then the size of the points on the scatter plot should be [ ]
               And the opacity of the points on the scatter plot should be [ ]
               And the title of the plot should be '[ ]'", {
-              app <- AppDriver$new(name = "feature-01-senario-b", 
+              app <- AppDriver$new(name = "feature-01-senario-b", # <2>
                                      height = 800, width = 1173)
                 app$set_inputs(`vars-alpha` = 0.7)
                 app$set_inputs(`vars-size` = 3)
@@ -396,8 +390,10 @@ describe("Feature 1: Scatter plot data visualization dropdowns
       })
 })
 ```
+1. Test for scenario A  
+2. Test for scenario B
 
-An important not on this approach is the different names for each `AppDriver$new()` (otherwise we'd be overwriting the previous snapshot/values).
+An important note with this approach is the different names for each `AppDriver$new()` (otherwise we'd be overwriting the previous snapshot/values).
 
 ### Testing apps in `inst/`
 
@@ -426,9 +422,9 @@ describe(
             
     test_logger(start = 'ggp2movies-feat-01', msg = "update x, y, z, missing")
       
-    app <- AppDriver$new(app_dir = system.file("dev", package = "moviesApp"), 
+    app <- AppDriver$new(app_dir = system.file("dev", package = "moviesApp"), # <1>
                          name = "ggp2movies_app-feature-01", 
-                         wait = FALSE, timeout = 30000,
+                         wait = FALSE, timeout = 30000, # <2>
                          height = 800, width = 1173)
       app$set_inputs(`vars-y` = "length")
       app$set_inputs(`vars-x` = "rating")
@@ -442,24 +438,22 @@ describe(
    })
 })
 ```
+1. Use `system.file()` to access application in `inst/dev`  
+2. Adjust the `wait` and `timeout` so the test will run  
+
 
 Not that I've changed the `wait` and `timeout` arguments in `AppDriver$new()` because this tests takes over 10 seconds to complete (which I can see with my `test_logger()` output): 
 
-```{verbatim}
+``` sh
 [ FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]
-INFO [2023-10-26 12:58:57] [ START ggp2movies-feat-01 = update x, y, z, missing]
-[ FAIL 0 | WARN 2 | SKIP 0 | PASS 1 ]
-INFO [2023-10-26 12:59:09] [ END ggp2movies-feat-01 = update x, y, z, missing]
+INFO [2024-05-21 12:39:03] [ START ggp2movies-feat-01 = update x, y, z, missing]
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 1 ]
+INFO [2024-05-21 12:40:11] [ END ggp2movies-feat-01 = update x, y, z, missing]
 ```
 
 When I confirm this in the output `png` file, I can see the x, y, and color values have been changed (and the missing values have been removed).
 
-:::{#fig-ggp2movies_app-feature-01-001_}
-
-![Snapshot png file](images/ggp2movies_app-feature-01-001_.png){#fig-ggp2movies_app-feature-01-001_ width='100%' align='center'}
-
-File saved in `tests/testthat/_snaps/ggp2movies_app-feature-01-001_.png'`
-:::
+![File saved in `tests/testthat/_snaps/ggp2movies_app-feature-01-001_.png'`](images/ggp2movies_app-feature-01-001_.png){width='100%' align='center'}
 
 
 ## [`test.mode`]{style="font-size: 1.05em;"} {#sec-tests-system-test-mode}
@@ -520,7 +514,7 @@ test_values <- app$get_values()
 test_values[['export']]
 ```
 
-```{verbatim}
+``` sh
 $`plot-alpha`
 [1] 0.5
 
@@ -544,9 +538,7 @@ $`plot-z`
 
 After writing our system tests and running `devtools::test()`, the `tests/testthat/_snaps/` folder contains the follow folders and files:
 
-```{bash}
-#| eval: false 
-#| code-fold: false
+``` sh
 tests/testthat/_snaps/
 ├── app-feature-01
 │   ├── feature-01-senario-a-001.json
@@ -555,33 +547,26 @@ tests/testthat/_snaps/
 │   └── feature-01-senario-b-001_.png
 ├── ggp2_app-feature-01
 │   ├── ggp2movies_app-feature-01-001.json
+│   ├── ggp2movies_app-feature-01-001_.new.png
 │   └── ggp2movies_app-feature-01-001_.png
 └── shinytest2
     ├── feature-01-001.json
-    └── feature-01-001_.png
+    ├── feature-01-001_.png
+    ├── moviesApp-feature-01-001.json
+    └── moviesApp-feature-01-001_.png
+
+4 directories, 11 files
 ```
 
 These outputs correspond to the three system test files in the `tests/testthat/`:
 
-```{bash}
-#| eval: false 
-#| code-fold: false
+``` sh
 tests/testthat/
-├── _snaps/
-│     ├── app-feature-01
-│     │   ├── feature-01-senario-a-001.json
-│     │   ├── feature-01-senario-a-001_.png
-│     │   ├── feature-01-senario-b-001.json
-│     │   └── feature-01-senario-b-001_.png
-│     ├── ggp2_app-feature-01
-│     │   ├── ggp2movies_app-feature-01-001.json
-│     │   └── ggp2movies_app-feature-01-001_.png
-│     └── shinytest2
-│         ├── feature-01-001.json
-│         └── feature-01-001_.png
 ├── test-app-feature-01.R
 ├── test-ggp2_app-feature-01.R
 └── test-shinytest2.R
+
+3 files
 ```
 
 I've removed the `tests/testthat/_snaps/` folder from the GitHub repo, so users can run the tests and generate the snapshots in their local environment. 
@@ -600,7 +585,7 @@ git_margin_box(
 
 ## Recap {.unnumbered}
 
-Behavior-driven development (or behavior-driven testing) fills the void between non-technical stakeholders and developers by encouraging natural, descriptive language (often complete sentences) to define and communicate the application requirements.
+Behavior-driven development (or behavior-driven testing) fills the gulf between non-technical stakeholders and developers by encouraging natural, descriptive language (often complete sentences) to define and communicate the application requirements.
 
 Capturing the application's desired behaviors in `Feature`s (*As a *, *I want*, *So that*) and `Scenario`s (*Given*, *When*, *Then*) provides a testing script that's clear and easy to follow. Using the BDD format also makes system tests easier to update if the features and scenarios change. 
 
