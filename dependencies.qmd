@@ -1,7 +1,5 @@
 # Dependencies {#sec-depends}
 
-[Managing what goes in and comes out]{style="font-size: 1.25em; font-style: italic; color: #02577A;"}
-
 ```{r}
 #| eval: true 
 #| echo: false 
@@ -363,7 +361,7 @@ To make the `movies_app()` function available to users of our package, we need t
     
     -   Read more [here](https://r-pkgs.org/dependencies-in-practice.html#exports)
     
-### Exporting [`movies_app()`]{style="font-size: 1.05em;"}
+### Export [`movies_app()`]{style="font-size: 1.00em;"}
 
 Let's start by exporting the `movies_app()` function from `moviesApp` by placing the `@export` tag above the function in `R/movies_app.R`:
 
@@ -482,7 +480,7 @@ Using `@keywords internal` *without* `@export` will result in a helpfile, but th
 ```
 
 
-### What [`@export`]{style="font-size: 1.05em;"} does
+### What [`@export`]{style="font-size: 1.00em;"} does
 
 We'll pause here to notice a few things about what `@export` does. After loading, documenting, and installing `moviesApp`, the `NAMESPACE` is updated with `export(movies_app)`, and the **Console** automatically calls `library(moviesApp)`.
 
@@ -500,7 +498,7 @@ ls(name = "package:moviesApp")
 [1] "movies_app"
 ```
 
-#### The [`search()`]{style="font-size: 1.05em;"} list
+#### The [`search()`]{style="font-size: 1.00em;"} list
 
 `library(moviesApp)` attaches `moviesApp` to the search list. We can view all the attached packages in the string returned from `search()`:
 
@@ -536,37 +534,30 @@ Why does this matter? Because if these packages aren't attached to the `search()
 
 For example, if we try to use `ggplot2` to build a plot (similar to the one we have in the app), we see the following:
 
-```{r}
-#| eval: false
-#| code-fold: false
+``` r
 ggplot(data = mtcars, 
   aes(x = disp, y = mpg)) + 
   geom_point()
+# Error in ggplot(data = mtcars, aes(x = disp, y = mpg)) : 
+#  could not find function "ggplot"
 ```
 
-```{verbatim}
-#| eval: false
-#| code-fold: false
-Error in ggplot(data = mtcars, 
-              aes(x = disp, y = mpg)) : 
-  could not find function "ggplot"
-```
 
 If we want to use functions from the packages `moviesApp` relies on, we need to explicitly namespace these functions from their original package namespaces (i.e., `pkg::fun()`): 
 
-::: {layout-ncol=2}
+:::{layout="[40,60]" layout-valign="top"}
 
-```{r}
-#| eval: false
-#| code-fold: false
+``` r
 ggplot2::ggplot(data = mtcars, 
   ggplot2::aes(x = disp, y = mpg)) + 
   ggplot2::geom_point()
 ```
 
-![We can use `ggplot2` if we explicitly namespace it's functions ](images/dep_using_addon_funs.png){width=100%}
+![](images/dep_using_addon_funs.png){width=100%}
 
 :::
+
+We can use `ggplot2` if we explicitly namespace it's functions
 
 ```{r}
 #| label: co_box_accessing_exports
@@ -606,7 +597,7 @@ Examples in `scatter_plot()` function without exporting
 
 The message at the top of the **Help** pane is informative because it tells us that despite `scatter_plot()` being functional when we run `movies_app()`, it's not part of the package namespace (and thus, not accessible to users in the help file). 
 
-#### Exporting [`scatter_plot()`]{style="font-size: 1.05em;"}
+#### Export [`scatter_plot()`]{style="font-size: 1.0em;"}
 
 Let's add the `@export` tag to `R/scatter_plot.R` so it's exported from `moviesApp`.
 
@@ -670,11 +661,9 @@ The contents of the updated `NAMESPACE` file are below (and `moviesApp::` in the
 
 Below, we confirm users can access the help file for `scatter_plot()` and run the examples:
 
-::: {#fig-deps_run_examples_scatter_plot}
-![`scatter_plot()` examples](images/dep_run_examples_scatter_plot.png){#fig-deps_run_examples_scatter_plot width='100%' fig-align='center'}
 
-Running examples in `?scatter_plot`
-:::
+![Running examples in `?scatter_plot`](images/dep_run_examples_scatter_plot.png){width='100%' fig-align='center'}
+
 
 #### [`loadedNamespaces()`]{style="font-size: 0.95em;"} 
 
@@ -725,19 +714,19 @@ Functions that are not exported (i.e., do not include the `@export` tag) are sti
 )
 ```
 
-### What to [`@export`]{style="font-size: 1.05em"}
+### What to [`@export`]{style="font-size: 1.00em"}
 
 > *'Always err on the side of caution, and simplicity. It's easier to give people more functionality than it is to take away stuff they're used to'* - [What to export, R Packages, 2ed](https://r-pkgs.org/dependencies-in-practice.html#what-to-export)
 
 When determining which functions to export, consider the question: "*When a user installs and loads `moviesApp`, what functions do I want to be available?*" 
 
-In app-packages, I take the following general approach:
+In app-packages, I'll take the following general approach:
 
--   Start by exporting only the standalone app function (`movies_app()`)
+-   Start by exporting the standalone app function (`movies_app()`)
 
--   Selectively export modules and/or functions that perform distinct tasks with potentially reusable functionality (i.e., generate specific UI components, perform data processing tasks, etc.).
+-   Then selectively export modules and/or functions that perform distinct tasks with potentially reusable functionality (i.e., generate specific UI components, perform data processing tasks, etc.).
 
-You'll rarely want to export everything, but it might be helpful if the primary audience for your app-package is other developers within your organization. See the **Low-key `@export`s with `@keywords internal`** box below for exporting functions without including them in your package index.
+I rarely want to export *everything* from an R package, but it could be helpful if the primary audience for your app-package is other developers within your organization. See the **Low-key `@export`s with `@keywords internal`** box below for exporting functions without including them in your package index.
 
 ## Imports {#sec-depends-imports}
 
@@ -763,17 +752,17 @@ Managing imports is slightly more involved than exports because imported depende
 
 The `DESCRIPTION` file manages dependencies with three fields: `Depends`, `Imports`, and `Suggests`. [^package-remotes] 
 
-#### [`Depends`]{style="font-size: 1.05em"} {#sec-pkg-depends-description}
+#### [`Depends`]{style="font-size: 1.00em"} {#sec-pkg-depends-description}
 
 Packages listed under `Depends` are essential for our app-package to work. These packages will be attached *before* our package when `library(moviesApp)` is called.
 
-#### [`Imports`]{style="font-size: 1.05em"} {#sec-pkg-imports-description}
+#### [`Imports`]{style="font-size: 1.00em"} {#sec-pkg-imports-description}
 
 Packages listed under `Imports` are necessary for our app-package to work. These packages are loaded (but not attached) when our app-package is installed.
 
 -   Most add-on packages belong under the `Imports` field (i.e., functions from these packages are used in the code below `R/`). 
 
-#### [`Suggests`]{style="font-size: 1.05em"} {#sec-pkg-suggests-description}
+#### [`Suggests`]{style="font-size: 1.00em"} {#sec-pkg-suggests-description}
 
 The `Suggests` field should include any packages that enhance our app-package, but aren't necessary for the basic functionality. This might include packages used in examples, vignettes, tests, etc. 
 
@@ -794,22 +783,21 @@ co_box(
 
 Function-level access is managed using namespace-qualified references (or 'explicit namespacing') in the code below `R/`. The `NAMESPACE` can also be used to include add-on packages or functions with the `@import` and `@importFrom` tags.[^imports-rpkgs-importFrom-import]
 
-#### [`pkg::fun()`]{style="font-size: 1.05em"} {#sec-depends-pkg-fun-syntax}
+#### [`pkg::fun()`]{style="font-size: 1.0em"} {#sec-depends-pkg-fun-syntax}
 
 Refer to add-on package functions using `pkg::fun()` syntax in the code below `R/`.  
 
-#### [`@importFrom`]{style="font-size: 1.05em"} {#sec-depends-import-from}
+#### [`@importFrom`]{style="font-size: 1.0em"} {#sec-depends-import-from}
 
 `@importFrom` should be used when 1) *"You can't call an operator from another package via `::`"* 2) *"importing a function makes your code much more readable"* (**not** easier to write)
 
-#### [`@import`]{style="font-size: 1.05em"} {#sec-depends-import}
+#### [`@import`]{style="font-size: 1.00em"} {#sec-depends-import}
 
 `@import` should be used if *"you make such heavy use of so many functions from another package that you want to import its entire namespace"*
 
 [^package-remotes]: Additional fields exists (i.e., `Remotes`), but these are [special circumstances](https://r-pkgs.org/dependencies-in-practice.html#depending-on-the-development-version-of-a-package).
 
 [^imports-rpkgs-importFrom-import]: Read more about this in the section titled, ['In code below R/' in R Packages, 2ed](https://r-pkgs.org/dependencies-in-practice.html#sec-dependencies-in-imports-r-code)
-
 
 ### Imports in `moviesApp`
 
@@ -823,13 +811,14 @@ The workflow I use to manage add-on dependencies comes from the advice in the `r
 
 We have some special considerations for the imported add-on functions in our app-package:
 
-#### [`@import shiny`]{style="font-size: 1.05em; font-weight: bold;"} {.unnumbered}
+#### [`@import shiny`]{style="font-size: 1.0em; font-weight: bold;"} {.unnumbered}
 
 A substantial portion of the code in `moviesApp` comes from `shiny`, so we'll remove the explicit namespacing and place the `@import` tag in `R/movies_app.R`[^ms-imports]
   
 [^ms-imports]: Using `@import` is not generally considered best practice, but it makes sense for app-packages: *...for Shiny apps, I recommend using `@import shiny` to make all the functions in the Shiny package easily available.* [Mastering Shiny, R CMD check](https://mastering-shiny.org/scaling-packaging.html#r-cmd-check)"
   
 ```{r}
+#| eval: false
 #| code-fold: show 
 #| code-summary: 'show/hide R/movies_app.R'
 #' Movies app standalone function
@@ -849,8 +838,7 @@ A substantial portion of the code in `moviesApp` comes from `shiny`, so we'll re
 ```
 1. Import entire shiny package namespace
 
-
-#### [`@importFrom rlang .data`]{style="font-size: 1.05em; font-weight: bold;"} {.unnumbered}
+#### [`@importFrom rlang .data`]{style="font-size: 1.0em; font-weight: bold;"} {.unnumbered}
 
 `.data` can't be exported using `::`, so we'll include `@importFrom` in `R/scatter_plot.R`. On the other hand, `ggplot2` has over 400 functions, so we'll add the package to the `Imports` field and use the  namespace-qualified references.[^ggplot2-in-pkgs]
   
@@ -892,6 +880,65 @@ A substantial portion of the code in `moviesApp` comes from `shiny`, so we'll re
 ```
 1. Import a the `.data` operator from `rlang`
 
+#### [`use_package('pkg')`]{style="font-size: 1.0em; font-weight: bold;"} {.unnumbered}
+
+As an example, we'll add the [`bslib` package](https://rstudio.github.io/bslib/index.html) and update our app UI layout:
+
+```{r}
+#| eval: false
+#| code-fold: false
+usethis::use_package('bslib')
+```
+
+``` sh
+✔ Setting active project to '/Users/mjfrigaard/projects/apps/moviesApp'
+✔ Adding 'bslib' to Imports field in DESCRIPTION
+• Refer to functions with `bslib::fun()`
+```
+
+In `movies_ui()`, we'll change the `fluidPage()` to the `bslib::page_fillable()` and adjust move the data source information to the `bslib::card_footer()`:
+
+```{r}
+#| eval: false
+#| code-fold: show 
+#| code-summary: 'updated movies_ui() bslib function'
+movies_ui <- function() {
+  bslib::page_fillable(
+    h1("Movie Reviews"),
+    bslib::layout_sidebar(
+      sidebar =
+        bslib::sidebar(
+          title = tags$h4("Sidebar inputs"),
+          img(
+            src = "shiny.png",
+            height = 60,
+            width = 55,
+            style = "margin:10px 10px"
+          ),
+          mod_var_input_ui("vars")
+        ),
+      bslib::card(
+        full_screen = TRUE,
+        bslib::card_header(
+          tags$h4("Scatter Plot")
+        ),
+        mod_scatter_display_ui("plot"),
+        bslib::card_footer(
+        tags$blockquote(
+          tags$em(
+            tags$h6("The data for this application comes from the ",
+            tags$a("Building web applications with Shiny",
+              href = "https://rstudio-education.github.io/shiny-course/"),
+                          "tutorial")
+            )
+          )
+        )
+      )
+    )
+  )
+}
+```
+
 
 After adding all add-on packages to the `DESCRIPTION` with `usethis::use_package()`, then deciding if/where to use `@importFrom` and `@import`, we'll load, document, and install `moviesApp`:
 
@@ -905,13 +952,55 @@ hot_key("all")
 
 When we review the updated `NAMESPACE` and `DESCRIPTION` files, we should see the following:
 
-::: {#fig-deps_imports_namespace layout-ncol=2}
+
+:::{layout="[50,50]" layout-valign="center"}
+
+Updated `NAMESPACE` with `@import` and `@importFrom`
+
+``` sh
+# Generated by roxygen2: do not edit by hand
+
+export(movies_app)
+export(scatter_plot)
+import(shiny)
+importFrom(rlang,.data)
+```
+
+Updated `DESCRIPTION` with all  `Imports`:
+
+``` sh
+Package: moviesApp
+Title: movies app
+Version: 0.0.0.9000
+Author: John Smith <John.Smith@email.io> [aut, cre]
+Maintainer: John Smith <John.Smith@email.io>
+Description: A movie-review shiny application.
+License: GPL-3
+Imports: 
+    bslib,
+    ggplot2,
+    rlang,
+    shiny,
+    shinythemes,
+    stringr,
+    tools
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.1
+```
+
+:::
+
+`roxygen2` will update the `NAMESPACE`, but `usethis::use_package()` is needed to update the `DESCRIPTION`.
+
+<!--
 
 ![Updated `NAMESPACE` with `@import` and `@importFrom`](images/dep_imports_namespace.png){#fig-deps_imports_namespace width='100%' align='center'}
 
 ![Updated `DESCRIPTION` with all  `Imports`](images/dep_imports_description.png){#fig-deps_imports_namespace width='100%' align='center'}
 
-`roxygen2` will update the `NAMESPACE`, but `usethis::use_package()` is needed to update the `DESCRIPTION`
+-->
+
 :::
 
 When we run `movies_app()`, we see the application launches and we can still run the `scatter_plot()` examples: 
@@ -925,7 +1014,7 @@ When we run `movies_app()`, we see the application launches and we can still run
 Confirming we still have full functionality in `moviesApp`
 :::
 
-### [What happened]{style="font-weight: bold;"} in [`moviesApp`]{style="font-size: 1.05em;"}?
+### What [`@imoprt`]{style="font-size: 1.00em; font-weight: bold;"} does
 
 The figure below attempts to capture some of confusion between the dependencies listed in the `NAMESPACE` and the `Imports` field in the `DESCRIPTION` file.[^imports-confusion-r-packages]
 
@@ -937,8 +1026,6 @@ The figure below attempts to capture some of confusion between the dependencies 
 
 `devtools::document()` (or **[<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd>]{style='font-size: 0.70em;'}**) updates the `NAMESPACE` with any `@import`, `@importFrom` or `@export` tags. However, no changes are made to the `DESCRIPTION` file.
 :::
-
-
 
 Let's confirm we're still only exporting `movies_app()` and `scatter_plot()` from `moviesApp`:
 
@@ -967,7 +1054,7 @@ Imports:
     stringr
 ```
 
-#### The [`search()`]{style="font-size: 1.05em;"} list
+#### The [`search()`]{style="font-size: 1.0em; font-weight: bold;"} list
 
 Are these packages on the search list?
 
@@ -1022,7 +1109,7 @@ ggplot2::ggplot(data = mtcars,
 
 ## More information on imports 
 
-I've provided a handful of useful tips on package imports below: 
+Below are handful of questions and answers I've encountered regarding package imports:
 
 ***How can I include an add-on package to my `DESCRIPTION` file?***
 
@@ -1030,7 +1117,7 @@ I've provided a handful of useful tips on package imports below:
 
 ***Will users of my app-package have access to the packages listed in the `Imports` field of my `DESCRIPTION` file?***
 
--   `library(moviesApp)` loads the namespace of imported packages, but they are not attached to the `search()` path[^desc-add-on-access] 
+-   `library(pkg)` loads the namespace of imported packages, but they are not attached to the `search()` path[^desc-add-on-access] 
 
 [^desc-add-on-access]: Users can access functions from add-on packages with the `pkg::fun` syntax
 
