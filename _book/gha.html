@@ -494,7 +494,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#steps-1" id="toc-steps-1" class="nav-link" data-scroll-target="#steps-1"><span class="header-section-number">16.2.4.3</span> Steps</a></li>
   </ul></li>
   </ul></li>
-  <li><a href="#sec-gha-shiny-docker" id="toc-sec-gha-shiny-docker" class="nav-link" data-scroll-target="#sec-gha-shiny-docker"><span class="header-section-number">16.3</span> Shiny/Docker workflow</a>
+  <li><a href="#sec-gha-shiny-docker" id="toc-sec-gha-shiny-docker" class="nav-link" data-scroll-target="#sec-gha-shiny-docker"><span class="header-section-number">16.3</span> Shiny &amp; Docker workflow</a>
   <ul>
   <li><a href="#secrets-and-tokens" id="toc-secrets-and-tokens" class="nav-link" data-scroll-target="#secrets-and-tokens"><span class="header-section-number">16.3.1</span> Secrets and tokens</a></li>
   <li><a href="#deploy.r" id="toc-deploy.r" class="nav-link" data-scroll-target="#deploy.r"><span class="header-section-number">16.3.2</span> <span style="font-size: 0.95em; font-weight: bold;"><code>deploy.R</code></span></a></li>
@@ -593,8 +593,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="do">##   branch          last_updated       </span></span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="do">##   &lt;chr&gt;           &lt;dttm&gt;             </span></span>
 <span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="do">## 1 16.1_gha-style  2024-05-22 14:26:40</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="do">## 2 16.2_gha-shiny  2024-02-21 22:39:17</span></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="do">## 3 16.3_gha-docker 2024-02-21 23:51:38</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="do">## 2 16.2_gha-shiny  2024-05-23 15:07:23</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="do">## 3 16.3_gha-docker 2024-05-24 04:32:34</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Launch an app:</p>
 <div class="cell">
@@ -1430,8 +1430,8 @@ a. <span style="font-size: 0.90rem;"><code>run</code> installs the <code>rsconne
 </section>
 </section>
 <section id="sec-gha-shiny-docker" class="level2 page-columns page-full" data-number="16.3">
-<h2 data-number="16.3" class="anchored" data-anchor-id="sec-gha-shiny-docker"><span class="header-section-number">16.3</span> Shiny/Docker workflow</h2>
-<p>In the previous chapter we covered Docker, which builds and application in an image and containerizes the deployment. We can combine Docker and GitHub Actions to automate the deployment of an app, which minimizes any risks of environmental discrepancies (avoiding the “it works on my machine” problem) and manual deployment processes (if something goes wrong after a workflow run, rolling back to a previous version in Git is straightforward).</p>
+<h2 data-number="16.3" class="anchored" data-anchor-id="sec-gha-shiny-docker"><span class="header-section-number">16.3</span> Shiny &amp; Docker workflow</h2>
+<p>We covered Docker in the previous chapter, which builds and application in an image and containerizes it’s deployment. In this section we’ll combine Docker and GitHub Actions to automate deployment of our app. Automating app deployments will minimize the risk of environmental discrepancies (avoiding the “<em>it works on my machine</em>” problem) and manual deployment processes. Plus, if something goes wrong after a workflow run, rolling back to a previous version in Git is straightforward.</p>
 
 <div class="no-row-height column-margin column-container"><div class="">
 <p>Launch app with the <a href="https://mjfrigaard.github.io/shinypak/articles/getting-started.html"><code>shinypak</code> package</a>:</p>
@@ -1441,13 +1441,14 @@ a. <span style="font-size: 0.90rem;"><code>run</code> installs the <code>rsconne
 </div></div><section id="secrets-and-tokens" class="level3" data-number="16.3.1">
 <h3 data-number="16.3.1" class="anchored" data-anchor-id="secrets-and-tokens"><span class="header-section-number">16.3.1</span> Secrets and tokens</h3>
 <p>Most of the steps below are covered in the excellent blog post by <a href="https://nrennie.rbind.io/">Nicola Rennie</a><a href="#fn10" class="footnote-ref" id="fnref10" role="doc-noteref"><sup>10</sup></a> I’ve updated the contents to work with a Shiny app-package.</p>
-<p>To make sure our <code>RSCONNECT_USER</code>, <code>RSCONNECT_TOKEN</code>, and <code>RSCONNECT_SECRET</code> travels with our <code>Dockerfile</code>, we can store these as environmental variables with <code>Sys.setenv()</code>:</p>
+<p>To make sure our Connect username, token, and secret travels with our <code>Dockerfile</code>, we will need to store them as environmental variables.</p>
+<p>Environmental variables can be set/unset with <code>Sys.setenv()</code>/<code>Sys.unsetenv()</code>:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a><span class="fu">Sys.setenv</span>(<span class="at">RSCONNECT_USER =</span> <span class="st">'&lt;username&gt;'</span>, </span>
 <span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">RSCONNECT_TOKEN =</span> <span class="st">'&lt;token&gt;'</span>, </span>
 <span id="cb52-3"><a href="#cb52-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">RSCONNECT_SECRET =</span> <span class="st">'&lt;secret&gt;'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>These will be passed to <code>rsconnect::setAccountInfo()</code> in our <code>deploy.R</code> file.</p>
+<p>These environmental variables are be passed to <code>rsconnect::setAccountInfo()</code> with a <code>deploy.R</code> file.</p>
 </section>
 <section id="deploy.r" class="level3" data-number="16.3.2">
 <h3 data-number="16.3.2" class="anchored" data-anchor-id="deploy.r"><span class="header-section-number">16.3.2</span> <span style="font-size: 0.95em; font-weight: bold;"><code>deploy.R</code></span></h3>
@@ -1483,8 +1484,8 @@ a. <span style="font-size: 0.90rem;"><code>run</code> installs the <code>rsconne
 <span id="cb54-15"><a href="#cb54-15" aria-hidden="true" tabindex="-1"></a>                <span class="fu">system.file</span>(<span class="st">"dev"</span>, <span class="at">package =</span> <span class="st">"moviesApp"</span>))</span>
 <span id="cb54-16"><a href="#cb54-16" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
 <span id="cb54-17"><a href="#cb54-17" aria-hidden="true" tabindex="-1"></a>    pkgload<span class="sc">::</span><span class="fu">load_all</span>()</span>
-<span id="cb54-18"><a href="#cb54-18" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb54-19"><a href="#cb54-19" aria-hidden="true" tabindex="-1"></a>  moviesApp<span class="sc">::</span><span class="fu">ggp2_movies_app</span>()</span>
+<span id="cb54-18"><a href="#cb54-18" aria-hidden="true" tabindex="-1"></a>    moviesApp<span class="sc">::</span><span class="fu">ggp2_movies_app</span>(<span class="at">options =</span> <span class="fu">list</span>(<span class="at">test.mode =</span> <span class="cn">FALSE</span>))</span>
+<span id="cb54-19"><a href="#cb54-19" aria-hidden="true" tabindex="-1"></a>  }</span>
 <span id="cb54-20"><a href="#cb54-20" aria-hidden="true" tabindex="-1"></a>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
@@ -1579,7 +1580,7 @@ a. <span style="font-size: 0.90rem;"><code>run</code> installs the <code>rsconne
 <figcaption>Installing R packages from <code>Dockerfile</code></figcaption>
 </figure>
 </div>
-<p>After the dependencies, the <code>moviesApp.tar.gz</code> is installed from <code>*source*</code>:</p>
+<p>After installing the dependencies, the <code>moviesApp.tar.gz</code> is installed from <code>*source*</code>:</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="images/gha_docker_shiny_build.png" class="img-fluid figure-img" style="width:100.0%"></p>
@@ -1593,22 +1594,22 @@ a. <span style="font-size: 0.90rem;"><code>run</code> installs the <code>rsconne
 <i class="callout-icon no-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span style="font-weight: bold; font-size: 1.15em;">Capturing and recording dependencies with <code>renv</code></span>
+<span style="font-weight: bold; font-size: 1.10em;">Capturing and recording dependencies with <code>renv</code></span>
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
 <div id="callout-4" class="callout-4-contents callout-collapse collapse show">
 <div class="callout-body-container callout-body">
-<div style="font-size: 1.10em; color: #282b2d;">
-<p>In the Shiny workflow example above we captured our application dependencies the <code>renv.lock</code> file and <code>renv/</code> folder, but when we used Docker <em>and</em> Shiny with Github Actions, we didn’t activate <code>renv</code>.</p>
-<p>We get away with this because when the workflow runs, we can see <code>renv</code> is still used to capture our dependencies (line 13 in the output below), we see a message about the packages listed in the <code>Suggests</code> field or our <code>DESCRIPTION</code>:</p>
+<div style="font-size: 1.05em; color: #282b2d;">
+<p>In the Shiny workflow example above, we captured the application dependencies with <code>renv</code>. However, in this Docker <em>and</em> Shiny workflow, we didn’t create a <code>renv.lock</code> file or a <code>renv/</code> folder.</p>
+<p>We get away with this because when the workflow runs, <code>renv</code> is used to capture the dependencies (line 9-12 in the output below). We see a message about the packages listed in the <code>Suggests</code> field or our <code>DESCRIPTION</code>:</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="images/gh_docker_dependencies.png" class="img-fluid figure-img" style="width:100.0%"></p>
 <figcaption>Docker dependencies</figcaption>
 </figure>
 </div>
-<p>Not having these packages installed doesn’t interfere with the application deploying because the packages listed in <code>Suggests</code> are used in<code>tests/</code>.</p>
+<p>Not having <code>shinytest2</code> and <code>testthat</code> packages installed won’t interfere with our application deploying because these packages are listed in the <code>Suggests</code> field in the <code>DESCRIPTION</code> file and are used in<code>tests/</code>.</p>
 </div>
 </div>
 </div>
@@ -1683,7 +1684,7 @@ a. <span style="font-size: 0.90rem;"><code>run</code> installs the <code>rsconne
 <li id="fn7"><p>“<em>This action assumes you have an <code>renv</code> lockfile in your repository that describes the R packages and versions required for your Shiny application.</em>” - <a href="https://github.com/r-lib/actions/tree/v2/examples#shiny-app-deployment">Shiny App Deployment</a><a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn8"><p>Instructions for the GitHub Action Shiny deployment can be found <a href="https://github.com/r-lib/actions/tree/v2/examples#shiny-app-deployment">here</a><a href="#fnref8" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn9"><p><code>run-on</code> is the latest Ubuntu runner and <code>env</code> is the <code>GITHUB_PAT</code> environment variable is your GitHub personal access token (access a secret with <code>secrets.&lt;SECRET_NAME&gt;</code>)<a href="#fnref9" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn10"><p>Automatically deploying a Shiny app for browsing #RStats tweets with GitHub Actions. Nicola Rennie. October 3, 2022. https://nrennie.rbind.io/blog/2022-10-05-automatically-deploying-a-shiny-app-for-browsing-rstats-tweets-with-github-actions/<a href="#fnref10" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn10"><p><a href="https://nrennie.rbind.io/blog/2022-10-05-automatically-deploying-a-shiny-app-for-browsing-rstats-tweets-with-github-actions/">Automatically deploying a Shiny app for browsing #RStats tweets with GitHub Actions.</a> Nicola Rennie. October 3, 2022.<a href="#fnref10" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn11"><p><code>att_amend_desc()</code> adds a <code>dev</code> folder with a YAML config file, but you can remove this before building/deploying.<a href="#fnref11" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>

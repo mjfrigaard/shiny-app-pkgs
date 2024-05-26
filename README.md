@@ -83,7 +83,7 @@ The contents of the text assumes you're comfortable with R, Posit Workbench, Shi
 
 The code examples can be found in the [`moviesApp` repo](https://github.com/mjfrigaard/moviesApp). The sections from each chapter can be found in the branches. 
 
-```bash
+``` sh
 git checkout <branch>
 ```
 
