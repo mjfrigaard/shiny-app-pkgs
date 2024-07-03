@@ -1,0 +1,1051 @@
+# charpente {#sec-charpente}
+
+```{r}
+#| eval: true 
+#| echo: false 
+#| include: false
+source("_common.R")
+```
+
+```{r}
+#| label: co_box_tldr
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b", 
+  look = "default", hsize = "1.15", size = "1.10",
+  header = "TLDR  &emsp; ![](images/charpente.png){width='10%'}", 
+  fold = TRUE,
+  contents = "
+<br>
+  
+"
+)
+```
+
+---
+
+## cap (a `charpente` app-package)
+
+This chapter walks through building a version of the `moviesApp` with the [`charpente`](https://rinterface.github.io/charpente/) framework. The resulting app-package (`cap`) is in the [`24_charpente`](https://github.com/mjfrigaard/moviesApp/tree/24_charpente) branch.
+
+```{r}
+#| eval: false
+#| code-fold: false
+install.packages("charpente")
+library(charpente)
+```
+
+## Set up
+
+Use `charpente` to create the necessary package structure and add your Shiny app:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+charpente::create_charpente_package(path = "path/to/cap")
+```
+
+`charpente` R packages include various files and directories that serve specific purposes, particularly for managing JavaScript dependencies, CSS styles, and other related assets:
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+├── CODE_OF_CONDUCT.md
+├── DESCRIPTION
+├── LICENSE
+├── LICENSE.md
+├── NAMESPACE
+├── NEWS.md
+├── R/
+│    └── cap-utils.R
+├── README.md
+├── cap.Rproj
+├── cran-comments.md
+├── inst/
+│    └── cap-0.0.0.9000
+├── node_modules/
+├── package-lock.json
+├── package.json
+├── srcjs/
+│    ├── main.js
+│    └── test
+├── styles/
+│    └── main.scss
+└── tests/
+    ├── testthat
+    └── testthat.R
+
+112 directories, 15 files
+```
+
+The new package has some files and folders we're not used to seeing in R packages--namely `package-lock.json`, `package.json`, `node_modules/`, `srcjs/`, and `styles/`.
+
+### `package-lock.json`
+
+`package-lock.json` is automatically generated for any operations where npm modifies either the `node_modules` tree or `package.json`. It describes the exact tree that was generated, so it is helpful for the consistent installation of dependencies.
+
+<details closed>
+  <summary>show/hide esbuild entry in package-lock.json</summary>
+  
+```json
+"node_modules/@esbuild/aix-ppc64": {
+  "version": "0.19.12",
+  "resolved": "https://registry.npmjs.org/@esbuild/aix-ppc64/-/aix-ppc64-0.19.12.tgz",
+  "integrity": "sha512-bmoCYyWdEL3wDQIVbcyzRyeKLgk2WtWLTWz1ZIAZF/EGbNOwSA6ew3PftJ1PqMiOOGu0OyFMzG53L0zqIpPeNA==",
+  "cpu": [
+    "ppc64"
+  ],
+  "dev": true,
+  "license": "MIT",
+  "optional": true,
+  "os": [
+    "aix"
+  ],
+  "engines": {
+    "node": ">=12"
+  }
+},
+```
+
+</details>
+
+### `package.json`
+
+`package.json` holds various metadata relevant to *this* project. This file is used to give information to npm that allows it to identify the project as well as handle the project’s dependencies. It can also contain other metadata such as a project `description`, `version`, `license`, and configuration data.
+
+<details>
+  <summary>show/hide package.json</summary>
+  
+```json
+{
+  "name": "cap",
+  "version": "0.0.0",
+  "description": "",
+  "private": true,
+  "main": "'main.js'",
+  "directories": {
+    "man": "man"
+  },
+  "type": "module",
+  "scripts": {
+    "test": "mocha srcjs/test",
+    "build-dev": "node esbuild.dev.js",
+    "build-prod": "node esbuild.prod.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT + file LICENSE",
+  "devDependencies": {
+    "autoprefixer": "^10.4.19",
+    "esbuild": "^0.19.12",
+    "esbuild-sass-plugin": "^2.16.1",
+    "mocha": "^8.4.0",
+    "postcss": "^8.4.39"
+  }
+}
+```
+
+</details>
+
+### `node_modules/`
+
+The `node_modules/` directory is where npm installs the project's dependencies. Any packages installed locally will be stored here, allowing the project to access the required modules.
+
+Below is an example `node_modules` folder in a new `charpente` package:
+
+```{bash}
+#| eval: false
+#| code-fold: true
+node_modules
+├── @esbuild
+│    └── darwin-x64
+├── @ungap
+│    └── promise-all-settled
+├── ansi-colors
+│    ├── LICENSE
+│    ├── README.md
+│    ├── index.js
+│    ├── package.json
+│    ├── symbols.js
+│    └── types
+├── ansi-regex
+│    ├── index.js
+│    ├── license
+│    ├── package.json
+│    └── readme.md
+├── ansi-styles
+│    ├── index.d.ts
+│    ├── index.js
+│    ├── license
+│    ├── package.json
+│    └── readme.md
+├── anymatch
+│    ├── LICENSE
+│    ├── README.md
+│    ├── index.d.ts
+│    ├── index.js
+│    └── package.json
+├── argparse
+│    ├── CHANGELOG.md
+│    ├── LICENSE
+│    ├── README.md
+│    ├── argparse.js
+│    ├── lib
+│    └── package.json
+├── autoprefixer
+│    ├── LICENSE
+│    ├── README.md
+│    ├── bin
+│    ├── data
+│    ├── lib
+│    └── package.json
+├── balanced-match
+│    ├── LICENSE.md
+│    ├── README.md
+│    ├── index.js
+│    └── package.json
+├── binary-extensions
+│    ├── binary-extensions.json
+│    ├── binary-extensions.json.d.ts
+│    ├── index.d.ts
+│    ├── index.js
+│    ├── license
+│    ├── package.json
+│    └── readme.md
+├── brace-expansion
+│    ├── LICENSE
+│    ├── README.md
+│    ├── index.js
+│    └── package.json
+├── braces
+│    ├── LICENSE
+│    ├── README.md
+│    ├── index.js
+│    ├── lib
+│    └── package.json
+├── browser-stdout
+│    ├── LICENSE
+│    ├── README.md
+│    ├── index.js
+│    └── package.json
+├── browserslist
+│    ├── LICENSE
+│    ├── README.md
+│    ├── browser.js
+│    ├── cli.js
+│    ├── error.d.ts
+│    ├── error.js
+│    ├── index.d.ts
+│    ├── index.js
+│    ├── node.js
+│    ├── package.json
+│    └── parse.js
+├── camelcase
+│    ├── index.d.ts
+│    ├── index.js
+│    ├── license
+│    ├── package.json
+│    └── readme.md
+├── caniuse-lite
+│    ├── LICENSE
+│    ├── README.md
+│    ├── data
+│    ├── dist
+│    └── package.json
+├── chalk
+│    ├── index.d.ts
+│    ├── license
+│    ├── node_modules
+│    ├── package.json
+│    ├── readme.md
+│    └── source
+├── chokidar
+│    ├── LICENSE
+│    ├── README.md
+│    ├── index.js
+│    ├── lib
+│    ├── package.json
+│    └── types
+├── cliui
+│    ├── CHANGELOG.md
+│    ├── LICENSE.txt
+│    ├── README.md
+│    ├── build
+│    ├── index.mjs
+│    ├── node_modules
+│    └── package.json
+├── color-convert
+│    ├── CHANGELOG.md
+│    ├── LICENSE
+│    ├── README.md
+│    ├── conversions.js
+│    ├── index.js
+│    ├── package.json
+│    └── route.js
+├── color-name
+│    ├── LICENSE
+│    ├── README.md
+│    ├── index.js
+│    └── package.json
+├── concat-map
+│    ├── LICENSE
+│    ├── README.markdown
+│    ├── example
+│    ├── index.js
+│    ├── package.json
+│    └── test
+├── debug
+│    ├── LICENSE
+│    ├── README.md
+│    ├── node_modules
+│    ├── package.json
+│    └── src
+├── decamelize
+│    ├── index.d.ts
+│    ├── index.js
+│    ├── license
+│    ├── package.json
+│    └── readme.md
+├── diff
+│    ├── CONTRIBUTING.md
+│    ├── LICENSE
+│    ├── README.md
+│    ├── dist
+│    ├── lib
+│    ├── package.json
+│    ├── release-notes.md
+│    └── runtime.js
+├── electron-to-chromium
+│    ├── LICENSE
+│    ├── README.md
+│    ├── chromium-versions.js
+│    ├── chromium-versions.json
+│    ├── full-chromium-versions.js
+│    ├── full-chromium-versions.json
+│    ├── full-versions.js
+│    ├── full-versions.json
+│    ├── index.js
+│    ├── package.json
+│    ├── versions.js
+│    └── versions.json
+├── emoji-regex
+│    ├── LICENSE-MIT.txt
+│    ├── README.md
+│    ├── es2015
+│    ├── index.d.ts
+│    ├── index.js
+│    ├── package.json
+│    └── text.js
+├── esbuild
+│    ├── LICENSE.md
+│    ├── README.md
+│    ├── bin
+│    ├── install.js
+│    ├── lib
+│    └── package.json
+├── esbuild-sass-plugin
+│    ├── LICENSE
+│    ├── README.md
+│    ├── lib
+│    ├── package.json
+│    └── src
+├── escalade
+│    ├── dist
+│    ├── index.d.ts
+│    ├── license
+│    ├── package.json
+│    ├── readme.md
+│    └── sync
+├── escape-string-regexp
+│    ├── index.d.ts
+│    ├── index.js
+│    ├── license
+│    ├── package.json
+│    └── readme.md
+├── fill-range
+│    ├── LICENSE
+│    ├── README.md
+│    ├── index.js
+│    └── package.json
+├── find-up
+│    ├── index.d.ts
+│    ├── index.js
+│    ├── license
+│    ├── package.json
+│    └── readme.md
+├── flat
+│    ├── LICENSE
+│    ├── README.md
+│    ├── cli.js
+│    ├── index.js
+│    ├── package.json
+│    └── test
+├── fraction.js
+│    ├── LICENSE
+│    ├── README.md
+│    ├── bigfraction.js
+│    ├── fraction.cjs
+│    ├── fraction.d.ts
+│    ├── fraction.js
+│    ├── fraction.min.js
+│    └── package.json
+├── fs.realpath
+│    ├── LICENSE
+│    ├── README.md
+│    ├── index.js
+│    ├── old.js
+│    └── package.json
+├── fsevents
+│    ├── LICENSE
+│    ├── README.md
+│    ├── fsevents.d.ts
+│    ├── fsevents.js
+│    ├── fsevents.node
+│    └── package.json
+├── function-bind
+│    ├── CHANGELOG.md
+│    ├── LICENSE
+│    ├── README.md
+│    ├── implementation.js
+│    ├── index.js
+│    ├── package.json
+│    └── test
+├── get-caller-file
+│    ├── LICENSE.md
+│    ├── README.md
+│    ├── index.d.ts
+│    ├── index.js
+│    ├── index.js.map
+│    └── package.json
+├── glob
+│    ├── LICENSE
+│    ├── README.md
+│    ├── changelog.md
+│    ├── common.js
+│    ├── glob.js
+│    ├── package.json
+│    └── sync.js
+├── glob-parent
+│    ├── CHANGELOG.md
+│    ├── LICENSE
+│    ├── README.md
+│    ├── index.js
+│    └── package.json
+├── growl
+│    ├── History.md
+│    ├── Readme.md
+│    ├── lib
+│    ├── package.json
+│    └── test.js
+├── has-flag
+│    ├── index.d.ts
+│    ├── index.js
+│    ├── license
+│    ├── package.json
+│    └── readme.md
+├── hasown
+│    ├── CHANGELOG.md
+│    ├── LICENSE
+│    ├── README.md
+│    ├── index.d.ts
+│    ├── index.js
+│    ├── package.json
+│    └── tsconfig.json
+├── he
+│    ├── LICENSE-MIT.txt
+│    ├── README.md
+│    ├── bin
+│    ├── he.js
+│    ├── man
+│    └── package.json
+├── immutable
+│    ├── LICENSE
+│    ├── README.md
+│    ├── dist
+│    └── package.json
+├── inflight
+│    ├── LICENSE
+│    ├── README.md
+│    ├── inflight.js
+│    └── package.json
+├── inherits
+│    ├── LICENSE
+│    ├── README.md
+│    ├── inherits.js
+│    ├── inherits_browser.js
+│    └── package.json
+├── is-binary-path
+│    ├── index.d.ts
+│    ├── index.js
+│    ├── license
+│    ├── package.json
+│    └── readme.md
+├── is-core-module
+│    ├── CHANGELOG.md
+│    ├── LICENSE
+│    ├── README.md
+│    ├── core.json
+│    ├── index.js
+│    ├── package.json
+│    └── test
+├── is-extglob
+│    ├── LICENSE
+│    ├── README.md
+│    ├── index.js
+│    └── package.json
+├── is-fullwidth-code-point
+│    ├── index.js
+│    ├── license
+│    ├── package.json
+│    └── readme.md
+├── is-glob
+│    ├── LICENSE
+│    ├── README.md
+│    ├── index.js
+│    └── package.json
+├── is-number
+│    ├── LICENSE
+│    ├── README.md
+│    ├── index.js
+│    └── package.json
+├── is-plain-obj
+│    ├── index.d.ts
+│    ├── index.js
+│    ├── license
+│    ├── package.json
+│    └── readme.md
+├── isexe
+│    ├── LICENSE
+│    ├── README.md
+│    ├── index.js
+│    ├── mode.js
+│    ├── package.json
+│    ├── test
+│    └── windows.js
+├── js-yaml
+│    ├── CHANGELOG.md
+│    ├── LICENSE
+│    ├── README.md
+│    ├── bin
+│    ├── dist
+│    ├── index.js
+│    ├── lib
+│    └── package.json
+├── locate-path
+│    ├── index.d.ts
+│    ├── index.js
+│    ├── license
+│    ├── package.json
+│    └── readme.md
+├── log-symbols
+│    ├── browser.js
+│    ├── index.d.ts
+│    ├── index.js
+│    ├── license
+│    ├── package.json
+│    └── readme.md
+├── minimatch
+│    ├── LICENSE
+│    ├── README.md
+│    ├── minimatch.js
+│    └── package.json
+├── mocha
+│    ├── CHANGELOG.md
+│    ├── LICENSE
+│    ├── README.md
+│    ├── assets
+│    ├── bin
+│    ├── browser-entry.js
+│    ├── index.js
+│    ├── lib
+│    ├── mocha.css
+│    ├── mocha.js
+│    ├── mocha.js.map
+│    └── package.json
+├── ms
+│    ├── index.js
+│    ├── license.md
+│    ├── package.json
+│    └── readme.md
+├── nanoid
+│    ├── CHANGELOG.md
+│    ├── LICENSE
+│    ├── README.md
+│    ├── async
+│    ├── bin
+│    ├── index.browser.js
+│    ├── index.cjs
+│    ├── index.d.ts
+│    ├── index.dev.js
+│    ├── index.js
+│    ├── index.prod.js
+│    ├── nanoid.js
+│    ├── non-secure
+│    ├── package.json
+│    └── url-alphabet
+├── node-releases
+│    ├── LICENSE
+│    ├── README.md
+│    ├── data
+│    └── package.json
+├── normalize-path
+│    ├── LICENSE
+│    ├── README.md
+│    ├── index.js
+│    └── package.json
+├── normalize-range
+│    ├── index.js
+│    ├── license
+│    ├── package.json
+│    └── readme.md
+├── once
+│    ├── LICENSE
+│    ├── README.md
+│    ├── once.js
+│    └── package.json
+├── p-limit
+│    ├── index.d.ts
+│    ├── index.js
+│    ├── license
+│    ├── package.json
+│    └── readme.md
+├── p-locate
+│    ├── index.d.ts
+│    ├── index.js
+│    ├── license
+│    ├── package.json
+│    └── readme.md
+├── path-exists
+│    ├── index.d.ts
+│    ├── index.js
+│    ├── license
+│    ├── package.json
+│    └── readme.md
+├── path-is-absolute
+│    ├── index.js
+│    ├── license
+│    ├── package.json
+│    └── readme.md
+├── path-parse
+│    ├── LICENSE
+│    ├── README.md
+│    ├── index.js
+│    └── package.json
+├── picocolors
+│    ├── LICENSE
+│    ├── README.md
+│    ├── package.json
+│    ├── picocolors.browser.js
+│    ├── picocolors.d.ts
+│    ├── picocolors.js
+│    └── types.ts
+├── picomatch
+│    ├── CHANGELOG.md
+│    ├── LICENSE
+│    ├── README.md
+│    ├── index.js
+│    ├── lib
+│    └── package.json
+├── postcss
+│    ├── LICENSE
+│    ├── README.md
+│    ├── lib
+│    ├── node_modules
+│    └── package.json
+├── postcss-value-parser
+│    ├── LICENSE
+│    ├── README.md
+│    ├── lib
+│    └── package.json
+├── randombytes
+│    ├── LICENSE
+│    ├── README.md
+│    ├── browser.js
+│    ├── index.js
+│    ├── package.json
+│    └── test.js
+├── readdirp
+│    ├── LICENSE
+│    ├── README.md
+│    ├── index.d.ts
+│    ├── index.js
+│    └── package.json
+├── require-directory
+│    ├── LICENSE
+│    ├── README.markdown
+│    ├── index.js
+│    └── package.json
+├── resolve
+│    ├── LICENSE
+│    ├── SECURITY.md
+│    ├── async.js
+│    ├── bin
+│    ├── example
+│    ├── index.js
+│    ├── lib
+│    ├── package.json
+│    ├── readme.markdown
+│    ├── sync.js
+│    └── test
+├── safe-buffer
+│    ├── LICENSE
+│    ├── README.md
+│    ├── index.d.ts
+│    ├── index.js
+│    └── package.json
+├── sass
+│    ├── LICENSE
+│    ├── README.md
+│    ├── package.json
+│    ├── sass.dart.js
+│    ├── sass.default.cjs
+│    ├── sass.default.js
+│    ├── sass.js
+│    ├── sass.node.js
+│    ├── sass.node.mjs
+│    └── types
+├── serialize-javascript
+│    ├── LICENSE
+│    ├── README.md
+│    ├── index.js
+│    └── package.json
+├── source-map-js
+│    ├── LICENSE
+│    ├── README.md
+│    ├── lib
+│    ├── package.json
+│    ├── source-map.d.ts
+│    └── source-map.js
+├── string-width
+│    ├── index.js
+│    ├── license
+│    ├── package.json
+│    └── readme.md
+├── strip-ansi
+│    ├── index.js
+│    ├── license
+│    ├── package.json
+│    └── readme.md
+├── strip-json-comments
+│    ├── index.d.ts
+│    ├── index.js
+│    ├── license
+│    ├── package.json
+│    └── readme.md
+├── supports-color
+│    ├── browser.js
+│    ├── index.js
+│    ├── license
+│    ├── package.json
+│    └── readme.md
+├── supports-preserve-symlinks-flag
+│    ├── CHANGELOG.md
+│    ├── LICENSE
+│    ├── README.md
+│    ├── browser.js
+│    ├── index.js
+│    ├── package.json
+│    └── test
+├── to-regex-range
+│    ├── LICENSE
+│    ├── README.md
+│    ├── index.js
+│    └── package.json
+├── update-browserslist-db
+│    ├── LICENSE
+│    ├── README.md
+│    ├── check-npm-version.js
+│    ├── cli.js
+│    ├── index.d.ts
+│    ├── index.js
+│    ├── package.json
+│    └── utils.js
+├── which
+│    ├── CHANGELOG.md
+│    ├── LICENSE
+│    ├── README.md
+│    ├── bin
+│    ├── package.json
+│    └── which.js
+├── wide-align
+│    ├── LICENSE
+│    ├── README.md
+│    ├── align.js
+│    └── package.json
+├── workerpool
+│    ├── HISTORY.md
+│    ├── LICENSE
+│    ├── README.md
+│    ├── dist
+│    ├── package.json
+│    └── src
+├── wrap-ansi
+│    ├── index.js
+│    ├── license
+│    ├── node_modules
+│    ├── package.json
+│    └── readme.md
+├── wrappy
+│    ├── LICENSE
+│    ├── README.md
+│    ├── package.json
+│    └── wrappy.js
+├── y18n
+│    ├── CHANGELOG.md
+│    ├── LICENSE
+│    ├── README.md
+│    ├── build
+│    ├── index.mjs
+│    └── package.json
+├── yargs
+│    ├── CHANGELOG.md
+│    ├── LICENSE
+│    ├── README.md
+│    ├── browser.mjs
+│    ├── build
+│    ├── helpers
+│    ├── index.cjs
+│    ├── index.mjs
+│    ├── lib
+│    ├── locales
+│    ├── node_modules
+│    ├── package.json
+│    └── yargs
+├── yargs-parser
+│    ├── CHANGELOG.md
+│    ├── LICENSE.txt
+│    ├── README.md
+│    ├── browser.js
+│    ├── build
+│    └── package.json
+├── yargs-unparser
+│    ├── CHANGELOG.md
+│    ├── LICENSE
+│    ├── README.md
+│    ├── index.js
+│    └── package.json
+└── yocto-queue
+    ├── index.d.ts
+    ├── index.js
+    ├── license
+    ├── package.json
+    └── readme.md
+
+172 directories, 502 files
+```
+
+### `srcjs/`
+
+`srcjs/` is intended to store source JavaScript files that you might write and use in your R package. These JavaScript files can then be processed and bundled for inclusion in the R package, particularly if you are using a package like `charpente` to manage and build JavaScript assets for use in Shiny applications or other interactive features.
+
+#### `srcjs/main.js` {.unnumbered}
+
+`srcjs/main.js` is the primary JavaScript file that may contain the main logic or functionality required by the package.
+
+```js
+import "../styles/main.scss";
+```
+
+#### `srcjs/test/test_basic.js` {.unnumbered}
+
+```js
+describe('Basic test', () => {
+      it('should not fail', (done) => {
+        done();
+      });
+    });
+    
+```
+
+### `styles/`
+
+The `styles/` directory is used for storing CSS stylesheets. These stylesheets can define the visual appearance of your Shiny applications or any web components used within the R package. By organizing styles in this directory, you can manage and maintain the CSS separate from the R and JavaScript code.
+
+### `R/cap-utils.R`
+
+This file contains R functions and code that are part of the package. It is placed in the `R/` directory, which is the primary location for all R code within the package.
+
+### `cran-comments.md`
+
+`cran-comments.md` includes notes and comments for the CRAN maintainers when submitting the package to CRAN. It typically contains information about the submission, testing, and any issues addressed.
+
+### `inst/cap-0.0.0.9000`
+
+`inst/` can contain additional files that are to be installed with the package but are not part of the R code. These files might include documentation, data, or other resources.
+
+These components are part of a modern approach to integrating JavaScript and CSS with R packages, especially for Shiny applications, ensuring that web dependencies are managed effectively and the package structure remains organized and maintainable.
+
+## Development 
+
+### `create_custom_handler()`
+
+The `create_custom_handler()` function is used to create a custom JavaScript handler. Here is an example of how to use it:
+
+```r
+# Load the charpente package
+library(charpente)
+
+# Create a custom JS handler
+charpente::create_custom_handler(
+  path = "path/to/your/package",
+  name = "my_custom_handler"
+)
+
+# Example content for inst/app/www/my_custom_handler.js
+# Add this JavaScript code to the created file
+
+#' Custom handler for special button click
+#' 
+#' @noRd
+Shiny.addCustomMessageHandler('customMessage', function(message) {
+  alert('Received custom message: ' + message);
+});
+```
+
+### `create_input_binding()`
+
+The `create_input_binding()` function is used to create a custom Shiny input binding. Here is an example:
+
+```r
+# Load the charpente package
+library(charpente)
+
+# Create a custom input binding
+charpente::create_input_binding(
+  path = "path/to/your/package",
+  name = "my_custom_input"
+)
+
+# Example content for inst/app/www/my_custom_input.js
+# Add this JavaScript code to the created file
+
+#' Custom input binding for my_special_input
+#' 
+#' @noRd
+var myCustomInputBinding = new Shiny.InputBinding();
+$.extend(myCustomInputBinding, {
+  find: function(scope) {
+    return $(scope).find(".my-special-input");
+  },
+  getValue: function(el) {
+    return $(el).val();
+  },
+  setValue: function(el, value) {
+    $(el).val(value);
+  },
+  subscribe: function(el, callback) {
+    $(el).on("change.myCustomInputBinding", function(e) {
+      callback();
+    });
+  },
+  unsubscribe: function(el) {
+    $(el).off(".myCustomInputBinding");
+  }
+});
+Shiny.inputBindings.register(myCustomInputBinding);
+```
+
+### `create_output_binding()`
+
+The `create_output_binding()` function is used to create a custom Shiny output binding. Here is an example:
+
+```r
+# Load the charpente package
+library(charpente)
+```
+
+```r
+# Create a custom output binding
+charpente::create_output_binding(
+  path = "path/to/your/package",
+  name = "my_custom_output"
+)
+```
+
+```r
+# Example content for inst/app/www/my_custom_output.js
+# Add this JavaScript code to the created file
+
+#' Custom output binding for my_special_output
+#' 
+#' @noRd
+var myCustomOutputBinding = new Shiny.OutputBinding();
+$.extend(myCustomOutputBinding, {
+  find: function(scope) {
+    return $(scope).find(".my-special-output");
+  },
+  renderValue: function(el, data) {
+    $(el).html(data);
+  }
+});
+Shiny.outputBindings.register(myCustomOutputBinding);
+```
+
+### Putting It All Together in a Shiny App
+
+Here's how you can use these custom bindings in a Shiny app within your package:
+
+1. **UI**:
+
+```r
+library(shiny)
+
+app_ui <- fluidPage(
+  tags$head(
+    tags$script(src = "www/my_custom_handler.js"),
+    tags$script(src = "www/my_custom_input.js"),
+    tags$script(src = "www/my_custom_output.js")
+  ),
+  textInput("my_special_input", "Enter text"),
+  actionButton("send_message", "Send Message"),
+  div(class = "my-special-output", "Output will appear here")
+)
+```
+
+2. **Server**:
+
+```r
+app_server <- function(input, output, session) {
+  observeEvent(input$send_message, {
+    session$sendCustomMessage("customMessage", input$my_special_input)
+  })
+  
+  output$my_special_output <- renderText({
+    paste("You entered:", input$my_special_input)
+  })
+}
+```
+
+3. **Run the App**:
+
+```r
+# Create app.R in the inst/app directory
+library(shiny)
+source("app_ui.R")
+source("app_server.R")
+
+shinyApp(ui = app_ui, server = app_server)
+```
+
+```r
+# Add Shiny app structure
+charpente::add_shiny(path = "path/to/your/package")
+
+# Add custom JS handlers and bindings
+charpente::create_custom_handler(path = "path/to/your/package", name = "my_custom_handler")
+charpente::create_input_binding(path = "path/to/your/package", name = "my_custom_input")
+charpente::create_output_binding(path = "path/to/your/package", name = "my_custom_output")
+```
+
+These steps will create a structured R package with a Shiny application, incorporating custom JavaScript handlers and input/output bindings using the `charpente` package.
+
+## Tests 
+
+## Deployment 
+
+## Summary of charpente features 
+
+## Dependencies 
+

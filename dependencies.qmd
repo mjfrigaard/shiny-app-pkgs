@@ -79,7 +79,7 @@ launch(app = "06.2_pkg-imports")
 
 Dependencies are the must-have components for your app-package, and they can be divided into imports and exports. **Imports** are the functions we're borrowing from add-on/third party packages (i.e., any packages not automatically loaded in a new R session). **Exports** are the functions, data, and other R objects our app-package offers to users.
 
-Dependencies are handled using `roxygen2` tags (to generate the `NAMESPACE`) and three fields in the `DESCRIPTION` file (`Suggests`, `Imports`, or `Depends`). Multiple packages can help you manage the dependencies in your app-package, and these are covered in the [Entanglement](entanglement.qmd) chapter.
+Dependencies are handled using `roxygen2` tags (to generate the `NAMESPACE`) and three fields in the `DESCRIPTION` file (`Suggests`, `Imports`, or `Depends`). Multiple packages can help you manage the dependencies in your app-package, and these are covered in the [Dependency hell](entanglement.qmd) chapter.
 
 
 This chapter will pick up where we left off with the [`05_roxygen2`](document.qmd)  branch of  `moviesApp`.
@@ -95,7 +95,7 @@ moviesApp/
   ├── R/
   │   ├── mod_scatter_display.R
   │   ├── mod_var_input.R
-  │   ├── movies_app.R
+  │   ├── launch_app.R
   │   ├── movies_server.R
   │   ├── movies_ui.R
   │   └── utils.R
@@ -106,7 +106,7 @@ moviesApp/
   │   ├── mod_scatter_display_ui.Rd
   │   ├── mod_var_input_server.Rd
   │   ├── mod_var_input_ui.Rd
-  │   ├── movies_app.Rd
+  │   ├── launch_app.Rd
   │   ├── movies_server.Rd
   │   ├── movies_ui.Rd
   │   └── scatter_plot.Rd # <1>
@@ -220,7 +220,7 @@ The first step in managing dependencies is identifying which add-on packages `mo
 
 [^depends-pkg-ns]: I've made this process somewhat easier by explicitly namespacing all of the add-on package functions in `moviesApp` (i.e., with `pkg::fun()`).
 
-In the last chapter, we moved and documented the standalone app function (`movies_app()`) in the `R/` folder. The `app.R` file now only contains the following: 
+In the last chapter, we moved and documented the standalone app function (`launch_app()`) in the `R/` folder. The `app.R` file now only contains the following: 
 
 ```{r}
 #| eval: false
@@ -235,8 +235,8 @@ library(stringr)
 library(ggplot2)
 library(rlang)
 
-# movies_app ------------------------------------
-movies_app()
+# launch_app ------------------------------------
+launch_app()
 ```
 
 Ideally, we'll want to replace these calls to `libary()`, but first we have to make sure the functions we're using in these packages will be available in `moviesApp`.
@@ -257,12 +257,12 @@ When we run the contents of `app.R`, we see the following:
 > library(ggplot2)
 > library(rlang)
 > 
-> # movies_app ------------------------------------
-> movies_app()
-Error in movies_app() : could not find function "movies_app"
+> # launch_app ------------------------------------
+> launch_app()
+Error in launch_app() : could not find function "launch_app"
 ```
 
-Why can't R find the `"movies_app"` function in `app.R`? 
+Why can't R find the `"launch_app"` function in `app.R`? 
 
 Let's recap what we've done so far: 
 
@@ -270,7 +270,7 @@ Let's recap what we've done so far:
 
 ### [`app.R`]{style="font-size: 1.05em"} {.unnumbered}
 
-1. The `app.R` file loads the necessary packages and calls `movies_app()`:
+1. The `app.R` file loads the necessary packages and calls `launch_app()`:
 
 ### {.unnumbered}
 
@@ -285,14 +285,14 @@ moviesApp/
 
 ### [`R/`]{style="font-size: 1.05em"} {.unnumbered}
 
-2. The `R/movies_app.R` file contains the code and `roxygen2` documentation for `movies_app()` function:
+2. The `R/launch_app.R` file contains the code and `roxygen2` documentation for `launch_app()` function:
 
 ### {.unnumbered}
 
 ``` sh
 moviesApp/
     └── R/
-        └── movies_app.R
+        └── launch_app.R
 
 ```
 
@@ -303,14 +303,14 @@ moviesApp/
 
 ### [`man/`]{style="font-size: 1.05em"} {.unnumbered}
 
-3. `roxygen2` generates the `man/movies_app.Rd` documentation file:
+3. `roxygen2` generates the `man/launch_app.Rd` documentation file:
 
 ### {.unnumbered}
 
 ``` sh
 moviesApp/
     └── man/
-          └── movies_app.Rd
+          └── launch_app.Rd
 
 ```
 
@@ -318,20 +318,20 @@ moviesApp/
 
 ## Exports {#sec-depends-exports} 
 
-The error above is telling us that despite having documentation for `movies_app()` in the `R/` folder *and* generating the corresponding `.Rd` file in `man/`, `movies_app()` isn't being **exported** from `moviesApp`.
+The error above is telling us that despite having documentation for `launch_app()` in the `R/` folder *and* generating the corresponding `.Rd` file in `man/`, `launch_app()` isn't being **exported** from `moviesApp`.
 
-The exact cause of the error above becomes more apparent when we try to explicitly namespace `movies_app()` from `moviesApp`:
+The exact cause of the error above becomes more apparent when we try to explicitly namespace `launch_app()` from `moviesApp`:
 
 ```{r}
 #| eval: false
 #| code-fold: false
-moviesApp::movies_app()
+moviesApp::launch_app()
 ```
 
 ```{verbatim}
 #| eval: false
 #| code-fold: false
-Error: 'movies_app' is not an exported object from 'namespace:moviesApp'
+Error: 'launch_app' is not an exported object from 'namespace:moviesApp'
 ```
 
 ```{r}
@@ -346,7 +346,7 @@ git_margin_box(
   repo = 'moviesApp')
 ```
 
-To make the `movies_app()` function available to users of our package, we need to export it. We export functions by including the `@export` tag in the `roxygen2` comment block (above the function we want to export):
+To make the `launch_app()` function available to users of our package, we need to export it. We export functions by including the `@export` tag in the `roxygen2` comment block (above the function we want to export):
 
 -   **`@export`**: The function name (`my_func`) is not required. 
 
@@ -361,9 +361,9 @@ To make the `movies_app()` function available to users of our package, we need t
     
     -   Read more [here](https://r-pkgs.org/dependencies-in-practice.html#exports)
     
-### Export [`movies_app()`]{style="font-size: 1.00em;"}
+### Export [`launch_app()`]{style="font-size: 1.00em;"}
 
-Let's start by exporting the `movies_app()` function from `moviesApp` by placing the `@export` tag above the function in `R/movies_app.R`:
+Let's start by exporting the `launch_app()` function from `moviesApp` by placing the `@export` tag above the function in `R/launch_app.R`:
 
 ```{r}
 #| eval: false 
@@ -379,7 +379,7 @@ Let's start by exporting the `movies_app()` function from `moviesApp` by placing
 #'
 #' @export
 #' 
-movies_app <- function() {
+launch_app <- function() {
   shiny::shinyApp(ui = movies_ui, server = movies_server)
 }
 ```
@@ -392,8 +392,8 @@ In `app.R`, we'll replace the calls to `library()` with a single call to `librar
 # packages ------------------------------------
 library(moviesApp)
 
-# movies_app ------------------------------------
-movies_app()
+# launch_app ------------------------------------
+launch_app()
 ```
 
 We'll load, document, and install the package to generate the `NAMESPACE` changes: 
@@ -408,7 +408,7 @@ hot_key("all")
 
 Now, when we run the code `app.R`, we see the following: 
 
-![`movies_app()`](images/dep_exported_app_fun.png){width=100%}
+![`launch_app()`](images/dep_exported_app_fun.png){width=100%}
 
 :::{.column-margin}
 
@@ -416,22 +416,22 @@ We've lost the Shiny icon (`www/shiny.png`) in the UI, but we'll address this in
 
 :::
 
-`movies_app()` launches our application!
+`launch_app()` launches our application!
 
 <!-- first dimension defines rows and the second columns -->
 <!-- "layout="[[1,1], [1]]" translates to: create two rows, the first of which has two columns of equal size and the second of which has a single column. -->
 
-The `NAMESPACE` file now contains a single export (`movies_app`), and when we enter `moviesApp::` in the **Console**, we see the `movies_app()` function help file in the tab completion.
+The `NAMESPACE` file now contains a single export (`launch_app`), and when we enter `moviesApp::` in the **Console**, we see the `launch_app()` function help file in the tab completion.
  
 :::: {.column-body-outset-right}
 
 ::: {#fig-dep_exported_namespace layout-ncol=2}
 
-![updated `NAMESPACE`](images/dep_exported_namespace.png){#fig-dep_exported_namespace width=40%}
+![updated `NAMESPACE`](images/dep_exported_namespace.png){#fig-dep_exported_namespace width=80%}
 
-![`moviesApp` namespace](images/dep_exported_movies_app.png){#fig-03_dependencies_namespace width=60%}
+![`moviesApp` namespace](images/dep_exported_launch_app.png){#fig-03_dependencies_namespace width=80%}
 
-The `movies_app()` is now part of the `moviesApp` namespace
+The `launch_app()` is now part of the `moviesApp` namespace
 :::
 
 ::::
@@ -456,21 +456,13 @@ If you'd like a function to be exported, but not listed in your app-package inde
 #' @keywords internal
 \`\`\`
   
-For example, adding `@export` and `@keywords internal` to `R/scatter_plot.R` will make the function accessible to users: 
+For example, adding `@export` and `@keywords internal` to `R/scatter_plot.R` will make the function accessible to users and generate a help file:
   
-![](img/keywords_internal_namespace.png){width='80%' fig-align='center'}
+![](images/depends_keywords_internal_namespace.png){width='80%' fig-align='center'}
   
-And generate a help file:
+But if a user were to click on the **Index** for `moviesApp` (at the bottom of the help file) `scatter_plot` would not be listed:
   
-![](img/keywords_internal_rd.png){width='80%' fig-align='center'}
-  
-But if a user were to click on the **Index** for `moviesApp` (at the bottom of the help file):
-  
-![](img/pkg_index.png){width='65%' fig-align='center'}
-  
-`scatter_plot` would not be listed:
-  
-![](img/shinyAppPkg_index.png){width='80%' fig-align='center'}
+![](images/depends_pkg_index.png){width='65%' fig-align='center'}
   
 Using `@keywords internal` *without* `@export` will result in a helpfile, but the function will only be accessible using `pkg:::fun()` (three colons, not two!).
   
@@ -482,9 +474,9 @@ Using `@keywords internal` *without* `@export` will result in a helpfile, but th
 
 ### What [`@export`]{style="font-size: 1.00em;"} does
 
-We'll pause here to notice a few things about what `@export` does. After loading, documenting, and installing `moviesApp`, the `NAMESPACE` is updated with `export(movies_app)`, and the **Console** automatically calls `library(moviesApp)`.
+We'll pause here to notice a few things about what `@export` does. After loading, documenting, and installing `moviesApp`, the `NAMESPACE` is updated with `export(launch_app)`, and the **Console** automatically calls `library(moviesApp)`.
 
-`ls()` returns "*the names of the objects in the specified environment*, so we can use it to confirm the `movies_app()` function is the only export from `moviesApp`:
+`ls()` returns "*the names of the objects in the specified environment*, so we can use it to confirm the `launch_app()` function is the only export from `moviesApp`:
 
 ```{r}
 #| eval: false
@@ -495,7 +487,7 @@ ls(name = "package:moviesApp")
 ```{verbatim}
 #| eval: false
 #| code-fold: false
-[1] "movies_app"
+[1] "launch_app"
 ```
 
 #### The [`search()`]{style="font-size: 1.00em;"} list
@@ -514,7 +506,7 @@ ls(name = "package:moviesApp")
 [1] TRUE
 ```
 
-What about the functions from add-on/third party packages `movies_app()` relies on, like `ggplot2`?
+What about the functions from add-on/third party packages `launch_app()` relies on, like `ggplot2`?
 
 Let's check to see if `ggplot2` is also attached to the `search()` list: 
 
@@ -595,7 +587,7 @@ Examples in `scatter_plot()` function without exporting
 
 [Examples for 'moviesApp::scatter_plot']{style="font-weight: bold; font-size: 1.15em;"}
 
-The message at the top of the **Help** pane is informative because it tells us that despite `scatter_plot()` being functional when we run `movies_app()`, it's not part of the package namespace (and thus, not accessible to users in the help file). 
+The message at the top of the **Help** pane is informative because it tells us that despite `scatter_plot()` being functional when we run `launch_app()`, it's not part of the package namespace (and thus, not accessible to users in the help file). 
 
 #### Export [`scatter_plot()`]{style="font-size: 1.0em;"}
 
@@ -650,9 +642,9 @@ The contents of the updated `NAMESPACE` file are below (and `moviesApp::` in the
 
 ::: {#fig-deps_scatter_plot_exported layout-ncol=2}
 
-![`@export` the `scatter_plot` function](images/dep_scatter_plot_exported.png){#fig-deps_scatter_plot_exported width='45%' fig-align='center'}
+![`@export` the `scatter_plot` function](images/dep_scatter_plot_exported.png){#fig-deps_scatter_plot_exported width='95%' fig-align='center'}
 
-![`moviesApp::scatter_plot()`](images/dep_scatter_plot_namespace.png){#fig-deps_scatter_plot_exported width='55%' fig-align='center'}
+![`moviesApp::scatter_plot()`](images/dep_scatter_plot_namespace.png){#fig-deps_scatter_plot_exported width='95%' fig-align='center'}
 
 `scatter_plot()` is now part of the `moviesApp` namespace
 :::
@@ -722,7 +714,7 @@ When determining which functions to export, consider the question: "*When a user
 
 In app-packages, I'll take the following general approach:
 
--   Start by exporting the standalone app function (`movies_app()`)
+-   Start by exporting the standalone app function (`launch_app()`)
 
 -   Then selectively export modules and/or functions that perform distinct tasks with potentially reusable functionality (i.e., generate specific UI components, perform data processing tasks, etc.).
 
@@ -813,14 +805,14 @@ We have some special considerations for the imported add-on functions in our app
 
 #### [`@import shiny`]{style="font-size: 1.0em; font-weight: bold;"} {.unnumbered}
 
-A substantial portion of the code in `moviesApp` comes from `shiny`, so we'll remove the explicit namespacing and place the `@import` tag in `R/movies_app.R`[^ms-imports]
+A substantial portion of the code in `moviesApp` comes from `shiny`, so we'll remove the explicit namespacing and place the `@import` tag in `R/launch_app.R`[^ms-imports]
   
 [^ms-imports]: Using `@import` is not generally considered best practice, but it makes sense for app-packages: *...for Shiny apps, I recommend using `@import shiny` to make all the functions in the Shiny package easily available.* [Mastering Shiny, R CMD check](https://mastering-shiny.org/scaling-packaging.html#r-cmd-check)"
   
 ```{r}
 #| eval: false
 #| code-fold: show 
-#| code-summary: 'show/hide R/movies_app.R'
+#| code-summary: 'show/hide R/launch_app.R'
 #' Movies app standalone function
 #'
 #' Wrapper function for `shinyApp()`
@@ -945,6 +937,8 @@ movies_ui <- function() {
 ```
 
 
+
+
 After adding all add-on packages to the `DESCRIPTION` with `usethis::use_package()`, then deciding if/where to use `@importFrom` and `@import`, we'll load, document, and install `moviesApp`:
 
 ```{r}
@@ -965,7 +959,7 @@ Updated `NAMESPACE` with `@import` and `@importFrom`
 ``` sh
 # Generated by roxygen2: do not edit by hand
 
-export(movies_app)
+export(launch_app)
 export(scatter_plot)
 import(shiny)
 importFrom(rlang,.data)
@@ -1006,11 +1000,11 @@ RoxygenNote: 7.3.1
 
 -->
 
-When we run `movies_app()`, we see the application launches and we can still run the `scatter_plot()` examples: 
+When we run `launch_app()`, we see the application launches and we can still run the `scatter_plot()` examples: 
 
 ::: {#fig-import_check_app_examples layout-ncol=2}
 
-![`movies_app()` works](images/dep_imports_app_fun.png){#fig-import_check_app_examples width='100%' align='center'}
+![`launch_app()` works](images/dep_imports_app_fun.png){#fig-import_check_app_examples width='100%' align='center'}
 
 ![Examples in `?scatter_plot`](images/dep_run_examples_scatter_plot.png){#fig-import_check_app_examples width='100%' align='center'}
 
@@ -1025,12 +1019,53 @@ The figure below attempts to capture some of confusion between the dependencies 
 
 ::: {#fig-deps_roxygenize_desc}
 
-![`roxygen2` does not connect the `NAMESPACE` to the `DESCRIPTION`](images/dep_roxygenize_desc.png){#fig-deps_roxygenize_desc width='70%' align='center'}
+<!-- ![`roxygen2` does not connect the `NAMESPACE` to the `DESCRIPTION`](images/dep_roxygenize_desc.png){#fig-deps_roxygenize_desc width='70%' align='center'} -->
+
+```{=html}
+
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.75rem;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #faf9ed;
+  padding: 0.2em;
+}
+
+</style>
+```
+
+```{mermaid}
+%%| fig-width: 6.5
+%%| fig-align: center
+%%| fig-cap: "`devtools::document` does not change the `DESCRIPTION`"
+%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'Inconsolata', 'primaryColor': '#89D6FB', 'edgeLabelBackground':'#02577A'}}}%%
+
+flowchart TD
+  X1(Code in <code>R/</code> Folder) --> X2(<code>roxygen2</code> Comments and Tags in <code>.R</code> Files)
+  X2 --> X3(Run <code>devtools::document</code>)
+  X3 --> note[<code>roxygen2</code> doesn't change the <code>DESCRIPTION</code> file]
+  X3 --> X4(Parse <code>roxygen2</code> Comments and Tags)
+  X4 --> X5(Generate <code>.Rd</code> Files in <code>man/</code> Folder)
+  X4 --> X6(Generate <code>NAMESPACE</code> File)
+  
+  style X1 fill:#8dd38d,stroke:none,rx:10,ry:10;
+  style X2 fill:#8dd38d,stroke:none,rx:10,ry:10;
+  style X3 fill:#89D6FB,stroke:none,rx:10,ry:10;
+  style X4 fill:#89D6FB,stroke:none,rx:10,ry:10;
+  style X5 fill:#89D6FB,stroke:none,rx:10,ry:10;
+  style X6 fill:#89D6FB,stroke:none,rx:10,ry:10;
+  style note fill:#FFDD67,stroke:none,rx:10,ry:10;
+```
+
+<!--style note fill:#fa7b3c,stroke:#E74A2F,stroke-width:2px;-->
 
 `devtools::document()` (or **[<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd>]{style='font-size: 0.70em;'}**) updates the `NAMESPACE` with any `@import`, `@importFrom` or `@export` tags. However, no changes are made to the `DESCRIPTION` file.
 :::
 
-Let's confirm we're still only exporting `movies_app()` and `scatter_plot()` from `moviesApp`:
+Let's confirm we're still only exporting `launch_app()` and `scatter_plot()` from `moviesApp`:
 
 ```{r}
 #| eval: false
@@ -1041,7 +1076,7 @@ ls(name = "package:moviesApp")
 ```{verbatim}
 #| eval: false
 #| code-fold: false
-[1] "movies_app"   "scatter_plot"
+[1] "launch_app"   "scatter_plot"
 ```
 
 Great. Now we've listed five packages in the `Imports` field of the `DESCRIPTION` file:
