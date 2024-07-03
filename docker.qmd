@@ -103,9 +103,26 @@ Imagine your computer as a building. In this building, your operating system (OS
 
 Docker containers are like individual, self-contained mini-kitchens containing appliances, ingredients, and utensils. Each mini-kitchen can operate independently, regardless of what's happening in the others. Docker images can contain different 'recipes' for software applications, and each application can have different requirements (dependencies, libraries, versions, etc.).[^docker-not-vm]
 
+<!--![Docker + Shiny app workflow](images/docker-flow.png){width='100%'}-->
+
 [^docker-not-vm]: Docker containers are similar to virtual machine environments (like [VMware](https://www.vmware.com/)), but don't use a significant portion of the hardware system’s resources.
 
 Docker images are created through a `build` process, which uses a `Dockerfile` (a text file containing a series of instructions) to define how the image should be constructed. For a Shiny app, all of the application's dependencies are stored inside the container, which ensures consistency across environments. The container also isolates the image (and the application) from the host system. 
+
+```{mermaid}
+%%| fig-width: 6.5
+%%| fig-align: center
+%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'Ubuntu Mono', 'primaryColor': '#89D6FB', 'edgeLabelBackground':'#02577A'}}}%%
+
+graph TD
+  A[App-package Source Code] --> B(Dockerfile)
+  B --> C[Docker Build Command]
+  C --> D[Docker Image]
+  D --> E[Docker Container]
+  E --> F[Shiny App Runs in Container]
+  F --> G[Browser Access to App]
+
+```
 
 ## Installing Docker 
 
@@ -117,7 +134,8 @@ After installation, Docker Desktop will initially show no active images/containe
 
 ![Docker Desktop Containers (Mac)](images/docker_desktop.png){width=100% fig-align='center'}
 
-After installing Docker, the development process for your Shiny app-package doesn't change until you're ready to deploy your application. 
+The development process for your Shiny app-package doesn't change until you're ready to deploy your application. 
+
 
 ## The `Dockerfile` {#sec-dockerfile}
 
@@ -149,7 +167,7 @@ git_margin_box(
 │   ├── ggp2_movies_app.R
 │   ├── mod_scatter_display.R
 │   ├── mod_var_input.R
-│   ├── movies_app.R
+│   ├── launch_app.R
 │   ├── movies_server.R
 │   ├── movies_ui.R
 │   ├── scatter_plot.R
@@ -187,7 +205,7 @@ git_margin_box(
 │   ├── mod_var_input_server.Rd
 │   ├── mod_var_input_ui.Rd
 │   ├── movies.Rd
-│   ├── movies_app.Rd
+│   ├── launch_app.Rd
 │   ├── movies_server.Rd
 │   ├── movies_ui.Rd
 │   ├── scatter_plot.Rd
@@ -317,7 +335,7 @@ When the container starts, set Shiny to listen on port `8180`, then launch the S
 #| eval: false 
 #| code-fold: false
 #| code-overflow: scroll
-CMD R -e "options('shiny.port'=8180,shiny.host='0.0.0.0');library(moviesApp);moviesApp::movies_app()"
+CMD R -e "options('shiny.port'=8180,shiny.host='0.0.0.0');library(moviesApp);moviesApp::launch_app()"
 ```
 
 ## Build image {#sec-docker-image}
@@ -336,7 +354,7 @@ WORKDIR /deploy
 RUN R -e 'remotes::install_local(upgrade="never")'
 RUN rm -rf /deploy
 EXPOSE 8180
-CMD R -e "options('shiny.port'=8180,shiny.host='0.0.0.0');library(moviesApp);moviesApp::movies_app()"
+CMD R -e "options('shiny.port'=8180,shiny.host='0.0.0.0');library(moviesApp);moviesApp::launch_app()"
 ```
 
 To build the Docker image and create a new container, run the `docker build` command in the Terminal with a tag (`-t`), a name for the image (`movies-app-docker-demo`), and the location (`.`): 
@@ -387,7 +405,7 @@ Type 'demo()' for some demos, 'help()' for on-line help, or
 'help.start()' for an HTML browser interface to help.
 Type 'q()' to quit R.
 
-> options('shiny.port'=8180,shiny.host='0.0.0.0');library(moviesApp);moviesApp::movies_app()
+> options('shiny.port'=8180,shiny.host='0.0.0.0');library(moviesApp);moviesApp::launch_app()
 Loading required package: shiny
 
 Listening on http://0.0.0.0:8180
@@ -406,7 +424,7 @@ You can change the name of a Docker image by stopping the container and passing 
 ```{bash}
 #| eval: false 
 #| code-fold: false
-docker rename unruffled_bhabha movies_app
+docker rename unruffled_bhabha launch_app
 ```
 
 Each Docker container is created from the image (which is specified in the `Dockerfile`). The image serves as a blueprint for the containers, and we could create multiple containers from the same image:

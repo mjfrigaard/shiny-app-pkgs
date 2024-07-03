@@ -152,7 +152,7 @@ git_margin_box <- function(contents = "standard", fig_pw = '70%', branch = 'main
       "\n\n",
       "::::{.column-margin}\n\n",
       ":::{style='font-size: 1.10em;'}\n\n",
-      "![](img/new_branch_ico.png){width='", fig_pw, "' fig-align='center'}\n\n",
+      "![](images/new_branch_ico.png){width='", fig_pw, "' fig-align='center'}\n\n",
       ":::\n\n",
       
       ":::{style='font-size: 1.05em;'}\n\n",
@@ -168,7 +168,7 @@ git_margin_box <- function(contents = "standard", fig_pw = '70%', branch = 'main
       "\n",
       ":::: {.column-margin}\n\n",
       "::: {style='font-size: 1.05em;'}\n\n",
-      "![](img/new_branch_ico.png){width='", fig_pw, 
+      "![](images/new_branch_ico.png){width='", fig_pw, 
       "' fig-align='center'}\n\n",
       "\nThe [`", branch, 
       "`](https://github.com/mjfrigaard/", repo, "/tree/", branch, ")
@@ -180,7 +180,7 @@ git_margin_box <- function(contents = "standard", fig_pw = '70%', branch = 'main
       "\n",
       ":::: {.column-margin}\n\n",
       "::: {style='font-weight: bold; font-size: 1.00em;'}\n\n",
-      "![](img/new_branch_ico.png){width='", fig_pw, "' fig-align='center'}\n\n",
+      "![](images/new_branch_ico.png){width='", fig_pw, "' fig-align='center'}\n\n",
       "\n\n Git branch: [`", 
       branch, "`](https://github.com/mjfrigaard/", repo, "/tree/", branch, ")\n\n",
       "Launch app with:\n\n",

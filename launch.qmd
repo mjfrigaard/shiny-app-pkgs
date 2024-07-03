@@ -103,14 +103,14 @@ git_margin_box(
 # packages ------------------------------------ # <2> 
 library(moviesApp) # <2> 
 
-# movies_app ------------------------------------ # <3> 
-movies_app() # <3> 
+# launch_app ------------------------------------ # <3> 
+launch_app() # <3> 
 ```
 1. Install packages (if needed)   
 2. Load package   
 3. Call standalone app function  
 
-`movies_app()` is a wrapper function for `shinyApp()`, where it passes `movies_ui()` and `movies_server()` to the `ui` and `server` arguments.
+`launch_app()` is a wrapper function for `shinyApp()`, where it passes `movies_ui()` and `movies_server()` to the `ui` and `server` arguments.
 
 ## Running apps
 
@@ -139,7 +139,7 @@ If we load the code in `R/` with `load_all()`, then click on **Run App**, we see
 ![The application is launched (with the `loadSupport()` warning)](images/launch_loadsupport_error.png){width=100%}
 
 
-Let's jump further back to the `05_roxygen2` branch of `moviesApp`. This is the first version of the app-package with `movies_app()` in the `R/` folder (see below).
+Let's jump further back to the `05_roxygen2` branch of `moviesApp`. This is the first version of the app-package with `launch_app()` in the `R/` folder (see below).
 
 ```{r}
 #| label: git_margin_box_05_roxygen2
@@ -159,25 +159,25 @@ git_margin_box(
 R/
 ├── mod_scatter_display.R
 ├── mod_var_input.R
-├── movies_app.R  # <1> 
+├── launch_app.R  # <1> 
 ├── movies_server.R
 ├── movies_ui.R
 └── utils.R
 
 1 directory, 6 files
 ```
-1. `movies_app()` standalone function in `R/` folder
+1. `launch_app()` standalone function in `R/` folder
 
 By placing the call to `shinyApp()` into the `R/` folder, we no longer have the **Run App** icon in the `app.R` file:
 
 ![No **Run App** icon in `app.R` of `05_roxygen2` branch](images/launch_no_run_app_button.png){width=100%}
 
-In the `05_roxygen2` branch, the `movies_app()` function hasn't been exported, so we should expect the following error when we run the contents of `app.R`:
+In the `05_roxygen2` branch, the `launch_app()` function hasn't been exported, so we should expect the following error when we run the contents of `app.R`:
 
 ```{verbatim}
 #| eval: false
 #| code-fold: false
-Error in movies_app() : could not find function "movies_app"
+Error in launch_app() : could not find function "launch_app"
 ```
 
 However, calling `runApp()` from the **Console** still launches the app.
@@ -226,7 +226,7 @@ The warning in the **Console** is telling us `loadSupport()` has detected that `
 
 The examples above demonstrate the differences between calling `shinyApp()` and `runApp()`, and the tensions between having a standalone app function in an R package vs. having an `app.R` file in a Shiny project.
 
-In the following sections, we'll compare `shinyApp()`, `shinyAppDir()`, and `runApp()` to determine which one to use in `R/movies_app.R` and the `app.R` file.   
+In the following sections, we'll compare `shinyApp()`, `shinyAppDir()`, and `runApp()` to determine which one to use in `R/launch_app.R` and the `app.R` file.   
 
 ## Shiny launch functions 
 
@@ -236,7 +236,7 @@ In the following sections, we'll compare `shinyApp()`, `shinyAppDir()`, and `run
 
 During development, the IDE provides the **Run App** icon for launching the application. 
 
-![The **Run App** icon in the **Source** pane calls `runApp()`)](img/Run_App.png){width='40%'}
+![The **Run App** icon in the **Source** pane calls `runApp()`)](images/Run_App.png){width='40%'}
 
 As we've seen, **Run App** calls `runApp()`, even when we have a call to `shinyApp()` in the `app.R` file. This might make you wonder, 
 
@@ -424,7 +424,19 @@ This final method does not produce the `loadSupport()` warning because a Shiny o
 
 ## Standalone options 
 
-Below I'll cover some options to consider when writing a standalone app function.
+We'll rename our standalone app function to `launch_app()` and include the options covered below.
+
+```{r}
+#| label: git_box_08_launch-app
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  fig_pw = '75%', 
+  branch = "08_launch-app", 
+  repo = 'moviesApp')
+```
 
 ### [`if (interactive())`]{style="font-size: 0.90em"} 
 
@@ -459,12 +471,12 @@ An `options` argument can be passed to `shinyApp()` or `shinyAppDir()`. For exam
 
 `test.mode` lets us [export values from our application]((https://shiny.posit.co/r/reference/shiny/1.0.2/exporttestvalues)) when we're running tests (which we'll cover in-depth in the [Tests](@sec-tests) section). 
 
-We'll make `options` an argument (defaulting to an empty `list()`) in our updated  `movies_app()` function.
+We'll make `options` an argument (defaulting to an empty `list()`) in our updated  `launch_app()` function.
 
 ```{r}
 #| eval: false 
 #| code-fold: false
-movies_app <- function(options = list()) {
+launch_app <- function(options = list()) {
     shinyApp(
       ui = movies_ui(), # <1>
       server = movies_server, # <1>
@@ -486,7 +498,7 @@ I've written `display_type()` helper function to control where the Shiny app is 
 
 The option to access configuration is `shiny.launch.browser`:[^launch-shiny.launch.browser]
 
-[^launch-shiny.launch.browser]: The `shiny.launch.browser` options are covered in [this blog post by Garrick Aden-Buie](https://www.garrickadenbuie.com/blog/shiny-tip-option-where-to-run/), and I've combined them into a `run` argument in `movies_app()`
+[^launch-shiny.launch.browser]: The `shiny.launch.browser` options are covered in [this blog post by Garrick Aden-Buie](https://www.garrickadenbuie.com/blog/shiny-tip-option-where-to-run/), and I've combined them into a `run` argument in `launch_app()`
 
 ```{r}
 #| eval: false 
@@ -536,14 +548,14 @@ The `cli` package is imported as part the `devtools`/`usethis` workflow, otherwi
 )
 ```
 
-### Updated [`movies_app()`]{style="font-size: 0.90em"} {#sec-launch-standalone-app-function}
+### Updated [`launch_app()`]{style="font-size: 0.90em"} {#sec-launch-standalone-app-function}
 
-In `movies_app()`, I'll add the `interactive()` check, `display_type()`, and `test.mode` option:
+In `launch_app()`, I'll add the `interactive()` check, `display_type()`, and `test.mode` option:
 
 ```{r}
 #| eval: false 
 #| code-fold: false
-movies_app <- function(options = list(), run = "w") {
+launch_app <- function(options = list(), run = "w") {
   if (interactive()) { # <1>
     display_type(run = run) # <2>
   }
@@ -568,12 +580,12 @@ After loading, documenting, and installing the package, I can test my new standa
 hot_key("all")
 ```
 
-![The updated `movies_app()` function launches the application in the window (without the `loadSupport()` warning)](images/launch_movies_app_updates.png){#fig-launch_movies_app_fun width=100%}
+![The updated `launch_app()` function launches the application in the window (without the `loadSupport()` warning)](images/launch_movies_app_updates.png){#fig-launch_movies_app_fun width=100%}
 
 
-Now we can see `movies_app()` is launching the application without the `loadSupport()` warning. We can also adjust the `test` and `run` arguments to see make sure these are implemented correctly:
+Now we can see `launch_app()` is launching the application without the `loadSupport()` warning. We can also adjust the `test` and `run` arguments to see make sure these are implemented correctly:
 
-![`test` and `run` arguments in `movies_app()`](images/launch_movies_app_fun.png){width=100%}
+![`test` and `run` arguments in `launch_app()`](images/launch_movies_app_fun.png){width=100%}
 
 
 ## [`app.R`]{style="font-size: 0.95em"} options {#sec-launch-app-dot-r}
@@ -714,7 +726,7 @@ withr::with_options(new = list(shiny.autoload.r = FALSE), code = { # <1>
   } else { # <3> 
     pkgload::load_all()
   } # <3> 
-    moviesApp::movies_app( # <4>
+    moviesApp::launch_app( # <4>
       options = list(test.mode = TRUE), run = 'p')
 })
 
@@ -737,18 +749,6 @@ hot_key("all")
 ### Updated [`app.R`]{style="font-size: 0.90em"} 
 
 When we send the contents of `app.R` to the **Console**, the `loadSupport()` options are applied before running the app:
-
-```{r}
-#| label: git_box_08_launch-app
-#| echo: false
-#| results: asis
-#| eval: true
-git_margin_box(
-  contents = "launch",
-  fig_pw = '75%', 
-  branch = "08_launch-app", 
-  repo = 'moviesApp')
-```
 
 
 ![Sending `app.R` to **Console**](images/launch_app_dot_r.png){width=100%}
@@ -777,7 +777,7 @@ Both methods work--this chapter demonstrates a way to remove the `loadSupport()`
 
 To deploy the app, I can click on the **Publish** icon: 
 
-![Send app.R to **Console** and click **Publish**](images/08_launch_deploy_app_dot_r.png){#fig-08_launch_deploy_app_dot_r width=100%}
+![Send app.R to **Console** and click **Publish**](images/launch_deploy_app_dot_r.png){#fig-08_launch_deploy_app_dot_r width=100%}
 
 Make sure all the files in the package are selected, then click **Publish**
 
@@ -793,7 +793,7 @@ The **Deploy** pane will open and you'll see a deployment log as your applicatio
 ── Preparing for deployment ────────────────────────────────────────────────────
 ℹ Creating application on server...
 ✔ Created application with id 10026672
-ℹ Bundling 24 files: .Rbuildignore, app.R, DESCRIPTION, launch.R, movies.RData, NAMESPACE, README.md, www/shiny.png, man/display_type.Rd, man/mod_scatter_display_server.Rd, man/mod_scatter_display_ui.Rd, man/mod_var_input_server.Rd, man/mod_var_input_ui.Rd, man/movies_app.Rd, man/movies_server.Rd, man/movies_ui.Rd, man/scatter_plot.Rd, R/display_mode.R, …, R/movies_ui.R, and R/scatter_plot.R
+ℹ Bundling 24 files: .Rbuildignore, app.R, DESCRIPTION, launch.R, movies.RData, NAMESPACE, README.md, www/shiny.png, man/display_type.Rd, man/mod_scatter_display_server.Rd, man/mod_scatter_display_ui.Rd, man/mod_var_input_server.Rd, man/mod_var_input_ui.Rd, man/launch_app.Rd, man/movies_server.Rd, man/movies_ui.Rd, man/scatter_plot.Rd, R/display_mode.R, …, R/movies_ui.R, and R/scatter_plot.R
 ℹ Capturing R dependencies with renv
 ✔ Found 63 dependencies
 ✔ Created 258,028b bundle
@@ -831,7 +831,7 @@ On [shinyapps.io](https://www.shinyapps.io/), the deployment log shows the `load
 inst/extdata/movies.fst, NAMESPACE, README.md, www/shiny.png, 
 man/display_type.Rd, man/mod_scatter_display_server.Rd, 
 man/mod_scatter_display_ui.Rd, man/mod_var_input_server.Rd, 
-man/mod_var_input_ui.Rd, man/movies_app.Rd,
+man/mod_var_input_ui.Rd, man/launch_app.Rd,
 man/movies_server.Rd, man/movies_ui.Rd, man/movies.Rd, …, 
 R/movies_ui.R, and R/scatter_plot.R
 ℹ Capturing R dependencies with renv
@@ -876,7 +876,7 @@ co_box(
 
 -   `shinyApp()` doesn't care about file structure, so it's useful for quick prototyping or if the app is in a single `.R` script. It's also more portable because you can share your app with a single `.R` script.
 
-    -   It's possible to bundle `shinyApp()` in a wrapper function to integrate within an R package (like we've done with `movies_app()`).
+    -   It's possible to bundle `shinyApp()` in a wrapper function to integrate within an R package (like we've done with `launch_app()`).
 
     -    `shinyApp()` returns a shiny app object, which can be useful if you want to explore the app structure programmatically (i.e., testing).
   
