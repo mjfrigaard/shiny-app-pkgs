@@ -474,9 +474,54 @@ Using `@keywords internal` *without* `@export` will result in a helpfile, but th
 
 ### What [`@export`]{style="font-size: 1.00em;"} does
 
-We'll pause here to notice a few things about what `@export` does. After loading, documenting, and installing `moviesApp`, the `NAMESPACE` is updated with `export(launch_app)`, and the **Console** automatically calls `library(moviesApp)`.
+We'll pause here to notice a few things about what `@export` does. After loading and documenting our package, the `NAMESPACE` is updated with `export(launch_app)`, and the **Console** automatically calls `library(moviesApp)`.
 
-`ls()` returns "*the names of the objects in the specified environment*, so we can use it to confirm the `launch_app()` function is the only export from `moviesApp`:
+```{=html}
+
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.75rem;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #faf9ed;
+  padding: 0.2em;
+}
+
+</style>
+```
+
+```{mermaid}
+%%| fig-width: 6.5
+%%| fig-align: center
+%%| fig-cap: 'The `@export` tag makes a function available to anyone using our package'
+%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'Inconsolata', 'primaryColor': '#89D6FB', 'edgeLabelBackground':'#02577A'}}}%%
+
+flowchart TD
+  Tag("Tag function with <code>@export</code>")
+  LoadAll("Run <code>devtools::load_all()</code>")
+  Document("Run <code>devtools::document()</code>")
+  Exported("Function exported in namespace")
+  NAMESPACE("<code>NAMESPACE</code> updated with <code>export(launch_app)</code>")
+  RdFile("<code>.Rd</code> file created")
+
+  Tag --> LoadAll
+  Tag --> Document
+  LoadAll --> Exported
+  Document --> NAMESPACE
+  Document --> RdFile
+  Exported --> NAMESPACE
+  
+  style Tag fill:#8dd38d,stroke:none,rx:10,ry:10;
+  style LoadAll fill:#89D6FB,stroke:none,rx:10,ry:10;
+  style Document fill:#89D6FB,stroke:none,rx:10,ry:10;
+  style Exported fill:#FFDD67,stroke:none,rx:10,ry:10;
+  style NAMESPACE fill:#FFDD67,stroke:none,rx:10,ry:10;
+  style RdFile fill:#FFDD67,stroke:none,rx:10,ry:10;
+```
+
+We can confirm `launch_app()` has been exported with `ls()`, which returns "*the names of the objects in the specified environment*.
 
 ```{r}
 #| eval: false
@@ -506,9 +551,7 @@ ls(name = "package:moviesApp")
 [1] TRUE
 ```
 
-What about the functions from add-on/third party packages `launch_app()` relies on, like `ggplot2`?
-
-Let's check to see if `ggplot2` is also attached to the `search()` list: 
+What about the add-on/third-party package functions `launch_app()` relies on, like `ggplot2`? Let's check to see if `ggplot2` is also attached to the `search()` list: 
 
 ```{r}
 #| eval: false
@@ -522,9 +565,7 @@ c("package:ggplot2") %in% search()
 [1] FALSE
 ```
 
-Why does this matter? Because if these packages aren't attached to the `search()` list, we can't call their functions the way we would if we'd used `library()`.
-
-For example, if we try to use `ggplot2` to build a plot (similar to the one we have in the app), we see the following:
+Why does this matter? Because if these packages aren't attached to the `search()` list, we can't call their functions directly (the way we would if we'd loaded the package with `library()`). For example, if we try to use `ggplot2` to build a plot (similar to the one we have in the app), we see the following:
 
 ``` r
 ggplot(data = mtcars, 
@@ -534,8 +575,7 @@ ggplot(data = mtcars,
 #  could not find function "ggplot"
 ```
 
-
-If we want to use functions from the packages `moviesApp` relies on, we need to explicitly namespace these functions from their original package namespaces (i.e., `pkg::fun()`): 
+We can use the add-on/third-party package functions `moviesApp` relies on, but we need to explicitly namespace these functions from their original package namespaces (i.e., using  `pkg::fun()`): 
 
 :::{layout="[40,60]" layout-valign="top"}
 
@@ -563,12 +603,12 @@ co_box(
   contents = "
 ***What happens to add-on/third party functions that are exported from `moviesApp`?***
   
-When a user loads `moviesApp` with `library(moviesApp)`, any add-on/third party package functions used in exports are available to users if they use `pkg::fun()` (or if they load the package themselves with `library()`).", 
+When a user loads `moviesApp` with `library(moviesApp)`, any add-on/third-party package functions used in exports are available to users if they use `pkg::fun()` (or if they load the package themselves with `library()`).", 
   fold = TRUE
 )
 ```
 
-Access to add-on/third party package functions has implications for the other functions in `moviesApp`--for example, the `scatter_plot()` function uses `ggplot2` functions. But we're not exporting `scatter_plot()`, so when we attempt to run the examples, we see the following error: 
+Access to add-on/third-party package functions has implications for the other functions in `moviesApp`--for example, the `scatter_plot()` function uses `ggplot2` functions. But we're not exporting `scatter_plot()`, so when we attempt to run the examples, we see the following error: 
 
 :::: {.column-body-outset-right}
 
@@ -1040,24 +1080,30 @@ The figure below attempts to capture some of confusion between the dependencies 
 ```{mermaid}
 %%| fig-width: 6.5
 %%| fig-align: center
-%%| fig-cap: "`devtools::document` does not change the `DESCRIPTION`"
+%%| fig-cap: '`devtools::document` does not change the `DESCRIPTION` file'
 %%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'Inconsolata', 'primaryColor': '#89D6FB', 'edgeLabelBackground':'#02577A'}}}%%
 
 flowchart TD
-  X1(Code in <code>R/</code> Folder) --> X2(<code>roxygen2</code> Comments and Tags in <code>.R</code> Files)
-  X2 --> X3(Run <code>devtools::document</code>)
-  X3 --> note[<code>roxygen2</code> doesn't change the <code>DESCRIPTION</code> file]
-  X3 --> X4(Parse <code>roxygen2</code> Comments and Tags)
-  X4 --> X5(Generate <code>.Rd</code> Files in <code>man/</code> Folder)
-  X4 --> X6(Generate <code>NAMESPACE</code> File)
+  Imports("List package under <code>Imports</code> in <code>DESCRIPTION</code>")
+  Reference("Reference <code>package::function()</code> in code")
+  LoadAll("Run <code>devtools::load_all()</code>")
+  Document("Run <code>devtools::document()</code>")
+  NamespaceUpdated("<code>NAMESPACE</code> updated")
+  RdFileUpdated("<code>.Rd</code> file updated")
+
+  Imports --> Reference
+  Reference --> LoadAll
+  Reference --> Document
+  LoadAll --> NamespaceUpdated
+  Document --> RdFileUpdated
+  NamespaceUpdated --> RdFileUpdated
   
-  style X1 fill:#8dd38d,stroke:none,rx:10,ry:10;
-  style X2 fill:#8dd38d,stroke:none,rx:10,ry:10;
-  style X3 fill:#89D6FB,stroke:none,rx:10,ry:10;
-  style X4 fill:#89D6FB,stroke:none,rx:10,ry:10;
-  style X5 fill:#89D6FB,stroke:none,rx:10,ry:10;
-  style X6 fill:#89D6FB,stroke:none,rx:10,ry:10;
-  style note fill:#FFDD67,stroke:none,rx:10,ry:10;
+  style Imports fill:#8dd38d,stroke:none,rx:10,ry:10;
+  style Reference fill:#8dd38d,stroke:none,rx:10,ry:10;
+  style LoadAll fill:#89D6FB,stroke:none,rx:10,ry:10;
+  style Document fill:#89D6FB,stroke:none,rx:10,ry:10;
+  style NamespaceUpdated fill:#FFDD67,stroke:none,rx:10,ry:10;
+  style RdFileUpdated fill:#FFDD67,stroke:none,rx:10,ry:10;
 ```
 
 <!--style note fill:#fa7b3c,stroke:#E74A2F,stroke-width:2px;-->

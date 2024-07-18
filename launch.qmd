@@ -246,31 +246,6 @@ Let's review what happens when we call `shinyApp()`, `shinyAppDir()`, and `runAp
 
 ### [`shinyApp()`]{style="font-size: 0.95em"} {#sec-launch-shiny-app}
 
-:::: {.callout-note collapse="false" appearance="default" title='shinyApp()'}
-
-::: {style='font-size: 1.05em; color: #696969;'}
-
-:::{layout="[45,55]" layout-valign="center"}
-
-[`shinyApp()`]{style="font-size: 0.95em"}: Creates and launches an app defined inline within the call itself (or with UI and server functions passed as arguments).
-
-``` r
-shinyApp(
-  ui = fluidPage(
-    # UI elements
-  ),
-  server = function(input, output) {
-    # Server logic
-  }
-)
-```
-
-:::
-
-:::
-
-::::
-
 One of the key features of `shinyApp()` is the creation of the `shiny.appobj` (a `shiny` app object):
 
 ```{r}
@@ -299,20 +274,23 @@ List of 5
 
 This is why `runApp()` works with any `.R` file creating a shiny app object.
 
-### [`shinyAppDir()`]{style="font-size: 0.95em"} {#sec-launch-shiny-app-dir}
-
-:::: {.callout-note collapse="false" appearance="default" title='shinyAppDir()'}
+:::: {.callout-note collapse="true" appearance="default" title='shinyApp()'}
 
 ::: {style='font-size: 1.05em; color: #696969;'}
 
 :::{layout="[45,55]" layout-valign="center"}
 
-[`shinyAppDir()`]{style="font-size: 0.95em"}: Launches an app from a directory (with an `app.R` or `ui.R`/`server.R` files).
+[`shinyApp()`]{style="font-size: 0.95em"}: Creates and launches an app defined inline within the call itself (or with UI and server functions passed as arguments).
 
 ``` r
-shinyAppDir(
-  appDir = "path/to/app/", 
-  options = list())
+shinyApp(
+  ui = fluidPage(
+    # UI elements
+  ),
+  server = function(input, output) {
+    # Server logic
+  }
+)
 ```
 
 :::
@@ -320,6 +298,8 @@ shinyAppDir(
 :::
 
 ::::
+
+### [`shinyAppDir()`]{style="font-size: 0.95em"} {#sec-launch-shiny-app-dir}
 
 `shinyAppDir()` is similar to `shinyApp()`, but is designed to use a "*path to directory that contains a Shiny app.*"
 
@@ -350,20 +330,18 @@ shinyAppDir(
 )
 ```
 
-### [`runApp()`]{style="font-size: 0.95em"} {#sec-launch-run-app}
-
-:::: {.callout-note collapse="false" appearance="default" title="runApp()"}
+:::: {.callout-note collapse="true" appearance="default" title='shinyAppDir()'}
 
 ::: {style='font-size: 1.05em; color: #696969;'}
 
 :::{layout="[45,55]" layout-valign="center"}
 
-[`runApp()`]{style="font-size: 0.95em"}: A generalized way to launch your app--it can run apps defined inline, or from a directory.
+[`shinyAppDir()`]{style="font-size: 0.95em"}: Launches an app from a directory (with an `app.R` or `ui.R`/`server.R` files).
 
 ``` r
-runApp(
-  appDir = "path/to/app/",
-  test.mode = TRUE/FALSE)
+shinyAppDir(
+  appDir = "path/to/app/", 
+  options = list())
 ```
 
 :::
@@ -371,6 +349,8 @@ runApp(
 :::
 
 ::::
+
+### [`runApp()`]{style="font-size: 0.95em"} {#sec-launch-run-app}
 
 The reason we're able to call `runApp()` in the **Console** to launch both applications above is because it's versatile:
 
@@ -415,6 +395,26 @@ runApp(appDir = app)
 :::
 
 This final method does not produce the `loadSupport()` warning because a Shiny object (`shiny.appobj`) has already been created, and `runApp()` is essentially calling `print(app)` in the **Console**.
+
+:::: {.callout-note collapse="true" appearance="default" title="runApp()"}
+
+::: {style='font-size: 1.05em; color: #696969;'}
+
+:::{layout="[45,55]" layout-valign="center"}
+
+[`runApp()`]{style="font-size: 0.95em"}: A generalized way to launch your app--it can run apps defined inline, or from a directory.
+
+``` r
+runApp(
+  appDir = "path/to/app/",
+  test.mode = TRUE/FALSE)
+```
+
+:::
+
+:::
+
+::::
 
 #### Recap {.unnumbered}
 
@@ -490,7 +490,7 @@ launch_app <- function(options = list()) {
 
 ### [`shiny.launch.browser`]{style="font-size: 0.90em"} 
 
-I've written `display_type()` helper function to control where the Shiny app is launched. The `run` argument in `display_type()` takes the following options: 
+I've written a `display_type()` helper function to 1) detect if the appliation is being developed in RStudio and, if so, 2) control where the Shiny app is launched. The `run` argument in `display_type()` takes the following options: 
 
 -   `"p"` = **Viewer Pane**  
 -   `"w"` = **IDE Window**   
@@ -515,22 +515,33 @@ The option to access configuration is `shiny.launch.browser`:[^launch-shiny.laun
 #' @export
 #'
 display_type <- function(run = "w") {
-  switch(run, # <1>
+  
+  if (Sys.getenv("RSTUDIO") == "1") { # <1>
+    environment <- "RStudio"
+  } else if (Sys.getenv("TERM_PROGRAM") == "vscode") {
+    environment <- "VS Code"
+  } else {
+    environment <- "R"
+  } # <1>
+  
+  switch(run, # <2>
     p = options(shiny.launch.browser = .rs.invokeShinyPaneViewer),
     b = options(shiny.launch.browser = .rs.invokeShinyWindowExternal),
     w = options(shiny.launch.browser = .rs.invokeShinyWindowViewer),
-    NULL = options(shiny.launch.browser = NULL)) # <1>
+    NULL = options(shiny.launch.browser = NULL)) # <2>
   
-    shinyViewerType <- getOption('shiny.launch.browser') |> # <2>
+    shinyViewerType <- getOption('shiny.launch.browser') |> 
                         attributes() |> 
                         unlist() |> 
-                        unname() # <2>
-    cli::cli_alert_info("shinyViewerType set to {shinyViewerType}") # <3>
+                        unname()
+    cli::cli_alert_info("Running in {environment}") # <3>
+    cli::cli_alert_info("shinyViewerType set to {shinyViewerType}") # <4>
 }
 ```
-1. Set option   
-2. Get option  
-3. Print option to console  
+1. Detect IDE 
+2. Set option   
+3. Print IDE    
+3. Print option   
 
 ```{r}
 #| label: co_box_cli_dependency
@@ -543,7 +554,7 @@ co_box(
   fold = TRUE,
   header = "New dependency!",
   contents = "
-The `cli` package is imported as part the `devtools`/`usethis` workflow, otherwise we'd want to add it the `Imports` field of the `DESCRIPTION` with `usethis::use_package('cli')`.
+The `cli` package is imported as part the `devtools`/`usethis` workflow but we want to add it the `Imports` field of the `DESCRIPTION` with `usethis::use_package('cli')`.
   "
 )
 ```
