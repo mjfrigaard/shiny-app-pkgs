@@ -172,6 +172,63 @@ In the **Build** pane, you'll notice a few new `** data` lines of output after a
 ** byte-compile and prepare package for lazy loading
 ```
 
+The diagram below captures what happens to the package files and namespace after adding `LazyData: true` to the `DESCRIPTION` file and exporting `movies` from `moviesApp`.
+
+```{=html}
+
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.75rem;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #faf9ed;
+  padding: 0.2em;
+}
+
+</style>
+```
+
+```{mermaid}
+%%| fig-width: 6.5
+%%| fig-align: center
+%%| fig-cap: 'Adding `LazyData: true` to the `DESCRIPTION` file'
+%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'Inconsolata', 'primaryColor': '#89D6FB', 'edgeLabelBackground':'#02577A'}}}%%
+
+flowchart TD
+  AddLazyData("Add <code>LazyData: true</code> to <code>DESCRIPTION</code>")
+  LoadAll("Run <code>devtools::load_all()</code>")
+  Document("Run <code>devtools::document()</code>")
+  Install("Run <code>devtools::install()</code>")
+  UpdateNamespace("Update <code>NAMESPACE</code> with <code>LazyData</code>")
+  BuildBinary("Build package binary")
+  LoadData("Load data into namespace")
+  UpdateDocs("Update documentation files")
+  InstallPackage("Install package")
+
+  AddLazyData --> LoadAll
+  AddLazyData --> Document
+  AddLazyData --> Install
+  LoadAll --> UpdateNamespace
+  UpdateNamespace --> LoadData
+  Document --> UpdateDocs
+  Install --> BuildBinary
+  BuildBinary --> LoadData
+  LoadData --> InstallPackage
+  UpdateDocs --> InstallPackage
+  
+  style AddLazyData fill:#8dd38d,stroke:none,rx:10,ry:10;
+  style LoadAll fill:#89D6FB,stroke:none,rx:10,ry:10;
+  style Document fill:#89D6FB,stroke:none,rx:10,ry:10;
+  style Install fill:#89D6FB,stroke:none,rx:10,ry:10;
+  style UpdateNamespace fill:#FFDD67,stroke:none,rx:10,ry:10;
+  style BuildBinary fill:#FFDD67,stroke:none,rx:10,ry:10;
+  style LoadData fill:#FFDD67,stroke:none,rx:10,ry:10;
+  style UpdateDocs fill:#FFDD67,stroke:none,rx:10,ry:10;
+  style InstallPackage fill:#FFDD67,stroke:none,rx:10,ry:10;
+```
+
 We can check to see if movies has been included in `moviesApp` using the `package::data` syntax: 
 
 
@@ -321,6 +378,64 @@ Writing movies.Rd
 Documentation completed
 ```
 
+The figure below captures what happens to the moviesApp package files after creating the `R/data.R` file. 
+
+```{=html}
+
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.75rem;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #faf9ed;
+  padding: 0.2em;
+}
+
+</style>
+```
+
+```{mermaid}
+%%| fig-width: 6.5
+%%| fig-align: center
+%%| fig-cap: 'Writing data documentation in the `R/data.R` file'
+%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'Inconsolata', 'primaryColor': '#89D6FB', 'edgeLabelBackground':'#02577A'}}}%%
+
+flowchart TD
+  DataFile("Write <code>R/data.R</code> with <code>movies</code> data")
+  LoadAll("Run <code>devtools::load_all()</code>")
+  Document("Run <code>devtools::document()</code>")
+  Install("Run <code>devtools::install()</code>")
+  UpdateNamespace("Update <code>NAMESPACE</code> with <code>LazyData</code>")
+  BuildRdFile("Build <code>.Rd</code> data documentation")
+  BuildBinary("Build package binary")
+  LoadData("Load data into namespace")
+  InstallPackage("Install package")
+
+  DataFile --> LoadAll
+  DataFile --> Document
+  DataFile --> Install
+  LoadAll --> UpdateNamespace
+  UpdateNamespace --> LoadData
+  Document --> BuildRdFile
+  Install --> BuildBinary
+  BuildBinary --> LoadData
+  LoadData --> InstallPackage
+  BuildRdFile --> InstallPackage
+  
+  style DataFile fill:#8dd38d,stroke:none,rx:10,ry:10;
+  style LoadAll fill:#89D6FB,stroke:none,rx:10,ry:10;
+  style Document fill:#89D6FB,stroke:none,rx:10,ry:10;
+  style Install fill:#89D6FB,stroke:none,rx:10,ry:10;
+  style UpdateNamespace fill:#FFDD67,stroke:none,rx:10,ry:10;
+  style BuildRdFile fill:#FFDD67,stroke:none,rx:10,ry:10;
+  style BuildBinary fill:#FFDD67,stroke:none,rx:10,ry:10;
+  style LoadData fill:#FFDD67,stroke:none,rx:10,ry:10;
+  style InstallPackage fill:#FFDD67,stroke:none,rx:10,ry:10;
+```
+
+We can view the documentation using the following in the **Console:**
 
 ```{r}
 #| eval: false
@@ -392,7 +507,7 @@ I've provided documentation for the full `movies` dataset below.
 
 ### Using `movies`
 
-After documenting the movies data in `data.R`, we'll remove the call to `load()` in the `mod_scatter_display_server()` function and replace it with a direct call to the dataset:
+After documenting the movies data in `R/data.R`, we'll remove the call to `load()` in the `mod_scatter_display_server()` function and replace it with a direct call to the dataset:
 
 ```{r}
 #| eval: false 
