@@ -81,7 +81,7 @@ The contents of the text assumes you're comfortable with R, Posit Workbench, Shi
 
 ## Usage 
 
-The code examples can be found in the [`moviesApp` repo](https://github.com/mjfrigaard/moviesApp). The sections from each chapter can be found in the branches. 
+The code examples can be found in the [`shinyAppPkgs` repo](https://github.com/mjfrigaard/shinyAppPkgs). The sections from each chapter can be found in the branches. 
 
 ``` sh
 git checkout <branch>

@@ -79,7 +79,7 @@ launch(app = "08_launch-app")
 ::::
 
 
-In the current branch of `moviesApp`, the `app.R` file loads our package and runs the standalone app function:
+In the current branch of `shinyAppPkgs`, the `app.R` file loads our package and runs the standalone app function:
 
 ```{r}
 #| label: git_margin_box_06.2_pkg-imports
@@ -90,7 +90,7 @@ git_margin_box(
   contents = "standard",
   fig_pw = '75%', 
   branch = "06.2_pkg-imports", 
-  repo = 'moviesApp')
+  repo = 'shinyAppPkgs')
 ```
 
 ```{r}
@@ -101,7 +101,7 @@ git_margin_box(
 # install.packages(pkgs, quiet = TRUE) # <1> 
 
 # packages ------------------------------------ # <2> 
-library(moviesApp) # <2> 
+library(shinyAppPkgs) # <2> 
 
 # launch_app ------------------------------------ # <3> 
 launch_app() # <3> 
@@ -139,7 +139,7 @@ If we load the code in `R/` with `load_all()`, then click on **Run App**, we see
 ![The application is launched (with the `loadSupport()` warning)](images/launch_loadsupport_error.png){width=100%}
 
 
-Let's jump further back to the `05_roxygen2` branch of `moviesApp`. This is the first version of the app-package with `launch_app()` in the `R/` folder (see below).
+Let's jump further back to the `05_roxygen2` branch of `shinyAppPkgs`. This is the first version of the app-package with `launch_app()` in the `R/` folder (see below).
 
 ```{r}
 #| label: git_margin_box_05_roxygen2
@@ -149,7 +149,7 @@ Let's jump further back to the `05_roxygen2` branch of `moviesApp`. This is the 
 git_margin_box(
   contents = "standard", 
   fig_pw = "75%",
-  repo = "moviesApp",
+  repo = "shinyAppPkgs",
   branch = "05_roxygen2")
 ```
 
@@ -187,7 +187,7 @@ However, calling `runApp()` from the **Console** still launches the app.
 
 ### [`loadSupport()`]{style="font-size: 0.90em"} warning 
 
-This behavior might be surprising to you--`runApp()` can launch the application in `moviesApp`, even without the standalone app function exported from the package namespace (but it still produces the `loadSupport()` warning).
+This behavior might be surprising to you--`runApp()` can launch the application in `shinyAppPkgs`, even without the standalone app function exported from the package namespace (but it still produces the `loadSupport()` warning).
 
 
 ```{r}
@@ -216,7 +216,7 @@ Warning in loadSupport(appDir, renv = sharedEnv, globalrenv = NULL):
   Sourcing files in R/ may cause unexpected behavior.
 \`\`\`
   
-The warning in the **Console** is telling us `loadSupport()` has detected that `moviesApp` is a package, but it's still sourcing the `R/` subdirectory.[^load-support-shiny-chap]
+The warning in the **Console** is telling us `loadSupport()` has detected that `shinyAppPkgs` is a package, but it's still sourcing the `R/` subdirectory.[^load-support-shiny-chap]
 
 [^load-support-shiny-chap]: If you recall, we covered the  [`loadSupport()`](https://shiny.posit.co/r/reference/shiny/1.5.0/loadsupport) function in [Chapter 2](shiny.qmd).
 
@@ -265,7 +265,7 @@ List of 5
  $ onStart         : NULL
  $ options         : list()
  $ appOptions      :List of 2
-  ..$ appDir       : chr "/path/to/moviesApp" # <1>
+  ..$ appDir       : chr "/path/to/shinyAppPkgs" # <1>
   ..$ bookmarkStore: NULL
  - attr(*, "class")= chr "shiny.appobj" # <2>
 ```
@@ -316,7 +316,7 @@ app$appOptions$appDir
 ```
 
 ``` sh
-[1] "path/to/moviesApp"
+[1] "path/to/shinyAppPkgs"
 ```
 
 This path can be passed to the `appDir` argument (along with any shiny `options`).
@@ -376,7 +376,7 @@ Works with a path to an `.R` file that creates a `shiny.appobj`:[^launch-run-app
 [^launch-run-app-shiny-examples]: Shiny's examples are run [using `runApp()`](https://github.com/rstudio/shiny/blob/9ebcbf8a2dec7045f609624d5f339e9a3e29de5f/R/runapp.R#L436)
 
 ``` r
-runApp(appDir = "path/to/moviesApp")
+runApp(appDir = "path/to/shinyAppPkgs")
 ```
 
 :::
@@ -435,7 +435,7 @@ git_margin_box(
   contents = "launch",
   fig_pw = '75%', 
   branch = "08_launch-app", 
-  repo = 'moviesApp')
+  repo = 'shinyAppPkgs')
 ```
 
 ### [`if (interactive())`]{style="font-size: 0.90em"} 
@@ -515,27 +515,24 @@ The option to access configuration is `shiny.launch.browser`:[^launch-shiny.laun
 #' @export
 #'
 display_type <- function(run = "w") {
-  
-  if (Sys.getenv("RSTUDIO") == "1") { # <1>
+  if (Sys.getenv("RSTUDIO") != "1") { #<1>
     environment <- "RStudio"
-  } else if (Sys.getenv("TERM_PROGRAM") == "vscode") {
-    environment <- "VS Code"
-  } else {
-    environment <- "R"
-  } # <1>
-  
-  switch(run, # <2>
-    p = options(shiny.launch.browser = .rs.invokeShinyPaneViewer),
-    b = options(shiny.launch.browser = .rs.invokeShinyWindowExternal),
-    w = options(shiny.launch.browser = .rs.invokeShinyWindowViewer),
-    NULL = options(shiny.launch.browser = NULL)) # <2>
-  
+    cli::cli_alert_info("App not running in {environment}")
+  } else { #<1>
+    switch(run, #<2>
+      p = options(shiny.launch.browser = .rs.invokeShinyPaneViewer),
+      b = options(shiny.launch.browser = .rs.invokeShinyWindowExternal),
+      w = options(shiny.launch.browser = .rs.invokeShinyWindowViewer),
+      NULL = options(shiny.launch.browser = NULL)) #<2>
+    environment <- "RStudio"
     shinyViewerType <- getOption('shiny.launch.browser') |> 
                         attributes() |> 
                         unlist() |> 
                         unname()
-    cli::cli_alert_info("Running in {environment}") # <3>
-    cli::cli_alert_info("shinyViewerType set to {shinyViewerType}") # <4>
+                      
+    cli::cli_alert_info("App running in {environment}") #<3>
+    cli::cli_alert_info("shinyViewerType set to {shinyViewerType}") #<4>
+  }
 }
 ```
 1. Detect IDE 
@@ -636,7 +633,7 @@ This is useful in a non-interactive settings if we want to re-direct the error o
 if (!interactive()) {
    sink(stderr(), type = "output")
    tryCatch(expr = {
-      library(moviesApp)
+      library(shinyAppPkgs)
    }, error = function(e) {
       pkgload::load_all()
    })
@@ -645,11 +642,11 @@ if (!interactive()) {
 }
 ```
 
-In this case, if `library(moviesApp)` throws an error, the function specified after `error =` is executed (i.e., `pkgload::load_all()`).[^launch-pkgload-load_all]
+In this case, if `library(shinyAppPkgs)` throws an error, the function specified after `error =` is executed (i.e., `pkgload::load_all()`).[^launch-pkgload-load_all]
 
 [^launch-pkgload-load_all]: `pkgload` is part of the [conscious uncoupling](https://www.tidyverse.org/blog/2018/10/devtools-2-0-0/) of the `devtools` package we learned about back in [Chapter 6](dependencies.qmd).
 
-Written this way, in a non-interactive R session, `app.R` will re-direct the error output and attempt to load and attach `moviesApp`, and if this fails, `app.R` will attempt to load all the files in the `R/` folder. 
+Written this way, in a non-interactive R session, `app.R` will re-direct the error output and attempt to load and attach `shinyAppPkgs`, and if this fails, `app.R` will attempt to load all the files in the `R/` folder. 
 
 ### Interactive sessions
 
@@ -657,7 +654,7 @@ If the session ***is*** interactive (i.e., `!interactive() == FALSE`), we want `
 
 #### [`pkgload`]{style="font-size: 0.90em"} 
 
-`pkgload::load_all()` is the function that's actually called when we run `devtools::load_all()` (or use [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd>]{style="font-weight: bold; font-size: 0.75em"}), and this is somewhat analogous to running `library(moviesApp)`
+`pkgload::load_all()` is the function that's actually called when we run `devtools::load_all()` (or use [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd>]{style="font-weight: bold; font-size: 0.75em"}), and this is somewhat analogous to running `library(shinyAppPkgs)`
 
 ```{r}
 #| eval: false 
@@ -665,7 +662,7 @@ If the session ***is*** interactive (i.e., `!interactive() == FALSE`), we want `
 if (!interactive()) {
    sink(stderr(), type = "output")
    tryCatch(expr = {
-      library(moviesApp)
+      library(shinyAppPkgs)
    }, error = function(e) {
       pkgload::load_all()
    })
@@ -728,7 +725,7 @@ withr::with_options(new = list(shiny.autoload.r = FALSE), code = { # <1>
     sink(stderr(), type = "output")
     tryCatch(
       expr = {
-        library(moviesApp)
+        library(shinyAppPkgs)
       },
       error = function(e) {
         pkgload::load_all()
@@ -737,7 +734,7 @@ withr::with_options(new = list(shiny.autoload.r = FALSE), code = { # <1>
   } else { # <3> 
     pkgload::load_all()
   } # <3> 
-    moviesApp::launch_app( # <4>
+    shinyAppPkgs::launch_app( # <4>
       options = list(test.mode = TRUE), run = 'p')
 })
 
@@ -747,7 +744,7 @@ withr::with_options(new = list(shiny.autoload.r = FALSE), code = { # <1>
 3. Define interactive behaviors  
 4. Launch app (with options)  
 
-Now that we've updated the `app.R` account for the app-package structure, we should load, document, and install `moviesApp` and run it's contents: 
+Now that we've updated the `app.R` account for the app-package structure, we should load, document, and install `shinyAppPkgs` and run it's contents: 
 
 ```{r}
 #| label: dev_key_all_01
@@ -828,13 +825,13 @@ Deployment completed: https://yourusername.shinyapps.io/app-name//
 
 ### Deploy log {#sec-launch-shinyapps-log}
 
-On [shinyapps.io](https://www.shinyapps.io/), the deployment log shows the `loadSupport()` warning persists (but the application still [deploys](https://paradigmdata.shinyapps.io/moviesApp/)). The server-side warning is a known issue.[^launch-loadsupport-warning]
+On [shinyapps.io](https://www.shinyapps.io/), the deployment log shows the `loadSupport()` warning persists (but the application still [deploys](https://paradigmdata.shinyapps.io/shinyAppPkgs/)). The server-side warning is a known issue.[^launch-loadsupport-warning]
 
 [^launch-loadsupport-warning]: You can learn more about this warning by reading these posts on StackOverflow ([How can I deploy my shiny app as a package?](https://stackoverflow.com/questions/64774355/how-can-i-deploy-my-shiny-app-as-a-package) [Problem with directory when deploying app on shinyapps](https://stackoverflow.com/questions/67511409/problem-with-directory-when-deploying-app-on-shinyapps)), and this post on Posit Community ([Errors when deploying app on shinyapps.io](https://community.rstudio.com/t/errors-when-deploying-app-on-shinyapps-io/104550)).
 
 ``` sh
 ── Preparing for deployment ────────────────────────────────────────────────────
-✔ Deploying "moviesApp" using "server: shinyapps.io / username: paradigmdata"
+✔ Deploying "shinyAppPkgs" using "server: shinyapps.io / username: paradigmdata"
 ℹ Creating application on server...
 ✔ Created application with id 12043521
 ℹ Bundling 27 files: 
@@ -861,8 +858,8 @@ Waiting for task: 1418523851
   rollforward: Activating new instances
   success: Stopping old instances
 ── Deployment complete ─────────────────────────────────────────────────────────
-✔ Successfully deployed to <https://paradigmdata.shinyapps.io/moviesApp/>
-Deployment completed: https://paradigmdata.shinyapps.io/moviesApp/
+✔ Successfully deployed to <https://paradigmdata.shinyapps.io/shinyAppPkgs/>
+Deployment completed: https://paradigmdata.shinyapps.io/shinyAppPkgs/
 ```
 
 

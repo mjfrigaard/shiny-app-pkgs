@@ -82,14 +82,14 @@ Dependencies are the must-have components for your app-package, and they can be 
 Dependencies are handled using `roxygen2` tags (to generate the `NAMESPACE`) and three fields in the `DESCRIPTION` file (`Suggests`, `Imports`, or `Depends`). Multiple packages can help you manage the dependencies in your app-package, and these are covered in the [Dependency hell](entanglement.qmd) chapter.
 
 
-This chapter will pick up where we left off with the [`05_roxygen2`](document.qmd)  branch of  `moviesApp`.
+This chapter will pick up where we left off with the [`05_roxygen2`](document.qmd)  branch of  `shinyAppPkgs`.
 
 Below is a folder tree of it's contents:
 
 ```{bash}
 #| eval: false
 #| code-fold: false
-moviesApp/
+shinyAppPkgs/
   ├── DESCRIPTION
   ├── NAMESPACE
   ├── R/
@@ -111,7 +111,7 @@ moviesApp/
   │   ├── movies_ui.Rd
   │   └── scatter_plot.Rd # <1>
   ├── movies.RData
-  ├── moviesApp.Rproj
+  ├── shinyAppPkgs.Rproj
   └── www/
       └── shiny.png
 
@@ -160,7 +160,7 @@ hot_key("L")
 ```{verbatim}
 #| eval: false
 #| code-fold: false
-ℹ Loading moviesApp
+ℹ Loading shinyAppPkgs
 ```
 
 ```{r}
@@ -176,8 +176,8 @@ hot_key("D")
 #| code-fold: false
 ==> devtools::document(roclets = c('rd', 'collate', 'namespace'))
 
-ℹ Updating moviesApp documentation
-ℹ Loading moviesApp
+ℹ Updating shinyAppPkgs documentation
+ℹ Loading shinyAppPkgs
 Documentation completed
 ```
 
@@ -192,10 +192,10 @@ hot_key("B")
 ```{verbatim}
 #| eval: false
 #| code-fold: false
-==> R CMD INSTALL --preclean --no-multiarch --with-keep.source moviesApp
+==> R CMD INSTALL --preclean --no-multiarch --with-keep.source shinyAppPkgs
 
-* installing to library ‘/path/to/local/install/moviesApp-090c61fc/R-4.2/x86_64-apple-darwin17.0’
-* installing *source* package ‘moviesApp’ ...
+* installing to library ‘/path/to/local/install/shinyAppPkgs-090c61fc/R-4.2/x86_64-apple-darwin17.0’
+* installing *source* package ‘shinyAppPkgs’ ...
 ** using staged installation
 ** R
 ** byte-compile and prepare package for lazy loading
@@ -205,20 +205,20 @@ hot_key("B")
 ** testing if installed package can be loaded from temporary location
 ** testing if installed package can be loaded from final location
 ** testing if installed package keeps a record of temporary installation path
-* DONE (moviesApp)
+* DONE (shinyAppPkgs)
 
 Restarting R session...
 
-> library(moviesApp)
+> library(shinyAppPkgs)
 ```
 
 It's also satisfying to see all three functions execute without any errors!
 
 ## Identifying dependencies {.unnumbered}
 
-The first step in managing dependencies is identifying which add-on packages `moviesApp` relies on.[^depends-pkg-ns] Our goal is to limit the dependencies to only those critical to the functioning of our app, because each additional dependency is a potential point of failure (should this package become unavailable or significantly change).
+The first step in managing dependencies is identifying which add-on packages `shinyAppPkgs` relies on.[^depends-pkg-ns] Our goal is to limit the dependencies to only those critical to the functioning of our app, because each additional dependency is a potential point of failure (should this package become unavailable or significantly change).
 
-[^depends-pkg-ns]: I've made this process somewhat easier by explicitly namespacing all of the add-on package functions in `moviesApp` (i.e., with `pkg::fun()`).
+[^depends-pkg-ns]: I've made this process somewhat easier by explicitly namespacing all of the add-on package functions in `shinyAppPkgs` (i.e., with `pkg::fun()`).
 
 In the last chapter, we moved and documented the standalone app function (`launch_app()`) in the `R/` folder. The `app.R` file now only contains the following: 
 
@@ -239,14 +239,14 @@ library(rlang)
 launch_app()
 ```
 
-Ideally, we'll want to replace these calls to `libary()`, but first we have to make sure the functions we're using in these packages will be available in `moviesApp`.
+Ideally, we'll want to replace these calls to `libary()`, but first we have to make sure the functions we're using in these packages will be available in `shinyAppPkgs`.
 
 When we run the contents of `app.R`, we see the following:
 
 ```{verbatim}
 #| eval: false
 #| code-fold: false
-> library(moviesApp)
+> library(shinyAppPkgs)
 > # pkgs <- c("shiny", "shinythemes", "stringr", "ggplot2", "rlang")
 > # install.packages(pkgs, quiet = TRUE)
 > 
@@ -275,7 +275,7 @@ Let's recap what we've done so far:
 ### {.unnumbered}
 
 ``` sh
-moviesApp/
+shinyAppPkgs/
     └── app.R
 ```
 
@@ -290,7 +290,7 @@ moviesApp/
 ### {.unnumbered}
 
 ``` sh
-moviesApp/
+shinyAppPkgs/
     └── R/
         └── launch_app.R
 
@@ -308,7 +308,7 @@ moviesApp/
 ### {.unnumbered}
 
 ``` sh
-moviesApp/
+shinyAppPkgs/
     └── man/
           └── launch_app.Rd
 
@@ -318,20 +318,20 @@ moviesApp/
 
 ## Exports {#sec-depends-exports} 
 
-The error above is telling us that despite having documentation for `launch_app()` in the `R/` folder *and* generating the corresponding `.Rd` file in `man/`, `launch_app()` isn't being **exported** from `moviesApp`.
+The error above is telling us that despite having documentation for `launch_app()` in the `R/` folder *and* generating the corresponding `.Rd` file in `man/`, `launch_app()` isn't being **exported** from `shinyAppPkgs`.
 
-The exact cause of the error above becomes more apparent when we try to explicitly namespace `launch_app()` from `moviesApp`:
+The exact cause of the error above becomes more apparent when we try to explicitly namespace `launch_app()` from `shinyAppPkgs`:
 
 ```{r}
 #| eval: false
 #| code-fold: false
-moviesApp::launch_app()
+shinyAppPkgs::launch_app()
 ```
 
 ```{verbatim}
 #| eval: false
 #| code-fold: false
-Error: 'launch_app' is not an exported object from 'namespace:moviesApp'
+Error: 'launch_app' is not an exported object from 'namespace:shinyAppPkgs'
 ```
 
 ```{r}
@@ -343,7 +343,7 @@ git_margin_box(
   contents = "launch",
   fig_pw = '75%', 
   branch = "06.1_pkg-exports", 
-  repo = 'moviesApp')
+  repo = 'shinyAppPkgs')
 ```
 
 To make the `launch_app()` function available to users of our package, we need to export it. We export functions by including the `@export` tag in the `roxygen2` comment block (above the function we want to export):
@@ -363,7 +363,7 @@ To make the `launch_app()` function available to users of our package, we need t
     
 ### Export [`launch_app()`]{style="font-size: 1.00em;"}
 
-Let's start by exporting the `launch_app()` function from `moviesApp` by placing the `@export` tag above the function in `R/launch_app.R`:
+Let's start by exporting the `launch_app()` function from `shinyAppPkgs` by placing the `@export` tag above the function in `R/launch_app.R`:
 
 ```{r}
 #| eval: false 
@@ -384,13 +384,13 @@ launch_app <- function() {
 }
 ```
 
-In `app.R`, we'll replace the calls to `library()` with a single call to `library(moviesApp)`
+In `app.R`, we'll replace the calls to `library()` with a single call to `library(shinyAppPkgs)`
 
 ```{r}
 #| eval: false 
 #| code-fold: false
 # packages ------------------------------------
-library(moviesApp)
+library(shinyAppPkgs)
 
 # launch_app ------------------------------------
 launch_app()
@@ -421,7 +421,7 @@ We've lost the Shiny icon (`www/shiny.png`) in the UI, but we'll address this in
 <!-- first dimension defines rows and the second columns -->
 <!-- "layout="[[1,1], [1]]" translates to: create two rows, the first of which has two columns of equal size and the second of which has a single column. -->
 
-The `NAMESPACE` file now contains a single export (`launch_app`), and when we enter `moviesApp::` in the **Console**, we see the `launch_app()` function help file in the tab completion.
+The `NAMESPACE` file now contains a single export (`launch_app`), and when we enter `shinyAppPkgs::` in the **Console**, we see the `launch_app()` function help file in the tab completion.
  
 :::: {.column-body-outset-right}
 
@@ -429,9 +429,9 @@ The `NAMESPACE` file now contains a single export (`launch_app`), and when we en
 
 ![updated `NAMESPACE`](images/dep_exported_namespace.png){#fig-dep_exported_namespace width=80%}
 
-![`moviesApp` namespace](images/dep_exported_launch_app.png){#fig-03_dependencies_namespace width=80%}
+![`shinyAppPkgs` namespace](images/dep_exported_launch_app.png){#fig-03_dependencies_namespace width=80%}
 
-The `launch_app()` is now part of the `moviesApp` namespace
+The `launch_app()` is now part of the `shinyAppPkgs` namespace
 :::
 
 ::::
@@ -460,7 +460,7 @@ For example, adding `@export` and `@keywords internal` to `R/scatter_plot.R` wil
   
 ![](images/depends_keywords_internal_namespace.png){width='80%' fig-align='center'}
   
-But if a user were to click on the **Index** for `moviesApp` (at the bottom of the help file) `scatter_plot` would not be listed:
+But if a user were to click on the **Index** for `shinyAppPkgs` (at the bottom of the help file) `scatter_plot` would not be listed:
   
 ![](images/depends_pkg_index.png){width='65%' fig-align='center'}
   
@@ -474,7 +474,7 @@ Using `@keywords internal` *without* `@export` will result in a helpfile, but th
 
 ### What [`@export`]{style="font-size: 1.00em;"} does
 
-We'll pause here to notice a few things about what `@export` does. After loading and documenting our package, the `NAMESPACE` is updated with `export(launch_app)`, and the **Console** automatically calls `library(moviesApp)`.
+We'll pause here to notice a few things about what `@export` does. After loading and documenting our package, the `NAMESPACE` is updated with `export(launch_app)`, and the **Console** automatically calls `library(shinyAppPkgs)`.
 
 ```{=html}
 
@@ -526,7 +526,7 @@ We can confirm `launch_app()` has been exported with `ls()`, which returns "*the
 ```{r}
 #| eval: false
 #| code-fold: false
-ls(name = "package:moviesApp")
+ls(name = "package:shinyAppPkgs")
 ```
 
 ```{verbatim}
@@ -537,12 +537,12 @@ ls(name = "package:moviesApp")
 
 #### The [`search()`]{style="font-size: 1.00em;"} list
 
-`library(moviesApp)` attaches `moviesApp` to the search list. We can view all the attached packages in the string returned from `search()`:
+`library(shinyAppPkgs)` attaches `shinyAppPkgs` to the search list. We can view all the attached packages in the string returned from `search()`:
 
 ```{verbatim}
 #| eval: false
 #| code-fold: false
-"package:moviesApp" %in% search()
+"package:shinyAppPkgs" %in% search()
 ```
 
 ```{verbatim}
@@ -575,7 +575,7 @@ ggplot(data = mtcars,
 #  could not find function "ggplot"
 ```
 
-We can use the add-on/third-party package functions `moviesApp` relies on, but we need to explicitly namespace these functions from their original package namespaces (i.e., using  `pkg::fun()`): 
+We can use the add-on/third-party package functions `shinyAppPkgs` relies on, but we need to explicitly namespace these functions from their original package namespaces (i.e., using  `pkg::fun()`): 
 
 :::{layout="[40,60]" layout-valign="top"}
 
@@ -601,14 +601,14 @@ co_box(
   look = "default", hsize = "1.15", size = "1.10", 
   header = "Accessing add-on package functions",
   contents = "
-***What happens to add-on/third party functions that are exported from `moviesApp`?***
+***What happens to add-on/third party functions that are exported from `shinyAppPkgs`?***
   
-When a user loads `moviesApp` with `library(moviesApp)`, any add-on/third-party package functions used in exports are available to users if they use `pkg::fun()` (or if they load the package themselves with `library()`).", 
+When a user loads `shinyAppPkgs` with `library(shinyAppPkgs)`, any add-on/third-party package functions used in exports are available to users if they use `pkg::fun()` (or if they load the package themselves with `library()`).", 
   fold = TRUE
 )
 ```
 
-Access to add-on/third-party package functions has implications for the other functions in `moviesApp`--for example, the `scatter_plot()` function uses `ggplot2` functions. But we're not exporting `scatter_plot()`, so when we attempt to run the examples, we see the following error: 
+Access to add-on/third-party package functions has implications for the other functions in `shinyAppPkgs`--for example, the `scatter_plot()` function uses `ggplot2` functions. But we're not exporting `scatter_plot()`, so when we attempt to run the examples, we see the following error: 
 
 :::: {.column-body-outset-right}
 
@@ -625,20 +625,20 @@ Examples in `scatter_plot()` function without exporting
 
 ::::
 
-[Examples for 'moviesApp::scatter_plot']{style="font-weight: bold; font-size: 1.15em;"}
+[Examples for 'shinyAppPkgs::scatter_plot']{style="font-weight: bold; font-size: 1.15em;"}
 
 The message at the top of the **Help** pane is informative because it tells us that despite `scatter_plot()` being functional when we run `launch_app()`, it's not part of the package namespace (and thus, not accessible to users in the help file). 
 
 #### Export [`scatter_plot()`]{style="font-size: 1.0em;"}
 
-Let's add the `@export` tag to `R/scatter_plot.R` so it's exported from `moviesApp`.
+Let's add the `@export` tag to `R/scatter_plot.R` so it's exported from `shinyAppPkgs`.
 
 ```{r}
 #| eval: false 
 #| code-fold: false
 #' Create scatter plot 
 #'
-#' Custom [`ggplot2`](https://ggplot2.tidyverse.org/) function for building scatter plots in `moviesApp()`.
+#' Custom [`ggplot2`](https://ggplot2.tidyverse.org/) function for building scatter plots in `shinyAppPkgs()`.
 #' 
 #' 
 #' @param df `data.frame` or `tibble`
@@ -665,7 +665,7 @@ Let's add the `@export` tag to `R/scatter_plot.R` so it's exported from `moviesA
 #' 
 ```
 
-After loading, documenting, and installing `moviesApp`, the `NAMESPACE` is updated with the `export()` [directive](https://r-pkgs.org/dependencies-mindset-background.html#sec-dependencies-NAMESPACE-file): 
+After loading, documenting, and installing `shinyAppPkgs`, the `NAMESPACE` is updated with the `export()` [directive](https://r-pkgs.org/dependencies-mindset-background.html#sec-dependencies-NAMESPACE-file): 
 
 ```{r}
 #| label: dev_key_all_02
@@ -676,7 +676,7 @@ hot_key("all")
 ```
 
 
-The contents of the updated `NAMESPACE` file are below (and `moviesApp::` in the **Console** now displays the `scatter_plot()` help file in the tab completion):
+The contents of the updated `NAMESPACE` file are below (and `shinyAppPkgs::` in the **Console** now displays the `scatter_plot()` help file in the tab completion):
 
 :::: {.column-body-outset-right}
 
@@ -684,9 +684,9 @@ The contents of the updated `NAMESPACE` file are below (and `moviesApp::` in the
 
 ![`@export` the `scatter_plot` function](images/dep_scatter_plot_exported.png){#fig-deps_scatter_plot_exported width='95%' fig-align='center'}
 
-![`moviesApp::scatter_plot()`](images/dep_scatter_plot_namespace.png){#fig-deps_scatter_plot_exported width='95%' fig-align='center'}
+![`shinyAppPkgs::scatter_plot()`](images/dep_scatter_plot_namespace.png){#fig-deps_scatter_plot_exported width='95%' fig-align='center'}
 
-`scatter_plot()` is now part of the `moviesApp` namespace
+`scatter_plot()` is now part of the `shinyAppPkgs` namespace
 :::
 
 ::::
@@ -699,7 +699,7 @@ Below, we confirm users can access the help file for `scatter_plot()` and run th
 
 #### [`loadedNamespaces()`]{style="font-size: 0.95em;"} 
 
-We've already confirmed that `ggplot2` isn't attached with `moviesApp` (and hence, it is not included in the `search()` list)
+We've already confirmed that `ggplot2` isn't attached with `shinyAppPkgs` (and hence, it is not included in the `search()` list)
 
 ```{r}
 #| eval: false 
@@ -739,7 +739,7 @@ co_box(
   fold = TRUE,
   header = "Accessing non-exported functions", 
   contents = "
-***What about functions that _aren't_ exported from `moviesApp`?***
+***What about functions that _aren't_ exported from `shinyAppPkgs`?***
   
 Functions that are not exported (i.e., do not include the `@export` tag) are still accessible after installing and loading a package using the `pkg:::fun()`
 "
@@ -750,7 +750,7 @@ Functions that are not exported (i.e., do not include the `@export` tag) are sti
 
 > *'Always err on the side of caution, and simplicity. It's easier to give people more functionality than it is to take away stuff they're used to'* - [What to export, R Packages, 2ed](https://r-pkgs.org/dependencies-in-practice.html#what-to-export)
 
-When determining which functions to export, consider the question: "*When a user installs and loads `moviesApp`, what functions do I want to be available?*" 
+When determining which functions to export, consider the question: "*When a user installs and loads `shinyAppPkgs`, what functions do I want to be available?*" 
 
 In app-packages, I'll take the following general approach:
 
@@ -771,7 +771,7 @@ git_margin_box(
   contents = "launch",
   fig_pw = '75%', 
   branch = "06.2_pkg-imports", 
-  repo = 'moviesApp')
+  repo = 'shinyAppPkgs')
 ```
 
 Managing imports is slightly more involved than exports because imported dependencies can live in `DESCRIPTION` and the `NAMESPACE`:
@@ -786,7 +786,7 @@ The `DESCRIPTION` file manages dependencies with three fields: `Depends`, `Impor
 
 #### [`Depends`]{style="font-size: 1.00em"} {#sec-pkg-depends-description}
 
-Packages listed under `Depends` are essential for our app-package to work. These packages will be attached *before* our package when `library(moviesApp)` is called.
+Packages listed under `Depends` are essential for our app-package to work. These packages will be attached *before* our package when `library(shinyAppPkgs)` is called.
 
 #### [`Imports`]{style="font-size: 1.00em"} {#sec-pkg-imports-description}
 
@@ -831,7 +831,7 @@ Refer to add-on package functions using `pkg::fun()` syntax in the code below `R
 
 [^imports-rpkgs-importFrom-import]: Read more about this in the section titled, ['In code below R/' in R Packages, 2ed](https://r-pkgs.org/dependencies-in-practice.html#sec-dependencies-in-imports-r-code)
 
-### Imports in `moviesApp`
+### Imports in `shinyAppPkgs`
 
 The workflow I use to manage add-on dependencies comes from the advice in the `roxygen2` documentation.[^imports-roxygen2-docs] 
 
@@ -845,7 +845,7 @@ We have some special considerations for the imported add-on functions in our app
 
 #### [`@import shiny`]{style="font-size: 1.0em; font-weight: bold;"} {.unnumbered}
 
-A substantial portion of the code in `moviesApp` comes from `shiny`, so we'll remove the explicit namespacing and place the `@import` tag in `R/launch_app.R`[^ms-imports]
+A substantial portion of the code in `shinyAppPkgs` comes from `shiny`, so we'll remove the explicit namespacing and place the `@import` tag in `R/launch_app.R`[^ms-imports]
   
 [^ms-imports]: Using `@import` is not generally considered best practice, but it makes sense for app-packages: *...for Shiny apps, I recommend using `@import shiny` to make all the functions in the Shiny package easily available.* [Mastering Shiny, R CMD check](https://mastering-shiny.org/scaling-packaging.html#r-cmd-check)"
   
@@ -882,7 +882,7 @@ A substantial portion of the code in `moviesApp` comes from `shiny`, so we'll re
 #' Create scatter plot 
 #'
 #' Custom [`ggplot2`](https://ggplot2.tidyverse.org/) function for building 
-#' scatter plots in `moviesApp()`.
+#' scatter plots in `shinyAppPkgs()`.
 #' 
 #' 
 #' @param df `data.frame` or `tibble`
@@ -923,7 +923,7 @@ usethis::use_package('bslib')
 ```
 
 ``` sh
-✔ Setting active project to '/Users/mjfrigaard/projects/apps/moviesApp'
+✔ Setting active project to '/Users/mjfrigaard/projects/apps/shinyAppPkgs'
 ✔ Adding 'bslib' to Imports field in DESCRIPTION
 • Refer to functions with `bslib::fun()`
 ```
@@ -979,7 +979,7 @@ movies_ui <- function() {
 
 
 
-After adding all add-on packages to the `DESCRIPTION` with `usethis::use_package()`, then deciding if/where to use `@importFrom` and `@import`, we'll load, document, and install `moviesApp`:
+After adding all add-on packages to the `DESCRIPTION` with `usethis::use_package()`, then deciding if/where to use `@importFrom` and `@import`, we'll load, document, and install `shinyAppPkgs`:
 
 ```{r}
 #| label: dev_key_all_03
@@ -1008,7 +1008,7 @@ importFrom(rlang,.data)
 Updated `DESCRIPTION` with all  `Imports`:
 
 ``` sh
-Package: moviesApp
+Package: shinyAppPkgs
 Title: movies app
 Version: 0.0.0.9000
 Author: John Smith <John.Smith@email.io> [aut, cre]
@@ -1048,7 +1048,7 @@ When we run `launch_app()`, we see the application launches and we can still run
 
 ![Examples in `?scatter_plot`](images/dep_run_examples_scatter_plot.png){#fig-import_check_app_examples width='100%' align='center'}
 
-Confirming we still have full functionality in `moviesApp`
+Confirming we still have full functionality in `shinyAppPkgs`
 :::
 
 ### What [`@import`]{style="font-size: 1.00em; font-weight: bold;"} does
@@ -1111,12 +1111,12 @@ flowchart TD
 `devtools::document()` (or **[<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd>]{style='font-size: 0.70em;'}**) updates the `NAMESPACE` with any `@import`, `@importFrom` or `@export` tags. However, no changes are made to the `DESCRIPTION` file.
 :::
 
-Let's confirm we're still only exporting `launch_app()` and `scatter_plot()` from `moviesApp`:
+Let's confirm we're still only exporting `launch_app()` and `scatter_plot()` from `shinyAppPkgs`:
 
 ```{r}
 #| eval: false
 #| code-fold: false
-ls(name = "package:moviesApp")
+ls(name = "package:shinyAppPkgs")
 ```
 
 ```{verbatim}
@@ -1157,7 +1157,7 @@ pkgs %in% search()
 [1] FALSE FALSE FALSE FALSE FALSE
 ```
 
-This demonstrates that none of these packages are attached with `moviesApp`. However, the `rlang` and `shiny` packages are included in the `loadedNamespaces()` (because we included them with `@import`/`@importFrom`). 
+This demonstrates that none of these packages are attached with `shinyAppPkgs`. However, the `rlang` and `shiny` packages are included in the `loadedNamespaces()` (because we included them with `@import`/`@importFrom`). 
 
 ```{r}
 #| eval: false
@@ -1173,7 +1173,7 @@ pkgs %in% loadedNamespaces()
 [1] FALSE  TRUE  TRUE FALSE FALSE
 ```
 
-We can still access the add-on package functions in `moviesApp` using the `pkg::fun()` syntax: 
+We can still access the add-on package functions in `shinyAppPkgs` using the `pkg::fun()` syntax: 
 
 ::: {layout="[35, 65]"}
 
@@ -1207,7 +1207,7 @@ Below are handful of questions and answers I've encountered regarding package im
 
 ***How can I tell the difference between functions written by a package author and imported functions in the code below `R/`?***
 
--   Using `pkg::fun()` makes calls to add-on packages explicit and easy to differentiate from the native functions developed in `moviesApp`[^rpks-pkg-fun-syntax]
+-   Using `pkg::fun()` makes calls to add-on packages explicit and easy to differentiate from the native functions developed in `shinyAppPkgs`[^rpks-pkg-fun-syntax]
 
 [^rpks-pkg-fun-syntax]: "*Our recommended default is to call external functions using the `package::function()` syntax*" - [R Packages, 2ed](https://r-pkgs.org/dependencies-in-practice.html#sec-dependencies-in-imports)
 
@@ -1221,7 +1221,7 @@ Below are handful of questions and answers I've encountered regarding package im
 
 - Place the `@importFrom pkg fun` tag directly above the code using the add-on function.
 
-- You can also consolidate all `@import` and `@importFrom` tags into a single package doc file (i.e., `R/[moviesApp]-package.R`) by calling `usethis::use_package_doc()`.
+- You can also consolidate all `@import` and `@importFrom` tags into a single package doc file (i.e., `R/[shinyAppPkgs]-package.R`) by calling `usethis::use_package_doc()`.
 
 ***Should I be using `@importFrom` or `@import` from?***
 
@@ -1254,7 +1254,7 @@ For example, if I had listed `shiny` as an import using the `@import` tag (resul
 ```{verbatim}
 #| code-fold: false
 #| eval: false
-── R CMD check results ────────────────────────── moviesApp 0.0.0.9000 ────
+── R CMD check results ────────────────────────── shinyAppPkgs 0.0.0.9000 ────
 Duration: 7.4s
 
 ❯ checking package dependencies ... ERROR
