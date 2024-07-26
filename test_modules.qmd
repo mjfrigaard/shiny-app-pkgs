@@ -38,7 +38,7 @@ co_box(
 
 ---
 
-In the previous chapters we added fixtures and helpers to our test suite and how to use them while running unit tests. In this chapter, we're going briefly discuss some tips for testing modules with `testServer()`--specifically, how to verify modules are transferring values correctly.
+In the previous chapters we covered adding test fixtures and helpers to our test suite. In this chapter, we're going briefly discuss some tips for testing modules with `testServer()`--specifically, how to verify modules are transferring values correctly.
 
 :::: {.callout-tip collapse='true' appearance='default'}
 
@@ -189,7 +189,7 @@ describe(
 })
 ```
 
-### [`session$returned()`]{style="font-size: 0.95em;"} {#sec-tests-mods-returned}
+### Testing return values {#sec-tests-mods-returned}
 
 Inside `testServer()`, we can create a list of initial graph inputs for `mod_var_input_server()`, then pass identical values to `session$setInputs()`, and confirm the returned object with `session$returned()`:[^tests-modules-returned]
 
@@ -221,7 +221,7 @@ Inside `testServer()`, we can create a list of initial graph inputs for `mod_var
                         size = 3,
                         plot_title = "Example title")           # <3>
 
-      testthat::expect_equal(
+      expect_equal(
         object = session$returned(),        # <4>
         expected = test_vals                # <4>
       )
@@ -237,7 +237,7 @@ Inside `testServer()`, we can create a list of initial graph inputs for `mod_var
 
 The test above confirms the initial values can be passed and returned from `mod_var_input_server()`.
 
-### [`session$flushReact()`]{style="font-size: 0.95em;"}
+### Flushing the reactives
 
 If we want to test changing inputs, we should call `session$flushReact()` to remove the values set by `session$setInputs()` [^tests-modules-flush-react]
 
@@ -256,7 +256,7 @@ shiny::testServer(app = mod_var_input_server, expr = {       # <1>
                       size = 2,
                       plot_title = "Enter plot title") # <3>
 
-    testthat::expect_equal(object = session$returned(), # <4>
+    expect_equal(object = session$returned(), # <4>
       expected = list(y = "critics_score",
                       x = "runtime",
                       z = "title_type",
@@ -289,7 +289,7 @@ INFO [2023-11-08 20:00:39] [ START var_inputs = updated returned()]
 INFO [2023-11-08 20:00:39] [ END var_inputs = updated returned()]
 ```
 
-### [`args = list()`]{style="font-size: 0.95em;"} {#sec-tests-mods-args-list}
+### Testing module parameters {#sec-tests-mods-args-list}
 
 Now that we've confirmed `mod_var_input_server()` is returning the initial updated values, we want to make sure reactive values are passed correctly into `mod_scatter_display_server()`. 
 
@@ -394,7 +394,7 @@ shiny::testServer(
   app = mod_scatter_display_server,
   args = list(
     var_inputs =
-      shiny::reactive( # <1>
+      reactive( # <1>
         list( 
             x = "critics_score",
             y = "imdb_rating",
@@ -407,7 +407,7 @@ shiny::testServer(
   ),
   expr = {
     test_logger(start = "display", msg = "selected_vars initial values")
-    testthat::expect_equal( # <2>
+    expect_equal( # <2>
       object = inputs(),
       expected = list(
         x = "critics_score",
@@ -446,21 +446,21 @@ devtools:::test_coverage_active_file()
 
 ![](images/tests_code_coverage_modules.png){width="100%" fig-align='center'}
 
-### Testing [`output$`]{style="font-size: 0.95em;"}s {#sec-tests-mods-outputs}
+### Testing module outputs {#sec-tests-mods-outputs}
 
 To confirm the plot is being created properly in `mod_scatter_display_server()`, we can't use the `ggplot2::is.ggplot()` function because the plot is being rendered by `renderPlot()`. However, we can verify the structure of the `output$scatterplot` object using any of the following expectations:
 
 ```{r}
 #| eval: false 
 #| code-fold: false
-testthat::expect_true(
+expect_true(
   object = is.list(output$scatterplot))
 
-testthat::expect_equal(
+expect_equal(
   object = names(output$scatterplot),
   expected = c("src", "width", "height", "alt", "coordmap"))
 
-testthat::expect_equal(
+expect_equal(
   object = output$scatterplot[["alt"]],
   expected = "Plot object")
 ```

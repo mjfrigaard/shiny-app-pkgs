@@ -34,7 +34,7 @@ co_box(
 
 ---
 
-During development, we either launch apps using the **Run App** button at the top of the `app.R` file, or by calling the standalone app function in the **Console**. This chapter covers some additional functions you might want to include in the `app.R` file, the differences between shiny's `shinyApp()`, `runApp()`, and `shinyAppDir()` functions, and other options for launching an app (or apps) in your app-package.
+During development, we either launch apps using the **Run App** button at the top of the `app.R` file, or by calling the standalone app function in the **Console**. This chapter covers the differences between shiny's `shinyApp()`, `runApp()`, and `shinyAppDir()` functions, functions to include in the `app.R` file, and options for launching an app (or apps) in your app-package.
 
 :::: {.callout-tip collapse='true' appearance='default'}
 
@@ -78,8 +78,7 @@ launch(app = "08_launch-app")
 
 ::::
 
-
-In the current branch of `shinyAppPkgs`, the `app.R` file loads our package and runs the standalone app function:
+In the current branch of `shinyAppPkgs`, the `app.R` file loads our package and runs the standalone app function, `launch_app()`:
 
 ```{r}
 #| label: git_margin_box_06.2_pkg-imports
@@ -110,13 +109,13 @@ launch_app() # <3>
 2. Load package   
 3. Call standalone app function  
 
-`launch_app()` is a wrapper function for `shinyApp()`, where it passes `movies_ui()` and `movies_server()` to the `ui` and `server` arguments.
 
 ## Running apps
 
-As we can see in the image below, the **Run App** icon is available in the **Source** pane:
+`launch_app()` passes our UI and server functions to `shinyApp()`. As we can see in the image below, this places the **Run App** icon in the **Source** pane:
 
-![**Run App** icon in `app.R` of `main` branch](images/launch_run_app_from_imports.png){width=100%}
+![**Run App** icon in `app.R` of `06.2_pkg-imports` branch](images/launch_run_app_from_imports.png){width=100%}
+
 
 
 ```{r}
@@ -134,12 +133,13 @@ I'll be using the term 'launch' to differentiate successfully running an applica
 )
 ```
 
-If we load the code in `R/` with `load_all()`, then click on **Run App**, we see this calls `runApp()` in the **Console**, but this also produces a warning: 
+If we load the code in `R/` with `load_all()`, then click on **Run App**, we see this calls `runApp()` in the **Console** and displays a warning: 
 
 ![The application is launched (with the `loadSupport()` warning)](images/launch_loadsupport_error.png){width=100%}
 
+### [`loadSupport()`]{style="font-size: 0.90em"} warning 
 
-Let's jump further back to the `05_roxygen2` branch of `shinyAppPkgs`. This is the first version of the app-package with `launch_app()` in the `R/` folder (see below).
+If we jump back to the `05_roxygen2` branch of `shinyAppPkgs`, `launch_app()` hasn't been exported, so we don't have the **Run App** icon in the `app.R` file:
 
 ```{r}
 #| label: git_margin_box_05_roxygen2
@@ -153,26 +153,10 @@ git_margin_box(
   branch = "05_roxygen2")
 ```
 
-```{bash}
-#| eval: false
-#| code-fold: false
-R/
-├── mod_scatter_display.R
-├── mod_var_input.R
-├── launch_app.R  # <1> 
-├── movies_server.R
-├── movies_ui.R
-└── utils.R
-
-1 directory, 6 files
-```
-1. `launch_app()` standalone function in `R/` folder
-
-By placing the call to `shinyApp()` into the `R/` folder, we no longer have the **Run App** icon in the `app.R` file:
-
+ 
 ![No **Run App** icon in `app.R` of `05_roxygen2` branch](images/launch_no_run_app_button.png){width=100%}
 
-In the `05_roxygen2` branch, the `launch_app()` function hasn't been exported, so we should expect the following error when we run the contents of `app.R`:
+Running the contents of the `app.R` file in the `05_roxygen2` branch gives us the following error:
 
 ```{verbatim}
 #| eval: false
@@ -180,14 +164,9 @@ In the `05_roxygen2` branch, the `launch_app()` function hasn't been exported, s
 Error in launch_app() : could not find function "launch_app"
 ```
 
-However, calling `runApp()` from the **Console** still launches the app.
+But `runApp()` will launch the app, but still displays the warning message in the **Console**:
 
 ![Calling `runApp()` in the **Console** of `05_roxygen2` branch](images/launch_loadsupport_error_run_app.png){#fig-launch_loadsupport_error_run_app width=100%}
-
-
-### [`loadSupport()`]{style="font-size: 0.90em"} warning 
-
-This behavior might be surprising to you--`runApp()` can launch the application in `shinyAppPkgs`, even without the standalone app function exported from the package namespace (but it still produces the `loadSupport()` warning).
 
 
 ```{r}
@@ -223,8 +202,7 @@ The warning in the **Console** is telling us `loadSupport()` has detected that `
 ")
 ```
 
-
-The examples above demonstrate the differences between calling `shinyApp()` and `runApp()`, and the tensions between having a standalone app function in an R package vs. having an `app.R` file in a Shiny project.
+The examples above demonstrate the differences between calling `shinyApp()` and `runApp()`, and the tension between calling a standalone app function from an R package vs. sourcing the `app.R` file in a Shiny project.
 
 In the following sections, we'll compare `shinyApp()`, `shinyAppDir()`, and `runApp()` to determine which one to use in `R/launch_app.R` and the `app.R` file.   
 
@@ -515,30 +493,30 @@ The option to access configuration is `shiny.launch.browser`:[^launch-shiny.laun
 #' @export
 #'
 display_type <- function(run = "w") {
-  if (Sys.getenv("RSTUDIO") != "1") { #<1>
-    environment <- "RStudio"
-    cli::cli_alert_info("App not running in {environment}")
-  } else { #<1>
+  if (Sys.getenv("RSTUDIO") == "1") { #<1>
     switch(run, #<2>
       p = options(shiny.launch.browser = .rs.invokeShinyPaneViewer),
       b = options(shiny.launch.browser = .rs.invokeShinyWindowExternal),
       w = options(shiny.launch.browser = .rs.invokeShinyWindowViewer),
-      NULL = options(shiny.launch.browser = NULL)) #<2>
+      NULL = options(shiny.launch.browser = NULL))#<2>
     environment <- "RStudio"
     shinyViewerType <- getOption('shiny.launch.browser') |> 
                         attributes() |> 
                         unlist() |> 
                         unname()
                       
-    cli::cli_alert_info("App running in {environment}") #<3>
-    cli::cli_alert_info("shinyViewerType set to {shinyViewerType}") #<4>
-  }
+    cli::cli_alert_info("App running in {environment}")#<3>
+    cli::cli_alert_info("shinyViewerType set to {shinyViewerType}")#<4>
+  } else {
+    environment <- "RStudio"
+    cli::cli_alert_info("App not running in {environment}")
+  } 
 }
 ```
 1. Detect IDE 
 2. Set option   
 3. Print IDE    
-3. Print option   
+4. Print option   
 
 ```{r}
 #| label: co_box_cli_dependency
@@ -831,7 +809,7 @@ On [shinyapps.io](https://www.shinyapps.io/), the deployment log shows the `load
 
 ``` sh
 ── Preparing for deployment ────────────────────────────────────────────────────
-✔ Deploying "shinyAppPkgs" using "server: shinyapps.io / username: paradigmdata"
+✔ Deploying "moviesApp" using "server: shinyapps.io / username: paradigmdata"
 ℹ Creating application on server...
 ✔ Created application with id 12043521
 ℹ Bundling 27 files: 
@@ -858,8 +836,8 @@ Waiting for task: 1418523851
   rollforward: Activating new instances
   success: Stopping old instances
 ── Deployment complete ─────────────────────────────────────────────────────────
-✔ Successfully deployed to <https://paradigmdata.shinyapps.io/shinyAppPkgs/>
-Deployment completed: https://paradigmdata.shinyapps.io/shinyAppPkgs/
+✔ Successfully deployed to <https://paradigmdata.shinyapps.io/moviesApp/>
+Deployment completed: https://paradigmdata.shinyapps.io/moviesApp/
 ```
 
 
