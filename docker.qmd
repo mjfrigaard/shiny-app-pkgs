@@ -89,7 +89,7 @@ With Docker, each Shiny application runs from an *image* in an isolated *contain
 
 [^docker-documentation]: Read more about Docker in the [official documentation.](https://docs.docker.com/)
 
-## What is Docker? {#sec-what-is-docker}
+## What is Docker? {#sec-docker-what-is-docker}
 
 Two terms to know when working with Docker are **container** and **image**. Containers and images work together but they serve different purposes in the Docker ecosystem.
 
@@ -97,7 +97,7 @@ Two terms to know when working with Docker are **container** and **image**. Cont
 
 **Containers**: A Docker container is a runtime instance of a Docker image. When you run an image, Docker creates a container from that image. A Docker image can exist without a container, but all containers must be instantiated from an image.
 
-### How they work
+### How Docker works
 
 Imagine your computer as a building. In this building, your operating system (OS) is like a big kitchen where everyone cooks. If someone (a software application) needs the oven at a specific temperature or requires a particular ingredient, this can interfere with what someone else (i.e., other applications) wants to cook. This situation is somewhat analogous to the competition for resources software applications can have while running on a particular machine. 
 
@@ -124,7 +124,7 @@ graph TD
 
 ```
 
-## Installing Docker 
+## Installing Docker {#sec-docker-install}
 
 Follow the instructions found on the [Docker website](https://docs.docker.com/get-docker/) to install Docker Desktop. I'll be demonstrating how to use Docker on a macOS (but it's available on most operating systems).
 
@@ -137,9 +137,9 @@ After installation, Docker Desktop will initially show no active images/containe
 The development process for your Shiny app-package doesn't change until you're ready to deploy your application. 
 
 
-## The `Dockerfile` {#sec-dockerfile}
+## Writing a `Dockerfile` {#sec-docker-dockerfile}
 
-We'll be using the `shinyAppPkgs` example from the previous chapter as an example (the folder/file structure is below):
+We'll be using the `shinyrPkgs` example from the previous chapter as an example (the folder/file structure is below):
 
 ```{r}
 #| label: git_box_15_docker
@@ -150,7 +150,7 @@ git_margin_box(
   contents = "launch",
   fig_pw = '75%', 
   branch = "15_docker", 
-  repo = 'shinyAppPkgs')
+  repo = 'shinyrPkgs')
 ```
 
 
@@ -210,7 +210,7 @@ git_margin_box(
 │   ├── movies_ui.Rd
 │   ├── scatter_plot.Rd
 │   └── test_logger.Rd
-├── shinyAppPkgs.Rproj
+├── shinyrPkgs.Rproj
 ├── tests
 │   ├── testthat
 │   │   ├── fixtures
@@ -329,16 +329,16 @@ EXPOSE 8180
 
 ### Launch app 
 
-When the container starts, set Shiny to listen on port `8180`, then launch the Shiny app from our `shinyAppPkgs` package. The port we exposed in the `Dockerfile` should match the `shiny.port` option.
+When the container starts, set Shiny to listen on port `8180`, then launch the Shiny app from our `shinyrPkgs` package. The port we exposed in the `Dockerfile` should match the `shiny.port` option.
 
 ```{bash}
 #| eval: false 
 #| code-fold: false
 #| code-overflow: scroll
-CMD R -e "options('shiny.port'=8180,shiny.host='0.0.0.0');library(shinyAppPkgs);shinyAppPkgs::launch_app()"
+CMD R -e "options('shiny.port'=8180,shiny.host='0.0.0.0');library(shinyrPkgs);shinyrPkgs::launch_app()"
 ```
 
-## Build image {#sec-docker-image}
+## Build the Docker image {#sec-docker-build-image}
 
 The final `Dockerfile` we'll use to launch our application is below: 
 
@@ -354,7 +354,7 @@ WORKDIR /deploy
 RUN R -e 'remotes::install_local(upgrade="never")'
 RUN rm -rf /deploy
 EXPOSE 8180
-CMD R -e "options('shiny.port'=8180,shiny.host='0.0.0.0');library(shinyAppPkgs);shinyAppPkgs::launch_app()"
+CMD R -e "options('shiny.port'=8180,shiny.host='0.0.0.0');library(shinyrPkgs);shinyrPkgs::launch_app()"
 ```
 
 To build the Docker image and create a new container, run the `docker build` command in the Terminal with a tag (`-t`), a name for the image (`movies-app-docker-demo`), and the location (`.`): 
@@ -373,7 +373,7 @@ After the image is built, we'll see a new image listed in Docker desktop:
 
 ![](images/docker_deployed_container.png){width=100% fig-align='center'}
 
-### Running the container
+### Running the container {#sec-docker-run-container}
 
 After building the image, we can run the new container using `docker run`
 
@@ -387,7 +387,7 @@ docker run -p 8180:8180 movies-app-docker-demo
 In the Terminal, we'll see an R session initialize, and the R function calls from the last line of our `Dockerfile`:
 
 ``` sh
-R version 4.4.0 (2024-04-24) -- "Puppy Cup"
+R version 4.4.1 (2024-06-14) -- "Race for Your Life"
 Copyright (C) 2024 The R Foundation for Statistical Computing
 Platform: x86_64-pc-linux-gnu
 
@@ -405,7 +405,7 @@ Type 'demo()' for some demos, 'help()' for on-line help, or
 'help.start()' for an HTML browser interface to help.
 Type 'q()' to quit R.
 
-> options('shiny.port'=8180,shiny.host='0.0.0.0');library(shinyAppPkgs);shinyAppPkgs::launch_app()
+> options('shiny.port'=8180,shiny.host='0.0.0.0');library(shinyrPkgs);shinyrPkgs::launch_app()
 Loading required package: shiny
 
 Listening on http://0.0.0.0:8180
@@ -519,9 +519,9 @@ You can include a `Dockerfile` in an app-package by adding it to the `.Rbuildign
 #| code-fold: false
 ^.*\.Rproj$
 ^\.Rproj\.user$
-^shinyAppPkgs\.Rcheck$
-^shinyAppPkgs.*\.tar\.gz$
-^shinyAppPkgs.*\.tgz$
+^shinyrPkgs\.Rcheck$
+^shinyrPkgs.*\.tar\.gz$
+^shinyrPkgs.*\.tgz$
 ^Dockerfile$
 ```
 
@@ -546,9 +546,9 @@ Note that if you include a `.dockerignore` file, you should *also* include this 
 #| code-fold: false
 ^.*\.Rproj$
 ^\.Rproj\.user$
-^shinyAppPkgs\.Rcheck$
-^shinyAppPkgs.*\.tar\.gz$
-^shinyAppPkgs.*\.tgz$
+^shinyrPkgs\.Rcheck$
+^shinyrPkgs.*\.tar\.gz$
+^shinyrPkgs.*\.tgz$
 ^Dockerfile$
 ^\.dockerignore$
 ```
