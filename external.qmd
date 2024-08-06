@@ -97,7 +97,7 @@ get_app(app = "09.4_inst-prod")
 
 ## External files {#sec-external-files}
 
-When we launch our app using the standalone app function, we see the following: 
+When we launch our app, we see the `shiny.png` logo in `www/` is not being loaded into the UI when the application is displayed: 
 
 ```{r}
 #| eval: false
@@ -111,25 +111,23 @@ launch_app(run = 'p')
 
 ::::
 
-The `shiny.png` logo in `www/` is not being loaded into the UI when the application is launched. Serving the contents of `www` was previously being handled automatically by the Shiny framework, but now that `shinyAppPkgs` is an R package, we'll need to explicitly tell the application where to find these resources.[^external-common-problem]
+Serving the contents of `www` was previously being handled automatically by Shiny's internal functions, but now that we've converted our application into a package, we'll need to explicitly tell the application where to find these resources.[^external-common-problem]
 
 [^external-common-problem]: This is a common problem developers encounter when converting shiny app into app-packages. See [this popular thread](https://community.rstudio.com/t/shiny-app-as-a-package-directory-structure-and-www-folder/135323/8) on Posit Community.
 
 ### Package files 
 
-While developing, we are used to interacting with our app-package from the **Files** pane:
+While developing in RStudio, we get used to accessing and interacting with our package files from the **Files** pane:
 
-!['Source' files `shinyAppPkgs` in **Files** pane](images/external_files_pane.png){width='80%'}
+!['Source' files `shinyrPkgs` in **Files** pane](images/external_files_pane.png){width='80%'}
 
-However, when we run `install()` (or use [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>B</kbd>]{style="font-weight: bold; font-size: 0.80em"}), the output in the **Build** pane gives us the location of our *installed* package:
+However, these aren't the files that get bundled into an R package. We can follow the path in that is displayed in the **Build** pane when we install our package (or use [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>B</kbd>]{style="font-weight: bold; font-size: 0.80em"}) to view the *installed* package files:
 
-```{bash}
-#| eval: false 
-#| code-fold: false
-==> R CMD INSTALL --preclean --no-multiarch --with-keep.source shinyAppPkgs
+```sh
+==> R CMD INSTALL --preclean --no-multiarch --with-keep.source shinyrPkgs
 
-* installing to library ‘/path/to/installed/package/shinyAppPkgs/’ # <1>
-* installing *source* package ‘shinyAppPkgs’ ...
+* installing to library ‘/path/to/installed/package/shinyrPkgs/’ # <1>
+* installing *source* package ‘shinyrPkgs’ ...
 ** using staged installation
 ** R
 ** data
@@ -144,20 +142,21 @@ However, when we run `install()` (or use [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd>
 ** testing if installed package keeps a record of temporary installation path
 * DONE 
 ```
-1. This is the location of the installed version of `shinyAppPkgs` 
+1. This is the location of the installed version of `shinyrPkgs` 
 
 [**Our _installed_ package files**]{style="font-size: 1.30em;"}
 
-If we viewed the files at the end of the path for `shinyAppPkgs` displayed above, we'd see the files and folders for an *installed* package. Below are folder trees for our source package and our installed package:[^path-package]
+Below are folder trees for our *source* package and our *installed* package:[^path-package]
 
-[^path-package]: `fs::path_package(package = "shinyAppPkgs")` returns the path to your installed package and `fs::dir_tree()` function will print a folder tree. 
+[^path-package]: `fs::path_package(package = "shinyrPkgs")` returns the path to your installed package and `fs::dir_tree()` function will print a folder tree. 
 
 :::: {layout="[50, 50]"}
 
 :::{style="font-size: 0.90em;"} 
 
 ``` sh
-source/shinyAppPkgs/
+# source
+shinyrPkgs/
 ├── DESCRIPTION
 ├── NAMESPACE
 ├── R
@@ -188,7 +187,7 @@ source/shinyAppPkgs/
 │   ├── movies_server.Rd
 │   ├── movies_ui.Rd
 │   └── scatter_plot.Rd
-├── shinyAppPkgs.Rproj
+├── shinyrPkgs.Rproj
 └── www
     └── shiny.png
 ```
@@ -198,7 +197,8 @@ source/shinyAppPkgs/
 :::{style="font-size: 0.90em;"} 
 
 ``` sh
-installed/shinyAppPkgs/
+# installed 
+shinyrPkgs/
 ├── DESCRIPTION
 ├── INDEX
 ├── Meta
@@ -211,9 +211,9 @@ installed/shinyAppPkgs/
 │   └── package.rds
 ├── NAMESPACE
 ├── R
-│   ├── shinyAppPkgs
-│   ├── shinyAppPkgs.rdb
-│   └── shinyAppPkgs.rdx
+│   ├── shinyrPkgs
+│   ├── shinyrPkgs.rdb
+│   └── shinyrPkgs.rdx
 ├── data
 │   ├── Rdata.rdb
 │   ├── Rdata.rds
@@ -223,8 +223,8 @@ installed/shinyAppPkgs/
 ├── help
 │   ├── AnIndex
 │   ├── aliases.rds
-│   ├── shinyAppPkgs.rdb
-│   ├── shinyAppPkgs.rdx
+│   ├── shinyrPkgs.rdb
+│   ├── shinyrPkgs.rdx
 │   └── paths.rds
 └── html
     ├── 00Index.html
@@ -235,15 +235,15 @@ installed/shinyAppPkgs/
 
 ::::
 
-The installed version of `shinyAppPkgs` has some of the same files as the 'source' version we've been working with (i.e., `NAMESPACE` and `DESCRIPTION`), but it also might surprise you that many of the source files aren't included in the installed version (i.e., the `.R` and `.Rd` files, the `man/` folder).
+The installed version of our package includes some of the same 'source' files we've been working with (i.e., the `NAMESPACE` and `DESCRIPTION`), but many of these files aren't included in the installed version (i.e., the `.R` and `.Rd` files, the `man/` folder). 
 
-Viewing the contents of your installed package should help demystify what happens when we run `devtools::install()` and give you a better idea of how `system.file()` works.[^inst-r-pkgs]
+### `system.file()` {#sec-external-system-file}
+
+Hopefully seeing the contents of an installed package demystifies what happens when we run `devtools::install()`. When we want to add non-R package files to our app (like our `shiny.png` logo), we store these files in the `inst/` folder and access them with `system.file()`.[^inst-r-pkgs] 
 
 [^inst-r-pkgs]: Read more about sub-directories to avoid in `inst/` in [R Packages, 2ed](https://r-pkgs.org/misc.html#sec-misc-inst).
 
 > "*The contents of the `inst/` subdirectory will be copied recursively to the installation directory. Subdirectories of `inst/` should not interfere with those used by R (currently, `R/`, `data/`, `demo/`, `exec/`, `libs/`, `man/`, `help/`, `html/` and `Meta/`, and earlier versions used `latex/`, `R-ex/`).*" - [Writing R extensions, Package subdirectories](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Package-subdirectories)
-
-### `system.file()` {#sec-external-system-file}
 
 `system.file()` gives us access to the package files *on installation* (i.e., the files we saw in the folder tree above). In the [data](data.qmd) chapter, we used `system.file()` to access the `movies.fst` file in `inst/extdata/`: 
 
@@ -252,7 +252,7 @@ Viewing the contents of your installed package should help demystify what happen
 #| code-fold: false
 fst::read_fst(
   path = system.file("extdata/", "movies.fst", 
-                     package = "shinyAppPkgs")
+                     package = "shinyrPkgs")
   )
 ```
 
@@ -262,7 +262,10 @@ As we can see, the `movies.fst` has two locations: the 'source' package location
 
 #### Source package files {.unnumbered}
 
+
+
 ``` sh
+# What we see
 inst/
   └── extdata/
         └── movies.fst
@@ -271,21 +274,20 @@ inst/
 #### Installed package files {.unnumbered}
 
 ``` sh
+# What R sees
 └── extdata/
       └── movies.fst
 ```
 
 :::
 
-`system.file()` is accessing `movies.fst` from the **installed** location.[^inst-view]
+`system.file()` is accessing `movies.fst` from the **installed** location. To include the contents of `www/` in our app-package, we'll need to move `www/` into `inst/`, then access it's contents with `system.file()`.[^inst-view]
 
 [^inst-view]: The key takeaway here is that the `inst/` subfolders and files are available *unchanged* in the installed version (with the `inst/` folder omitted.).
 
-To include the contents of `www/` in our app-package, we'll need to move `www/` into `inst/`, then access it's contents with `system.file()` and `addResourcePath()`. 
-
 ### [`addResourcePath()`]{style="font-size: 0.95em;"} {#sec-external-add-resource-path}
 
-The `addResourcePath()` function will add a "*directory of static resources to Shiny's web server*." In `shinyAppPkgs`, want to add the `www` directory that includes the `shiny.png` file.[^add-resource-path-4]
+The `addResourcePath()` function will add a "*directory of static resources to Shiny's web server*." In `shinyrPkgs`, want to add the `www` directory that includes the `shiny.png` file.[^add-resource-path-4]
 
 [^add-resource-path-4]: You can read more about adding external resources in the [documentation for `addResourcePath()`](https://shiny.posit.co/r/reference/shiny/latest/resourcepaths).
 
@@ -313,7 +315,7 @@ inst/
 
 :::
 
-In `R/movies_ui.R` function, we'll include the `addResourcePath()` at the top of the `tagList()` and reference the image in `img()` using only the subfolder in the path:
+In `R/movies_ui.R`, we'll include the `addResourcePath()` at the top of the `tagList()` and reference the image in `img()` using only the subfolder in the path:
 
 ```{r}
 #| eval: false 
@@ -321,7 +323,7 @@ In `R/movies_ui.R` function, we'll include the `addResourcePath()` at the top of
 movies_ui <- function() {
   addResourcePath(
     prefix = 'www', # <1> 
-    directoryPath = system.file('www', package = 'shinyAppPkgs')) # <2> 
+    directoryPath = system.file('www', package = 'shinyrPkgs')) # <2> 
   tagList(
     fluidPage(
       theme = shinythemes::shinytheme("spacelab"),
@@ -371,13 +373,13 @@ git_margin_box(
   contents = "launch",
   fig_pw = '75%', 
   branch = "09.1_inst-www", 
-  repo = 'shinyAppPkgs')
+  repo = 'shinyrPkgs')
 ```
 
 ```{r}
 #| eval: false 
 #| code-fold: false
-library(shinyAppPkgs)
+library(shinyrPkgs)
 launch_app(run = 'p')
 ```
 
@@ -389,11 +391,13 @@ launch_app(run = 'p')
 ::::
 
 
-The `inst/` folder can also be used to store files we're using in alternate versions of our application. This can include alternate images, CSS styling, JS scripts, data files, or even entirely different apps!
+The `inst/` folder is very versatile and can also be used to store a variety of files we're using in our application (CSS styling, JavaScript functions, HTML, etc). In the following sections, I'm going to demonstrate using `inst/` for storing alternative UI layouts, data, and production versions of our application.
 
-## [`bslib`]{style="font-size: 0.95em;"} app {#sec-external-inst-bslib}
+## [`inst/bslib`]{style="font-size: 0.95em;"} {#sec-external-inst-bslib}
 
-We can use `inst/` to store alternative files and configure our UI function to test different layouts. In the example below, I've included a second optional UI layout that uses a [`bslib`](https://rstudio.github.io/bslib/index.html) theme in `movies_ui()`.
+We can use `inst/` to store alternative files and then configure our UI function to test different layouts. During development, you might want a version of your app with the exact same functionality, but a different UI layout.[^layouts-git] 
+
+[^layouts-git]: As the development of your application progresses, you can (and should) keep different versions of your application in separate Git branches. But I've also found using the `inst/` folder for those early stages of developing is helpful. 
 
 ```{r}
 #| label: git_launch_09.2_inst-bslib
@@ -405,7 +409,7 @@ git_margin_box(
   branch = "09.2_inst-bslib")
 ```
 
-The `bslib` argument includes an alternate image file (stored in `inst/www/bootstrap.png`):
+In the example below, I've included a second optional UI layout that uses a [`bslib`](https://rstudio.github.io/bslib/index.html) theme in `movies_ui()`. The `bslib` argument includes an alternate image file (stored in `inst/www/bootstrap.png`):
 
 ```{r}
 #| label: co_box_bslib
@@ -431,7 +435,7 @@ Remember to include the `bslib` and `sass` packages to your `DESCRIPTION` with `
 movies_ui <- function(bslib = FALSE) {
   addResourcePath( # <1>
     prefix = 'www', 
-    directoryPath = system.file('www', package = 'shinyAppPkgs')) # <1>
+    directoryPath = system.file('www', package = 'shinyrPkgs')) # <1>
   if (isFALSE(bslib)) {
   tagList( # <2>
     bslib::page_fillable(
@@ -541,11 +545,11 @@ launch_app(run = 'p', bslib = TRUE)
 ::::
 
 
-The example above was a simple, but using `inst/` to hold alternate features (i.e., images or custom `.html`, `.css`, `.sass`, `.js` code) that can be easily displayed with an optional argument is a great tool for demonstrating features to users and stakeholders. 
+The example above was a simple, but using `inst/` to hold alternate layouts that can be displayed with a single argument is a great tool when demoing versions for stakeholders.
  
-## [`dev`]{style="font-size: 0.95em;"} data app {#sec-external-inst-dev}
+## [`inst/dev`]{style="font-size: 0.95em;"} {#sec-external-inst-dev}
 
-It's not uncommon to be working on multiple 'development' versions of an application in the same package. In these situations, we might want to store the development files in the `inst/dev` folder.
+It's not uncommon to be working on an application that will display data from multiple sources. In these situations, we might want to store the development files in the `inst/dev` folder.
 
 ```{r}
 #| label: git_launch_09.3_inst-dev
@@ -559,7 +563,7 @@ git_margin_box(
 
 ### [`tidy_movies` data]{style="font-size: 0.95em;"} 
 
-The 'development' application in `shinyAppPkgs` uses a tidy version of the [`ggplot2movies::movies` data](https://cran.r-project.org/web/packages/ggplot2movies/index.html), which we created in the [`data-raw/tidy_movies.R`](https://github.com/mjfrigaard/shinyAppPkgs/blob/09.3_inst-dev/data-raw/tidy_movies.R) file.[^raw-data-5]
+The 'development' application in `shinyrPkgs` uses a tidy version of the [`ggplot2movies::movies` data](https://cran.r-project.org/web/packages/ggplot2movies/index.html), which we created in the [`data-raw/tidy_movies.R`](https://github.com/mjfrigaard/shinyrPkgs/blob/09.3_inst-dev/data-raw/tidy_movies.R) file.[^raw-data-5]
 
 ```{r}
 #| eval: false 
@@ -623,13 +627,13 @@ fst::write_fst(x = tidy_movies, path = "inst/dev/tidy_movies.fst")
 
 ### [`inst/dev/R`]{style="font-size: 0.95em;"}
 
-We can place the application modules, UI, and server functions in [`inst/dev/R`](https://github.com/mjfrigaard/shinyAppPkgs/tree/09.3_inst-dev/inst/dev/R). Both functions in the `dev/` display module has been re-written to add functionality for importing the `tidy_movies.fst` data file and an option to removing missing values from the graph.  
+We can place the application modules, UI, and server functions in [`inst/dev/R`](https://github.com/mjfrigaard/shinyrPkgs/tree/09.3_inst-dev/inst/dev/R). Both functions in the `dev/` display module has been re-written to add functionality for importing the `tidy_movies.fst` data file and an option to removing missing values from the graph.  
 
-Any of the functions from `shinyAppPkgs` can be used in the `dev/` modules with explicit namespacing (i.e., `shinyAppPkgs::fun()`). For example, `dev_mod_vars_ui()` contains choices for the columns in the `tidy_movies` data, but there's no need to re-write the `mod_var_input_server()` function.[^export-modules-6]
+Any of the functions from `shinyrPkgs` can be used in the `dev/` modules with explicit namespacing (i.e., `shinyrPkgs::fun()`). For example, `dev_mod_vars_ui()` contains choices for the columns in the `tidy_movies` data, but there's no need to re-write the `mod_var_input_server()` function.[^export-modules-6]
 
 [^export-modules-6]: This requires exporting `mod_var_input_server()` with `@export` in the `R/` folder.
 
-The [`app.R` file](https://github.com/mjfrigaard/shinyAppPkgs/blob/09c_inst-dev/inst/dev/app.R) will contain the call to `shinyApp()`, and any other packages we'll need to launch the application. The data and alternative image file can be placed in the root folder (with the `app.R` file):
+The [`app.R` file](https://github.com/mjfrigaard/shinyrPkgs/blob/09.3_inst-dev/inst/dev/app.R) will contain the call to `shinyApp()`, and any other packages we'll need to launch the application. The data and alternative image file can be placed in the root folder (with the `app.R` file):
 
 ``` sh
 inst/dev
@@ -647,7 +651,7 @@ inst/dev
 
 ### Launch [`dev`]{style="font-size: 0.95em;"} {#sec-inst-dev-launch}
 
-Finally, the development app is launched with it's own standalone function (stored in `R/ggp2_launch_app.R`). The `ggp2_launch_app()` function is similar to `launch_app()`, but `appDir` is set to the location of the development files (which we provide with `system.file()`).
+Finally, we'll launch the development data app with it's own standalone function, `ggp2_launch_app()`. This function is similar to `launch_app()`, but the `appDir` argument is set to the location of the development files (which we locate with `system.file()`).
 
 ```{r}
 #| label: git_box_09.3_inst-dev
@@ -658,7 +662,7 @@ git_margin_box(
   contents = "launch",
   fig_pw = '75%', 
   branch = "09.3_inst-dev", 
-  repo = 'shinyAppPkgs')
+  repo = 'shinyrPkgs')
 ```
 
 ```{r}
@@ -681,7 +685,7 @@ ggp2_launch_app <- function(options = list(), run = "w") {
   } 
     shinyAppDir(
     appDir = system.file("dev",
-      package = "shinyAppPkgs"
+      package = "shinyrPkgs"
     ),
     options = options
   )
@@ -690,7 +694,7 @@ ggp2_launch_app <- function(options = list(), run = "w") {
 
 <br>
 
-After loading, documenting, and installing `shinyAppPkgs`, we can run the development version using `ggplot2_launch_app()`:
+After loading, documenting, and installing, we'll run the development data app:
 
 ```{r}
 #| label: dev_key_load_all_02
@@ -718,11 +722,11 @@ ggp2_launch_app(run = 'p')
 
 ::::
 
-You may have noticed that I've used a different color and theme for the two development examples above. I've found this can be a quick and easy way to differentiate 'development' and 'production' versions of an application.
+I've been using different colors and themes for alternative applications above. This can be a quick and easy way to differentiate the versions of your application.
 
-## [`prod`]{style="font-size: 0.95em;"} app {#sec-external-inst-prod}
+## [`inst/prod`]{style="font-size: 0.95em;"} {#sec-external-inst-prod}
 
-It's also possible to have a folder dedicated for deploying your application in your app-package. 
+It's also possible to have a folder dedicated for deploying the application in an app-package. 
 
 ```{r}
 #| label: git_box_09.4_inst-prod
@@ -733,12 +737,12 @@ git_margin_box(
   contents = "launch",
   fig_pw = '75%', 
   branch = "09.4_inst-prod", 
-  repo = 'shinyAppPkgs')
+  repo = 'shinyrPkgs')
 ```
 
 ### [`prod` data]{style="font-size: 0.95em;"} 
 
-This folder can be named something like `inst/prod/` or `inst/deploy`, and it will contain the 'production' ready versions of UI and server functions in a single `app.R` file:
+This folder can be named `inst/prod/` or `inst/deploy`, and it can contain a version of your application that's 'fit for public consumption.' In `inst/prod/app` I've created an `app.R` file:
 
 
 ```{bash}
@@ -754,22 +758,22 @@ inst/
 
 ### [`prod/app/app.R`]{style="font-size: 0.95em;"} 
 
-In the `app.R` file, include only a call to `shinyApp()` with the ui and server function (explicitly namespaced from your app-package):
+`app.R` includes a call to `shinyApp()` with the ui and server functions (explicitly namespaced from your app-package):
 
 ```{r}
 #| eval: false
 #| code-fold: show 
 #| code-summary: 'show/hide prod/app/app.R'
 shinyApp(
-  ui = shinyAppPkgs::movies_ui(bslib = TRUE), 
-  server = shinyAppPkgs::movies_server)
+  ui = shinyrPkgs::movies_ui(bslib = TRUE), 
+  server = shinyrPkgs::movies_server)
 ```
 
-I used the `bslib` version, just to differentiate it from the other applications in `shinyAppPkgs`. 
+I'll use the `bslib` version from above to differentiate it from the other applications in `shinyrPkgs`. 
 
 ### [Deploying `prod`]{style="font-size: 0.95em;"} {#sec-inst-prod-deploy}
 
-Back in the root `app.R` file, we'll use `shinyAppDir()` and `system.file()` to return the app object from `prod/app/app.R`:
+Back in the root `app.R` file, we can use `shinyAppDir()` and `system.file()` to return the app object from `prod/app/app.R`:
 
 ```{r}
 #| eval: false
@@ -782,7 +786,7 @@ withr::with_options(new = list(shiny.autoload.r = FALSE), code = {
     tryCatch(
       expr = {
         # load package ----
-        library(shinyAppPkgs)
+        library(shinyrPkgs)
       },
       error = function(e) {
         # load R/ folder ----
@@ -791,7 +795,7 @@ withr::with_options(new = list(shiny.autoload.r = FALSE), code = {
     )
     # create shiny object from prod/app ----
     shinyAppDir(appDir = 
-        system.file("prod/app", package = "shinyAppPkgs"))
+        system.file("prod/app", package = "shinyrPkgs"))
   } else {
     # load R/ folder ----
     pkgload::load_all()
@@ -812,46 +816,49 @@ withr::with_options(new = list(shiny.autoload.r = FALSE), code = {
 hot_key("all")
 ```
 
-To deploy the app, call `rsconnect::deployApp()` in the console. 
-
+To deploy the app, call `rsconnect::deployApp()` in the console and supply an `appName`:
 
 ```{r}
 #| eval: false
 #| code-fold: false 
-rsconnect::deployApp(appName = 'shinyAppPkgs-launch')
+rsconnect::deployApp(appName = 'moviesApp-prod')
 ```
 
 The deployment log will look something like this: 
 
 ```{verbatim}
-── Preparing for deployment ────────────────────────────────────────────
-✔ Deploying "moviesApp-launch" to "server: shinyapps.io / username: yourusername"
-ℹ Bundling 35 files: .Rbuildignore, app.R, data/movies.rda, data/movies.RData,
-  data-raw/tidy_movies.R, DESCRIPTION, inst/dev/app.R, inst/dev/imdb.png, 
-  inst/dev/tidy_movies.fst, inst/extdata/movies.fst, inst/prod/app/app.R, 
-  inst/www/bootstrap.png, inst/www/shiny.png, man/display_type.Rd, 
-  man/ggp2_launch_app.Rd, man/mod_scatter_display_server.Rd, 
-  man/mod_scatter_display_ui.Rd, man/mod_var_input_server.Rd, …, 
-  R/scatter_plot.R, and README.md
+─> rsconnect::deployApp(appName = 'moviesApp-prod')
+── Preparing for deployment ───────────────────────────────────────────────────────────────────
+✔ Deploying "moviesApp-prod" using "server: shinyapps.io / username: paradigmdata"
+ℹ Creating application on server...
+✔ Created application with id 12382917
+ℹ Bundling 39 files: .Rbuildignore, app.R, data/movies.rda, data/movies.RData,
+data-raw/tidy_movies.R, DESCRIPTION, inst/dev/app.R, inst/dev/imdb.png, 
+inst/dev/R/dev_mod_scatter.R, inst/dev/R/dev_mod_vars.R, inst/dev/R/devServer.R,
+inst/dev/R/devUI.R, inst/dev/tidy_movies.fst, inst/extdata/movies.fst, 
+inst/prod/app/app.R, inst/www/bootstrap.png, inst/www/shiny.png, 
+man/display_type.Rd, …, R/scatter_plot.R, and README.md
 ℹ Capturing R dependencies with renv
-✔ Found 72 dependencies
-✔ Created 1,179,590b bundle
+✔ Found 69 dependencies
+✔ Created 1,567,570b bundle
 ℹ Uploading bundle...
-✔ Uploaded bundle with id 7749936
-── Deploying to server ────────────────────────────────────────────────────────────────────
-Waiting for task: 1341341295
-  building: Parsing manifest
-  building: Building image: 9226179
+✔ Uploaded bundle with id 8922917
+── Deploying to server ────────────────────────────────────────────────────────────────────────
+Waiting for task: 1442064759
+  building: Building image: 10835937
   building: Fetching packages
+  building: Building package: fstcore
+  building: Building package: fst
   building: Installing packages
   building: Installing files
-  building: Pushing image: 9226179
+  building: Pushing image: 10835937
   deploying: Starting instances
-── Deployment complete ───────────────────────────────────────────
-✔ Successfully deployed to <https://mjfrigaard.shinyapps.io/moviesApp-launch/>
+  success: Stopping old instances
+── Deployment complete ────────────────────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://paradigmdata.shinyapps.io/moviesApp-prod/>
 ```
 
-You can see a deployed version of this application [here](https://mjfrigaard.shinyapps.io/moviesApp-launch/)
+You can see a deployed version of this application [here](https://paradigmdata.shinyapps.io/moviesApp-prod/)
 
 ```{r}
 #| label: co_box_install
@@ -862,9 +869,9 @@ You can see a deployed version of this application [here](https://mjfrigaard.shi
 co_box(
   color = "g", fold = TRUE,
   look = "default", hsize = "1.15", size = "1.10",
-  header = "Uses of `inst/` in other packages", 
+  header = "Other Uses of `inst/`", 
   contents = "
-You can explore the structure of other installed packages to see how they work 'under the hood' to gain insight into how they use the `inst/` folder. 
+I found exploring the structure of the `inst/` folder in other packages incredibly helpful in understanding how they work 'under the hood.' 
   
 - For example, the `inst/extdata/` folder in the [`readr` package](https://readr.tidyverse.org/) holds a variety of datasets:
   
@@ -921,49 +928,49 @@ You can explore the structure of other installed packages to see how they work '
 
 This chapter had covered how to include external files and resources (i.e., what was previously stored in the `www/` folder of a regular Shiny app project) in your app-package with `addResourcePath()` and `system.file()`.
 
-We've also covered how to use the `inst/` folder to include alternative files, development and production/deployment versions of your app. You can now launch the following applications from `shinyAppPkgs`: 
+We've also covered how to use the `inst/` folder to include alternative files, development and production/deployment versions of your app. You can now launch the following applications from `shinyrPkgs`: 
 
 **Standard application with/without test mode**
 
 ```{r}
 #| eval: false
 #| code-fold: false
-library(shinyAppPkgs)
+library(shinyrPkgs)
 launch_app(options = list(test.mode = TRUE))
 # or 
 launch_app(options = list(test.mode = FALSE))
 ```
 
-**`blisb` application with/without test mode**
+**[`inst/bslib`]{style="font-size: 1.05em;"}: an application with an alternative layout (with/without test mode)**
 
 ```r
-library(shinyAppPkgs)
+library(shinyrPkgs)
 launch_app(options = list(test.mode = TRUE), bslib = TRUE)
 # or 
 launch_app(options = list(test.mode = FALSE), bslib = TRUE) 
 ```
 
-**`ggplot2movies` data application with/without test mode**
+**[`inst/dev`]{style="font-size: 1.05em;"}: an application using a 'development' dataset (with/without test mode)**
 
 ```{r}
 #| eval: false
 #| code-fold: false
-library(shinyAppPkgs)
+library(shinyrPkgs)
 ggp2_launch_app(options = list(test.mode = TRUE))
 # or 
 ggp2_launch_app(options = list(test.mode = FALSE))
 ```
 
-**`prod/` application**
+**[`inst/prod`]{style="font-size: 1.05em;"}: An `app.R` file for launching a 'production' version of our app.**
 
 ```{r}
 #| eval: false
 #| code-fold: false
-library(shinyAppPkgs)
+library(shinyrPkgs)
 rsconnect::deployApp()
 ```
 
-In the next chapter, we're going to cover testing the code in your shiny app-package.  
+In the next section, we're going to cover testing the code in a shiny app-package.  
 
 ```{r}
 #| label: co_box_isnt_recap
@@ -984,7 +991,7 @@ co_box(
   
 - **`addResourcePath()`**: create a `prefix` (i.e., path) for a `directoryPath` of static files to accessible in shiny's web server:
 
-    \`\`\`
+    \`\`\`sh
     # file location
     inst/
       └── www/
@@ -995,7 +1002,7 @@ co_box(
     # add path to app 
     addResourcePath(prefix = 'www', 
                     directoryPath = system.file('www', 
-                                    package = 'shinyAppPkgs'))
+                                    package = 'shinyrPkgs'))
     # use path without 'inst/' prefix
     shiny::img(src = 'www/shiny.png')
     \`\`\`
