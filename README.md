@@ -81,7 +81,7 @@ The contents of the text assumes you're comfortable with R, Posit Workbench, Shi
 
 ## Usage 
 
-The code examples can be found in the [`shinyrPkgs` repo](https://github.com/mjfrigaard/shinyrPkgs). The sections from each chapter can be found in the branches. 
+The code examples can be found in the [`sap` repo](https://github.com/mjfrigaard/sap). The sections from each chapter can be found in the branches. 
 
 ``` sh
 git checkout <branch>

@@ -14,7 +14,7 @@ source("_common.R")
 #| eval: true
 co_box(
   color = "b",
-  look = "default", hsize = "1.15", size = "1.10", 
+  look = "default", hsize = "1.10", size = "1.05", 
   header = "TLDR `NAMESPACE` & `DESCRIPTION`", fold = TRUE,
   contents = "
 Managing dependencies: 
@@ -79,17 +79,52 @@ launch(app = "06.2_pkg-imports")
 
 Dependencies are the must-have components for your app-package, and they can be divided into imports and exports. **Imports** are the functions we're borrowing from add-on/third party packages (i.e., any packages not automatically loaded in a new R session). **Exports** are the functions, data, and other R objects our app-package offers to users.
 
-Dependencies are handled using `roxygen2` tags (to generate the `NAMESPACE`) and three fields in the `DESCRIPTION` file (`Suggests`, `Imports`, or `Depends`). Multiple packages can help you manage the dependencies in your app-package, and these are covered in the [Dependency hell](entanglement.qmd) chapter.
+Dependencies are handled with in the `NAMESPACE` directives (generated via `roxygen2` tags) and three fields in the `DESCRIPTION` file (`Suggests`, `Imports`, or `Depends`). 
+
+```{=html}
+
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.75rem;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #faf9ed;
+  padding: 0.2em;
+}
+
+</style>
+```
+
+```{mermaid}
+%%| fig-width: 6.5
+%%| fig-align: center
+%%| fig-cap: 'The `NAMESPACE` and `DESCRIPTION` handle package dependencies'
+%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'Inconsolata', 'primaryColor': '#89D6FB', 'edgeLabelBackground':'#02577A', 'secondaryColor': '#98DC96'}}}%%
+flowchart TD
+    sap[[Our App-Package: sap]]
+    Pkg_A[[R Package A: <code>fun_a</code>]]
+    Pkg_B[[R Package B: <code>fun_b</code>]]
+    User_1((User 1))
+    User_2((User 2))
+
+    sap -->|<code>Imports</code>| Pkg_A
+    sap -->|<code>Imports</code>| Pkg_B
+
+    sap -->|<code>export</code>| User_1
+    sap -->|<code>export</code>| User_2
+```
 
 
-This chapter will pick up where we left off with the [`05_roxygen2`](document.qmd)  branch of  `shinyrPkgs`.
+Multiple packages can help you manage the dependencies in your app-package, and these are covered in the [Dependency hell](entanglement.qmd) chapter. This chapter will pick up where we left off with the [`05_roxygen2`](document.qmd)  branch of  `sap`.
 
 Below is a folder tree of it's contents:
 
-```{bash}
+```{verbatim}
 #| eval: false
 #| code-fold: false
-shinyrPkgs/
+sap/
   ├── DESCRIPTION
   ├── NAMESPACE
   ├── R/
@@ -111,7 +146,7 @@ shinyrPkgs/
   │   ├── movies_ui.Rd
   │   └── scatter_plot.Rd # <1>
   ├── movies.RData
-  ├── shinyrPkgs.Rproj
+  ├── sap.Rproj
   └── www/
       └── shiny.png
 
@@ -127,7 +162,7 @@ shinyrPkgs/
 co_box(
   color = "b", 
   fold = TRUE,
-  look = "default", hsize = "1.15", size = "1.10", 
+  look = "default", hsize = "1.10", size = "1.05", 
   header = "Chapter 4 recap: documenting functions with `roxygen2`", 
   contents = "
 **Required `@tags` for all functions**: 
@@ -160,7 +195,7 @@ hot_key("L")
 ```{verbatim}
 #| eval: false
 #| code-fold: false
-ℹ Loading shinyrPkgs
+ℹ Loading sap
 ```
 
 ```{r}
@@ -176,8 +211,8 @@ hot_key("D")
 #| code-fold: false
 ==> devtools::document(roclets = c('rd', 'collate', 'namespace'))
 
-ℹ Updating shinyrPkgs documentation
-ℹ Loading shinyrPkgs
+ℹ Updating sap documentation
+ℹ Loading sap
 Documentation completed
 ```
 
@@ -192,10 +227,10 @@ hot_key("B")
 ```{verbatim}
 #| eval: false
 #| code-fold: false
-==> R CMD INSTALL --preclean --no-multiarch --with-keep.source shinyrPkgs
+==> R CMD INSTALL --preclean --no-multiarch --with-keep.source sap
 
-* installing to library ‘/path/to/local/install/shinyrPkgs-090c61fc/R-4.2/x86_64-apple-darwin17.0’
-* installing *source* package ‘shinyrPkgs’ ...
+* installing to library ‘/path/to/local/install/sap-090c61fc/R-4.2/x86_64-apple-darwin17.0’
+* installing *source* package ‘sap’ ...
 ** using staged installation
 ** R
 ** byte-compile and prepare package for lazy loading
@@ -205,20 +240,20 @@ hot_key("B")
 ** testing if installed package can be loaded from temporary location
 ** testing if installed package can be loaded from final location
 ** testing if installed package keeps a record of temporary installation path
-* DONE (shinyrPkgs)
+* DONE (sap)
 
 Restarting R session...
 
-> library(shinyrPkgs)
+> library(sap)
 ```
 
 It's also satisfying to see all three functions execute without any errors!
 
 ## Identifying dependencies {.unnumbered}
 
-The first step in managing dependencies is identifying which add-on packages `shinyrPkgs` relies on.[^depends-pkg-ns] Our goal is to limit the dependencies to only those critical to the functioning of our app, because each additional dependency is a potential point of failure (should this package become unavailable or significantly change).
+The first step in managing dependencies is identifying which add-on packages `sap` relies on.[^depends-pkg-ns] Our goal is to limit the dependencies to only those critical to the functioning of our app, because each additional dependency is a potential point of failure (should this package become unavailable or significantly change).
 
-[^depends-pkg-ns]: I've made this process somewhat easier by explicitly namespacing all of the add-on package functions in `shinyrPkgs` (i.e., with `pkg::fun()`).
+[^depends-pkg-ns]: I've made this process somewhat easier by explicitly namespacing all of the add-on package functions in `sap` (i.e., with `pkg::fun()`).
 
 In the last chapter, we moved and documented the standalone app function (`launch_app()`) in the `R/` folder. The `app.R` file now only contains the following: 
 
@@ -239,25 +274,13 @@ library(rlang)
 launch_app()
 ```
 
-Ideally, we'll want to replace these calls to `libary()`, but first we have to make sure the functions we're using in these packages will be available in `shinyrPkgs`.
+Ideally, we'll want to replace these calls to `libary()`, but first we have to make sure the functions we're using in these packages will be available in `sap`.
 
 When we run the contents of `app.R`, we see the following:
 
 ```{verbatim}
 #| eval: false
 #| code-fold: false
-> library(shinyrPkgs)
-> # pkgs <- c("shiny", "shinythemes", "stringr", "ggplot2", "rlang")
-> # install.packages(pkgs, quiet = TRUE)
-> 
-> # packages ------------------------------------
-> library(shiny)
-> library(shinythemes)
-> library(stringr)
-> library(ggplot2)
-> library(rlang)
-> 
-> # launch_app ------------------------------------
 > launch_app()
 Error in launch_app() : could not find function "launch_app"
 ```
@@ -274,8 +297,8 @@ Let's recap what we've done so far:
 
 ### {.unnumbered}
 
-``` sh
-shinyrPkgs/
+```{verbatim}
+sap/
     └── app.R
 ```
 
@@ -289,8 +312,8 @@ shinyrPkgs/
 
 ### {.unnumbered}
 
-``` sh
-shinyrPkgs/
+```{verbatim}
+sap/
     └── R/
         └── launch_app.R
 
@@ -307,8 +330,8 @@ shinyrPkgs/
 
 ### {.unnumbered}
 
-``` sh
-shinyrPkgs/
+```{verbatim}
+sap/
     └── man/
           └── launch_app.Rd
 
@@ -318,20 +341,18 @@ shinyrPkgs/
 
 ## Exports {#sec-depends-exports} 
 
-The error above is telling us that despite having documentation for `launch_app()` in the `R/` folder *and* generating the corresponding `.Rd` file in `man/`, `launch_app()` isn't being **exported** from `shinyrPkgs`.
+The error above is telling us that despite having documentation for `launch_app()` in the `R/` folder *and* generating the corresponding `.Rd` file in `man/`, `launch_app()` isn't being **exported** from `sap`.
 
-The exact cause of the error above becomes more apparent when we try to explicitly namespace `launch_app()` from `shinyrPkgs`:
+The exact cause of the error above becomes more apparent when we try to explicitly namespace `launch_app()` from `sap`:
 
 ```{r}
 #| eval: false
 #| code-fold: false
-shinyrPkgs::launch_app()
+sap::launch_app()
 ```
 
 ```{verbatim}
-#| eval: false
-#| code-fold: false
-Error: 'launch_app' is not an exported object from 'namespace:shinyrPkgs'
+Error: 'launch_app' is not an exported object from 'namespace:sap'
 ```
 
 ```{r}
@@ -343,7 +364,7 @@ git_margin_box(
   contents = "launch",
   fig_pw = '75%', 
   branch = "06.1_pkg-exports", 
-  repo = 'shinyrPkgs')
+  repo = 'sap')
 ```
 
 To make the `launch_app()` function available to users of our package, we need to export it. We export functions by including the `@export` tag in the `roxygen2` comment block (above the function we want to export):
@@ -363,7 +384,7 @@ To make the `launch_app()` function available to users of our package, we need t
     
 ### Export [`launch_app()`]{style="font-size: 1.00em;"}
 
-Let's start by exporting the `launch_app()` function from `shinyrPkgs` by placing the `@export` tag above the function in `R/launch_app.R`:
+Let's start by exporting the `launch_app()` function from `sap` by placing the `@export` tag above the function in `R/launch_app.R`:
 
 ```{r}
 #| eval: false 
@@ -384,13 +405,13 @@ launch_app <- function() {
 }
 ```
 
-In `app.R`, we'll replace the calls to `library()` with a single call to `library(shinyrPkgs)`
+In `app.R`, we'll replace the calls to `library()` with a single call to `library(sap)`
 
 ```{r}
 #| eval: false 
 #| code-fold: false
 # packages ------------------------------------
-library(shinyrPkgs)
+library(sap)
 
 # launch_app ------------------------------------
 launch_app()
@@ -421,7 +442,7 @@ We've lost the Shiny icon (`www/shiny.png`) in the UI, but we'll address this in
 <!-- first dimension defines rows and the second columns -->
 <!-- "layout="[[1,1], [1]]" translates to: create two rows, the first of which has two columns of equal size and the second of which has a single column. -->
 
-The `NAMESPACE` file now contains a single export (`launch_app`), and when we enter `shinyrPkgs::` in the **Console**, we see the `launch_app()` function help file in the tab completion.
+The `NAMESPACE` file now contains a single export (`launch_app`), and when we enter `sap::` in the **Console**, we see the `launch_app()` function help file in the tab completion.
  
 :::: {.column-body-outset-right}
 
@@ -429,9 +450,9 @@ The `NAMESPACE` file now contains a single export (`launch_app`), and when we en
 
 ![updated `NAMESPACE`](images/dep_exported_namespace.png){#fig-dep_exported_namespace width=100%}
 
-![`shinyrPkgs` namespace](images/dep_exported_launch_app.png){#fig-03_dependencies_namespace width=100%}
+![`sap` namespace](images/dep_exported_launch_app.png){#fig-03_dependencies_namespace width=100%}
 
-The `launch_app()` is now part of the `shinyrPkgs` namespace
+The `launch_app()` is now part of the `sap` namespace
 :::
 
 ::::
@@ -444,7 +465,7 @@ The `launch_app()` is now part of the `shinyrPkgs` namespace
 #| eval: true
 co_box(
   color = "g",
-  look = "default", hsize = "1.15", size = "1.10", 
+  look = "default", hsize = "1.10", size = "1.05", 
   header = "Low-key exports with **@keywords internal**",
   contents = "
   
@@ -460,7 +481,7 @@ For example, adding `@export` and `@keywords internal` to `R/scatter_plot.R` wil
   
 ![](images/depends_keywords_internal_namespace.png){width='80%' fig-align='center'}
   
-But if a user were to click on the **Index** for `shinyrPkgs` (at the bottom of the help file) `scatter_plot` would not be listed:
+But if a user were to click on the **Index** for `sap` (at the bottom of the help file) `scatter_plot` would not be listed:
   
 ![](images/depends_pkg_index.png){width='65%' fig-align='center'}
   
@@ -474,7 +495,7 @@ Using `@keywords internal` *without* `@export` will result in a helpfile, but th
 
 ### What [`@export`]{style="font-size: 1.00em;"} does
 
-We'll pause here to notice a few things about what `@export` does. After loading and documenting our package, the `NAMESPACE` is updated with `export(launch_app)`, and the **Console** automatically calls `library(shinyrPkgs)`.
+We'll pause here to notice a few things about what `@export` does. After loading and documenting our package, the `NAMESPACE` is updated with `export(launch_app)`, and the **Console** automatically calls `library(sap)`.
 
 ```{=html}
 
@@ -526,7 +547,7 @@ We can confirm `launch_app()` has been exported with `ls()`, which returns "*the
 ```{r}
 #| eval: false
 #| code-fold: false
-ls(name = "package:shinyrPkgs")
+ls(name = "package:sap")
 ```
 
 ```{verbatim}
@@ -537,12 +558,12 @@ ls(name = "package:shinyrPkgs")
 
 #### The [`search()`]{style="font-size: 1.00em;"} list
 
-`library(shinyrPkgs)` attaches `shinyrPkgs` to the search list. We can view all the attached packages in the string returned from `search()`:
+`library(sap)` attaches `sap` to the search list. We can view all the attached packages in the string returned from `search()`:
 
 ```{verbatim}
 #| eval: false
 #| code-fold: false
-"package:shinyrPkgs" %in% search()
+"package:sap" %in% search()
 ```
 
 ```{verbatim}
@@ -575,7 +596,7 @@ ggplot(data = mtcars,
 #  could not find function "ggplot"
 ```
 
-We can use the add-on/third-party package functions `shinyrPkgs` relies on, but we need to explicitly namespace these functions from their original package namespaces (i.e., using  `pkg::fun()`): 
+We can use the add-on/third-party package functions `sap` relies on, but we need to explicitly namespace these functions from their original package namespaces (i.e., using  `pkg::fun()`): 
 
 :::{layout="[40,60]" layout-valign="top"}
 
@@ -598,17 +619,17 @@ We can use `ggplot2` if we explicitly namespace it's functions
 #| eval: true
 co_box(
   color = "g",
-  look = "default", hsize = "1.15", size = "1.10", 
+  look = "default", hsize = "1.10", size = "1.05", 
   header = "Accessing add-on package functions",
   contents = "
-***What happens to add-on/third party functions that are exported from `shinyrPkgs`?***
+***What happens to add-on/third party functions that are exported from `sap`?***
   
-When a user loads `shinyrPkgs` with `library(shinyrPkgs)`, any add-on/third-party package functions used in exports are available to users if they use `pkg::fun()` (or if they load the package themselves with `library()`).", 
+When a user loads `sap` with `library(sap)`, any add-on/third-party package functions used in exports are available to users if they use `pkg::fun()` (or if they load the package themselves with `library()`).", 
   fold = TRUE
 )
 ```
 
-Access to add-on/third-party package functions has implications for the other functions in `shinyrPkgs`--for example, the `scatter_plot()` function uses `ggplot2` functions. But we're not exporting `scatter_plot()`, so when we attempt to run the examples, we see the following error: 
+Access to add-on/third-party package functions has implications for the other functions in `sap`--for example, the `scatter_plot()` function uses `ggplot2` functions. But we're not exporting `scatter_plot()`, so when we attempt to run the examples, we see the following error: 
 
 
 
@@ -619,20 +640,20 @@ Access to add-on/third-party package functions has implications for the other fu
 Examples in `scatter_plot()` function without exporting
 :::
 
-[Examples for 'shinyrPkgs::scatter_plot']{style="font-weight: bold; font-size: 1.15em;"}
+[Examples for 'sap::scatter_plot']{style="font-weight: bold; font-size: 1.15em;"}
 
 The message at the top of the **Help** pane is informative because it tells us that despite `scatter_plot()` being functional when we run `launch_app()`, it's not part of the package namespace (and thus, not accessible to users in the help file). 
 
 #### Export [`scatter_plot()`]{style="font-size: 1.0em;"}
 
-Let's add the `@export` tag to `R/scatter_plot.R` so it's exported from `shinyrPkgs`.
+Let's add the `@export` tag to `R/scatter_plot.R` so it's exported from `sap`.
 
 ```{r}
 #| eval: false 
 #| code-fold: false
 #' Create scatter plot 
 #'
-#' Custom [`ggplot2`](https://ggplot2.tidyverse.org/) function for building scatter plots in `shinyrPkgs`.
+#' Custom [`ggplot2`](https://ggplot2.tidyverse.org/) function for building scatter plots in `sap`.
 #' 
 #' 
 #' @param df `data.frame` or `tibble`
@@ -659,7 +680,7 @@ Let's add the `@export` tag to `R/scatter_plot.R` so it's exported from `shinyrP
 #' 
 ```
 
-After loading, documenting, and installing `shinyrPkgs`, the `NAMESPACE` is updated with the `export()` [directive](https://r-pkgs.org/dependencies-mindset-background.html#sec-dependencies-NAMESPACE-file): 
+After loading, documenting, and installing `sap`, the `NAMESPACE` is updated with the `export()` [directive](https://r-pkgs.org/dependencies-mindset-background.html#sec-dependencies-NAMESPACE-file): 
 
 ```{r}
 #| label: dev_key_all_02
@@ -670,7 +691,7 @@ hot_key("all")
 ```
 
 
-The contents of the updated `NAMESPACE` file and typing `shinyrPkgs::` in the **Console** now displays the `scatter_plot()` help file in the tab completion:
+The contents of the updated `NAMESPACE` file and typing `sap::` in the **Console** now displays the `scatter_plot()` help file in the tab completion:
 
 :::: {.column-body-outset-right}
 
@@ -678,9 +699,9 @@ The contents of the updated `NAMESPACE` file and typing `shinyrPkgs::` in the **
 
 ![`@export` the `scatter_plot` function](images/dep_scatter_plot_exported.png){#fig-deps_scatter_plot_exported width='100%' fig-align='center'}
 
-![`shinyrPkgs::scatter_plot()`](images/dep_scatter_plot_namespace.png){#fig-deps_scatter_plot_exported width='100%' fig-align='center'}
+![`scatter_plot()`](images/dep_scatter_plot_namespace.png){#fig-deps_scatter_plot_exported width='100%' fig-align='center'}
 
-`scatter_plot()` is now part of the `shinyrPkgs` namespace
+`scatter_plot()` is now part of the `sap` namespace
 :::
 
 ::::
@@ -693,7 +714,7 @@ Below, we confirm users can access the help file for `scatter_plot()` and run th
 
 #### [`loadedNamespaces()`]{style="font-size: 0.95em;"} 
 
-We've already confirmed that `ggplot2` isn't attached with `shinyrPkgs` (and hence, it is not included in the `search()` list)
+We've already confirmed that `ggplot2` isn't attached with `sap` (and hence, it is not included in the `search()` list)
 
 ```{r}
 #| eval: false 
@@ -729,11 +750,11 @@ c("ggplot2") %in% loadedNamespaces()
 #| eval: true
 co_box(
   color = "g", 
-  look = "default", hsize = "1.15", size = "1.10", 
+  look = "default", hsize = "1.10", size = "1.05", 
   fold = TRUE,
   header = "Accessing non-exported functions", 
   contents = "
-***What about functions that _aren't_ exported from `shinyrPkgs`?***
+***What about functions that _aren't_ exported from `sap`?***
   
 Functions that are not exported (i.e., do not include the `@export` tag) are still accessible after installing and loading a package using the `pkg:::fun()`
 "
@@ -744,7 +765,7 @@ Functions that are not exported (i.e., do not include the `@export` tag) are sti
 
 > *'Always err on the side of caution, and simplicity. It's easier to give people more functionality than it is to take away stuff they're used to'* - [What to export, R Packages, 2ed](https://r-pkgs.org/dependencies-in-practice.html#what-to-export)
 
-When determining which functions to export, consider the question: "*When a user installs and loads `shinyrPkgs`, what functions do I want to be available?*" 
+When determining which functions to export, consider the question: "*When a user installs and loads `sap`, what functions do I want to be available?*" 
 
 In app-packages, I'll take the following general approach:
 
@@ -765,7 +786,7 @@ git_margin_box(
   contents = "launch",
   fig_pw = '75%', 
   branch = "06.2_pkg-imports", 
-  repo = 'shinyrPkgs')
+  repo = 'sap')
 ```
 
 Managing imports is slightly more involved than exports because imported dependencies can live in `DESCRIPTION` and the `NAMESPACE`:
@@ -780,7 +801,7 @@ The `DESCRIPTION` file manages dependencies with three fields: `Depends`, `Impor
 
 #### [`Depends`]{style="font-size: 1.00em"} {#sec-pkg-depends-description}
 
-Packages listed under `Depends` are essential for our app-package to work. These packages will be attached *before* our package when `library(shinyrPkgs)` is called.
+Packages listed under `Depends` are essential for our app-package to work. These packages will be attached *before* our package when `library(sap)` is called.
 
 #### [`Imports`]{style="font-size: 1.00em"} {#sec-pkg-imports-description}
 
@@ -799,7 +820,7 @@ The `Suggests` field should include any packages that enhance our app-package, b
 #| eval: true
 co_box(
   color = "r", 
-  look = "default", hsize = "1.15", size = "1.10", 
+  look = "default", hsize = "1.10", size = "1.05", 
   fold = TRUE, 
   header = "Avoiding dependency hell",
   contents = "Generally speaking, you want to keep your app-package lightweight (i.e., limit the number of add-on/third-party dependencies, other than `base`-R packages and `shiny`). Doing this ensures you'll be able to safely use this app-packages as a dependencies in the next app-packages. We'll cover tracking and exploring dependencies in @sec-entanglement.")
@@ -839,7 +860,7 @@ We have some special considerations for the imported add-on functions in our app
 
 #### Using [`@import`]{style="font-size: 1.0em; font-weight: bold;"} {.unnumbered}
 
-A substantial portion of the code in `shinyrPkgs` comes from `shiny`, so we'll remove the explicit namespacing and place the `@import` tag in `R/launch_app.R`[^ms-imports]
+A substantial portion of the code in `sap` comes from `shiny`, so we'll remove the explicit namespacing and place the `@import` tag in `R/launch_app.R`[^ms-imports]
   
 [^ms-imports]: Using `@import` is not generally considered best practice, but it makes sense for app-packages: *...for Shiny apps, I recommend using `@import shiny` to make all the functions in the Shiny package easily available.* [Mastering Shiny, R CMD check](https://mastering-shiny.org/scaling-packaging.html#r-cmd-check)"
   
@@ -876,7 +897,7 @@ A substantial portion of the code in `shinyrPkgs` comes from `shiny`, so we'll r
 #' Create scatter plot 
 #'
 #' Custom [`ggplot2`](https://ggplot2.tidyverse.org/) function for building 
-#' scatter plots in `shinyrPkgs`.
+#' scatter plots in `sap`.
 #' 
 #' 
 #' @param df `data.frame` or `tibble`
@@ -917,7 +938,7 @@ usethis::use_package('bslib')
 ```
 
 ``` sh
-✔ Setting active project to '/Users/mjfrigaard/projects/apps/shinyrPkgs'
+✔ Setting active project to '/Users/mjfrigaard/projects/apps/sap'
 ✔ Adding 'bslib' to Imports field in DESCRIPTION
 • Refer to functions with `bslib::fun()`
 ```
@@ -973,7 +994,7 @@ movies_ui <- function() {
 
 
 
-After adding all add-on packages to the `DESCRIPTION` with `usethis::use_package()`, then deciding if/where to use `@importFrom` and `@import`, we'll load, document, and install `shinyrPkgs`:
+After adding all add-on packages to the `DESCRIPTION` with `usethis::use_package()`, then deciding if/where to use `@importFrom` and `@import`, we'll load, document, and install `sap`:
 
 ```{r}
 #| label: dev_key_all_03
@@ -1002,7 +1023,7 @@ importFrom(rlang,.data)
 Updated `DESCRIPTION` with all  `Imports`:
 
 ``` sh
-Package: shinyrPkgs
+Package: sap
 Title: Shiny App-Packages
 Version: 0.0.0.9000
 Author: John Smith <John.Smith@email.io> [aut, cre]
@@ -1042,7 +1063,7 @@ When we run `launch_app()`, we see the application launches and we can still run
 
 ![Examples in `?scatter_plot`](images/dep_run_examples_scatter_plot.png){#fig-import_check_app_examples width='100%' align='center'}
 
-Confirming we still have full functionality in `shinyrPkgs`
+Confirming we still have full functionality in `sap`
 :::
 
 ### What [`@import`]{style="font-size: 1.00em; font-weight: bold;"} does
@@ -1105,12 +1126,12 @@ flowchart TD
 `devtools::document()` (or **[<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd>]{style='font-size: 0.70em;'}**) updates the `NAMESPACE` with any `@import`, `@importFrom` or `@export` tags. However, no changes are made to the `DESCRIPTION` file.
 :::
 
-Let's confirm we're still only exporting `launch_app()` and `scatter_plot()` from `shinyrPkgs`:
+Let's confirm we're still only exporting `launch_app()` and `scatter_plot()` from `sap`:
 
 ```{r}
 #| eval: false
 #| code-fold: false
-ls(name = "package:shinyrPkgs")
+ls(name = "package:sap")
 ```
 
 ```{verbatim}
@@ -1151,7 +1172,7 @@ pkgs %in% search()
 [1] FALSE FALSE FALSE FALSE FALSE
 ```
 
-This demonstrates that none of these packages are attached with `shinyrPkgs`. However, the `rlang` and `shiny` packages are included in the `loadedNamespaces()` (because we included them with `@import`/`@importFrom`). 
+This demonstrates that none of these packages are attached with `sap`. However, the `rlang` and `shiny` packages are included in the `loadedNamespaces()` (because we included them with `@import`/`@importFrom`). 
 
 ```{r}
 #| eval: false
@@ -1167,7 +1188,7 @@ pkgs %in% loadedNamespaces()
 [1] FALSE  TRUE  TRUE FALSE FALSE
 ```
 
-We can still access the add-on package functions in `shinyrPkgs` using the `pkg::fun()` syntax: 
+We can still access the add-on package functions in `sap` using the `pkg::fun()` syntax: 
 
 ::: {layout="[35, 65]"}
 
@@ -1201,7 +1222,7 @@ Below are handful of questions and answers I've encountered regarding package im
 
 ***How can I tell the difference between functions written by a package author and imported functions in the code below `R/`?***
 
--   Using `pkg::fun()` makes calls to add-on packages explicit and easy to differentiate from the native functions developed in `shinyrPkgs`[^rpks-pkg-fun-syntax]
+-   Using `pkg::fun()` makes calls to add-on packages explicit and easy to differentiate from the native functions developed in `sap`[^rpks-pkg-fun-syntax]
 
 [^rpks-pkg-fun-syntax]: "*Our recommended default is to call external functions using the `package::function()` syntax*" - [R Packages, 2ed](https://r-pkgs.org/dependencies-in-practice.html#sec-dependencies-in-imports)
 
@@ -1215,7 +1236,7 @@ Below are handful of questions and answers I've encountered regarding package im
 
 - Place the `@importFrom pkg fun` tag directly above the code using the add-on function.
 
-- You can also consolidate all `@import` and `@importFrom` tags into a single package doc file (i.e., `R/[shinyrPkgs]-package.R`) by calling `usethis::use_package_doc()`.
+- You can also consolidate all `@import` and `@importFrom` tags into a single package doc file (i.e., `R/[sap]-package.R`) by calling `usethis::use_package_doc()`.
 
 ***Should I be using `@importFrom` or `@import` from?***
 
@@ -1248,7 +1269,7 @@ For example, if I had listed `shiny` as an import using the `@import` tag (resul
 ```{verbatim}
 #| code-fold: false
 #| eval: false
-── R CMD check results ────────────────────────── shinyrPkgs 0.0.0.9000 ────
+── R CMD check results ────────────────────────── sap 0.0.0.9000 ────
 Duration: 7.4s
 
 ❯ checking package dependencies ... ERROR
@@ -1275,7 +1296,7 @@ Below are the main takeaways from managing the imports and exports from your app
 #| eval: true
 co_box(
   color = "g",
-  look = "default", hsize = "1.15", size = "1.10", 
+  look = "default", hsize = "1.10", size = "1.05", 
   header = "Dependencies recap",
   contents = "
   This chapter covered: 

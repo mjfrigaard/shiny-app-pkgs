@@ -15,31 +15,29 @@ library(dplyr)
 #| eval: true
 co_box(
   color = "b", 
-  look = "default", hsize = "1.15", size = "1.10",
+  look = "default", hsize = "1.10", size = "1.05",
   header = "TLDR Data", 
   fold = TRUE,
   contents = "
 **Data files in your app-package:** 
   
 - **`data/`**: data files that will be used in your application (i.e., become part of your app-package namespace and accessed via `pkg::data`) should in stored in `data/`\n
-    - Add data to the data/ directory using `usethis::use_data()`\n
+    - Add data to the `data/` directory using `usethis::use_data()`\n
     - Include the `LazyData: true` field in the `DESCRIPTION`\n
   
 - **`data-raw/`**: scripts used to prepare data files can be created with `usethis::use_data_raw()`\n
     - Store intermediate data files in `data-raw/`\n
-    - Store output files in `data/` (or inst/extdata/`)\n
+    - Store output files in `data/` (or `inst/extdata/`)\n
   
 - **`inst/extdata/`**: 'External' data files (i.e., non-R formatted data files) can be stored in `inst/extdata` and accessed using `system.file()`. \n
     
-**Workflow:** start with the script that creates/downloads/wrangles your data using `usethis::use_data_raw()`, keep any intermediate or non-R formatted files in `inst/extdata/`, then export the final object to `data/` with `usethis::use_data()` \n
-  
-  "
+**Workflow:** start with the script that creates/downloads/wrangles your data using `usethis::use_data_raw()`, keep any intermediate or non-R formatted files in `inst/extdata/`, then export the final object to `data/` with `usethis::use_data()` \n"
 )
 ```
 
 ---
 
-We've documented the functions in `shinyrPkgs` and successfully managed the dependencies with the `NAMESPACE` and `DESCRIPTION`. In this chapter, we're going to cover how make sure our data file (`movie.RData`) becomes part of our package and can be loaded into our application. I'll also discuss other locations and purposes for app-package data files. 
+In the previous chapters we covered how to document functions and manage dependencies. In this chapter, we're going to cover how make sure our data file (`movie.RData`) becomes part of our app-package and can be loaded into our application. We'll also discuss other locations and purposes for app-package data files. 
 
 
 :::: {.callout-tip collapse='true' appearance='default'}
@@ -85,11 +83,9 @@ launch(app = "07_data")
 ::::
 
 
-## App-package data 
+Data in R packages are typically stored in one of three folders: `data/`, `data-raw/`, and `inst/extdata/`.[^data-pkgs-1] The folder you use will depend on the format, accessibility, and intended purpose of the data file.[^app-data-chapter]
 
-Data in R packages are typically stored in one of three folders: `data/`, `data-raw/`, and `inst/extdata/`.[^data-pkgs-1] The folder you use will depend on the format, accessibility, and intended purpose of the data file.[^app-data-chpater]
-
-[^app-data-chpater]: For information on how to store and retrieve inside your application, see the chapter on [app Data](app_data.qmd).
+[^app-data-chapter]: For information on how to store and retrieve inside your application, see the chapter on [app Data](app_data.qmd).
 
 [^data-pkgs-1]: Read more about the data folder in the ['Data in packages' section of Writing R Extenstions](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Data-in-packages) and the ['Data' chapter of R Packages, 2ed](https://r-pkgs.org/data.html).
 
@@ -113,12 +109,12 @@ Data files become part of a package when they're added to the `data/` folder and
 
 -   `LazyData: false` (or omitted): accessing a data file from the package requires explicitly loading it using the `data()` function.
 
-Files in `data/` should be in the `.rda` or `.RData` format. Below are the steps for adding `movies` to `shinyrPkgs`:
+Files in `data/` should be in the `.rda` or `.RData` format. Below are the steps for adding `movies` to `sap`:
 
 1. Move the `movies.RData` file into a newly created the `data/` folder:
 
 ``` sh
-shinyrPkgs/
+sap/
     └──data/
         └── movies.RData
 ```
@@ -126,7 +122,7 @@ shinyrPkgs/
 2. Include `LazyData: true` in the `DESCRIPTION` file (I've added it above `Imports:`):
 
 ``` sh
-Package: shinyrPkgs
+Package: sap
 Version: 0.0.0.9000
 Type: Package
 Title: Shiny App-Packages
@@ -148,23 +144,42 @@ Imports:
 
 3. Load, document, and install.
 
-[<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd>]{style="font-style: italic; font-weight: bold; font-size: 1.10em"}
-
-``` sh
-ℹ Loading shinyrPkgs
+```{r}
+#| label: data_hot_key_01
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key("L")
 ```
 
-[<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd>]{style="font-style: italic; font-weight: bold; font-size: 1.10em"}
+
+``` sh
+ℹ Loading sap
+```
+
+```{r}
+#| label: data_hot_key_02
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key("D")
+```
 
 ``` sh
 ==> devtools::document(roclets = c('rd', 'collate', 'namespace'))
 
-ℹ Updating shinyrPkgs documentation
-ℹ Loading shinyrPkgs
+ℹ Updating sap documentation
+ℹ Loading sap
 Documentation completed
 ```
 
-[<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>B</kbd>]{style="font-style: italic; font-weight: bold; font-size: 1.10em"}
+```{r}
+#| label: data_hot_key_03
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key("B")
+```
 
 In the **Build** pane, you'll notice a few new `** data` lines of output after adding data:
 
@@ -174,7 +189,7 @@ In the **Build** pane, you'll notice a few new `** data` lines of output after a
 ** byte-compile and prepare package for lazy loading
 ```
 
-The diagram below captures what happens to the package files and namespace after adding `LazyData: true` to the `DESCRIPTION` file and exporting `movies` from `shinyrPkgs`.
+The diagram below captures what happens to the package files and namespace after adding `LazyData: true` to the `DESCRIPTION` file and exporting `movies` from `sap`.
 
 ```{=html}
 
@@ -231,10 +246,10 @@ flowchart TD
   style InstallPackage fill:#FFDD67,stroke:none,rx:10,ry:10;
 ```
 
-We can check to see if movies has been included in `shinyrPkgs` using the `package::data` syntax: 
+We can check to see if movies has been included in `sap` using the `package::data` syntax: 
 
 
-![`movies` is now part of `shinyrPkgs`](images/data_movies_namespace.png){#fig-data_movies_namespace width='100%' fig-align='center'}
+![`movies` is now part of `sap`](images/data_movies_namespace.png){#fig-data_movies_namespace width='100%' fig-align='center'}
 
 ### [`usethis::use_data()`]{style="font-size: 0.95em"}
 
@@ -251,7 +266,7 @@ usethis::use_data(movies)
 ```{verbatim}
 #| eval: false 
 #| code-fold: false
-✔ Setting active project to '/path/to/shinyrPkgs'
+✔ Setting active project to '/path/to/sap'
 ✔ Adding 'R' to Depends field in DESCRIPTION
 ✔ Creating 'data/'
 ✔ Saving 'movies' to 'data/movies.rda'
@@ -269,7 +284,7 @@ Depends:
 
 *`use_data()` will also add `LazyData: true` to the `DESCRIPTION`*
 
-## Documenting data {#sec-document-data}
+## Documenting [`data/`]{style="font-size: 1.05em; font-weight: bold;"} {#sec-document-data}
 
 Documenting data can be tedious, but it's worth the effort if you'll be sharing your package with collaborators. There are multiple ways to store dataset documentation. A common approach is to create a `data.R` file in the `R/` folder.[^data-ggplot2-example]
 
@@ -357,14 +372,14 @@ Below is the documentation for the first five columns in the `movies` dataset:
 "movies"
 ```
 
-If we load and document `shinyrPkgs`, we can see a preview of the help file:
+If we load and document `sap`, we can see a preview of the help file:
 
 [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd>]{style="font-style: italic; font-weight: bold; font-size: 1.10em"}
 
 ```{verbatim}
 #| eval: false
 #| code-fold: false
-ℹ Loading shinyrPkgs
+ℹ Loading sap
 ```
 
 [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd>]{style="font-style: italic; font-weight: bold; font-size: 1.10em"}
@@ -374,13 +389,13 @@ If we load and document `shinyrPkgs`, we can see a preview of the help file:
 #| code-fold: false
 ==> devtools::document(roclets = c('rd', 'collate', 'namespace'))
 
-ℹ Updating shinyrPkgs documentation
-ℹ Loading shinyrPkgs
+ℹ Updating sap documentation
+ℹ Loading sap
 Writing movies.Rd
 Documentation completed
 ```
 
-The figure below captures what happens to the shinyrPkgs package files after creating the `R/data.R` file. 
+The figure below captures what happens to the sap package files after creating the `R/data.R` file. 
 
 ```{=html}
 
@@ -634,7 +649,7 @@ Either method works--what's important is that each dataset in your package *has*
 #| eval: true
 co_box(
   color = "g", fold = TRUE, look = "default",
-  hsize = "1.15", size = "1.10",
+  hsize = "1.10", size = "1.05",
   header = "Documenting data",
   contents = "
 
@@ -674,7 +689,7 @@ The `data-raw` folder is not an official directory in the standard R package str
 #| eval: true
 co_box(
   color = "o", fold = TRUE, look = "default",
-  hsize = "1.15", size = "1.10",
+  hsize = "1.10", size = "1.05",
   header = "Scripts for creating `movies` data",
   contents = "
 The code used to produce the `movies` dataset in the `data/` directory might* come from [this GitHub repo](https://github.com/mine-cetinkaya-rundel/rotten). If so, the `data-raw` folder is where [the data processing and preparation scritps](https://github.com/mine-cetinkaya-rundel/rotten/tree/master/working) would be stored (along with a copy of the data in `.csv` format) before saving a copy in the `data/` folder. 
@@ -739,7 +754,7 @@ fstcore package v0.9.14
 (OpenMP was not detected, using single threaded mode)
 ```
 
-Then load, document, and install `shinyrPkgs`:
+Then load, document, and install `sap`:
 
 [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd> / <kbd>D</kbd> / <kbd>B</kbd>]{style="font-style: italic; font-weight: bold; font-size: 1.10em"}
 
@@ -750,7 +765,7 @@ We can import `movies.fst` using `system.file()` to create a path to the file:
 #| code-fold: false 
 tibble::as_tibble(
   fst::read_fst(path = 
-      system.file("extdata/", "movies.fst", package = "shinyrPkgs")
+      system.file("extdata/", "movies.fst", package = "sap")
     )
   )
 ```
@@ -790,7 +805,7 @@ git_margin_box(
   contents = "standard",
   fig_pw = '75%', 
   branch = "07_data", 
-  repo = 'shinyrPkgs')
+  repo = 'sap')
 ```
 
 ## Recap {.unnumbered}
@@ -804,7 +819,7 @@ It's common for Shiny apps to require data, so knowing how to store and access t
 #| eval: true
 co_box(
   color = "g", fold = FALSE,
-  look = "default", hsize = "1.15", size = "1.10",
+  look = "default", hsize = "1.10", size = "1.05",
   header = "Recap: Package data files",
   contents = "
 - `data/`: All data files stored in `data/` will be 'lazy loaded' (see below) when the package is installed and loaded.  

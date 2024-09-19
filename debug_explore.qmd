@@ -1,0 +1,301 @@
+# Exploring code {#sec-debug-explore}
+
+<!--
+https://shiny.posit.co/r/articles/improve/debugging/
+https://debruine.github.io/shinyintro/debugging.html
+-->
+
+```{r}
+#| label: _common
+#| eval: true 
+#| echo: false 
+#| include: false
+source("_common.R")
+library(lobstr)
+```
+
+:::: {.callout-tip collapse='true' appearance='default'}
+
+## [Accessing applications]{style='font-weight: bold; font-size: 1.15em;'}
+
+::: {style='font-size: 0.95em; color: #282b2d;'}
+
+I've created the [`shinypak` R package](https://mjfrigaard.github.io/shinypak/) In an effort to make each section accessible and easy to follow:
+  
+Install `shinypak` using `pak` (or `remotes`):
+
+```{r}
+#| code-fold: false 
+#| message: false
+#| warning: false
+#| eval: false
+# install.packages('pak')
+pak::pak('mjfrigaard/shinypak')
+```
+
+Review the chapters in each section:
+  
+```{r}
+#| code-fold: false 
+#| message: false
+#| warning: false
+#| collapse: true
+library(shinypak)
+list_apps(regex = 'debug')
+```
+
+Launch the app: 
+
+```{r}
+#| code-fold: false 
+#| eval: false
+launch(app = "23.1_debug-error")
+```
+
+Download the app: 
+
+```{r}
+#| code-fold: false 
+#| eval: false
+get_app(app = "23.1_debug-error")
+```
+
+::: 
+
+::::
+
+When used as an exploratory tool, the debugger allows us to ‘look inside’ functions and break down their execution line-by-line.
+
+`observe()` and `browser()` aren't only useful for addressing bugs--we can also use the debugger to understand how an application works.
+
+Suppose it's been awhile since we've looked at the `ggplot2movies::movies` application (run with `ggp2_movies_app()`). We can place calls to `observe(browser())` in the `inst/dev/app.R` file, load the package, and run the application to see how it executes.
+
+We'll wrap the code in `dev_mod_scatter_server()` in `observe()`, and place a call to `browser()` before the alternate dataset is loaded:
+
+```{r}
+#| eval: false 
+#| code-fold: false 
+dev_mod_scatter_server <- function(id, var_inputs) {
+  moduleServer(id, function(input, output, session) {
+
+    observe({ # <1> 
+      browser() # <2>
+
+    # load alternate data
+    all_data <- fst::read_fst("tidy_movies.fst")
+    # <3>
+    # <3> 
+    # <3> 
+    # <3>
+    }) # <1> 
+  })
+}
+```
+1. Observer scope   
+2. Call to `browser()`   
+3. Additional module code omitted
+
+Load the package and run the app:
+
+```{r}
+#| label: hot_key_ggp2_movies_app
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key(fun = "L")
+```
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+ℹ Loading sap
+```
+
+```{r}
+#| eval: false 
+#| code-fold: false
+ggp2_movies_app(options = list(test.mode = FALSE), run = 'p')
+```
+
+
+This will suspend the execution of application before the tidy `ggplot2movies::movies` data are loaded (`tidy_movies.fst`), and before the graph is rendered: 
+
+
+:::: {.column-page-inset-right}
+
+::: {layout="[60, 40]" layout-valign="top"}
+
+![Debugging `dev_mod_scatter_server()`](images/debug_dev_app_04.png){width='100%'}
+
+![`ggp2_movies_app()` in interactive debugger](images/debug_dev_ggp2_movies_app_04.png){width='100%'}
+
+:::
+
+::::
+
+We can step through the module function to explore how the alternate data are loaded (and missing values are removed). 
+
+## Verify app data 
+
+First we'll proceed through the code until `tidy_movies.fst` is loaded, then confirm it's structure: 
+
+::: {layout="[35, 65]" layout-valign="top"}
+
+``` r
+Browse[2]> n
+Browse[2]> n
+Browse[2]> str(all_data)
+```
+
+``` sh
+'data.frame':	46002 obs. of  8 variables: 
+ $ title     : chr  "'Til There Was You" ...
+ $ length    : int  113 97 98 98 102 120 ...
+ $ year      : int  1997 1999 2002 2004 ...
+ $ budget    : int  23000000 16000000 ...
+ $ avg_rating: num  4.8 6.7 5.6 6.4 6.1 ...
+ $ votes     : int  799 19095 181 7859 ...
+ $ mpaa      : Factor w/ 5 levels "G","PG" ...
+ $ genre     : Factor w/ 8 levels "Action"...
+```
+    
+:::
+
+This gives us an idea of the total rows before missing are removed. 
+
+## Verfiy missing 
+
+After loading `all_data`, the module creates a reactive `graph_data()`. We can see `graph_data()` is 'bound' to `input$missing`, so we'll confirm the  `input$missing` value:
+
+![](images/debug_dev_verify_missing_04.png){width='85%' fig-align='center'}
+
+::: {layout="[35, 65]" layout-valign="top"}
+
+``` r
+Browse[2]> input$missing
+```
+
+``` sh
+[1] TRUE
+```
+
+:::
+
+This tells us '*Remove missing*' has been selected, and we can verify the missing values have been removed from `graph_data()`:
+
+::: {layout="[35, 65]" layout-valign="top"}
+
+
+``` r
+Browse[2]> n
+Browse[2]> str(graph_data())
+```
+
+``` sh
+'data.frame':	1608 obs. of  8 variables: 
+ $ title     : chr  "'Til There Was You" ...
+ $ length    : int  113 97 98 98 102 120 ...
+ $ year      : int  1997 1999 2002 2004 ...
+ $ budget    : int  23000000 16000000 ...
+ $ avg_rating: num  4.8 6.7 5.6 6.4 6.1 ...
+ $ votes     : int  799 19095 181 7859 ...
+ $ mpaa      : Factor w/ 5 levels "G","PG" ...
+ $ genre     : Factor w/ 8 levels "Action"...
+```
+
+:::
+
+## Verfiy variable inputs 
+    
+Next we'll confirm the `var_inputs()` list of graph values from our `dev` variable input module:
+
+::: {layout="[35, 65]" layout-valign="top"}
+
+``` r
+Browse[2]> str(var_inputs())
+```
+
+``` sh
+List of 6
+ $ x         : chr "year"
+ $ y         : chr "budget"
+ $ z         : chr "mpaa"
+ $ alpha     : num 0.4
+ $ size      : num 2.5
+ $ plot_title: chr ""
+```
+    
+:::
+
+
+`var_inputs()` is creates the `inputs()` reactive for the graph, so we'll confirm those values, too.
+
+![](images/debug_dev_verify_inputs_04.png){width='85%' fig-align='center'}
+
+::: {layout="[35, 65]" layout-valign="top"}
+
+``` r
+Browse[2]> n
+Browse[2]> str(inputs())
+```
+
+``` sh
+List of 6
+ $ x         : chr "year"
+ $ y         : chr "budget"
+ $ z         : chr "mpaa"
+ $ alpha     : num 0.4
+ $ size      : num 2.5
+ $ plot_title: chr ""
+```
+    
+:::
+
+## Verfiy graph
+
+Now that we have an understanding of the reactive flow inside the app, we'll render the plot: 
+
+::: {layout="[35, 65]" layout-valign="top"}
+
+``` r
+Browse[2]> n
+```
+
+![](images/debug_dev_verify_app_04.png)
+
+:::
+
+Using `browser()` to 'step through' an application gives us a better understanding of the 'order of execution' in our `dev` scatter plot display module, (and it lets us see how `input$missing` and `bindEvent()` are working).
+
+## Recap {.unnumbered}
+
+```{r}
+#| label: co_box_recap
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g", 
+  fold = FALSE,
+  look = "default", hsize = "1.10", size = "1.05", 
+  header = "Recap: CI/CD!",
+  contents = "
+
+`browser()` and `observe()` are powerful tools for debugging your application. Navigating a function using the debugger console gives you control over the execution of each line. If we want to see what's happening 'behind the scenes', we can collect the reactive values and print them in the UI while the app is running. 
+
+The Shiny documentation also has a [list of methods](https://shiny.posit.co/r/articles/improve/debugging/) for debugging apps, and learning how to read call stacks (or a stacktrace) will help you debug your shiny app.[^debug-call-stacks], [^call-stack-shiny]")
+```
+
+```{r}
+#| label: git_contrib_box
+#| echo: false
+#| results: asis
+#| eval: true
+git_contrib_box()
+```
+
+[^call-stack-shiny]: Stack traces are also covered in [Advanced R, 2ed](https://adv-r.hadley.nz/debugging.html#traceback), [Mastering Shiny](https://mastering-shiny.org/action-workflow.html#tracebacks-in-shiny), and in the [Shiny documentation](https://github.com/rstudio/shiny/wiki/Stack-traces-in-R). I've summarized some tips on reading Shiny call stacks in the [stack traces](stack_traces.qmd) section on the Appendix.
+
+
+[^debug-call-stacks]: Watch [this video](https://www.youtube.com/watch?v=g1h-YDWVRLc) to learn about call stacks and abstract folder trees with `lobstr`. 
+

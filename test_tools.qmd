@@ -20,7 +20,7 @@ library(shiny)
 #| eval: true
 co_box(
   color = "b",
-  look = "default", hsize = "1.15", size = "1.10",
+  look = "default", hsize = "1.10", size = "1.05",
   header = "TLDR Test Tools", fold = TRUE,
   contents = "
 
@@ -77,7 +77,7 @@ By integrating fixtures, helpers, and snapshots from `testthat` into your Shiny 
 
 ---
 
-This chapter introduces tools to help write clean and efficient tests. These files, folders and methods can be included in our app-package test suite and are described in-depth in [R Packages, 2ed](https://r-pkgs.org/testing-design.html#sec-testing-design-principles), and the [`testthat` documentation.](https://testthat.r-lib.org/articles/third-edition.html), but within the context of a standard R package. The sections below contain examples of each tool implemented in our app-package.[^test_tools-documentation]
+This chapter introduces tools to help write clean and efficient tests. These files, folders and methods can be included in our app-package test suite and are thoroughly described in [R Packages, 2ed](https://r-pkgs.org/testing-design.html#sec-testing-design-principles) and the [`testthat` documentation](https://testthat.r-lib.org/articles/third-edition.html), but within the context of a standard R package. The sections below contain examples of each tool implemented in our example app-package.[^test_tools-documentation]
 
 :::: {.callout-tip collapse='true' appearance='default'}
 
@@ -159,7 +159,7 @@ git_margin_box(
   contents = "launch",
   fig_pw = '65%', 
   branch = "12.1_tests-fixtures", 
-  repo = 'shinyrPkgs')
+  repo = 'sap')
 ```
 
 In R packages, test fixtures are stored in the `tests/testthat/fixtures/` folder:[^tests-fixtures-folder-name]
@@ -181,7 +181,7 @@ Large static data files are an example of a test fixture.[^test_tools-6] Any cod
 
 [^test_tools-6]: Creating a tidied version of `ggplot2movies::movies` would be costly to re-create with every test, so it's advised to store it as an [static test fixture.](https://r-pkgs.org/testing-advanced.html#sec-testing-advanced-concrete-fixture)
 
-For example, I've stored the code used to create a ['tidy' version](https://github.com/mjfrigaard/shinyrPkgs/blob/12a_tests-fixtures/tests/testthat/fixtures/make-tidy_ggp2_movies.R) of the `ggplot2movies::movies` data along with the output dataset in `tests/testthat/fixtures/`:
+For example, I've stored the code used to create a ['tidy' version](https://github.com/mjfrigaard/sap/blob/12a_tests-fixtures/tests/testthat/fixtures/make-tidy_ggp2_movies.R) of the `ggplot2movies::movies` data along with the output dataset in `tests/testthat/fixtures/`:
 
 ```{bash}
 #| eval: false 
@@ -213,28 +213,24 @@ This type of test appropriate because we want to confirm the data source will ge
 ```{r}
 #| eval: false 
 #| code-fold: false
-testthat::describe( # <1>
+describe( # <1>
   "Feature: Scatter plot data visualization
-
      As a film data analyst
-     I want to explore movie review data from IMDB.com
-     So that I can analyze relationships between movie reivew metrics
-
+     I want to explore IMDB.com movie review data 
+     So that I can examine relationships between movie reivew metrics
    Background:
-     Given I have data with IMDB movie reviews
+     Given I have IMDB movie reviews data  
      And the data contains continuous variables like 'rating'
      And the data contains categorical variables like 'mpaa'", 
      code = { # <1>
-      
-    testthat::it( # <2>
+    it( # <2>
       "Scenario: Scatter plot initial x, y, color values 
-         When I launched the Scatter Plot Data Visualization
-         And I have a dataset of movie reviews from IMDB 
-         Then the scatter plot should show 'Rating' on the x-axis
-         And the scatter plot should show 'Length' on the y-axis
-         And the points on the scatter plot should be colored by 'MPAA' rating", 
+         When I launch the Scatter Plot Data Visualization
+         And I have a IMDB dataset of movie reviews 
+         Then the plot should show 'Rating' on the x-axis
+         And the plot should show 'Length' on the y-axis
+         And the points on the plot should be colored by 'MPAA' rating", 
         code = { # <2>
-        
     ggp2_scatter_inputs <- list(  # <3>
           x = "rating",
           y = "length",
@@ -243,7 +239,6 @@ testthat::describe( # <1>
           size = 3,
           plot_title = "Enter plot title"
         )              # <3>
-        
     tidy_ggp2_movies <- readRDS(test_path("fixtures", # <4>
                                 "tidy_ggp2_movies.rds")) # <4>
     app_graph <- scatter_plot(tidy_ggp2_movies,  # <5>
@@ -267,6 +262,15 @@ testthat::describe( # <1>
 
 If the `tidy_ggp2_movies.rds` file in the `tests/testthat/fixtures/` folder are going to be used repeatedly, it might make sense to store the data in `inst/extdata/` or `data-raw/`. Test fixtures are described in-depth in [R Packages, 2ed](https://r-pkgs.org/testing-advanced.html#test-fixtures) and in the [`testthat` documentation](https://testthat.r-lib.org/articles/test-fixtures.html#test-fixtures).
 
+::: {.panel-tabset}
+
+### Tests in RStudio ![](images/rstudio-icon.png){height=20}
+
+
+### Tests in Positron ![](images/positron.png){height=20}
+
+:::
+
 ## Test helpers {#sec-test-helpers}
 
 <!-- https://r-pkgs.org/testing-design.html#testthat-helper-files -->
@@ -282,7 +286,7 @@ git_margin_box(
   contents = "launch",
   fig_pw = '65%', 
   branch = "12.2_tests-helpers", 
-  repo = 'shinyrPkgs')
+  repo = 'sap')
 ```
 
 Test helpers reduce repeated/duplicated test code. In general, objects or values that aren't large enough to justify storing as static test fixtures can be created with helper functions. Helper functions are stored in `tests/testthat/helper.R`, which is automatically loaded with `devtools::load_all()`:
@@ -424,7 +428,7 @@ make_var_inputs <- function() {
 #| eval: true
 co_box(
   color = "r", fold = TRUE,
-  look = "default", hsize = "1.15", size = "1.10",
+  look = "default", hsize = "1.10", size = "1.05",
   header = "Violating the DRY principle",
   contents = "
 If you have repeated code in your tests, consider the following questions below before creating a helper function: 
@@ -470,7 +474,7 @@ test_logger <- function(start = NULL, end = NULL, msg) {
 
 [^test_tools-logging]: If you like verbose logging outputs, check out the [`logger` package](https://daroczig.github.io/logger/)
 
-I tend to use functions like `test_logger()` enough to justify placing them in a testing utility file ([`R/testthat.R`](https://github.com/mjfrigaard/shinyrPkgs/blob/13_tests-modules/R/testthat.R)) below `R/`. Including testing functions in the `R/` folder also ensures they're documented (and any dependencies become part of your app-package).[^test_tools-helpers-r-dir]
+I tend to use functions like `test_logger()` enough to justify placing them in a testing utility file ([`R/testthat.R`](https://github.com/mjfrigaard/sap/blob/13_tests-modules/R/testthat.R)) below `R/`. Including testing functions in the `R/` folder also ensures they're documented (and any dependencies become part of your app-package).[^test_tools-helpers-r-dir]
 
 [^test_tools-helpers-r-dir]: Placing common files for testing below `R/` is covered in [R Packages, 2ed](https://r-pkgs.org/testing-design.html#hiding-in-plain-sight-files-below-r)
 
@@ -528,7 +532,7 @@ git_margin_box(
   contents = "launch",
   fig_pw = '65%', 
   branch = "12.3_tests-snapshots", 
-  repo = 'shinyrPkgs')
+  repo = 'sap')
 ```
 
 
@@ -543,7 +547,7 @@ Writing tests for UI outputs can be difficult because their "correctness" is som
 #| eval: true
 co_box(
   color = "b", fold = TRUE, 
-  look = "default", hsize = "1.15", size = "1.10",
+  look = "default", hsize = "1.10", size = "1.05",
   header = "Mocking",
   contents = "
 Test mocks are covered in @sec-tests-mocks-snapshots, but the example isn't from our app-package (it comes from the package development masterclass given at [posit::conf(2023)](https://github.com/posit-conf-2023/pkg-dev-masterclass)). 
@@ -551,7 +555,7 @@ Test mocks are covered in @sec-tests-mocks-snapshots, but the example isn't from
 )
 ```
 
-I've included a small UI function (`text_logo()`) in the `R/` folder of `shinyrPkgs`: 
+I've included a small UI function (`text_logo()`) in the `R/` folder of `sap`: 
 
 ```{r}
 #| eval: true 
@@ -629,7 +633,7 @@ Reviewing the entire HTML contents of `movies_ui()` to see if `text_logo()` is w
 #| eval: true
 co_box(
   color = "r", 
-  look = "default", hsize = "1.15", size = "1.10",
+  look = "default", hsize = "1.10", size = "1.05",
   fold = TRUE,
   header = "Warning: snapshots and multiple line descriptions",
   contents = "
@@ -782,7 +786,7 @@ co_box(
   color = "g",
   header = "Recap: Test tools",
   fold = FALSE,
-  look = "default", hsize = "1.15", size = "1.10",
+  look = "default", hsize = "1.10", size = "1.05",
   contents = "
 
 <h5>**Test tools**</h5>

@@ -1,0 +1,517 @@
+# Design {#sec-design}
+
+```{r}
+#| eval: true 
+#| echo: false 
+#| include: false
+source("_common.R")
+library(htmltools)
+library(thematic)
+library(fst)
+# download.file("https://github.com/mjfrigaard/sap/raw/18_design/inst/extdata/movies.fst", destfile = "_assets/movies.fst")
+movies <- fst::read_fst(path = "_assets/movies.fst")
+# name_case
+source("https://raw.githubusercontent.com/mjfrigaard/sap/22_design/R/name_case.R")
+# rcartocolor::Vivid 
+clr_pal12 <- c("#FC5C64FF", "#2F8AC4FF", "#99C945FF", "#E58606FF",
+               "#5D69B1FF", "#CC61B0FF", "#24796CFF", "#DAA51BFF",
+               "#2F8AC4FF", "#764E9FFF", "#CC3A8EFF", "#A5AA99FF")
+```
+
+```{r}
+#| label: co_box_dev
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "r", 
+  header = "Warning",
+  contents = "The contents for section are under development. Thank you for your patience."
+)
+```
+
+In this section, we’ll briefly introduce a few packages that can be used to customize the look and feel of your Shiny app. Specifically, we’ll cover using [`bslib`](https://rstudio.github.io/bslib/index.html)’s layout functions, building interactive graphs with [`plotly`](https://plotly.com/r/getting-started/), adding colors and themes with [`thematic`](https://rstudio.github.io/thematic/index.html), and conditionally displaying the contents in a [`reactable`](https://glin.github.io/reactable/) table.
+
+:::: {.callout-tip collapse='true' appearance='default' icon=false}
+
+## [Accessing the code examples]{style='font-weight: bold; font-size: 1.15em;'}
+
+::: {style='font-size: 0.95em; color: #282b2d;'}
+
+I've created the [`shinypak` R package](https://mjfrigaard.github.io/shinypak/) In an effort to make each section accessible and easy to follow:
+  
+Install `shinypak` using `pak` (or `remotes`):
+
+```{r}
+#| code-fold: false 
+#| message: false
+#| warning: false
+#| eval: false
+# install.packages('pak')
+pak::pak('mjfrigaard/shinypak')
+```
+
+Review the chapters in each section:
+  
+```{r}
+#| code-fold: false 
+#| message: false
+#| warning: false
+#| collapse: true
+library(shinypak)
+list_apps(regex = 'design')
+```
+
+Launch an app: 
+
+```{r}
+#| code-fold: false 
+#| eval: false
+launch(app = "18_design")
+```
+
+::: 
+
+::::
+
+## Pages, Panels, and Cards
+
+[`bslib`](https://rstudio.github.io/bslib/) leverages [Bootstrap](https://getbootstrap.com/), a popular front-end framework, which allows developers to easily create application and R markdown themes and styles without deep knowledge of CSS or HTML. `bslib` is tightly integrated into the Shiny ecosystem.[^bslib-depends]
+
+
+[^bslib-depends]: `bslib` is a dependency of the Shiny package, so it’s automatically loaded with `@import shiny`. However, I recommend listing it in the `Imports` field of the `DESCRIPTION` and referencing its use explicitly to distinguish it from other layout functions
+
+The application layout in this branch has been upgraded to the `page_navbar()`, allowing us to have multiple pages and sidebars:
+
+::: {#fig-ui_demo_page_navbar_p1}
+
+![](images/ui_demo_page_navbar_p1.png){#fig-ui_demo_page_navbar_p1 width='100%' fig-align="center"}
+
+
+![](images/ui_demo_page_navbar_l1.png){#fig-ui_demo_page_navbar_p1 width='100%' fig-align="center"}
+
+`layout_sidebar()` inside `nav_panel()`
+:::
+
+The `page_navbar()` displays the pages as *Panel 1*, *Panel 2*, *Panel 3*, and *Panel 4*. The landing page uses `nav_panel()` to arrange the `sidebar()` and `card()` contents.
+
+The subsequent pages display the `sidebar` and `card`s with the `navset_card_tab()` and a second `nav_panel()`:
+
+::: {#fig-ui_demo_page_navbar_p2}
+
+![](images/ui_demo_page_navbar_p2.png){#fig-ui_demo_page_navbar_p2 width='100%' fig-align="center"}
+
+![](images/ui_demo_page_navbar_l2.png){#fig-ui_demo_page_navbar_p2 width='100%' fig-align="center"}
+
+`navset_card_tab()` inside `nav_panel()`
+:::
+
+ You can view a demo of this layout with the `demo_app_navbar()` function.
+
+## Colors and Fonts
+
+We can choose custom colors and fonts with `bslib` by passing the `bs_theme()` function to the `theme `argument of `page_navbar()`:
+
+```{r}
+#| eval: false
+#| code-fold: false
+theme = bslib::bs_theme(
+        version = 5,
+        bg = "#000000",          # <1>
+        fg = "#ffffff",          # <2>
+        body_bg = "#121212",     # <3>
+        primary = "#2979ff",     # <4>
+        secondary = "#bdbdbd",   # <5>
+        base_font = sass::font_google("Roboto") # <6>
+      )
+```
+1. Pure black background for maximum contrast
+2. White text color for sharp contrast
+3. Dark gray for the main content background 
+4. Bright blue primary color
+5. Light gray for secondary elements
+6. Base font from Google
+
+`bs_theme()` can be used to define the colors in our, and the `sass::font_google()` function also gives us control over the fonts. [^theme-text-colors]  
+
+[^theme-text-colors]: `primary` and `secondary` control the text colors, and the `bg`, `fg`, and `body_bg` arguments control the background, foreground, and body-background 
+
+You can view the dark theme using `demo_app_navbar(theme = "dark")`:
+
+![Dark theme in bslib `page_navbar()`](images/ui_demo_page_navbar_bs_theme.png){width='100%' fig-align="center"}
+
+## Graphs
+
+After launching the application with `launch_app()`, we can see the landing page displays our scatter-plot, which has been rebuilt using [`plotly`](https://plotly.com/r/) to add some interactivity to the application.
+
+::: {#fig-compare}
+
+![](images/code_compare_panel.png){width='100%' fig-align="center"}
+
+**Compare** displays the scatter plot
+:::
+
+The scatter plot is rendered using `plotly::renderPlotly()`. The major differences between the `ggplot2` syntax and `plotly` are:
+
+1.    The plot is initialized by `plot_ly()`, and `movies` is linked to the x, y, and color axes. `base::get()` is used to dynamically select the column names stored in our reactive values (`vals()`).
+
+2.    By setting the `text` argument to `~title`, the scatter-plot will display the `title` of the film when the cursor hovers over a specific point.
+
+3.    `marker` specifies the size (`vals()$size`) and opacity (`vals()$alpha`) of the points. The `type = 'scatter'` and `mode = 'markers'` arguments specify this is a scatter plot with points.
+
+```{r}
+#| eval: false
+#| code-fold: show 
+#| code-summary: 'show/hide plotly render code'
+req(vals())
+plotly::plot_ly(
+  data = movies,
+  x = ~get(vals()$x), #<1>
+  y = ~get(vals()$y), 
+  color = ~get(vals()$color), #<1>
+  text = ~title, #<2>
+  type = 'scatter', #<3>
+  mode = 'markers', #<3>
+  colors = clr_pal3, #<4>
+  marker = list( #<5>
+    size = vals()$size,
+    opacity = vals()$alpha #<5>
+  )
+)
+```
+1. Reactive user variable inputs  
+2. Hover value for points  
+3. The scatter type with markers (similar to aesthetics)
+4. Color palette 
+5. Point size and opacity  
+
+The code to create the `clr_pal3` vector is created in [`data-raw/clr_pal3.R`](https://github.com/mjfrigaard/sap/blob/18_design/data-raw/clr_pal3.R) and contains three colors for the levels in `critics_rating`: 
+
+```{r}
+#| eval: false
+#| code-fold: false 
+clr_pal3 <- c("#FC5C64FF", "#2F8AC4FF", "#99C945FF")
+
+usethis::use_data(clr_pal3, overwrite = TRUE)
+```
+
+The UI navbar (stored in [`R/navbar_ui.R`](https://github.com/mjfrigaard/sap/blob/18_design/R/navbar_ui.R)) now includes panels for **Counts**, **Distributions**, and **Awards**, with **Graphs** and **Table** sub-panels. We will cover these graphs in the section below. 
+ 
+### Plot Internals 
+
+The remaining graphs in the application are built using `ggplot2`, but instead of writing utility functions (as we did in previous branches), these visualizations use [`rlang`’s injection operator](https://rlang.r-lib.org/reference/injection-operator.html) (`!!`) for the plot inputs. This method makes it possible to include the `ggplot2` functions *inside* each plotting module. See the example from [`R/mod_boxplot.R`](https://github.com/mjfrigaard/sap/blob/18_design/R/mod_boxplot.R) below:
+
+```{r}
+#| eval: false
+#| code-fold: false
+ggplot2::ggplot(d_bp,
+    ggplot2::aes(x = !!vals()$num_var, # <1>
+                 y = !!vals()$chr_var,
+                 fill = !!vals()$chr_var) # <1>
+  ) 
+```
+1. Injection operator for our reactive `vals()`
+
+The modules in this branch follow a similar naming convention to the previous branches. For example, In the UI, the **Compare** panel collects the inputs in the sidebar and passes them to the point module in the `card_body()`:
+
+```{r}
+#| eval: false 
+#| echo: false
+library(lobstr)
+ast(
+  layout_sidebar(
+    sidebar(
+      mod_compare_vars_ui()
+      ),
+    card_body(
+      mod_compare_point_ui()
+    )
+  )
+)
+```
+
+```r
+█─layout_sidebar 
+├─█─sidebar 
+│ └─█─mod_compare_vars_ui 
+└─█─card_body 
+  └─█─mod_compare_point_ui 
+```
+
+In the **Counts** panel, the sidebar collects the inputs inside the `navset_card_tab()`, then passes them to the two `nav_panel()`s:
+
+```{r}
+#| eval: false 
+#| echo: false
+ast(
+  navset_card_tab(
+    sidebar(
+      mod_counts_vars_ui()
+      ),
+    nav_panel(
+      mod_counts_vbox_ui(),
+      mod_counts_bar_ui(),
+      mod_counts_waffle_ui(),
+    ),
+    nav_panel(
+      mod_counts_tbl_ui()
+    )
+  )
+)
+```
+
+
+```r
+█─navset_card_tab 
+├─█─sidebar 
+│ └─█─mod_counts_vars_ui 
+├─█─nav_panel 
+│ ├─█─mod_counts_vbox_ui 
+│ ├─█─mod_counts_bar_ui 
+│ └─█─mod_counts_waffle_ui 
+└─█─nav_panel 
+  └─█─mod_counts_tbl_ui 
+```
+
+A consistent naming convention is a life-saver here because it helps differentiate the inputs (`_vars`) from the outputs (`_bar`, `_point`, `_tbl`, etc.).
+
+### [`thematic`]{style="font-size: 1.10em;"}
+
+We can match the colors and fonts to the `bslib` package using `thematic::thematic_shiny()`, which is placed inside our updated `launch_app()` function.[^thematic-options]
+
+[^thematic-options]: We've also set the [`ragg`](https://ragg.r-lib.org/index.html) option and global `ggplot2` theme *before* calling `thematic_shiny()`
+
+```{r}
+#| eval: false
+#| code-fold: false
+launch_app <- function(options = list(), run = "p", ...) {
+  
+  if (interactive()) {
+    display_type(run = run)
+  }
+    
+    options(shiny.useragg = TRUE) #<1>
+    
+    ggplot2::theme_set(ggplot2::theme_minimal()) #<2>
+    
+    thematic::thematic_shiny( #<3>
+      bg = "#121212",
+      fg = "#ffffff",
+      accent = "#bdbdbd", 
+      font = "Roboto") #<3>
+    
+    shinyApp(
+      ui = navbar_ui(...),
+      server = navbar_server,
+      options = options
+    )
+    
+}
+```
+1. Set `ragg` option 
+2. Set `ggplot2` theme globally 
+3. Set `thematic` theme 
+
+This significantly reduces the amount of code required to produce `ggplot2` visualizations that match our `bslib` theme. For example, to reproduce the graph we see in the application, we can use the following code using `thematic`:
+
+
+```{r}
+#| eval: true 
+#| echo: true
+#| message: false
+#| warning: false
+#| fig.showtext: true
+#| code-fold: show 
+#| code-summary: 'show/hide bar graph code'
+x_lab <- name_case("critics_rating") # <1>
+d <- subset(movies, # <2>
+  thtr_rel_year >= 1980 &
+    thtr_rel_year <= 1990)  # <2>
+ggplot2::theme_set(ggplot2::theme_minimal(base_size = 16))  # <3>
+thematic::thematic_on(bg = "#000000", fg = "#ffffff",  # <4>
+  accent = "#bdbdbd", font = "Roboto")  # <4>
+ggplot2::ggplot(d,  # <5>
+  ggplot2::aes(x = forcats::fct_rev( # <6>
+    forcats::fct_infreq(
+      critics_rating)
+      )
+    ) # <6>
+  ) + # <5>
+  ggplot2::geom_bar( # <7>
+    ggplot2::aes(fill = critics_rating),
+    show.legend = FALSE
+  ) + # <7>
+  ggplot2::coord_flip() + # <8>
+  ggplot2::scale_fill_manual(values = clr_pal12) + # <9>
+  ggplot2::labs( # <10>
+    x = x_lab, y = "# of Movies",
+    fill = x_lab) # <10>
+```
+1. Build x label  
+2. Subset data  
+3. Set theme (globally)  
+4. $et thematic theme 
+5. Set aesthetics 
+6. Reorganize labels  
+7. Build bar graph  
+8. Flip x and y   
+9. Use color scale  
+10. Assign labels  
+
+However, if we want the same result using `ggplot2` functions, the `theme()` layer would looks something like this:
+
+```{r}
+#| eval: false
+#| code-fold: show 
+#| code-summary: 'show/hide bar graph theme args'
+ggplot2::theme(
+      legend.position = "none",
+      plot.background = ggplot2::element_rect(fill = "#121212", color = NA),
+      panel.background = ggplot2::element_rect(fill = "#121212", color = NA),
+      panel.grid.major = ggplot2::element_line(color = "#ffffff"),
+      panel.grid.minor = ggplot2::element_line(color = "#ffffff"),
+      axis.title = ggplot2::element_text(color = "#ffffff"),
+      axis.ticks = ggplot2::element_line(color = "#ffffff"),
+      title = ggplot2::element_text(color = "#ffffff"),
+      text = ggplot2::element_text(color = "#ffffff"),
+      axis.text = ggplot2::element_text(color = "#ffffff", size = 14),
+      axis.title = ggplot2::element_text(color = "#ffffff", size = 16)
+    )
+```
+
+As we can see, `thematic_on()` reduces the amount of `theme()` adjustments we need to specify the colors and fonts for our `ggplot2` graphs.
+
+The waffle graph is slightly more challenging because this geom comes with it's own theme (`ggwaffle::theme_waffle()`): 
+
+```{r}
+#| message: false
+#| warning: false 
+#| echo: true 
+#| code-fold: show 
+#| code-summary: 'show/hide ggwaffle code'
+library(ggwaffle)
+x_lab <- name_case(as.character("critics_rating"))
+# convert to character 
+movies$chr_var <- as.character(movies[["critics_rating"]])
+# subset
+d <- subset(movies, 
+        thtr_rel_year >= 1980L &
+        thtr_rel_year <= 1990L)
+# waffle iron
+d_iron <- ggwaffle::waffle_iron(d,
+                      ggwaffle::aes_d(group = chr_var))
+# plot
+ggplot2::ggplot(data = d_iron, 
+       ggplot2::aes(x = x, 
+           y = y, 
+           fill = group)) + 
+  ggwaffle::geom_waffle() +
+  ggplot2::scale_fill_manual(values = clr_pal12) +  
+  ggplot2::labs(
+    x = "", y = "", 
+    fill = x_lab
+  ) + 
+  ggwaffle::theme_waffle() +
+  ggplot2::theme( 
+      legend.text = ggplot2::element_text(color = "#ffffff", size = 14),
+      legend.title = ggplot2::element_text(color = "#ffffff", size = 16)
+) 
+```
+
+
+By placing the `thematic_shiny()` function in our standalone app function, we're can focus on building graphs without worrying about their colors and fonts matching our `bslib` theme. The graphs from the **Distributions** and **Awards** sub-panels are below:
+
+::: {#fig-distrib-awards}
+
+![](images/code_dist_graph_panel.png){#fig-distrib-awards width='100%' fig-align="center"}
+
+![](images/code_awards_graph_panel.png){#fig-distrib-awards width='100%' fig-align="center"}
+
+**Distribution** and **Awards** graph sub-panels
+:::
+
+A new label utility function ([`R/name_case.R`](https://github.com/mjfrigaard/sap/blob/18_design/R/name_case.R)) also makes it easier to convert the variable inputs into title case for the graphs and tables:
+
+```{r}
+#| eval: false
+#| code-fold: true
+#| code-summary: 'show/hide name_case() function'
+name_case <- function(x, case = "title") {
+  
+  if (!is.character(x)) { # <1>
+    stop("Input must be a character vector")
+  }
+  
+  change_case <- function(name, case) { # <2>
+    sep_words <- strsplit(name, "_|[^[:alnum:]]+")[[1]] # <3>
+    case_words <- switch(case, # <4>
+                   title = paste0(
+                              toupper(substring(sep_words, 1, 1)), 
+                                      substring(sep_words, 2)),
+                   lower = tolower(sep_words),
+                   stop("Unsupported case")) # <4>
+    return(paste(case_words, collapse = " ")) # <5>
+  }
+  
+  named_vector <- sapply(x, change_case, case) # <6>
+  
+  return(unname(named_vector))
+}
+```
+1. Check if input is a character vector  
+2. Change the case of a single name   
+3. split the string by underscores or other non-alphanumeric characters  
+4. Change case of each word  
+5. Combine the words  
+6. Apply `change_case` to all elements  
+
+Read more about building the graphs with `thematic` and `bslib` in the [Graphs vignette.](https://github.com/mjfrigaard/sap/blob/18_design/vignettes/graphs.qmd)
+
+## Value Boxes
+
+The **Counts** sub-panel include a value box for the time-span and total number of movies released the two year inputs. The `value_box()` uses a combination of `shiny` and `bsicons` functions to format the text:
+
+```{r}
+#| eval: false
+#| code-fold: false
+mod_counts_vbox_ui <- function(id) {
+  ns <- NS(id)
+  tagList(
+    bslib::value_box(
+      full_screen = FALSE, 
+      fill = FALSE,
+      title = markdown("#### Totals"), 
+      value = textOutput(ns("counts_text")),
+      showcase = bsicons::bs_icon("film"),
+      h4(textOutput(ns("years_text")))
+      )
+    )
+}
+```
+
+The rendered output is placed in the `bslib::card_header()` above the graphs: 
+
+::: {#fig-counts-value-box}
+
+![](images/code_counts_graph_panel.png){#fig-counts-value-box width='100%' fig-align="center"}
+
+**Counts** value box
+:::
+
+## Tables 
+
+We can match the `reactable` tables with the UI `bslib` theme using the `reactableTheme()` function. We also use some conditional formatting to match the colors in the graphs:
+
+```{r}
+
+```
+
+
+```{=html}
+<!--
+
+The reactive programming model ensures that user inputs are instantly reflected in the outputs, creating a seamless interactive experience. 
+
+-->
+```
+

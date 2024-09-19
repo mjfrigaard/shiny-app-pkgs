@@ -1,33 +1,59 @@
-# Debugging {#sec-debug}
-
-<!--
-https://shiny.posit.co/r/articles/improve/debugging/
-https://debruine.github.io/shinyintro/debugging.html
--->
+# Debugging {.unnumbered}
 
 ```{r}
-#| label: _common
 #| eval: true 
 #| echo: false 
 #| include: false
 source("_common.R")
-library(lobstr)
+library(shinypak)
 ```
 
+```{r}
+#| label: co_box_dev
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "r", 
+  header = "Warning",
+  contents = "The contents for section are under development. Thank you for your patience."
+)
+```
 
-Debugging is an essential skill for any programmer, and it's not restricted to fixing errors or broken code. When used as an exploratory tool, the debugger allows us to ‘look inside’ functions and break down their execution line-by-line. Posit Workbench's debugging tools are covered elsewhere, so this chapter will focus on debugging Shiny code and functions inside an R package.[^debug-other-resources]
+Expand the callout boxes below to review the previous testing chapters:
 
-## Debugging Shiny Apps {.unnumbered}
+::: {.callout-note collapse='true'}
+
+## [Test suite (Chapter 10)]{style='font-size: 1.35em;'}
+
+[Test suite](test_suite.qmd) covers:
+
+1. Getting started with @sec-tests-suite-use-testthat in your app-package
+
+2. An introduction to @sec-tests-suite-bdd-intro
+
+3. Make running tests during development easier by setting @sec-tests-suite-keyboard-shortcuts 
+:::
+
+::: {.callout-note collapse='true'}
+
+## [Specifications (Chapter 11)]{style='font-size: 1.35em;'}
+
+[Specifications](test_specs.qmd) dives into:
+
+1. The differences between @sec-tests-specs-app-reqs, @sec-tests-specs-user-specs, @sec-tests-specs-features, and @sec-tests-specs-func-reqs
+
+2. The @sec-tests-specs-bdd-testthat functions (`describe()` and `it()`) are introduced
+
+3. Tracking features, requirements and tests with a @sec-tests-specs-traceability-matrix
 
 :::: {.callout-tip collapse='true' appearance='default'}
 
-## [Accessing applications]{style='font-weight: bold; font-size: 1.15em;'}
+### [Chapter 11 Applications]{style='font-weight: bold; font-size: 1.15em;'}
 
 ::: {style='font-size: 0.95em; color: #282b2d;'}
 
-I've created the [`shinypak` R package](https://mjfrigaard.github.io/shinypak/) In an effort to make each section accessible and easy to follow:
-  
-Install `shinypak` using `pak` (or `remotes`):
+The applications in Chapter 11 (Specifications) can be accessed with the `launch()` or `get()` functions from the [`shinypak` R package](https://mjfrigaard.github.io/shinypak/):
 
 ```{r}
 #| code-fold: false 
@@ -36,1120 +62,167 @@ Install `shinypak` using `pak` (or `remotes`):
 #| eval: false
 # install.packages('pak')
 pak::pak('mjfrigaard/shinypak')
+library(shinypak)
 ```
 
-Review the chapters in each section:
+Chapter 11 applications:
   
 ```{r}
 #| code-fold: false 
 #| message: false
 #| warning: false
 #| collapse: true
-library(shinypak)
-list_apps(regex = 'debug')
-```
-
-Launch the app: 
-
-```{r}
-#| code-fold: false 
-#| eval: false
-launch(app = "23.1_debug-error")
-```
-
-Download the app: 
-
-```{r}
-#| code-fold: false 
-#| eval: false
-get_app(app = "23.1_debug-error")
+list_apps(regex = '^11')
 ```
 
 ::: 
 
 ::::
 
-During regular development, Posit Workbench's interactive debugger lets us inspect variables and expressions and execute the code line-by-line. In Shiny functions, the debugger lets us track the execution of reactive expressions and observers, which allows us to unravel reactivity-related issues that are often difficult to diagnose.
-
-```{r}
-#| label: git_box_25.0_debug-error
-#| echo: false
-#| results: asis
-#| eval: true
-git_margin_box(
-  contents = "launch",
-  fig_pw = '65%', 
-  branch = "25.0_debug-error", 
-  repo = 'shinyrPkgs')
-```
-
-Let's start by debugging the scatter plot in `launch_app()`. After loading, documenting and installing `shinyrPkgs`, launch the application:
-
-[^debug-other-resources]: For an introduction to the IDE's debugging tools, see this [Posit article](https://support.posit.co/hc/en-us/articles/205612627-Debugging-with-the-RStudio-IDE). Debugging is also covered in [Advanced R, 2ed](https://adv-r.hadley.nz/debugging.html) and [Mastering Shiny.](https://mastering-shiny.org/action-workflow.html#debugging)
-
-```{r}
-#| label: hot_key_intro
-#| echo: false
-#| results: asis
-#| eval: true
-hot_key(fun = "L")
-```
-
-```{r}
-#| eval: false 
-#| code-fold: false
-launch_app(test = FALSE)
-```
-
-:::{#fig-debug_movies_app_01}
-
-![Error in `launch_app()`](images/debug_movies_app_01.png){#fig-debug_movies_app_01 width='100%' align='center'}
-
-The Error messages in the UI is not always informative
 :::
 
-The error printed in the UI is not very descriptive, but fortunately the following output is also printed to the **Console**: 
+::: {.callout-note collapse='true'}
 
-```{verbatim}
-#| eval: false 
-#| code-fold: false
-Warning: Error in ggplot2::geom_point: Problem while computing aesthetics.
-ℹ Error occurred in the 1st layer.
-Caused by error in `.data[[NULL]]`:
-! Must subset the data pronoun with a string, not `NULL`.
-```
+## [Test tools (Chapter 12)]{style='font-size: 1.35em;'}
 
-`ggplot2` has excellent error messages: we can see the error is coming from `ggplot2::geom_point()`, specifically from one of the calls to `.data`. We can safely assume the source of this bug is the `scatter_plot()` utility function. However, we'll proceed as if the message wasn't very helpful or informative.
+[Test tools](test_tools.qmd) covers: 
 
+1. Where to store and how to use test @sec-test-fixtures and @sec-test-helpers
 
-### Debugging strategies {.unnumbered}
+2. Checking test coverage during @sec-test-coverage-active-file
 
-The two most common tools I use for debugging are:
+3. Creating snapshots and @sec-test-snaps-review
 
-1. Wrapping `browser()` in a call to `observe()`  
-2. Capturing reactive values with `reactiveValuesToList()` and sending output to the UI
+:::: {.callout-tip collapse='true' appearance='default'}
 
-These two methods cover 90% of my Shiny app debugging needs. In the following sections, I'll provide examples of how--and when--I use each method.
+### [Chapter 12 Applications]{style='font-weight: bold; font-size: 1.15em;'}
 
-[`browser()`]{style="font-size: 1.25em; font-weight: bold;"} 
+::: {style='font-size: 0.95em; color: #282b2d;'}
 
-`browser()` pauses code execution and activates the interactive debugger mode in the IDE, allowing us to view objects, execute code, and ‘step through’ each function line.
-
-[`observe()`]{style="font-size: 1.25em; font-weight: bold;"} 
-
-Shiny’s reactive model can make debugging challenging because the issues aren’t limited to logic or calculations but include the timing, sequence, or creation of reactive values. `observe()` creates a reactive observer that 'listens' for changes to reactive expressions (and executes code in response). 
-
-Wrapping `browser()` with `observe()` will trigger the debugger when the observer is invalidated, allowing us to interactively examine variables and reactive expressions (within the scope of the `observe()` function):
-
-:::{.column-margin}
-
-![Posit Workbench's interactive debugger](img/debug_debugger.png)
-
-:::
+The applications in Chapter 12 (Test tools) can be accessed with the `launch()` or `get()` functions from the [`shinypak` R package](https://mjfrigaard.github.io/shinypak/):
 
 ```{r}
-#| eval: false 
-#| code-fold: false
-server <- function(input, output, session) { # <1> 
-
-    observe({ # <2>
-        browser() # <3> 
-    
-
-    returned_values <- mod_something("bla")
-
-    mod_something_else("blabla", input_values = returned_values)
-    
-    }) # <2>
-} # <1>
-```
-1. Shiny server function
-2. `observe()` function scope  
-3. Call to `browser()` (called at the top of the `observe()` scope)  
-
-```{r}
-#| label: co_box_dbug_modules
-#| echo: false
-#| results: asis
-#| eval: true
-co_box(
-  color = "r", 
-  size = '1.05', 
-  header = "Debugging Reactivity in Shiny App-Packages", 
-  hsize = '1.15', 
-  fold = FALSE, 
-  look = 'simple',
-  contents = "
-  
-***Don't forget to load any debugging calls with `devtools::load_all()` _before_ re-launching the app*** 
-  
-\`\`\`r
-devtools::load_all('.')
-`\`\`\
-
-***Or***
-  
-<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd>
-
-  "
-)
-```
-
-
-## Debugging modules {#sec-debug-modules}
-
-The contents of your Shiny app-package can quickly become a complicated and intertwined combination of functions: utility, modules, UI, server, etc. I like to display the relationship between the functions with abstract syntax trees:[^debug-lobstr] 
-
-[^debug-lobstr]: Create abstract syntax trees with the [`ast()` function](https://lobstr.r-lib.org/reference/ast.html) from the [`lobstr` package](https://lobstr.r-lib.org/). 
-
-:::{layout="[50,50]" layout-valign="top"}
-
-For example, we know `scatter_plot()` is called from *within* the scatter plot display module function: 
-
-``` sh
-█─mod_scatter_display_server 
-└─█─scatter_plot
-```
-
-:::
-
-```{r}
+#| code-fold: false 
+#| message: false
+#| warning: false
 #| eval: false
-#| include: false 
-lobstr::ast(
-  mod_scatter_display_server(
-    scatter_plot()
-    )
-  )
+# install.packages('pak')
+pak::pak('mjfrigaard/shinypak')
+library(shinypak)
 ```
 
-:::{layout="[50,50]" layout-valign="top"}
-
-And `mod_scatter_display_server()` is called within `movies_server()`: 
-
-``` sh
-█─movies_server 
-├─█─mod_scatter_display_server 
-│ └─█─scatter_plot 
-└─█─mod_var_input_server 
-```
-
-:::
-
-```{r}
-#| eval: false
-#| include: false 
-lobstr::ast(
-    movies_server(
-      mod_scatter_display_server(
-        scatter_plot()
-        ),
-      mod_var_input_server()
-      )
-)
-```
-
-:::{layout="[50,50]" layout-valign="top"}
-
-Which is called from inside `shinyrPkgs`:
-
-``` sh
-█─launch_app 
-├─█─movies_ui 
-│ ├─█─mod_var_input_ui 
-│ └─█─mod_scatter_display_ui 
-└─█─movies_server 
-  ├─█─mod_scatter_display_server 
-  │ └─█─scatter_plot 
-  └─█─mod_var_input_server
-```
-
-:::
-
-```{r}
-#| eval: false
-#| include: false 
-lobstr::ast(
-  launch_app( 
-    movies_ui(
-      mod_var_input_ui(),
-      mod_scatter_display_ui()
-    ),
-    movies_server(
-      mod_scatter_display_server(
-        scatter_plot()
-        ),
-      mod_var_input_server()
-      )
-    )
-  )
-```
-
-I find these abstract folder trees helpful when I'm debugging or testing Shiny functions. I can use them to try and anticipate the application call stack (especially when I end up with multiple utility functions or nested modules).
-
-We'll add `browser()` and `observe()` in the `movies_server()` function to capture the behaviors of both modules: 
-
-```{r}
-#| label: git_box_25.1_debug-selected_vars
-#| echo: false
-#| results: asis
-#| eval: true
-git_margin_box(contents = "launch",
-  fig_pw = '65%', 
-  branch = "25.1_debug-selected_vars", 
-  repo = 'shinyrPkgs')
-```
-
-```{r}
-#| eval: false 
-#| code-fold: false
-movies_server <- function(input, output, session) {
-
-    observe({ # <1>
-      browser() # <2>
-    
-      selected_vars <- mod_var_input_server("vars")
-
-      mod_scatter_display_server("plot", var_inputs = selected_vars)
-      
-    }) # <1>
-
-}
-```
-1. Observer scope  
-2. Activate debugger 
-
-Then we'll load the package and display the app in the **Viewer** pane (below the **Console**):
-
-```{r}
-#| label: hot_key_movies_server
-#| echo: false
-#| results: asis
-#| eval: true
-hot_key(fun = "L")
-```
-
-```{verbatim}
-#| eval: false 
-#| code-fold: false
-ℹ Loading shinyrPkgs
-```
-
-```{r}
-#| eval: false 
-#| code-fold: false
-launch_app(options = list(test.mode = FALSE), run = 'p')
-```
-
-```{verbatim}
-#| eval: false 
-#| code-fold: false
-ℹ shinyViewerType set to pane
-```
-
-The application launches, but `browser()` pauses the execution of the modules and activates the IDE's debugger. This allows us to view the objects that are available in `movies_server()` *before* the variables are passed to the graph rendering functions:
-
-:::{#fig-debug_app_server_02}
-
-![Debugger with call to `browser()` inside `observe()`](images/debug_app_server_02.png){#fig-debug_app_server_02 width='100%' align='center'}
-
-Note that the plot hasn't rendered in the application yet because the call to `observe(browser())` suspends the execution of any subsequent code   
-:::
-
-In the **Source** pane, we can see the call to `browser()` highlighted (`Browse[1]>` tells us the location in the `browser()` function).
-
-:::{#fig-debug_browser_placement_02}
-
-![`R/movies_server.R` with `observe(browser())`](images/debug_browser_placement_02.png){#fig-debug_browser_placement_02 width='100%' align='center'}
-
-Because `browser()` was called inside `observe()`, the execution will pause, and we can interactively examine values
-:::
-
-In the debugger, we want to confirm the returned values from the variable input module, `selected_vars`, which requires us to execute the next two lines of code:
-
-```{r}
-#| eval: false 
-#| code-fold: false 
-Browse[1]> n
-Browse[2]> n
-```
-
-:::{#fig-debug_mod_display_server_02}
-
-![Execute the function line-by-line with `n` to create `selected_vars`](images/debug_mod_display_server_02.png){#fig-debug_mod_display_server_02 width='100%' align='center'}
-
-Click the **Next** icon twice to create `selected_vars`
-:::
-
-Inside `movies_server()`:
-
-:::{layout="[50,50]" layout-valign="top"}
-
-`mod_var_input_server()` collects the following values and returns a reactive list (**`selected_vars`**):    
-
-- Three variable names 
-  - `x`, `y`, `z`      
-- Graph aesthetics  
-  -  `alpha` and `size`    
-- An optional plot title  
-  -  `plot_title`    
-
-:::
-
-When we inspect `selected_vars` in the debugger console (*without parentheses*) we see the **method** (i.e., the reactive list of inputs), and not the actual values:
-
-::: {layout="[35, 65]" layout-valign="top"}
-
-``` r
-Browse[2]> selected_vars
-```
-
-``` sh
-reactive({
-    list(y = input$y, x = input$x,
-         z = input$z, alpha = input$alpha, 
-         size = input$size, 
-         plot_title = input$plot_title)
-})
-```
-
-:::
-
-If we check `selected_vars()` (*with parentheses*) in the debugger, we see this contains the **values** from the variable input module: 
-
-::: {layout="[35, 65]" layout-valign="top"}
-
-``` r 
-Browse[2]> selected_vars()
-```
-
-``` sh
-$y
-[1] "audience_score"
-
-$x
-[1] "imdb_rating"
-
-$z
-[1] "mpaa_rating"
-
-$alpha
-[1] 0.5
-
-$size
-[1] 2
-
-$plot_title
-[1] ""
-```
-
-:::
-
-These two steps confirm that the UI values are being collected by the variable input module and stored in `selected_vars`, so the error must be coming from inside the scatter plot display module.
-
-## Module communication {#sec-module-comms}
-
-```{r}
-#| label: git_box_25.2_debug-var_inputs
-#| echo: false
-#| results: asis
-#| eval: true
-git_margin_box(
-  contents = "launch",
-  fig_pw = '65%', 
-  branch = "25.2_debug-var_inputs",
-  repo = 'shinyrPkgs')
-```
-
-We'll repeat a similar process in `mod_scatter_display_server()`, but include the call to `observe(browser())` *after* `moduleServer()`. Then we'll load the package and run the application again: 
-
-```{r}
-#| eval: false 
-#| code-fold: false 
-mod_scatter_display_server <- function(id, var_inputs) {
-  moduleServer(id, function(input, output, session) {
-    
-    observe({ # <1>
-      browser()
-    
-      # module code
-      
-      }) # <1>
-
-  })
-}
-```
-1. Wrap `browser()` in `observe()` and place after the call to `moduleServer()` 
-
-```{r}
-#| label: hot_key_module
-#| echo: false
-#| results: asis
-#| eval: true
-hot_key(fun = "L")
-```
-
-```{verbatim}
-#| eval: false 
-#| code-fold: false
-ℹ Loading shinyrPkgs
-```
-
-```{r}
-#| eval: false 
-#| code-fold: false
-launch_app(options = list(test.mode = FALSE), run = 'p')
-```
-
-Inside the module, we want to confirm `var_inputs()` is being created correctly from the `var_inputs` object in `movies_server()`. 
-
-:::{layout="[50,50]" layout-valign="top"}
-
-`selected_vars` is the input for `mod_scatter_display_server()` (as **`var_inputs`**)
-
-- `var_inputs` is converted to the reactive `inputs`    
-  - `inputs` is passed to `scatter_plot()` inside `renderPlot()`    
-
-:::
-
-::: {layout="[35, 65]" layout-valign="top"}
-
-``` r
-Browse[2]> var_inputs()
-```
-
-``` sh 
-$y
-[1] "audience_score"
-
-$x
-[1] "imdb_rating"
-
-$z
-[1] "mpaa_rating"
-
-$alpha
-[1] 0.5
-
-$size
-[1] 2
-
-$plot_title
-[1] ""
-```
-
-:::
-
-### Verify variable inputs 
-
-Inside the scatter plot display module, the `var_inputs` argument is used to create a reactive `input()` object for the graph created by `scatter_plot()`:
-
-```{r}
-#| eval: false 
-#| code-fold: false 
-    inputs <- reactive({ # <2>
-      plot_title <- tools::toTitleCase(var_inputs()$plot_title) # <1>
-        list(
-          x = var_inputs()$x,
-          y = var_inputs()$y,
-          z = var_inputs()$z,
-          alpha = var_inputs()$alpha,
-          size = var_inputs()$size,
-          plot_title = plot_title
-        ) # <1>
-    }) # <2>
-```
-1. Variable inputs (from `selected_vars`)   
-2. `inputs()` for `scatter_plot()`   
-
-Now that we've confirmed `var_inputs()` has been created, we'll verify the values are passed correctly *from* `var_inputs()` *to* `inputs()` (which is used to create the scatter plot).
-
-To do this, we'll progress through the module function (using `n` in the debugger console or by clicking **Next**) until the `inputs()` reactive has been created,
-
-:::{#fig-debug_mod_display_server_ouput_02}
-
-![Progressing _past_ `inputs()` tells us it's been created](images/debug_mod_display_server_ouput_02.png){#fig-debug_mod_display_server_ouput_02 width='100%'}
-
-Use `n` in the debugger or click **Next** to progress through the function
-:::
-
-::: {layout="[35, 65]" layout-valign="top"}
-
-``` r
-Browse[2]> inputs()
-```
-
-``` sh
-$x
-[1] "imdb_rating"
-
-$y
-[1] "audience_score"
-
-$z
-[1] "mpaa_rating"
-
-$alpha
-[1] 0.5
-
-$size
-[1] 2
-
-$plot_title
-[1] ""
-```
-
-:::
-
-These two steps have shown us 1) the modules are communicating properly, and 2) the scatter plot display module contains the list of reactive values needed to render the graph.
-
-```{r}
-#| label: co_box_browser_observe
-#| echo: false
-#| results: asis
-#| eval: true
-co_box(
-  color = "g", 
-  size = '1.15', 
-  header = "My approach to debugging", 
-  hsize = '1.20', 
-  fold = FALSE, 
-  look = 'default',
-  contents = "
+Chapter 12 applications:
   
-If an application is producing a bug (i.e., failing to render an output, producing an error in the **Console**, etc.), I'll start by placing a call to `browser()` (wrapped in `observe()`) at the top-level UI/server functions, then procced 'down' into the modules.
-  
-  "
-)
-```
-
-## Debugging utility functions
-
 ```{r}
-#| label: git_box_25.3_debug-scatter_plot
-#| echo: false
-#| results: asis
-#| eval: true
-git_margin_box(
-  contents = "launch",
-  fig_pw = '65%', 
-  branch = "25.3_debug-scatter_plot", 
-  repo = 'shinyrPkgs')
-```
-
-If we want to debug the scatter plot output, we need to move our `observe(browser())` functions inside the call to `renderPlot()`:
-
-```{r}
-#| eval: false 
-#| code-fold: false
-output$scatterplot <- renderPlot({
-  observe({ # <1>
-    browser() # <2>
-
-    
-  }) # <1>
-})
-```
-1. Observe scope   
-2. Call to `browser()`   
-
-Load the package and run the application again:
-
-```{r}
-#| label: hot_key_render_plot
-#| echo: false
-#| results: asis
-#| eval: true
-hot_key(fun = "L")
-```
-
-```{verbatim}
-#| eval: false 
-#| code-fold: false
-ℹ Loading shinyrPkgs
-```
-
-```{r}
-#| eval: false 
-#| code-fold: false
-launch_app(options = list(test.mode = FALSE), run = 'p')
-```
-
-Inside `renderPlot()`, we can progress to the creation of the `plot` object:
-
-::: {layout="[35, 65]" layout-valign="top"}
-
-``` r
-Browse[1]> n
-```
-
-``` sh
-debug at shinyrPkgs/R/mod_scatter_display.R#68: 
-  plot <- scatter_plot(
-    df = movies, 
-    x_var = inputs()$x, 
-    y_var = inputs()$y, 
-    col_var = inputs()$col, 
-    alpha_var = inputs()$alpha, 
-    size_var = inputs()$size)
-```
-
-:::
-
-From here we can step inside the `scatter_plot()` utility function to identify the source of the error:
-
-```{r}
-#| eval: false 
 #| code-fold: false 
-Browse[2]> s
+#| message: false
+#| warning: false
+#| collapse: true
+list_apps(regex = '^12')
 ```
 
-:::{#fig-debug_scatter_plot_03}
-
-![Step into `scatter_plot()`](images/debug_scatter_plot_03.png){#fig-debug_scatter_plot_03 width='100%' align='center'}
-
-Use `s` in the debugger console to 'step into' `scatter_plot()`
-:::
-
-Note the changes in the debugger console when we 'step into' `scatter_plot()`:
-
-```{bash}
-#| eval: false 
-#| code-fold: false
-debugging in: 
-  scatter_plot(df = movies, 
-    x_var = inputs()$x, 
-    y_var = inputs()$y, 
-    col_var = inputs()$col, 
-    alpha_var = inputs()$alpha, 
-    size_var = inputs()$size)
-debug at /shinyrPkgs/R/scatter_plot.R#30: # <1> 
-{   
-    ggplot2::ggplot(data = df, 
-      ggplot2::aes(x = .data[[x_var]], 
-                   y = .data[[y_var]], 
-                   color = .data[[col_var]])) + 
-      ggplot2::geom_point(alpha = alpha_var, 
-                          size = size_var)
-}
-```
-1. Location of debugger in utility function  
-
-After some examination, we can identify the source of the error.
-
-```{r}
-#| eval: false 
-#| code-fold: true
-#| code-summary: 'show/hide source of scatter_plot() bug'
-inputs <- reactive({
-  plot_title <- tools::toTitleCase(var_inputs()$plot_title)
-  list(
-    x = var_inputs()$x,
-    y = var_inputs()$y,
-    col = var_inputs()$z, # <1>
-    alpha = var_inputs()$alpha,
-    size = var_inputs()$size,
-    plot_title = plot_title
-  )
-})
-plot <- scatter_plot(
-  df = movies,
-  x_var = inputs()$x,
-  y_var = inputs()$y,
-  col_var = inputs()$z, # <2>
-  alpha_var = inputs()$alpha,
-  size_var = inputs()$size
-)
-```
-1. Color is assigned as **`col`** in `inputs`   
-2. Color is passed to `scatter_plot()` as **`col_var`**
-
-## Print debugging {#sec-verbatim-reactives}
-
-```{r}
-#| label: git_box_25.4_debug-print
-#| echo: false
-#| results: asis
-#| eval: true
-git_margin_box(
-  contents = "launch",
-  fig_pw = '65%', 
-  branch = "25.4_debug-print", 
-  repo = 'shinyrPkgs')
-```
-
-One of the best tried and tested methods of debugging is simply adding a `cat()` or `print()` call somewhere in your code to print variables or objects to the R console. This is a basic but effective way to track variable changes.
-
-We can do something similar in Shiny applications by combining `verbatimTextOutput()`, `renderPrint()`, and `reactiveValuesToList()`: 
-
-In [`mod_var_input`](https://github.com/mjfrigaard/shinyrPkgs/blob/18d_debugging/R/mod_var_input.R): 
-
--   Place a `verbatimTextOutput()` in the ui function. 
-
-```{r}
-#| eval: false 
-#| code-fold: false 
-    code("module reactive values"), # <1> 
-    verbatimTextOutput(outputId = ns("mod_vals")) # <2> 
-  )
-```
-1. Optional label  
-2. Include the `ns()` for the `inputId`
-
--   In a `renderPrint()`, use `reactiveValuesToList()` to gather the `inputId`s and pass them to `print()` (I'm actually using `lobstr::tree()` to give a clearer display).
-
-```{r}
-#| eval: false 
-#| code-fold: false 
-  output$mod_vals <- renderPrint({
-    lobstr::tree( # <2> 
-      reactiveValuesToList( # <1> 
-        x = input,
-        all.names = TRUE # <3> 
-      ) # <1> 
-    ) # <2> 
-  })
-```
-1. Collect reactive values in module  
-2. Print these values to the UI   
-3. Include all reactive objects    
-
-Load the package and run the app:
-
-```{r}
-#| label: hot_key_print_module
-#| echo: false
-#| results: asis
-#| eval: true
-hot_key(fun = "L")
-```
-
-```{verbatim}
-#| eval: false 
-#| code-fold: false
-ℹ Loading shinyrPkgs
-```
-
-```{r}
-#| eval: false 
-#| code-fold: false
-launch_app(options = list(test.mode = FALSE), run = 'p')
-```
-
-
-:::{#fig-debug_print_movies_app_05}
-
-!['Print' in `launch_app()`](images/debug_reactive_values_sidebar.png){#fig-debug_print_movies_app_05 width='40%' fig-align='left'}
-
-`reactiveValuesToList()` printed from `mod_var_inputs`
-:::
-
-Now we can see the reactive values from our module in the application sidebar! 
-
-We can also use this 'print' method to explore reactive values at various locations in our application. For example, if we wanted to print the reactive values for multiple modules in an app, we can use these methods in the top level `movies_ui()` and `movies_server()` functions.
-
-In the `bslib` portion of [`movies_ui()`](https://github.com/mjfrigaard/shinyrPkgs/blob/18d_debugging/R/movies_ui.R): 
-
--   Add `verbatimTextOutput()` with an optional label  
-
-    ```{r}
-    #| eval: false 
-    #| code-fold: false
-    code("reactive values"),
-    verbatimTextOutput(outputId = 'vals')
-    )
-    ```
-
-In [`movies_server()`](https://github.com/mjfrigaard/shinyrPkgs/blob/18d_debugging/R/movies_server.R):
-
--   Collect all the `inputId`s with `reactiveValuesToList()` and print with `print()` or `lobstr::ast()`
-
-    ```{r}
-    #| eval: false 
-    #| code-fold: false
-    all_vals <- reactive({
-      reactiveValuesToList(x = input, all.names = TRUE)
-    })
-    
-    output$vals <- renderPrint({
-      lobstr::tree(all_vals())
-    })
-    ```
-
-
-Load the package and run the app:
-
-```{r}
-#| label: hot_key_print_app
-#| echo: false
-#| results: asis
-#| eval: true
-hot_key(fun = "L")
-```
-
-```{verbatim}
-#| eval: false 
-#| code-fold: false
-ℹ Loading shinyrPkgs
-```
-
-```{r}
-#| eval: false 
-#| code-fold: false
-launch_app(options = list(test.mode = FALSE), 
-  run = 'p', bslib = TRUE)
-```
-
-
-:::{#fig-debug_print_bslib_movies_app_05}
-
-!['Print' in `launch_app(bslib = TRUE)`](images/debug_print_bslib_movies_app_05.png){#fig-debug_print_bslib_movies_app_05 width='100%' align='center'}
-
-`reactiveValuesToList()` printed from `movies_ui()` and `movies_server()`
-:::
-
-Here we can see both levels of reactive values (from the module and the UI/server functions). The handy thing about this method is that the values change when we interact with the application:
-
-:::{#fig-debug_change_print_bslib_movies_app_05}
-
-![Changing values in `launch_app(bslib = TRUE)`](images/debug_change_print_bslib_movies_app_05.png){#fig-debug_change_print_bslib_movies_app_05 width='100%' align='center'}
-
-`y` and `vars-y` *both* update when the UI inputs change
-:::
-
-
-## Exploring code 
-
-`observe()` and `browser()` aren't only useful for addressing bugs--we can also use the debugger to understand how an application works.
-
-Suppose it's been awhile since we've looked at the `ggplot2movies::movies` application (run with `ggp2_movies_app()`). We can place calls to `observe(browser())` in the `inst/dev/app.R` file, load the package, and run the application to see how it executes.
-
-We'll wrap the code in `dev_mod_scatter_server()` in `observe()`, and place a call to `browser()` before the alternate dataset is loaded:
-
-```{r}
-#| eval: false 
-#| code-fold: false 
-dev_mod_scatter_server <- function(id, var_inputs) {
-  moduleServer(id, function(input, output, session) {
-
-    observe({ # <1> 
-      browser() # <2>
-
-    # load alternate data
-    all_data <- fst::read_fst("tidy_movies.fst")
-    # <3>
-    # <3> 
-    # <3> 
-    # <3>
-    }) # <1> 
-  })
-}
-```
-1. Observer scope   
-2. Call to `browser()`   
-3. Additional module code omitted
-
-Load the package and run the app:
-
-```{r}
-#| label: hot_key_ggp2_movies_app
-#| echo: false
-#| results: asis
-#| eval: true
-hot_key(fun = "L")
-```
-
-```{verbatim}
-#| eval: false 
-#| code-fold: false
-ℹ Loading shinyrPkgs
-```
-
-```{r}
-#| eval: false 
-#| code-fold: false
-ggp2_movies_app(options = list(test.mode = FALSE), run = 'p')
-```
-
-
-This will suspend the execution of application before the tidy `ggplot2movies::movies` data are loaded (`tidy_movies.fst`), and before the graph is rendered: 
-
-
-:::: {.column-page-inset-right}
-
-::: {layout="[60, 40]" layout-valign="top"}
-
-![Debugging `dev_mod_scatter_server()`](images/debug_dev_app_04.png){width='100%'}
-
-![`ggp2_movies_app()` in interactive debugger](images/debug_dev_ggp2_movies_app_04.png){width='100%'}
-
-:::
+::: 
 
 ::::
 
-We can step through the module function to explore how the alternate data are loaded (and missing values are removed). 
-
-### Verify app data 
-
-First we'll proceed through the code until `tidy_movies.fst` is loaded, then confirm it's structure: 
-
-::: {layout="[35, 65]" layout-valign="top"}
-
-``` r
-Browse[2]> n
-Browse[2]> n
-Browse[2]> str(all_data)
-```
-
-``` sh
-'data.frame':	46002 obs. of  8 variables: 
- $ title     : chr  "'Til There Was You" ...
- $ length    : int  113 97 98 98 102 120 ...
- $ year      : int  1997 1999 2002 2004 ...
- $ budget    : int  23000000 16000000 ...
- $ avg_rating: num  4.8 6.7 5.6 6.4 6.1 ...
- $ votes     : int  799 19095 181 7859 ...
- $ mpaa      : Factor w/ 5 levels "G","PG" ...
- $ genre     : Factor w/ 8 levels "Action"...
-```
-    
 :::
 
-This gives us an idea of the total rows before missing are removed. 
+::: {.callout-note collapse='true'}
 
-### Verfiy missing 
+## [Testing modules (Chapter 13)]{style='font-size: 1.35em;'}
 
-After loading `all_data`, the module creates a reactive `graph_data()`. We can see `graph_data()` is 'bound' to `input$missing`, so we'll confirm the  `input$missing` value:
+[Testing modules](test_modules.qmd) includes strategies for: 
 
-![](images/debug_dev_verify_missing_04.png){width='85%' fig-align='center'}
+1. Testing returned values with @sec-tests-mods-returned
 
-::: {layout="[35, 65]" layout-valign="top"}
+2. Passing module arguments with @sec-tests-mods-args-list
 
-``` r
-Browse[2]> input$missing
-```
+3. Checking @sec-tests-mods-coverage and @sec-tests-mods-outputs
 
-``` sh
-[1] TRUE
-```
+:::: {.callout-tip collapse='true' appearance='default'}
 
-:::
+### [Chapter 13 Applications]{style='font-weight: bold; font-size: 1.15em;'}
 
-This tells us '*Remove missing*' has been selected, and we can verify the missing values have been removed from `graph_data()`:
+::: {style='font-size: 0.95em; color: #282b2d;'}
 
-::: {layout="[35, 65]" layout-valign="top"}
-
-
-``` r
-Browse[2]> n
-Browse[2]> str(graph_data())
-```
-
-``` sh
-'data.frame':	1608 obs. of  8 variables: 
- $ title     : chr  "'Til There Was You" ...
- $ length    : int  113 97 98 98 102 120 ...
- $ year      : int  1997 1999 2002 2004 ...
- $ budget    : int  23000000 16000000 ...
- $ avg_rating: num  4.8 6.7 5.6 6.4 6.1 ...
- $ votes     : int  799 19095 181 7859 ...
- $ mpaa      : Factor w/ 5 levels "G","PG" ...
- $ genre     : Factor w/ 8 levels "Action"...
-```
-
-:::
-
-### Verfiy variable inputs 
-    
-Next we'll confirm the `var_inputs()` list of graph values from our `dev` variable input module:
-
-::: {layout="[35, 65]" layout-valign="top"}
-
-``` r
-Browse[2]> str(var_inputs())
-```
-
-``` sh
-List of 6
- $ x         : chr "year"
- $ y         : chr "budget"
- $ z         : chr "mpaa"
- $ alpha     : num 0.4
- $ size      : num 2.5
- $ plot_title: chr ""
-```
-    
-:::
-
-
-`var_inputs()` is creates the `inputs()` reactive for the graph, so we'll confirm those values, too.
-
-![](images/debug_dev_verify_inputs_04.png){width='85%' fig-align='center'}
-
-::: {layout="[35, 65]" layout-valign="top"}
-
-``` r
-Browse[2]> n
-Browse[2]> str(inputs())
-```
-
-``` sh
-List of 6
- $ x         : chr "year"
- $ y         : chr "budget"
- $ z         : chr "mpaa"
- $ alpha     : num 0.4
- $ size      : num 2.5
- $ plot_title: chr ""
-```
-    
-:::
-
-### Verfiy graph
-
-Now that we have an understanding of the reactive flow inside the app, we'll render the plot: 
-
-::: {layout="[35, 65]" layout-valign="top"}
-
-``` r
-Browse[2]> n
-```
-
-![](images/debug_dev_verify_app_04.png)
-
-:::
-
-Using `browser()` to 'step through' an application gives us a better understanding of the 'order of execution' in our `dev` scatter plot display module, (and it lets us see how `input$missing` and `bindEvent()` are working).
-
-## Recap {.unnumbered}
+The applications in Chapter 13 (Testing modules) can be accessed with the `launch()` or `get()` functions from the [`shinypak` R package](https://mjfrigaard.github.io/shinypak/):
 
 ```{r}
-#| label: co_box_recap
-#| echo: false
-#| results: asis
-#| eval: true
-co_box(
-  color = "g", 
-  fold = FALSE,
-  look = "default", hsize = "1.15", size = "1.10", 
-  header = "Recap: CI/CD!",
-  contents = "
-
-`browser()` and `observe()` are powerful tools for debugging your application. Navigating a function using the debugger console gives you control over the execution of each line. If we want to see what's happening 'behind the scenes', we can collect the reactive values and print them in the UI while the app is running. 
-
-The Shiny documentation also has a [list of methods](https://shiny.posit.co/r/articles/improve/debugging/) for debugging apps, and learning how to read call stacks (or a stacktrace) will help you debug your shiny app.[^debug-call-stacks], [^call-stack-shiny]")
+#| code-fold: false 
+#| message: false
+#| warning: false
+#| eval: false
+# install.packages('pak')
+pak::pak('mjfrigaard/shinypak')
+library(shinypak)
 ```
+
+Chapter 13 applications:
+  
+```{r}
+#| code-fold: false 
+#| message: false
+#| warning: false
+#| collapse: true
+list_apps(regex = '^13')
+```
+
+::: 
+
+::::
+
+:::
+
+::: {.callout-note collapse='true'}
+
+## [System tests (Chapter 14)]{style='font-size: 1.35em;'}
+
+1. Introduction to @sec-tests-system-shinytest2
+
+1. Using `shinytest2` to @sec-tests-system-recording-tests
+
+1. Exporting test values with @sec-tests-system-test-mode
+
+:::: {.callout-tip collapse='true' appearance='default'}
+
+### [Chapter 14 Applications]{style='font-weight: bold; font-size: 1.15em;'}
+
+::: {style='font-size: 0.95em; color: #282b2d;'}
+
+The applications in Chapter 14 (System tests) can be accessed with the `launch()` or `get()` functions from the [`shinypak` R package](https://mjfrigaard.github.io/shinypak/):
 
 ```{r}
-#| label: git_contrib_box
-#| echo: false
-#| results: asis
-#| eval: true
-git_contrib_box()
+#| code-fold: false 
+#| message: false
+#| warning: false
+#| eval: false
+# install.packages('pak')
+pak::pak('mjfrigaard/shinypak')
+library(shinypak)
 ```
 
-[^call-stack-shiny]: Stack traces are also covered in [Advanced R, 2ed](https://adv-r.hadley.nz/debugging.html#traceback), [Mastering Shiny](https://mastering-shiny.org/action-workflow.html#tracebacks-in-shiny), and in the [Shiny documentation](https://github.com/rstudio/shiny/wiki/Stack-traces-in-R). I've summarized some tips on reading Shiny call stacks in the [stack traces](stack_traces.qmd) section on the Appendix.
+Chapter 14 applications:
+  
+```{r}
+#| code-fold: false 
+#| message: false
+#| warning: false
+#| collapse: true
+list_apps(regex = '^14')
+```
 
+::: 
 
-[^debug-call-stacks]: Watch [this video](https://www.youtube.com/watch?v=g1h-YDWVRLc) to learn about call stacks and abstract folder trees with `lobstr`. 
+::::
 
+:::
+
+Debugging is an essential skill for any programmer, and it's not restricted to fixing errors or broken code. 
+
+## Utility functions
+
+## Debugging apps 
+
+## Print Debugging
+
+## Exploring code

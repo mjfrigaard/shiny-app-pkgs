@@ -3,12 +3,78 @@
 
 options(width = 50L, pillar.width = 50L)
 
+pkg_info <- function(pkg, gt = FALSE) {
+  
+  # read the 'DESCRIPTION' file
+  pkg_description <- readr::read_lines(system.file('DESCRIPTION', package = pkg))
+  
+  # initialize the empty 'info' list to store the results
+  info <- list(Package = NULL, Version = NULL, Title = NULL, Description = NULL)
+  
+  # iterate through each line to find and store the relevant fields
+  description_started <- FALSE
+  description_text <- ""
+  
+  for (line in pkg_description) {
+    if (startsWith(line, "Package:")) {
+      info$Package <- sub("Package: ", "", line)
+    } else if (startsWith(line, "Version:")) {
+      info$Version <- sub("Version: ", "", line)
+    } else if (startsWith(line, "Title:")) {
+      info$Title <- sub("Title: ", "", line)
+    } else if (startsWith(line, "Description:")) {
+      description_started <- TRUE
+      description_text <- sub("Description: ", "", line)
+    } else if (description_started) {
+      if (grepl("^\\s", line)) {  # Continuation of description
+        description_text <- paste0(description_text, " ", trimws(line))
+      } else {
+        # Stop if we hit a new field
+        break
+      }
+    }
+  }
+  
+  # store the complete description
+  info$Description <- trimws(description_text)
+  
+  # convert to a data frame
+  pkg_info_df <- as.data.frame(info, stringsAsFactors = FALSE)
+  
+  # return gt table
+  if (gt) {
+    # create the gt table
+    gt::gt(data = pkg_info_df) |>
+      gt::tab_style(
+        style = "vertical-align:top",
+        locations = gt::cells_body(columns = everything())
+      ) |>
+      gt::cols_align(
+        align = "left",
+        columns = everything()
+      )
+  } else {
+    pkg_info_df
+  }
+  
+}
+
+# Example usage:
+pkg_info("charpente", FALSE)
+
+
+
+  
+  
+
+
+
 co_box <- function(
   color = "b",
   header = "header",
   contents = "Your text",
   size = "1.05",
-  hsize = "1.10",
+  hsize = "1.05",
   fold = FALSE,
   look = "default") {
   
@@ -87,7 +153,7 @@ git_contrib_box <- function(
                 header = "See a typo, error, or something missing?",
                 contents = "Please open an issue on ",
                 size = "0.95",
-                hsize = "1.10",
+                hsize = "1.05",
                 fold = TRUE) {
   
   git_repo_root <- "https://github.com/mjfrigaard/"
@@ -210,7 +276,7 @@ glue::glue("\n:::: {{layout='[ 15, 33, 16 ]'}}
 
 ::: {{#second-column}}
 
-::: {{style='font-weight: bold; font-size: 1.15em' layout-valign='bottom'}}
+::: {{style='font-color: #000000; font-weight: bold; font-size: 1.15em' layout-valign='bottom'}}
 
 <br><br>
 
@@ -279,7 +345,7 @@ glue::glue("\n:::: {{layout='[ 30, 50, 20 ]'}}
 
 ::: {{#second-column}}
 
-::: {{style='font-weight: bold; font-size: 1.25em' layout-valign='bottom'}}
+::: {{style='font-weight: bold; font-size: 1.15em' layout-valign='bottom'}}
 
 <br>
 
