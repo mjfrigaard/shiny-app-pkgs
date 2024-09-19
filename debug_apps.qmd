@@ -1,0 +1,512 @@
+# Debugging apps {#sec-debug-apps}
+
+```{r}
+#| eval: true 
+#| echo: false 
+#| include: false
+source("_common.R")
+```
+
+```{r}
+#| label: co_box_dev
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "r", 
+  header = "Warning",
+  contents = "The contents for section are under development. Thank you for your patience."
+)
+```
+
+:::: {.callout-tip collapse='true' appearance='default'}
+
+## [Accessing applications]{style='font-weight: bold; font-size: 1.15em;'}
+
+::: {style='font-size: 0.95em; color: #282b2d;'}
+
+I've created the [`shinypak` R package](https://mjfrigaard.github.io/shinypak/) In an effort to make each section accessible and easy to follow:
+  
+Install `shinypak` using `pak` (or `remotes`):
+
+```{r}
+#| code-fold: false 
+#| message: false
+#| warning: false
+#| eval: false
+# install.packages('pak')
+pak::pak('mjfrigaard/shinypak')
+```
+
+Review the chapters in each section:
+  
+```{r}
+#| code-fold: false 
+#| message: false
+#| warning: false
+#| collapse: true
+library(shinypak)
+list_apps(regex = 'debug')
+```
+
+Launch the app: 
+
+```{r}
+#| code-fold: false 
+#| eval: false
+launch(app = "23.1_debug-error")
+```
+
+Download the app: 
+
+```{r}
+#| code-fold: false 
+#| eval: false
+get_app(app = "23.1_debug-error")
+```
+
+::: 
+
+::::
+
+During regular development, Posit Workbench's interactive debugger lets us inspect variables and expressions and execute the code line-by-line. In Shiny functions, the debugger lets us track the execution of reactive expressions and observers, which allows us to unravel reactivity-related issues that are often difficult to diagnose.
+
+```{r}
+#| label: git_box_25.0_debug-error
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  fig_pw = '65%', 
+  branch = "25.0_debug-error", 
+  repo = 'sap')
+```
+
+## Debugging modules {#sec-debug-modules}
+
+The contents of your Shiny app-package can quickly become a complicated and intertwined combination of functions: utility, modules, UI, server, etc. I like to display the relationship between the functions with abstract syntax trees:[^debug-lobstr] 
+
+[^debug-lobstr]: Create abstract syntax trees with the [`ast()` function](https://lobstr.r-lib.org/reference/ast.html) from the [`lobstr` package](https://lobstr.r-lib.org/). 
+
+:::{layout="[50,50]" layout-valign="top"}
+
+For example, we know `scatter_plot()` is called from *within* the scatter plot display module function: 
+
+``` sh
+█─mod_scatter_display_server 
+└─█─scatter_plot
+```
+
+:::
+
+```{r}
+#| eval: false
+#| include: false 
+lobstr::ast(
+  mod_scatter_display_server(
+    scatter_plot()
+    )
+  )
+```
+
+:::{layout="[50,50]" layout-valign="top"}
+
+And `mod_scatter_display_server()` is called within `movies_server()`: 
+
+``` sh
+█─movies_server 
+├─█─mod_scatter_display_server 
+│ └─█─scatter_plot 
+└─█─mod_var_input_server 
+```
+
+:::
+
+```{r}
+#| eval: false
+#| include: false 
+lobstr::ast(
+    movies_server(
+      mod_scatter_display_server(
+        scatter_plot()
+        ),
+      mod_var_input_server()
+      )
+)
+```
+
+:::{layout="[50,50]" layout-valign="top"}
+
+Which is called from inside `sap`:
+
+``` sh
+█─launch_app 
+├─█─movies_ui 
+│ ├─█─mod_var_input_ui 
+│ └─█─mod_scatter_display_ui 
+└─█─movies_server 
+  ├─█─mod_scatter_display_server 
+  │ └─█─scatter_plot 
+  └─█─mod_var_input_server
+```
+
+:::
+
+```{r}
+#| eval: false
+#| include: false 
+lobstr::ast(
+  launch_app( 
+    movies_ui(
+      mod_var_input_ui(),
+      mod_scatter_display_ui()
+    ),
+    movies_server(
+      mod_scatter_display_server(
+        scatter_plot()
+        ),
+      mod_var_input_server()
+      )
+    )
+  )
+```
+
+I find these abstract folder trees helpful when I'm debugging or testing Shiny functions. I can use them to try and anticipate the application call stack (especially when I end up with multiple utility functions or nested modules).
+
+We'll add `browser()` and `observe()` in the `movies_server()` function to capture the behaviors of both modules: 
+
+```{r}
+#| label: git_box_25.1_debug-selected_vars
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(contents = "launch",
+  fig_pw = '65%', 
+  branch = "25.1_debug-selected_vars", 
+  repo = 'sap')
+```
+
+```{r}
+#| eval: false 
+#| code-fold: false
+movies_server <- function(input, output, session) {
+
+    observe({ # <1>
+      browser() # <2>
+    
+      selected_vars <- mod_var_input_server("vars")
+
+      mod_scatter_display_server("plot", var_inputs = selected_vars)
+      
+    }) # <1>
+
+}
+```
+1. Observer scope  
+2. Activate debugger 
+
+Then we'll load the package and display the app in the **Viewer** pane (below the **Console**):
+
+```{r}
+#| label: hot_key_movies_server
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key(fun = "L")
+```
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+ℹ Loading sap
+```
+
+```{r}
+#| eval: false 
+#| code-fold: false
+launch_app(options = list(test.mode = FALSE), run = 'p')
+```
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+ℹ shinyViewerType set to pane
+```
+
+The application launches, but `browser()` pauses the execution of the modules and activates the IDE's debugger. This allows us to view the objects that are available in `movies_server()` *before* the variables are passed to the graph rendering functions:
+
+:::{#fig-debug_app_server_02}
+
+![Debugger with call to `browser()` inside `observe()`](images/debug_app_server_02.png){#fig-debug_app_server_02 width='100%' align='center'}
+
+Note that the plot hasn't rendered in the application yet because the call to `observe(browser())` suspends the execution of any subsequent code   
+:::
+
+In the **Source** pane, we can see the call to `browser()` highlighted (`Browse[1]>` tells us the location in the `browser()` function).
+
+:::{#fig-debug_browser_placement_02}
+
+![`R/movies_server.R` with `observe(browser())`](images/debug_browser_placement_02.png){#fig-debug_browser_placement_02 width='100%' align='center'}
+
+Because `browser()` was called inside `observe()`, the execution will pause, and we can interactively examine values
+:::
+
+In the debugger, we want to confirm the returned values from the variable input module, `selected_vars`, which requires us to execute the next two lines of code:
+
+```{r}
+#| eval: false 
+#| code-fold: false 
+Browse[1]> n
+Browse[2]> n
+```
+
+:::{#fig-debug_mod_display_server_02}
+
+![Execute the function line-by-line with `n` to create `selected_vars`](images/debug_mod_display_server_02.png){#fig-debug_mod_display_server_02 width='100%' align='center'}
+
+Click the **Next** icon twice to create `selected_vars`
+:::
+
+Inside `movies_server()`:
+
+:::{layout="[50,50]" layout-valign="top"}
+
+`mod_var_input_server()` collects the following values and returns a reactive list (**`selected_vars`**):    
+
+- Three variable names 
+  - `x`, `y`, `z`      
+- Graph aesthetics  
+  -  `alpha` and `size`    
+- An optional plot title  
+  -  `plot_title`    
+
+:::
+
+When we inspect `selected_vars` in the debugger console (*without parentheses*) we see the **method** (i.e., the reactive list of inputs), and not the actual values:
+
+::: {layout="[35, 65]" layout-valign="top"}
+
+``` r
+Browse[2]> selected_vars
+```
+
+``` sh
+reactive({
+    list(y = input$y, x = input$x,
+         z = input$z, alpha = input$alpha, 
+         size = input$size, 
+         plot_title = input$plot_title)
+})
+```
+
+:::
+
+If we check `selected_vars()` (*with parentheses*) in the debugger, we see this contains the **values** from the variable input module: 
+
+::: {layout="[35, 65]" layout-valign="top"}
+
+``` r 
+Browse[2]> selected_vars()
+```
+
+``` sh
+$y
+[1] "audience_score"
+
+$x
+[1] "imdb_rating"
+
+$z
+[1] "mpaa_rating"
+
+$alpha
+[1] 0.5
+
+$size
+[1] 2
+
+$plot_title
+[1] ""
+```
+
+:::
+
+These two steps confirm that the UI values are being collected by the variable input module and stored in `selected_vars`, so the error must be coming from inside the scatter plot display module.
+
+## Module communication {#sec-module-comms}
+
+```{r}
+#| label: git_box_25.2_debug-var_inputs
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  fig_pw = '65%', 
+  branch = "25.2_debug-var_inputs",
+  repo = 'sap')
+```
+
+We'll repeat a similar process in `mod_scatter_display_server()`, but include the call to `observe(browser())` *after* `moduleServer()`. Then we'll load the package and run the application again: 
+
+```{r}
+#| eval: false 
+#| code-fold: false 
+mod_scatter_display_server <- function(id, var_inputs) {
+  moduleServer(id, function(input, output, session) {
+    
+    observe({ # <1>
+      browser()
+    
+      # module code
+      
+      }) # <1>
+
+  })
+}
+```
+1. Wrap `browser()` in `observe()` and place after the call to `moduleServer()` 
+
+```{r}
+#| label: hot_key_module
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key(fun = "L")
+```
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+ℹ Loading sap
+```
+
+```{r}
+#| eval: false 
+#| code-fold: false
+launch_app(options = list(test.mode = FALSE), run = 'p')
+```
+
+Inside the module, we want to confirm `var_inputs()` is being created correctly from the `var_inputs` object in `movies_server()`. 
+
+:::{layout="[50,50]" layout-valign="top"}
+
+`selected_vars` is the input for `mod_scatter_display_server()` (as **`var_inputs`**)
+
+- `var_inputs` is converted to the reactive `inputs`    
+  - `inputs` is passed to `scatter_plot()` inside `renderPlot()`    
+
+:::
+
+::: {layout="[35, 65]" layout-valign="top"}
+
+``` r
+Browse[2]> var_inputs()
+```
+
+``` sh 
+$y
+[1] "audience_score"
+
+$x
+[1] "imdb_rating"
+
+$z
+[1] "mpaa_rating"
+
+$alpha
+[1] 0.5
+
+$size
+[1] 2
+
+$plot_title
+[1] ""
+```
+
+:::
+
+### Verify variable inputs 
+
+Inside the scatter plot display module, the `var_inputs` argument is used to create a reactive `input()` object for the graph created by `scatter_plot()`:
+
+```{r}
+#| eval: false 
+#| code-fold: false 
+    inputs <- reactive({ # <2>
+      plot_title <- tools::toTitleCase(var_inputs()$plot_title) # <1>
+        list(
+          x = var_inputs()$x,
+          y = var_inputs()$y,
+          z = var_inputs()$z,
+          alpha = var_inputs()$alpha,
+          size = var_inputs()$size,
+          plot_title = plot_title
+        ) # <1>
+    }) # <2>
+```
+1. Variable inputs (from `selected_vars`)   
+2. `inputs()` for `scatter_plot()`   
+
+Now that we've confirmed `var_inputs()` has been created, we'll verify the values are passed correctly *from* `var_inputs()` *to* `inputs()` (which is used to create the scatter plot).
+
+To do this, we'll progress through the module function (using `n` in the debugger console or by clicking **Next**) until the `inputs()` reactive has been created,
+
+:::{#fig-debug_mod_display_server_ouput_02}
+
+![Progressing _past_ `inputs()` tells us it's been created](images/debug_mod_display_server_ouput_02.png){#fig-debug_mod_display_server_ouput_02 width='100%'}
+
+Use `n` in the debugger or click **Next** to progress through the function
+:::
+
+::: {layout="[35, 65]" layout-valign="top"}
+
+``` r
+Browse[2]> inputs()
+```
+
+``` sh
+$x
+[1] "imdb_rating"
+
+$y
+[1] "audience_score"
+
+$z
+[1] "mpaa_rating"
+
+$alpha
+[1] 0.5
+
+$size
+[1] 2
+
+$plot_title
+[1] ""
+```
+
+:::
+
+These two steps have shown us 1) the modules are communicating properly, and 2) the scatter plot display module contains the list of reactive values needed to render the graph.
+
+```{r}
+#| label: co_box_browser_observe
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g", 
+  size = '1.15', 
+  header = "My approach to debugging", 
+  hsize = '1.20', 
+  fold = FALSE, 
+  look = 'default',
+  contents = "
+  
+If an application is producing a bug (i.e., failing to render an output, producing an error in the **Console**, etc.), I'll start by placing a call to `browser()` (wrapped in `observe()`) at the top-level UI/server functions, then procced 'down' into the modules.
+  
+  "
+)
+```
+

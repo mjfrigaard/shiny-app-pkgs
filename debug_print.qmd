@@ -1,0 +1,225 @@
+# Print debugging {#sec-print-debug}
+
+```{r}
+#| label: _common
+#| eval: true 
+#| echo: false 
+#| include: false
+source("_common.R")
+library(lobstr)
+```
+
+```{r}
+#| label: co_box_dev
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "r", 
+  header = "Warning",
+  contents = "The contents for section are under development. Thank you for your patience."
+)
+```
+
+
+:::: {.callout-tip collapse='true' appearance='default'}
+
+## [Accessing applications]{style='font-weight: bold; font-size: 1.15em;'}
+
+::: {style='font-size: 0.95em; color: #282b2d;'}
+
+I've created the [`shinypak` R package](https://mjfrigaard.github.io/shinypak/) In an effort to make each section accessible and easy to follow:
+  
+Install `shinypak` using `pak` (or `remotes`):
+
+```{r}
+#| code-fold: false 
+#| message: false
+#| warning: false
+#| eval: false
+# install.packages('pak')
+pak::pak('mjfrigaard/shinypak')
+```
+
+Review the chapters in each section:
+  
+```{r}
+#| code-fold: false 
+#| message: false
+#| warning: false
+#| collapse: true
+library(shinypak)
+list_apps(regex = 'debug')
+```
+
+Launch the app: 
+
+```{r}
+#| code-fold: false 
+#| eval: false
+launch(app = "23.1_debug-error")
+```
+
+Download the app: 
+
+```{r}
+#| code-fold: false 
+#| eval: false
+get_app(app = "23.1_debug-error")
+```
+
+::: 
+
+::::
+
+
+```{r}
+#| label: git_box_25.4_debug-print
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  fig_pw = '65%', 
+  branch = "25.4_debug-print", 
+  repo = 'sap')
+```
+
+One of the best tried and tested methods of debugging is simply adding a `cat()` or `print()` call somewhere in your code to print variables or objects to the R console. This is a basic but effective way to track variable changes.
+
+We can do something similar in Shiny applications by combining `verbatimTextOutput()`, `renderPrint()`, and `reactiveValuesToList()`: 
+
+In [`mod_var_input`](https://github.com/mjfrigaard/sap/blob/18d_debugging/R/mod_var_input.R): 
+
+-   Place a `verbatimTextOutput()` in the ui function. 
+
+```{r}
+#| eval: false 
+#| code-fold: false 
+    code("module reactive values"), # <1> 
+    verbatimTextOutput(outputId = ns("mod_vals")) # <2> 
+  )
+```
+1. Optional label  
+2. Include the `ns()` for the `inputId`
+
+-   In a `renderPrint()`, use `reactiveValuesToList()` to gather the `inputId`s and pass them to `print()` (I'm actually using `lobstr::tree()` to give a clearer display).
+
+```{r}
+#| eval: false 
+#| code-fold: false 
+  output$mod_vals <- renderPrint({
+    lobstr::tree( # <2> 
+      reactiveValuesToList( # <1> 
+        x = input,
+        all.names = TRUE # <3> 
+      ) # <1> 
+    ) # <2> 
+  })
+```
+1. Collect reactive values in module  
+2. Print these values to the UI   
+3. Include all reactive objects    
+
+Load the package and run the app:
+
+```{r}
+#| label: hot_key_print_module
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key(fun = "L")
+```
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+ℹ Loading sap
+```
+
+```{r}
+#| eval: false 
+#| code-fold: false
+launch_app(options = list(test.mode = FALSE), run = 'p')
+```
+
+
+:::{#fig-debug_print_movies_app_05}
+
+!['Print' in `launch_app()`](images/debug_reactive_values_sidebar.png){#fig-debug_print_movies_app_05 width='40%' fig-align='left'}
+
+`reactiveValuesToList()` printed from `mod_var_inputs`
+:::
+
+Now we can see the reactive values from our module in the application sidebar! 
+
+We can also use this 'print' method to explore reactive values at various locations in our application. For example, if we wanted to print the reactive values for multiple modules in an app, we can use these methods in the top level `movies_ui()` and `movies_server()` functions.
+
+In the `bslib` portion of [`movies_ui()`](https://github.com/mjfrigaard/sap/blob/18d_debugging/R/movies_ui.R): 
+
+-   Add `verbatimTextOutput()` with an optional label  
+
+    ```{r}
+    #| eval: false 
+    #| code-fold: false
+    code("reactive values"),
+    verbatimTextOutput(outputId = 'vals')
+    )
+    ```
+
+In [`movies_server()`](https://github.com/mjfrigaard/sap/blob/18d_debugging/R/movies_server.R):
+
+-   Collect all the `inputId`s with `reactiveValuesToList()` and print with `print()` or `lobstr::ast()`
+
+    ```{r}
+    #| eval: false 
+    #| code-fold: false
+    all_vals <- reactive({
+      reactiveValuesToList(x = input, all.names = TRUE)
+    })
+    
+    output$vals <- renderPrint({
+      lobstr::tree(all_vals())
+    })
+    ```
+
+
+Load the package and run the app:
+
+```{r}
+#| label: hot_key_print_app
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key(fun = "L")
+```
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+ℹ Loading sap
+```
+
+```{r}
+#| eval: false 
+#| code-fold: false
+launch_app(options = list(test.mode = FALSE), 
+  run = 'p', bslib = TRUE)
+```
+
+
+:::{#fig-debug_print_bslib_movies_app_05}
+
+!['Print' in `launch_app(bslib = TRUE)`](images/debug_print_bslib_movies_app_05.png){#fig-debug_print_bslib_movies_app_05 width='100%' align='center'}
+
+`reactiveValuesToList()` printed from `movies_ui()` and `movies_server()`
+:::
+
+Here we can see both levels of reactive values (from the module and the UI/server functions). The handy thing about this method is that the values change when we interact with the application:
+
+:::{#fig-debug_change_print_bslib_movies_app_05}
+
+![Changing values in `launch_app(bslib = TRUE)`](images/debug_change_print_bslib_movies_app_05.png){#fig-debug_change_print_bslib_movies_app_05 width='100%' align='center'}
+
+`y` and `vars-y` *both* update when the UI inputs change
+:::

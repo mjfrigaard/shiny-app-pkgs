@@ -1,0 +1,125 @@
+# shinyapps.io {#sec-shinyappsio}
+
+```{r}
+#| eval: true 
+#| echo: false 
+#| include: false
+source("_common.R")
+```
+
+```{r}
+#| label: co_box_tldr
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b", 
+  look = "default", hsize = "1.10", size = "1.05",
+  header = "TLDR: Deploying your app", fold = TRUE,
+  contents = "
+
+"
+)
+```
+
+## Deploying the app 
+
+Below we'll cover deploying your Shiny app-package in RStudio ![](images/rstudio-icon.png){height=20} and Positron ![](images/positron.png){height=20}. The Positron ![](images/positron.png){height=20} IDE was still in the early stages of development when this section was written, so some of these steps may change in future versions. 
+
+### In RStudio ![](images/rstudio-icon.png){height=20}
+
+To deploy the app, I can click on the **Publish** icon: 
+
+![Send app.R to **Console** and click **Publish**](images/launch_deploy_app_dot_r.png){width=100%}
+
+Make sure all the files in the package are selected, then click **Publish**
+
+![Publishing apps to `shinyapps.io`](images/launch_publilsh_window.png){width=80%}
+
+
+The **Deploy** pane will open and you'll see a deployment log as your application is sent to the server: 
+
+```{bash}
+#| eval: false 
+#| code-fold: true 
+#| code-summary: 'show/hide deployment log'
+── Preparing for deployment ────────────────────────────────────────────────────
+✔ Deploying "movie-reviews" using "server: shinyapps.io / username: yourusername"
+ℹ Creating application on server...
+✔ Created application with id 12692760
+ℹ Bundling 27 files: .Rbuildignore, app.R, data/movies.rda, data/movies.RData, 
+DESCRIPTION, inst/extdata/movies.fst, NAMESPACE, README.md, www/shiny.png,
+man/display_type.Rd, man/launch_app.Rd, man/mod_scatter_display_server.Rd,
+man/mod_scatter_display_ui.Rd, man/mod_var_input_server.Rd, 
+man/mod_var_input_ui.Rd, man/movies_server.Rd, man/movies_ui.Rd, man/movies.Rd,
+…, R/movies_ui.R, and R/scatter_plot.R
+ℹ Capturing R dependencies with renv
+✔ Found 61 dependencies
+✔ Created 389,882b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle with id 9093617
+── Deploying to server ─────────────────────────────────────────────────────────
+Waiting for task: 1456625417
+  building: Building image: 11062313
+  building: Fetching packages
+  building: Installing packages
+  building: Installing files
+  building: Pushing image: 11062313
+  deploying: Starting instances
+  rollforward: Activating new instances
+  success: Stopping old instances
+── Deployment complete ─────────────────────────────────────────────────────────
+✔ Successfully deployed to <https://yourusername.shinyapps.io/app-name/>
+Deployment completed: https://yourusername.shinyapps.io/app-name//
+```
+
+#### Deploy logs {#sec-launch-shinyapps-log}
+
+On [shinyapps.io](https://www.shinyapps.io/), the deployment log shows the `loadSupport()` warning persists (but the application still [deploys](https://paradigmdata.shinyapps.io/movie-reviews/). The server-side warning is a known issue.[^launch-loadsupport-warning]
+
+[^launch-loadsupport-warning]: You can learn more about this warning by reading these posts on StackOverflow: [How can I deploy my shiny app as a package?](https://stackoverflow.com/questions/64774355/how-can-i-deploy-my-shiny-app-as-a-package); [Problem with directory when deploying app on shinyapps](https://stackoverflow.com/questions/67511409/problem-with-directory-when-deploying-app-on-shinyapps), and this post on Posit Community: [Errors when deploying app on shinyapps.io](https://community.rstudio.com/t/errors-when-deploying-app-on-shinyapps-io/104550).
+
+```{verbatim}
+shinyapps[12692760]: Running as user: uid=10001(shiny) gid=10001(shiny) groups=10001(shiny)
+shinyapps[12692760]: Connect version: 2024.05.0
+shinyapps[12692760]: LANG: C.UTF-8
+shinyapps[12692760]: Working directory: /srv/connect/apps/movie-reviews
+shinyapps[12692760]: Using R 4.4.0
+shinyapps[12692760]: R.home(): /opt/R/4.4.0/lib/R
+shinyapps[12692760]: Content will use current R environment
+shinyapps[12692760]: R_LIBS: (unset)
+shinyapps[12692760]: .libPaths(): /usr/lib/R, /opt/R/4.4.0/lib/R/library
+shinyapps[12692760]: shiny version: 1.9.1
+shinyapps[12692760]: httpuv version: 1.6.15
+shinyapps[12692760]: rmarkdown version: (none)
+shinyapps[12692760]: knitr version: (none)
+shinyapps[12692760]: jsonlite version: 1.8.8
+shinyapps[12692760]: RJSONIO version: (none)
+shinyapps[12692760]: htmltools version: 0.5.8.1
+shinyapps[12692760]: reticulate version: (none)
+shinyapps[12692760]: Using pandoc: /opt/connect/ext/pandoc/2.16
+shinyapps[12692760]: 
+shinyapps[12692760]: Starting R with process ID: '31'
+shinyapps[12692760]: Shiny application starting ...
+shinyapps[12692760]: Warning in warn_if_app_dir_is_package(appDir) :
+shinyapps[12692760]:   Loading R/ subdirectory for Shiny application, 
+  but this directory appears to contain an R package. Sourcing files 
+  in R/ may cause unexpected behavior. See `?loadSupport` for more details.
+shinyapps[12692760]: ℹ Loading sap
+shinyapps[12692760]: 
+shinyapps[12692760]: Listening on http://127.0.0.1:123456
+```
+
+### In Positron ![](images/positron.png){height=20}
+
+After loading, documenting, and installing our app-package, we can deploy it in Positron ![](images/positron.png){height=20} using the `rsconnect::deployApp()` function.  
+
+![Deploying Shiny app from Positron's **Console**](images/launch_positron_deployApp.png){width=100%}
+
+As we can see, Positron doesn't open a **Deploy** window or separate Terminal task for launching the application (it's printed directly to the **Console**). 
+
+
+## The [`rsconnect`]{style="font-size: 0.90em; font-weight: bold;"} folder
+
+When deploying a Shiny app, the `rsconnect/` folder is automatically created to store configuration settings and deployment metadata for the app. Below are a few points to consider with regard to this folder:
+
