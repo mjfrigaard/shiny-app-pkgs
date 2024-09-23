@@ -14,6 +14,10 @@ source("_common.R")
 library(lobstr)
 ```
 
+When building Shiny app-packages, debugging plays a crucial role in ensuring that our app works as expected *and* integrates seamlessly into the package structure. RStudio's debugging tools are covered elsewhere,[^debug-other-resources] so this chapter will focus on Positron's debugging features for functions inside our app-package.
+
+[^debug-other-resources]: For an introduction to the IDE's debugging tools, see this [Posit article](https://support.posit.co/hc/en-us/articles/205612627-Debugging-with-the-RStudio-IDE). Debugging is also covered in [Advanced R, 2ed](https://adv-r.hadley.nz/debugging.html) and [Mastering Shiny.](https://mastering-shiny.org/action-workflow.html#debugging)
+
 :::: {.callout-tip collapse='true' appearance='default'}
 
 ## [Accessing applications]{style='font-weight: bold; font-size: 1.15em;'}
@@ -64,9 +68,152 @@ get_app(app = "23.1_debug-error")
 
 ::::
 
-When used as an exploratory tool, the debugger allows us to ‘look inside’ functions and break down their execution line-by-line.
+## Debugging methods {#sec-debug-explore-methods}
+
+When used as an exploratory tool, the debugger allows us to ‘look inside’ functions and break down their execution line-by-line. The two most common tools I use for debugging are:
+
+1. Wrapping `browser()` in a call to `observe()`  
+2. Capturing reactive values with `reactiveValuesToList()` and sending output to the UI
+
+These two methods cover 90% of my Shiny app debugging needs. In the following sections, I'll provide examples of how--and when--I use each method.
+
+### [`browser()`]{style="font-size: 1.02em; font-weight: bold;"} and [`observe()`]{style="font-size: 1.02em; font-weight: bold;"}
+
+`browser()` pauses code execution and activates the interactive debugger mode in the IDE, allowing us to view objects, execute code, and ‘step through’ each function line.
+
+```{=html}
+
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+
+</style>
+```
+
+```{mermaid}
+%%| fig-width: 6.5
+%%| fig-align: center
+%%| fig-cap: '`browser()` used for debugging functions'
+%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'Inconsolata', 'primaryColor': '#8dd38d', 'edgeLabelBackground':'#ffd700'}}}%%
+flowchart TD
+    Start["Run (i.e., <code>source()</code>) .R File"] --> Running[Function Executes]
+    Running --> Browser["<code>browser()</code>"]
+    Browser --> Pause[Execution paused]
+    Pause --> Debugger[View intermediate variables/values]
+    Debugger --> Exit["Exit <code>browser()</code>"]
+    Exit --> Resume[Resume Execution]
+    Resume --> Running
+    
+```
+
+Shiny’s reactive model can make debugging challenging because the issues aren’t limited to the internal logic or calculations. Bugs can also be caused by the timing, sequence, or creation of reactive values. `observe()` creates a reactive observer that 'listens' for changes to reactive expressions (and executes code in response).
+
+```{r}
+#| label: co_box_dbug_modules
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "r", 
+  size = '1.05', 
+  header = "Debugging in Shiny App-Packages", 
+  hsize = '1.15', 
+  fold = TRUE, 
+  look = 'simple',
+  contents = "
+  
+***Don't forget to load any debugging calls with `devtools::load_all()` _before_ re-launching the app*** 
+  
+\`\`\`r
+devtools::load_all('.')
+`\`\`\
+
+***Or***
+  
+<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd>
+
+  "
+)
+```
+
+Wrapping `browser()` with `observe()` will trigger the debugger when the observer is invalidated, allowing us to interactively examine variables and reactive expressions (within the scope of the `observe()` function):
+
+```{r}
+#| eval: false 
+#| code-fold: false
+server <- function(input, output, session) { # <1> 
+
+    observe({ # <2>
+        browser() # <3> 
+    
+
+    returned_values <- module_values_server("id_x")
+
+    module_render_server("id_y", input_values = returned_values)
+    
+    }) # <2>
+} # <1>
+```
+1. Shiny server function
+2. `observe()` function scope  
+3. `browser()` called at the top of the `observe()` scope
+
+```{=html}
+
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+
+</style>
+```
+
+```{mermaid}
+%%| fig-width: 6.5
+%%| fig-align: center
+%%| fig-cap: '`observe()` and `browser()` functions'
+%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'Inconsolata', 'primaryColor': '#8dd38d', 'edgeLabelBackground':'#ffd700'}}}%%
+flowchart TD
+    subgraph shinyServer["<code>server()</code> Function"]
+        S1["<code>observe({})</code>"]
+        S1 --> S2["<code>browser()</code> invalidates observer"]
+        S2 --> S3["<code>observe()</code> scope execution paused"]
+        S3 --> S4["View variables/reactive expressions"]
+        S4 --> S5["Exit <code>browser()</code>"]
+        S5 --> S1
+    end
+    
+    style shinyServer fill:#fafafa,stroke:#333,stroke-width:1px
+```
 
 `observe()` and `browser()` aren't only useful for addressing bugs--we can also use the debugger to understand how an application works.
+
+## Example: [`ggplot2movies`]{style="font-size: 1.02em; font-weight: bold;"} app
+
+```{r}
+#| label: git_box_10_debug-explore
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  fig_pw = '65%', 
+  branch = "10_debug-explore", 
+  repo = 'sap')
+```
 
 Suppose it's been awhile since we've looked at the `ggplot2movies::movies` application (run with `ggp2_movies_app()`). We can place calls to `observe(browser())` in the `inst/dev/app.R` file, load the package, and run the application to see how it executes.
 
@@ -135,7 +282,7 @@ This will suspend the execution of application before the tidy `ggplot2movies::m
 
 We can step through the module function to explore how the alternate data are loaded (and missing values are removed). 
 
-## Verify app data 
+### Verify app data 
 
 First we'll proceed through the code until `tidy_movies.fst` is loaded, then confirm it's structure: 
 
@@ -163,7 +310,7 @@ Browse[2]> str(all_data)
 
 This gives us an idea of the total rows before missing are removed. 
 
-## Verfiy missing 
+### Verfiy missing 
 
 After loading `all_data`, the module creates a reactive `graph_data()`. We can see `graph_data()` is 'bound' to `input$missing`, so we'll confirm the  `input$missing` value:
 
@@ -205,7 +352,7 @@ Browse[2]> str(graph_data())
 
 :::
 
-## Verfiy variable inputs 
+### Verfiy variable inputs 
     
 Next we'll confirm the `var_inputs()` list of graph values from our `dev` variable input module:
 
@@ -251,7 +398,7 @@ List of 6
     
 :::
 
-## Verfiy graph
+### Verfiy graph
 
 Now that we have an understanding of the reactive flow inside the app, we'll render the plot: 
 
