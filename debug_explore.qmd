@@ -34,9 +34,9 @@ Debugging plays a crucial role in ensuring that our app works as expected *and* 
 )
 ```
 
-Debugging Shiny code can be challenging because the reactive model involves a dynamic interactions and non-linear flow of execution between inputs, outputs, and reactive expressions. Shiny bugs can originate from reactive dependencies, execution order (Shiny is inherently asynchronous), hidden states, lazy evaluation, and reactive context/invalidation (i.e., with `isolate()`, `reactive()`, and `observe()`).
+Debugging Shiny code can be challenging because the reactive model involves dynamic interactions and a non-linear flow of execution between inputs, outputs, and reactive expressions. Shiny bugs can originate from reactive dependencies, execution order (Shiny is inherently asynchronous), hidden states, lazy evaluation, and reactive context/invalidation (i.e., with `isolate()`,`reactive()`, and `observe()`).
 
-Understanding the interplay of reactivity, lazy evaluation, asynchronous execution, and hidden states will help us diagnose and resolve bugs in our Shiny app-packages. However, we'll have to employ specific strategies and tools to handle Shiny bugs effectively, and some of the traditional debugging approaches can fall short in reactive contexts. Below we'll cover the two most common methods for debugging R code, and how we can adapt them for a Shiny application. 
+Understanding the interplay of reactivity, lazy evaluation, asynchronous execution, and hidden states will help us diagnose and resolve bugs in our Shiny app-packages. However, we’ll have to employ specific strategies and tools to handle Shiny bugs effectively, and some of the traditional debugging approaches can fall short in reactive contexts. Below, we’ll cover the two most common methods for debugging R code and how to adapt them for a Shiny application. 
 
 :::: {.callout-tip collapse='true' appearance='default'}
 
@@ -90,21 +90,19 @@ get_app(app = "23.1_debug-error")
 
 ## Debugging methods {#sec-debug-explore-methods}
 
-When used as an exploratory tool, debugging can allow us peak ‘inside’ functions, see their intermediate values/variables, and break down their execution line-by-line. The two most common methods for debugging R code are:
+Debugging allows us to ‘peek inside’ functions, see intermediate values/variables, and break down their execution line-by-line. The two most common methods for debugging R code are:
 
-1. Interactive debugging (i.e., using `browser()`) 
+1. Interactive debugging (i.e., using `browser()`)
 
 2. Print debugging (with `print()` or `cat()`)
 
-However, `browser()` and `print()` are not as straightforward to use within reactive contexts. For example, `browser()` will disrupt the reactive flow, making it hard to maintain an interactive debugging session. `print()`/`cat()` only provides a snapshot of variable values *at the time of the print call*, so they can't help us explore the other parts of the environment or interact with the running application.
+However, these methods are not as straightforward to use within reactive contexts. For instance, `browser()` can disrupt the reactive flow, making maintaining an interactive debugging session challenging. Similarly, `print()` and `cat()` can only provide a snapshot of variable values *at the location and time of the print call*, limiting their usefulness in exploring the other parts of the environment or interacting with the running application.
 
+In the following sections, I’ll provide examples of how these methods can be adapted to a Shiny context.
 
+### [`browser()`]{style="font-size: 1.02em; font-weight: bold;"} + [`observe()`]{style="font-size: 1.02em; font-weight: bold;"}
 
-These two methods cover 90% of my Shiny app debugging needs. In the following sections, I'll provide examples of how--and when--I use `browser()` and `observe()`.
-
-### [`browser()`]{style="font-size: 1.02em; font-weight: bold;"} and [`observe()`]{style="font-size: 1.02em; font-weight: bold;"}
-
-`browser()` pauses code execution and activates the interactive debugger mode in the IDE, allowing us to view objects, execute code, and ‘step through’ each function line.
+As noted above, `browser()` pauses code execution and activates the interactive debugger mode, allowing us to view objects, execute code, and ‘step through’ a function line-by-line:
 
 ```{=html}
 
@@ -127,7 +125,7 @@ These two methods cover 90% of my Shiny app debugging needs. In the following se
 %%| fig-width: 5
 %%| fig-height: 6
 %%| fig-align: center
-%%| fig-cap: '`browser()` used for debugging functions'
+%%| fig-cap: 'debugging functions with `browser()`'
 %%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'Inconsolata', 'primaryColor': '#8dd38d', 'edgeLabelBackground':'#ffd700'}}}%%
 flowchart TD
     Start["Run <code>.R</code> File"] --> Running[Function Executes]
@@ -140,9 +138,72 @@ flowchart TD
     
 ```
 
-`observe()` creates a reactive observer that 'listens' for changes to reactive expressions (and executes code in response). 
+<!--
+Within the server, any call to `observe()` will create a reactive observer that 'listens' for changes to reactive dependencies (and runs any enclosed code whenever those dependencies change). 
+-->
 
-Wrapping `browser()` with `observe()` will trigger the debugger when the observer is invalidated, allowing us to interactively examine variables and reactive expressions (within the scope of the `observe()` function):
+For debugging Shiny apps, we want to pause execution without altering or stopping the reactive flow. Fortunately, Shiny already has a function that performs this: `observe()`.
+
+Consider the following `observeApp()`: 
+
+```{r}
+#| eval: false 
+#| code-fold: false
+observeApp <- function() {
+  ui <- bslib::page_fluid(
+    titlePanel(p("Simple", code("observe()"), "Shiny App")),
+    bslib::layout_column_wrap(
+      width = 1/2,
+      bslib::card(
+        bslib::card_header("Press the Button"),
+        actionButton(
+          inputId = "btn", 
+          label = "Click Me!")
+      )
+    )
+  )
+  server <- function(input, output, session) {
+    observe({
+      if (input$btn > 0) {  
+        print("Clicked!")  
+      }
+    })
+  }
+  shinyApp(ui, server)
+}
+```
+
+In the `server`, the `observe()` function listens to the button click, checks if the button has been clicked at least once, and when the click event is detected, it prints `"Clicked!"` to the R console:
+
+:::{layout="[50, 50]" layout-valign="top"}
+
+![](images/debug_explore_positron_observeApp_viewer.png){fig-align='center'}
+
+![](images/debug_explore_positron_observeApp_console.png){fig-align='center'}
+
+:::
+
+`observe()` does not inherently pause or interrupt other reactive processes—it just triggers when changes occur within its scope.
+
+While debugging, we need to define the context (or scope) for `browser()`'s behavior. When `browser()` is called from inside `observe()`, the code execution pauses at that point and temporarily suspends the reactive process so we can inspect the environment.
+
+```{r}
+#| eval: false 
+#| code-fold: false
+  server <- function(input, output, session) { # <1>
+    observe({ # <2>
+      browser() # <3>
+      if (input$btn > 0) {  
+        print("Clicked!")  
+      }
+    }) # <2>
+  } # <1>
+```
+1. Shiny server function
+2. `observe()` function scope  
+3. `browser()` called at the top of the `observe()` scope
+
+Below is a diagram of how `browser()` works inside the `observe()`d scope (without altering or stopping the reactive flow):
 
 ```{=html}
 
@@ -167,13 +228,14 @@ Wrapping `browser()` with `observe()` will trigger the debugger when the observe
 %%| fig-cap: '`observe()` and `browser()` functions'
 %%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'Inconsolata', 'primaryColor': '#8dd38d', 'edgeLabelBackground':'#ffd700'}}}%%
 flowchart TD
-    subgraph shinyServer["<code>server()</code> Function"]
-        S1["<code>observe({})</code>"]
+    subgraph shinyServer["Shiny <code>server()</code> Function"]
+        S1["<code>observe({...</code>"]
         S1 --> S2["<code>browser()</code> invalidates observer"]
         S2 --> S3["<code>observe()</code> scope execution paused"]
-        S3 --> S4["View variables/reactive expressions"]
+        S3 --> S4["View variables/reactives"]
         S4 --> S5["Exit <code>browser()</code>"]
-        S5 --> S1
+        S5 --> S6["<code>...})</code> (end of <code>observe</code> scope)"]
+        S6 --> S1
     end
     
     style shinyServer fill:#fafafa,stroke:#333,stroke-width:1px
@@ -181,26 +243,21 @@ flowchart TD
 
 
 ```{r}
-#| eval: false 
-#| code-fold: false
-server <- function(input, output, session) { # <1> 
-
-    observe({ # <2>
-        browser() # <3> 
-    
-
-    returned_values <- module_values_server("id_x")
-
-    module_render_server("id_y", input_values = returned_values)
-    
-    }) # <2>
-} # <1>
+#| label: co_box_observe_browser
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g",
+  look = "default", hsize = "1.10", size = "1.05",
+  header = "`observe()` and `browser()`",
+  fold = FALSE,
+  contents = "
+Wrapping `browser()` with `observe()` will trigger the debugger when the observer is invalidated, allowing us to interactively examine variables and reactive expressions (within the scope of the `observe()` function).
+")
 ```
-1. Shiny server function
-2. `observe()` function scope  
-3. `browser()` called at the top of the `observe()` scope
 
-`observe()` and `browser()` aren't only useful for addressing bugs--we can also use the debugger to understand how an application works.
+`observe()` and `browser()` are useful for addressing bugs; we can also use the debugger to understand how an application works.
 
 ## Example: [`ggplot2movies`]{style="font-size: 1.02em; font-weight: bold;"} app
 
@@ -216,7 +273,11 @@ git_margin_box(
   repo = 'sap')
 ```
 
-Suppose it's been awhile since we've looked at our development `ggplot2movies` application[^ggp2-callback] and we can't remember how the 'Remove missing' checkbox works. We can place the debugging functions in the module `.R` file, load the changes, and launch the application to refresh our memory on how this code is evaluated. RStudio's debugging tools are covered elsewhere,[^debug-other-resources] so this chapter will focus on Positron's debugging features for functions inside our app-package.
+Suppose it's been awhile since we've looked at our development `ggplot2movies` application,[^ggp2-callback] and we can't remember how the 'Remove missing' checkbox works:
+
+![Remove missing checkbox in `ggplot2movies` development application ](images/debug_explore_remove_missing_checkbox.png){width='80%' fig-align='center'}
+
+We'll place debugging functions in the module containing this input, load the changes, and launch the application to refresh our memory on how this code is evaluated. Debugging in RStudio is covered elsewhere,[^debug-other-resources] so this chapter will focus on Positron's debugging features.
 
 [^debug-other-resources]: For an introduction to the IDE's debugging tools, see this [Posit article](https://support.posit.co/hc/en-us/articles/205612627-Debugging-with-the-RStudio-IDE). Debugging is also covered in [Advanced R, 2ed](https://adv-r.hadley.nz/debugging.html) and [Mastering Shiny.](https://mastering-shiny.org/action-workflow.html#debugging)
 
@@ -245,22 +306,50 @@ We'll place the call to  `observe()` inside `dev_mod_scatter_server()` (right af
 #| code-fold: false 
 dev_mod_scatter_server <- function(id, var_inputs) {
   moduleServer(id, function(input, output, session) {
-    # load alternate data
-    all_data <- fst::read_fst("tidy_movies.fst") # <1>
+    observe({ # <1>
+      browser() # <2>
+      # load alternate data
+      all_data <- fst::read_fst("tidy_movies.fst") # <3>
 
-    observe({ # <2>
-    # load alternate data
-    browser() # <3>
-      # <4> 
-      # <4> 
-    })  # <2>
+      # build reactive data based on missing checkbox input
+      graph_data <- reactive({ # <4>
+        if (input$missing) {
+          tidyr::drop_na(data = all_data)
+        } else {
+          all_data
+        }
+      }) |>
+        # bind to input to update when it changes
+        bindEvent(input$missing) # <4>
+
+      inputs <- reactive({ # <5>
+        plot_title <- tools::toTitleCase(var_inputs()$plot_title)
+        list(
+          x = var_inputs()$x,
+          y = var_inputs()$y,
+          z = var_inputs()$z,
+          alpha = var_inputs()$alpha,
+          size = var_inputs()$size,
+          plot_title = plot_title
+        )
+      }) # <5>
+      
+    })  # <1>
+    
+    # <6>
+    
   })
 }
 ```
-1. Read `tidy_movies.fst` data    
-2. Observer scope   
-3. Call to `browser()` 
-4. Additional module code omitted  
+1. Observer scope   
+2. Call to `browser()` (execution paused) 
+3. Read `tidy_movies.fst` data  
+4. Missing data checkbox logic  
+5. Reactive values from user inputs  
+6. Omitted module code
+
+You might wonder why we didn’t end the `observe()` scope right after the`graph_data` reactive was created. We’ll cover that in the next section.
+Load the package and run the app:
 
 Load the package and run the app:
 
@@ -314,7 +403,9 @@ ggp2_launch_app(options = list(test.mode = TRUE))
 
 ## Interactive debugging
 
-Below we'll cover what happens to each IDE when they enter 'interactive debugger' mode. As noted above, RStudio's ![](images/rstudio-icon.png){height=20} debugger is covered elsewhere,[^debug-other-resources] so we'll focus on debugging tools in Positron ![](images/positron.png){height=20}. 
+Below, we'll cover what happens to each IDE when they enter 'interactive debugger' mode. As noted above, RStudio's ![](images/rstudio-icon.png){height=20} debugger is covered elsewhere,[^debug-other-resources] so we'll focus on debugging tools in Positron ![](images/positron.png){height=20}. 
+
+### IDE changes
 
 :::: {.panel-tabset}
 
@@ -322,13 +413,13 @@ Below we'll cover what happens to each IDE when they enter 'interactive debugger
 
 When the app is launched, Positron ![](images/positron.png){height=20} alerts us that we're in debugging with the following changes to the IDE: 
 
-1. The footer is [highlighted in red]{style="background-color: #F78F8F; font-weight: bold;"}
+1. The **Console** displays the interactive debugger prompt: [`Browse[1]>`]{style="font-weight: bold;"}
 
-2. The **Run and Debug** sidebar menu item is displayed (which I've outlined in [orange]{style="color: #FF9300; font-weight: bold;"}):
+2. The `dev_mod_scatter.R` file in the **Editor** [highlights the call to `browser()` in yellow]{style="background-color: #FAFFC1; font-weight: bold;"}
 
-3. The **Console** displays the interactive debugger prompt: [`Browse[1]>`]{style="font-weight: bold;"}
+3. The **Run and Debug** sidebar menu item is displayed (which I've [outlined in orange]{style="color: #FF9300; font-weight: bold;"}):
 
-4. The `dev_mod_scatter.R` file [highlights the call to `browser()` in yellow]{style="background-color: #FAFFC1; font-weight: bold;"}
+4. The footer is [highlighted in red]{style="background-color: #F78F8F; font-weight: bold;"}
 
 :::{.column-page-inset-right}
 
@@ -336,11 +427,14 @@ When the app is launched, Positron ![](images/positron.png){height=20} alerts us
 
 :::
 
+The changes to the **Console** and **Editor** are also displayed below:
+
 :::{layout="[50, 50]" layout-valign="top"}
 
-![Click to enlarge `.R` file in debugger mode](images/debug_explore_dev_mod_scatter.png){fig-align='center'}
+![Click to enlarge Positron **Console** in debugger mode](images/debug_explore_positron_console.png){fig-align='center'}
 
-![Click to enlarge **Console** in debugger mode](images/debug_explore_positron_console.png){fig-align='center'}
+![Click to enlarge Positron **Editor** in debugger mode](images/debug_explore_positron_editor.png){fig-align='center'}
+
 
 :::
 
@@ -360,51 +454,92 @@ In RStudio ![](images/rstudio-icon.png){height=20}, launching the apps triggers 
 
 :::
 
+The changes to the **Console** and **Source** panes are also displayed below:
+
+:::{layout="[50, 50]" layout-valign="top"}
+
+![Click to enlarge RStudio **Console** pane in debugger mode](images/debug_explore_rstudio_console.png){fig-align='center'}
+
+![Click to enlarge RStudio **Source** pane in debugger mode](images/debug_explore_rstudio_source.png){fig-align='center'}
+
+:::
+
 ::::
 
 In both IDEs, our `observe()` and `browser()` placement will suspend the execution of the application before the data are loaded (`tidy_movies.fst`) and the graph is rendered. 
 
-![Click to enlarge suspended `ggplot2movies` data app](images/debug_explore_browser_suspend_app.png){width='100%' fig-align='center'}
+![Click to enlarge suspended `ggplot2movies` data app](images/debug_explore_browser_suspend_app.png){width='80%' fig-align='center'}
 
 In the next sections, we'll 'step through' the module function to explore how the `tidy_movies.fst` data are loaded (and missing values are removed). 
 
-### Verify app data 
+## Variables and values
 
-First we'll proceed through the code until `tidy_movies.fst` is loaded, then confirm it's structure.
+We’ll proceed through the code in `dev_mod_scatter.R` until `tidy_movies.fst` is loaded, and the data object enters the logic for the missing checkbox, then we’ll confirm its structure.
 
+:::{.column-margin}
+
+Step through/execute each line of code by entering **`n`** in the **Console**. 
+
+:::{style="font-weight: bold;"}
+
+```
+Browse[1]> n
+```
+
+:::
+
+:::
 
 :::: {.panel-tabset}
 
 ### Positron ![](images/positron.png){height=20}
 
-We can execute the next line of code by entering **`n`** in the **Console**. This will display a `debug at` location (which is the full path the file containing our call to `browser()`). In the `inst/dev/R/dev_mod_scatter.R` file, the next line of code to be executed is [highlighted in yellow]{style="background-color: #FAFFC1; font-weight: bold;"} (the final line is [highlighted in gray]{style="background-color: #E6E6E6; font-weight: bold;"})
+As we step through the function, Positron's ![](images/positron.png){height=20} **Console** displays the `debug at` location, followed by the code line number: 
 
-:::{layout="[50, 50]" layout-valign="top"}
+![Click to enlarge full path and line number to the file containing our call to `browser()`](images/debug_explore_positron_step.png){width='100%' fig-align='center'}
 
-![](images/debug_explore_positron_step.png){width='100%' fig-align='center'}
+In the **Editor**, the same line of code is [highlighted in yellow]{style="background-color: #FAFFC1; font-weight: bold;"}:
 
-![](images/debug_explore_positron_highlight_b4_exec.png){width='100%' fig-align='center'}
+![Click to enlarge corresponding line number in **Editor**](images/debug_explore_positron_highlight_next_exec.png){width='100%' fig-align='center'}
+
+The line creating `graph_data` gives us a hint for how the missing data are removed (i.e., with `bindEvent()`), but we'll explore this more in [Print debugging](debug_print.qmd).
+
+![The [gray highlighted]{style="background-color: #E6E6E6; font-weight: bold;"} area tells us what will be evaluated next if we enter **`n`** in the **Console** (click to enlarge)](images/debug_explore_positron_reactives.png){width='100%' fig-align='center'}
+
+Under *Locals* in the **DEBUG VARIABLES** sidebar, we can see `all_data` is listed as a `<data.frame>`, and `graph_data` are listed as a `<reactive.event>`:
+
+![Click to enlarge **DEBUG VARIABLES** in sidebar](images/debug_explore_positron_reactive_event.png){width='80%' fig-align='center'}
 
 
-:::
-
-After entering **`n`** again in the interactive debugger prompt (`Browse[1]>`) we can see the `graph_data` is created in the **DEBUG VARIABLES** sidebar:
-
-![](images/debug_explore_positron_variables.png){width='80%' fig-align='center'}
 
 ### RStudio ![](images/rstudio-icon.png){height=20}
 
+In RStudio's ![](images/rstudio-icon.png){height=20} interactive debugger, the **Source** pane [highlights the next line]{style="background-color: #FFF399; font-weight: bold;"} to be evaluated: 
+
+![Click to enlarge the line of code following the call to `browser()` in the **Source** pane](images/debug_explore_rstudio_source_next.png){width='100%' fig-align='center'}
+
+As we step through the function, the **Source** pane continues [highlighting each section of code]{style="background-color: #FFF399; font-weight: bold;"}. 
+
+![Click to enlarge the creation of the reactive `graph_data`](images/debug_explore_rstudio_source_step.png){width='100%' fig-align='center'}
+
+After the data are loaded and the missing logic is executed, both `all_data` and `graph_data` are visible in the **Environment**: 
+
+![Click to enlarge the `all_data` **Data** and the `graph_data`  **Values** (as a function) in the **Environment**](images/debug_explore_rstudio_env_data_values.png){width='100%' fig-align='center'}
+
+
 ::::
+
+### Inspecting variables
+
+We can use the **Console** to evaluate code while the interactive debugger is running. This comes in handy if we want to check the structure of an object inside a module (like `all_data`).
 
 ::: {layout="[35, 65]" layout-valign="top"}
 
-``` r
-Browse[2]> n
-Browse[2]> n
+```r
 Browse[2]> str(all_data)
 ```
 
-``` sh
+```sh
 'data.frame':	46002 obs. of  8 variables: 
  $ title     : chr  "'Til There Was You" ...
  $ length    : int  113 97 98 98 102 120 ...
@@ -418,115 +553,44 @@ Browse[2]> str(all_data)
     
 :::
 
-This gives us an idea of the total rows before missing are removed. 
+This gives us an idea of the total rows before missing are removed.
 
-### Verfiy missing 
+### Inspecting values 
 
-After loading `all_data`, the module creates a reactive `graph_data()`. We can see `graph_data()` is 'bound' to `input$missing`, so we'll confirm the  `input$missing` value:
-
-![](images/debug_dev_verify_missing_04.png){width='85%' fig-align='center'}
+The reactive values and inputs can also be viewed in the **Console**, and we can see `graph_data()` is 'bound' to `input$missing` with `bindEvent()`. We can confirm the `input$missing` value in the **Console**:
 
 ::: {layout="[35, 65]" layout-valign="top"}
 
-``` r
+```r
 Browse[2]> input$missing
 ```
 
-``` sh
+```sh
 [1] TRUE
 ```
 
 :::
 
-This tells us '*Remove missing*' has been selected, and we can verify the missing values have been removed from `graph_data()`:
+This tells us the '*Remove missing*' checkbox has been selected, and we can verify the missing values have been removed from `graph_data()`:
 
 ::: {layout="[35, 65]" layout-valign="top"}
 
 
-``` r
-Browse[2]> n
-Browse[2]> str(graph_data())
+```r
+Browse[2]> identical(
+              nrow(tidyr::drop_na(all_data)), 
+              nrow(graph_data())
+            )
 ```
 
-``` sh
-'data.frame':	1608 obs. of  8 variables: 
- $ title     : chr  "'Til There Was You" ...
- $ length    : int  113 97 98 98 102 120 ...
- $ year      : int  1997 1999 2002 2004 ...
- $ budget    : int  23000000 16000000 ...
- $ avg_rating: num  4.8 6.7 5.6 6.4 6.1 ...
- $ votes     : int  799 19095 181 7859 ...
- $ mpaa      : Factor w/ 5 levels "G","PG" ...
- $ genre     : Factor w/ 8 levels "Action"...
+```sh
+[1] TRUE
 ```
 
 :::
 
-### Verfiy variable inputs 
-    
-Next we'll confirm the `var_inputs()` list of graph values from our `dev` variable input module:
 
-::: {layout="[35, 65]" layout-valign="top"}
-
-``` r
-Browse[2]> str(var_inputs())
-```
-
-``` sh
-List of 6
- $ x         : chr "year"
- $ y         : chr "budget"
- $ z         : chr "mpaa"
- $ alpha     : num 0.4
- $ size      : num 2.5
- $ plot_title: chr ""
-```
-    
-:::
-
-
-`var_inputs()` is creates the `inputs()` reactive for the graph, so we'll confirm those values, too.
-
-![](images/debug_dev_verify_inputs_04.png){width='85%' fig-align='center'}
-
-::: {layout="[35, 65]" layout-valign="top"}
-
-``` r
-Browse[2]> n
-Browse[2]> str(inputs())
-```
-
-``` sh
-List of 6
- $ x         : chr "year"
- $ y         : chr "budget"
- $ z         : chr "mpaa"
- $ alpha     : num 0.4
- $ size      : num 2.5
- $ plot_title: chr ""
-```
-    
-:::
-
-### Verfiy graph
-
-Now that we have an understanding of the reactive flow inside the app, we'll render the plot: 
-
-::: {layout="[35, 65]" layout-valign="top"}
-
-``` r
-Browse[2]> n
-```
-
-![](images/debug_dev_verify_app_04.png)
-
-:::
-
-Using `browser()` to 'step through' an application gives us a better understanding of the 'order of execution' in our `dev` scatter plot display module, (and it lets us see how `input$missing` and `bindEvent()` are working).
-
-## Print debugging
-
-Capturing reactive values with `reactiveValuesToList()` and sending output to the UI.
+Using `browser()` to 'step through' an application gives us a better understanding of the 'order of execution', and it lets us see how `input$missing` and `bindEvent()` work together to remove the missing values with the checkbox. 
 
 ## Recap {.unnumbered}
 
