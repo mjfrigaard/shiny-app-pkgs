@@ -1,9 +1,4 @@
-# Exploring code {#sec-debug-explore}
-
-<!--
-https://shiny.posit.co/r/articles/improve/debugging/
-https://debruine.github.io/shinyintro/debugging.html
--->
+# Interactive debugging {#sec-debug-funs}
 
 ```{r}
 #| label: _common
@@ -15,28 +10,29 @@ library(lobstr)
 ```
 
 ```{r}
-#| label: co_box_tldr
+#| label: co_box_dev
 #| echo: false
 #| results: asis
 #| eval: true
 co_box(
-  color = "b",
-  look = "default", hsize = "1.10", size = "1.05",
-  header = "TLDR &emsp; Exloring code with debugging",
-  fold = TRUE,
-  contents = "
-
-<br>
-  
-Debugging plays a crucial role in ensuring that our app works as expected *and* integrates seamlessly into the R package structure. 
-
-  "
+  color = "r", 
+  header = "Warning",
+  contents = "The contents for section are under development. Thank you for your patience."
 )
 ```
 
-Debugging Shiny code can be challenging because the reactive model involves dynamic interactions and a non-linear flow of execution between inputs, outputs, and reactive expressions. Shiny bugs can originate from reactive dependencies, execution order (Shiny is inherently asynchronous), hidden states, lazy evaluation, and reactive context/invalidation (i.e., with `isolate()`,`reactive()`, and `observe()`).
+## Debugging methods {#sec-debug-explore-methods}
 
-Understanding the interplay of reactivity, lazy evaluation, asynchronous execution, and hidden states will help us diagnose and resolve bugs in our Shiny app-packages. However, we’ll have to employ specific strategies and tools to handle Shiny bugs effectively, and some of the traditional debugging approaches can fall short in reactive contexts. Below, we’ll cover the two most common methods for debugging R code and how to adapt them for a Shiny application. 
+Debugging allows us to ‘peek inside’ functions, see intermediate values/variables, and break down their execution line-by-line. The two most common methods for debugging R code are:
+
+1. Interactive debugging (i.e., using `browser()` or setting a breakpoint)
+
+2. Print debugging (with `print()` or `cat()`)
+
+However, these methods are not as straightforward to use within reactive contexts. For instance, `browser()` can disrupt the reactive flow, making maintaining an interactive debugging session challenging. Similarly, `print()` and `cat()` can only provide a snapshot of variable values *at the location and time of the print call*, limiting their usefulness in exploring the other parts of the environment or interacting with the running application.
+
+In the following sections, I’ll provide examples of how these methods can be adapted to a Shiny context.
+
 
 :::: {.callout-tip collapse='true' appearance='default'}
 
@@ -88,17 +84,6 @@ get_app(app = "23.1_debug-error")
 
 ::::
 
-## Debugging methods {#sec-debug-explore-methods}
-
-Debugging allows us to ‘peek inside’ functions, see intermediate values/variables, and break down their execution line-by-line. The two most common methods for debugging R code are:
-
-1. Interactive debugging (i.e., using `browser()`)
-
-2. Print debugging (with `print()` or `cat()`)
-
-However, these methods are not as straightforward to use within reactive contexts. For instance, `browser()` can disrupt the reactive flow, making maintaining an interactive debugging session challenging. Similarly, `print()` and `cat()` can only provide a snapshot of variable values *at the location and time of the print call*, limiting their usefulness in exploring the other parts of the environment or interacting with the running application.
-
-In the following sections, I’ll provide examples of how these methods can be adapted to a Shiny context.
 
 ### [`browser()`]{style="font-size: 1.02em; font-weight: bold;"} + [`observe()`]{style="font-size: 1.02em; font-weight: bold;"}
 
@@ -591,6 +576,194 @@ Browse[2]> identical(
 
 
 Using `browser()` to 'step through' an application gives us a better understanding of the 'order of execution', and it lets us see how `input$missing` and `bindEvent()` work together to remove the missing values with the checkbox. 
+
+
+---
+
+
+Let's start by loading the `sap` package and launching the application. 
+
+```{r}
+#| label: hot_key_intro
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key(fun = "L")
+```
+
+```{r}
+#| eval: false 
+#| code-fold: false
+launch_app(test = FALSE)
+```
+
+:::{#fig-debug_movies_app_01}
+
+![Error in `launch_app()`](images/debug_movies_app_01.png){#fig-debug_movies_app_01 width='100%' align='center'}
+
+The Error messages in the UI is not always informative
+:::
+
+The error printed in the UI is not very descriptive, but fortunately the following output is also printed to the **Console**: 
+
+:::{.column-margin}
+
+`ggplot2` has excellent error messages 👌
+
+:::
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+Warning: Error in ggplot2::geom_point: Problem while computing aesthetics.
+ℹ Error occurred in the 1st layer.
+Caused by error in `.data[[NULL]]`:
+! Must subset the data pronoun with a string, not `NULL`.
+```
+
+We can see the error is coming from `ggplot2::geom_point()`, specifically from one of the calls to `.data`. We can safely assume the source of this bug is the `scatter_plot()` utility function. However, we'll proceed as if the message wasn't very helpful or informative.
+
+## Debugging utility functions
+
+```{r}
+#| label: git_box_25.3_debug-scatter_plot
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  fig_pw = '65%', 
+  branch = "25.3_debug-scatter_plot", 
+  repo = 'sap')
+```
+
+If we want to debug the scatter plot output, we need to move our `observe(browser())` functions inside the call to `renderPlot()`:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+output$scatterplot <- renderPlot({
+  observe({ # <1>
+    browser() # <2>
+
+    
+  }) # <1>
+})
+```
+1. Observe scope   
+2. Call to `browser()`   
+
+Load the package and run the application again:
+
+```{r}
+#| label: hot_key_render_plot
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key(fun = "L")
+```
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+ℹ Loading sap
+```
+
+```{r}
+#| eval: false 
+#| code-fold: false
+launch_app(options = list(test.mode = FALSE), run = 'p')
+```
+
+Inside `renderPlot()`, we can progress to the creation of the `plot` object:
+
+::: {layout="[35, 65]" layout-valign="top"}
+
+``` r
+Browse[1]> n
+```
+
+``` sh
+debug at sap/R/mod_scatter_display.R#68: 
+  plot <- scatter_plot(
+    df = movies, 
+    x_var = inputs()$x, 
+    y_var = inputs()$y, 
+    col_var = inputs()$col, 
+    alpha_var = inputs()$alpha, 
+    size_var = inputs()$size)
+```
+
+:::
+
+From here we can step inside the `scatter_plot()` utility function to identify the source of the error:
+
+```{r}
+#| eval: false 
+#| code-fold: false 
+Browse[2]> s
+```
+
+:::{#fig-debug_scatter_plot_03}
+
+![Step into `scatter_plot()`](images/debug_scatter_plot_03.png){#fig-debug_scatter_plot_03 width='100%' align='center'}
+
+Use `s` in the debugger console to 'step into' `scatter_plot()`
+:::
+
+Note the changes in the debugger console when we 'step into' `scatter_plot()`:
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+debugging in: 
+  scatter_plot(df = movies, 
+    x_var = inputs()$x, 
+    y_var = inputs()$y, 
+    col_var = inputs()$col, 
+    alpha_var = inputs()$alpha, 
+    size_var = inputs()$size)
+debug at /sap/R/scatter_plot.R#30: # <1> 
+{   
+    ggplot2::ggplot(data = df, 
+      ggplot2::aes(x = .data[[x_var]], 
+                   y = .data[[y_var]], 
+                   color = .data[[col_var]])) + 
+      ggplot2::geom_point(alpha = alpha_var, 
+                          size = size_var)
+}
+```
+1. Location of debugger in utility function  
+
+After some examination, we can identify the source of the error.
+
+```{r}
+#| eval: false 
+#| code-fold: true
+#| code-summary: 'show/hide source of scatter_plot() bug'
+inputs <- reactive({
+  plot_title <- tools::toTitleCase(var_inputs()$plot_title)
+  list(
+    x = var_inputs()$x,
+    y = var_inputs()$y,
+    col = var_inputs()$z, # <1>
+    alpha = var_inputs()$alpha,
+    size = var_inputs()$size,
+    plot_title = plot_title
+  )
+})
+plot <- scatter_plot(
+  df = movies,
+  x_var = inputs()$x,
+  y_var = inputs()$y,
+  col_var = inputs()$z, # <2>
+  alpha_var = inputs()$alpha,
+  size_var = inputs()$size
+)
+```
+1. Color is assigned as **`col`** in `inputs`   
+2. Color is passed to `scatter_plot()` as **`col_var`**
+
 
 ## Recap {.unnumbered}
 
