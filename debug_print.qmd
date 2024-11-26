@@ -22,8 +22,6 @@ co_box(
 ```
 
 
-
-
 :::: {.callout-tip collapse='true' appearance='default'}
 
 ## [Accessing applications]{style='font-weight: bold; font-size: 1.15em;'}
@@ -59,7 +57,7 @@ Launch the app:
 ```{r}
 #| code-fold: false 
 #| eval: false
-launch(app = "23.1_debug-error")
+launch(app = "11_debug-print")
 ```
 
 Download the app: 
@@ -67,7 +65,7 @@ Download the app:
 ```{r}
 #| code-fold: false 
 #| eval: false
-get_app(app = "23.1_debug-error")
+get_app(app = "11_debug-print")
 ```
 
 ::: 
@@ -75,8 +73,74 @@ get_app(app = "23.1_debug-error")
 ::::
 
 
+In the previous chapter we explored triggering the interactive debugger in Positron ![](images/positron.png){height=20} with `browser()` and `observe()`. In this chapter, we'll explore another commonly used technique for identifying and resolving issues in code: print debugging. 
+
+## Debugging with `print()` {#sec-debug-print}
+
+Print debugging is a different approach than the interactive debugger, and it's suited for a different types of development workflow. Print debugging involves inserting a `print()` (or `cat()`) statement into the body of a function to output variables, values, or other important information at various points.
+
+
+```{=html}
+
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+
+</style>
+```
+
+```{mermaid}
+%%| label: print_statement
+%%| fig-width: 5
+%%| fig-height: 6
+%%| fig-align: center
+%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'Inconsolata'}}}%%
+flowchart TD
+    Start["Function Executes"] --> Print["<code>print()</code> / <code>cat()</code>"]
+    Print --> Issue{"<strong>Output reveals issue?</strong>"}
+    Issue -- Yes --> Mod[Modify Function]
+    Mod --> Start
+    Issue -- No --> Start
+
+style Start fill:#E5E6EB,stroke:none,rx:3,ry:3
+style Print fill:#4CBB9D,stroke:none,rx:3,ry:3
+style Issue fill:#FF7F00,stroke:#FF7F00,stroke-width:5px,color:#FFFFFF
+style Mod fill:#4CB7DB,stroke:#4CB7DB,rx:10,ry:10
+```
+
+<!--
+style ExitBrowser fill:#4CB7DB,stroke:none,rx:3,ry:3
+style Obs fill:#FFFFFF,stroke:#4CBB9D,stroke-width:3px,rx:10,ry:10
+style ExitObserver fill:#FFFFFF,stroke:#4CBB9D,stroke-width:3px,rx:10,ry:10
+-->
+
+<br>
+
+Using well-placed calls to `print()` or `cat()` allows us to display variable values, which helps us to understand the inner-workings of the function. After running the function, we can view the output in the **Console** (or log file).
+
+### Reactive printing 
+
+`print()` and `cat()` can only provide a snapshot of values or variables *at the location and time of the print call*, limiting their usefulness in exploring the other parts of the environment or interacting with the running application. 
+
+In Shiny apps, a powerful tool for capturing and printing input values is `reactiveValuesToList()`. 
+
 ```{r}
-#| label: git_box_25.4_debug-print
+#| code-fold: false
+#| eval: false
+reactiveValuesToList(x = , all.names = )
+```
+
+If we combine `reactiveValuesToList()` with `verbatimTextOutput()`, and `renderPrint()`, we can convert Shiny reactive values (i.e., user inputs) into a list that can be printed and displayed back in the UI.
+
+```{r}
+#| label: git_box_11_debug-print
 #| echo: false
 #| results: asis
 #| eval: true
@@ -86,3 +150,25 @@ git_margin_box(
   branch = "25.4_debug-print", 
   repo = 'sap')
 ```
+
+Advantages:
+
+- Simplicity: It’s very easy to implement. Just insert a few lines of code and run the program.
+
+- Universal: Works in any programming environment, even if sophisticated debugging tools aren’t available.
+
+- Non-intrusive: It doesn’t require special configurations or debugging tools.
+  
+Disadvantages:
+
+- Limited context: You only see what you explicitly print. If you miss a key variable or condition, you may need to add more print statements.
+
+- Manual effort: It can be time-consuming to insert, remove, and adjust print statements, especially in large or complex codebases.
+
+- Clutter: Excessive use of print statements can clutter the code and output.
+
+- No runtime control: You can’t pause execution or inspect the program state in real-time.
+
+## Recap 
+
+If we want to see what's happening 'behind the scenes', we can collect the reactive values and print them in the UI while the app is running.
