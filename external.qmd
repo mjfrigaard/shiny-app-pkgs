@@ -45,11 +45,11 @@ img(src = 'www/shiny.png')
 
 In this chapter we'll cover how to add external resources (i.e., files previously stored and served from the `www/` folder) to your app-package, and the many uses of the `inst/` folder in an R package.
 
-:::: {.callout-tip collapse='true' appearance='deafult'}
+:::{.callout-tip collapse='true' appearance='deafult'}
 
 ## [Accessing applications]{style='font-weight: bold; font-size: 1.15em;'}
 
-::: {style='font-size: 0.95em; color: #282b2d;'}
+:::{style='font-size: 0.95em; color: #282b2d;'}
 
 I've created the [`shinypak` R package](https://mjfrigaard.github.io/shinypak/) In an effort to make each section accessible and easy to follow:
   
@@ -91,11 +91,19 @@ Download an app with `get_app()`
 get_app(app = "09.1_inst-www")
 ```
 
-::: 
+:::
 
-::::
+:::
 
 ## [`inst/www`]{style="font-size: 0.95em; font-weight: bold;"} {#sec-external-add-resources}
+
+When we launch our app, we see the `shiny.png` logo in `www/` is not being loaded into the UI when the application is displayed: 
+
+```{r}
+#| eval: false
+#| code-fold: false
+launch_app(run = 'p')
+```
 
 ```{r}
 #| label: git_launch_09.1_inst-www
@@ -107,19 +115,11 @@ git_margin_box(
   branch = "09.1_inst-wwww")
 ```
 
-When we launch our app, we see the `shiny.png` logo in `www/` is not being loaded into the UI when the application is displayed: 
-
-```{r}
-#| eval: false
-#| code-fold: false
-launch_app(run = 'p')
-```
-
-:::: {.column-body-outset-right}
+:::{.column-body-outset-right}
 
 ![`www/shiny.png` is not accessible when we launch the app](images/external_initial_launch_app.png){width='100%' fig-align='center'}
 
-::::
+:::
 
 Serving the contents of `www` was previously being handled automatically by Shiny's internal functions, but now that we've converted our application into a package, we'll need to explicitly tell the application where to find these resources.[^external-common-problem]
 
@@ -129,7 +129,7 @@ Serving the contents of `www` was previously being handled automatically by Shin
 
 While developing, we get used to accessing and interacting with our package files from the **Files** pane or **Explorer** window:
 
-::: {.panel-tabset}
+:::{.panel-tabset}
 
 ### RStudio ![](images/rstudio-icon.png){height=20}
 
@@ -141,93 +141,15 @@ While developing, we get used to accessing and interacting with our package file
 
 :::
 
-However, these aren't the files that get bundled into an R package. But we can follow the path in that is displayed when we install our package to view our *installed* package files:
-
-::: {.panel-tabset}
-
-### RStudio ![](images/rstudio-icon.png){height=20}
-
-The **Build** pane when we install our package (or use [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>B</kbd>]{style="font-weight: bold; font-size: 0.80em"}) to view the *installed* package files:
-
-```{verbatim}
-==> R CMD INSTALL --preclean --no-multiarch --with-keep.source sap
-
-* installing to library ‘/Users/username/Library/R/x86_64/4.4/library’ # <1>
-* installing *source* package ‘sap’ ...
-** using staged installation
-** R
-** data
-*** moving datasets to lazyload DB
-** inst
-** byte-compile and prepare package for lazy loading
-** help
-*** installing help indices
-** building package indices
-** testing if installed package can be loaded from temporary location
-** testing if installed package can be loaded from final location
-** testing if installed package keeps a record of temporary installation path
-* DONE 
-```
-1. This is the location of the installed version of `sap` 
-
-### Positron ![](images/positron.png){height=20}
-
-```{verbatim}
- *  Executing task: /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/bin/R -e 'pak::local_install(upgrade = FALSE)' 
-
-
-R version 4.4.0 (2024-04-24) -- "Puppy Cup" # <1>
-Copyright (C) 2024 The R Foundation for Statistical Computing
-Platform: x86_64-apple-darwin20
-
-R is free software and comes with ABSOLUTELY NO WARRANTY.
-You are welcome to redistribute it under certain conditions.
-Type 'license()' or 'licence()' for distribution details.
-
-  Natural language support but running in an English locale
-
-R is a collaborative project with many contributors.
-Type 'contributors()' for more information and
-'citation()' on how to cite R or R packages in publications.
-
-Type 'demo()' for some demos, 'help()' for on-line help, or
-'help.start()' for an HTML browser interface to help.
-Type 'q()' to quit R. # <1>
-
-> pak::local_install(upgrade = FALSE)
-✔ Updated metadata database: 7.52 MB in 17 files. # <2>
-✔ Updating metadata database ... done # <2>
- 
-→ Will update 1 package.
-→ Will download 1 package with unknown size.
-+ sap 0.0.0.9000 → 0.0.0.9000 👷🏿‍♀️ ⬇
-ℹ Getting 1 pkg with unknown size
-✔ Got sap 0.0.0.9000 (source) (96 B)
-ℹ Packaging sap 0.0.0.9000
-✔ Packaged sap 0.0.0.9000 (17.4s)
-ℹ Building sap 0.0.0.9000
-✔ Built sap 0.0.0.9000 (2.4s)
-✔ Installed sap 0.0.0.9000 (local) (83ms)
-✔ 1 pkg + 61 deps: kept 60, upd 1, dld 1 (NA B) [51.2s]
-> 
-> 
- *  Terminal will be reused by tasks, press any key to close it. # <3>
-```
-1. A new R session is started when we use  [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>B</kbd>]{style="font-weight: bold; font-size: 0.80em"}  
-2. Uses local cache for updating package  
-3. Terminal remains open for future builds  
-
-:::
+However, these aren't the files that get bundled into an R package. But we can use  `fs::path_package()` and `fs::dir_tree()` to print a folder tree of our *installed* package files:
 
 [**Our _installed_ package files**]{style="font-size: 1.30em;"}
 
-Below are folder trees for our *source* package and our *installed* package:[^path-package]
+Below are folder trees for our *source* package and our *installed* package:
 
-[^path-package]: `fs::path_package(package = "sap")` returns the path to your installed package and `fs::dir_tree()` function will print a folder tree. 
+::: {layout="[50, 50]"}
 
-:::: {layout="[50, 50]"}
-
-:::{style="font-size: 0.90em;"} 
+::: {style="font-size: 0.90em;"} 
 
 ```{verbatim}
 # source
@@ -266,15 +188,15 @@ sap/
 └── www
     └── shiny.png
 ```
-1. Files/folders in *both* source and installed versions
-2. Files/folders in *both* source and installed versions
-3. Files/folders in *both* source and installed versions
-4. Files/folders in *both* source and installed versions
-5. Files/folders in *both* source and installed versions
+1. `DESCRIPTION` is in *both* source and installed versions
+2. `NAMESPACE` is in *both* source and installed versions
+3. The `R/` folder is in *both* source and installed versions
+4. The `data/` folder is in *both* source and installed versions
+5. The `extdata/` folder is in *both* source and installed versions
 
 :::
 
-:::{style="font-size: 0.90em;"} 
+::: {style="font-size: 0.90em;"} 
 
 ```{verbatim}
 sap/
@@ -309,22 +231,21 @@ sap/
     ├── 00Index.html
     └── R.css
 ```
-1. Files/folders in *both* source and installed versions
-2. Files/folders in *both* source and installed versions
-3. Files/folders in *both* source and installed versions
-4. Files/folders in *both* source and installed versions
-5. Files/folders in *both* source and installed versions
-
+1. `DESCRIPTION` is in *both* source and installed versions
+2. `NAMESPACE` is in *both* source and installed versions
+3. The `R/` folder is in *both* source and installed versions
+4. The `data/` folder is in *both* source and installed versions
+5. The `extdata/` folder is in *both* source and installed versions
 
 :::
 
-::::
+:::
 
 The installed version of our package includes some of the same 'source' folders and files we've been working with (i.e., the `R/` and `data/` folders, and the `NAMESPACE` and `DESCRIPTION`), but there are also some new files aren't included in the installed version (i.e., the `.R` and `.Rd` files, the `man/` folder, etc.). 
 
 ### [`system.file()`]{style="font-size: 0.95em;"} {#sec-external-system-file}
 
-Hopefully seeing the contents of an installed package demystifies what happens when we run `devtools::install()`. When we want to add non-R package files to our app (like our `shiny.png` logo), we store these files in the `inst/` folder and access them with `system.file()`.[^inst-r-pkgs] 
+Hopefully seeing the contents of an installed package demystifies what happens when we run `devtools::install()`. When we want to add non-R package files to our app (like the `shiny.png` logo), we store these files in the `inst/` folder and access them with `system.file()`.[^inst-r-pkgs] 
 
 [^inst-r-pkgs]: Read more about sub-directories to avoid in `inst/` in [R Packages, 2ed](https://r-pkgs.org/misc.html#sec-misc-inst).
 
@@ -341,7 +262,7 @@ fst::read_fst(
   )
 ```
 
-As we can see, the `movies.fst` has two locations: the 'source' package location, and the 'installed' location.
+In essence, `movies.fst` has two locations: the 'source' package location, and the 'installed' location.
 
 :::{layout="[45,55]" layout-valign="top"}
 
@@ -375,7 +296,7 @@ The `addResourcePath()` function will add a "*directory of static resources to S
 
 [^add-resource-path-4]: You can read more about adding external resources in the [documentation for `addResourcePath()`](https://shiny.posit.co/r/reference/shiny/latest/resourcepaths).
 
-::: {layout="[10,-1, 10]" layout-valign="top"}
+:::{layout="[10,-1, 10]" layout-valign="top"}
 
 #### [Current `www` location]{style="font-size: 0.95em;"} {.unnumbered}
 
@@ -403,7 +324,8 @@ In `R/movies_ui.R`, we'll include the `addResourcePath()` at the top of the `tag
 
 ```{r}
 #| eval: false 
-#| code-fold: false
+#| code-fold: show 
+#| code-summary: 'show/hide movies_ui()'
 movies_ui <- function() {
   addResourcePath(
     prefix = 'www', # <1> 
@@ -456,16 +378,14 @@ launch_app(run = 'p')
 ```
 
 
-:::: {.column-body-outset-right}
+:::{.column-body-outset-right}
 
 ![`inst/www` accessible with `addResourcePath()`](images/external_www_launch_app.png){width='100%' fig-align='center'}
 
-::::
+:::
 
 
-The `inst/` folder is versatile tool that we can use to store a variety of files we need in our application (logos or images, CSS styling, JavaScript functions, HTML, etc). W.
-
-For example, we can use `inst/` to store alternate image files and configure the UI to display a different layout. This method ensures our app has the exact same functionality, but a different UI layout.[^layouts-git] 
+The `inst/` folder is versatile tool that we can use to store a variety of files we need in our application (logos or images, CSS styling, JavaScript functions, HTML, etc). For example, we can use `inst/` to store alternate image files and configure the UI to display a different layout. This method ensures our app has the exact same functionality, but a different UI layout.[^layouts-git] 
 
 [^layouts-git]: As the development of your application progresses, you can (and should) keep different versions of your application in separate Git branches. But I've also found using the `inst/` folder for those early stages of developing is helpful. 
 
@@ -558,8 +478,8 @@ The updated `movies_ui()` function below has an optional [`bslib`](https://rstud
 
 ```{r}
 #| eval: false 
-#| code-fold: show 
-#| code-summary: 'show/hide movies_ui()'
+#| code-fold: true 
+#| code-summary: 'show/hide updated movies_ui()'
 movies_ui <- function(bslib = FALSE) {
   addResourcePath( # <1>
     prefix = 'www', 
@@ -651,7 +571,7 @@ The `bslib` argument toggles between the two UI options. After making the change
 ```{r}
 #| eval: false 
 #| code-fold: show 
-#| code-summary: 'show/hide launch_app()'
+#| code-summary: 'show/hide updated launch_app()'
 launch_app <- function(options = list(), run = "p", ...) {
   if (interactive()) {
     display_type(run = run)
@@ -682,7 +602,7 @@ This alternate version of `launch_app()` uses the same modules and utility funct
 launch_app(run = 'p', bslib = TRUE)
 ```
 
-::: {.column-body-outset-right}
+:::{.column-body-outset-right}
 
 ![`inst/www/bootstrap.png` image from `movies_ui()`](images/external_bslib_launch_app.png){#fig-external_bslib_launch_app width='100%' fig-align='center'}
 
@@ -864,13 +784,25 @@ ggp2_launch_app(run = 'p')
 ```
 
 
-::: {.column-body-outset-right}
+:::{.column-body-outset-right}
 
 ![`inst/tidy-movies/` app with `dev_movies_ui()`](images/external_ggp2_launch_app.png){width='100%' fig-align='center'}
 
 :::
 
-I've been using different colors and themes for alternative applications above. This can be a quick and easy way to differentiate the versions of your application.
+```{r}
+#| label: co_box_themes_colors
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g", 
+  look = "default", hsize = "1.10", size = "1.05",
+  header = "Using colors and themes",
+  contents = "Using different colors and themes for alternative applications can be a quick and easy way to differentiate the versions of your application.")
+```
+
+
 
 ## [`inst/quarto`]{style="font-size: 0.95em; font-weight: bold;"} {#sec-external-inst-quarto}
 
@@ -931,11 +863,25 @@ Note the `context: setup` chunk includes options and themes (I'm using the [`the
 
 ### [`panel`]{style="font-size: 0.95em; font-weight: bold;"}
 
-The variable input and display modules can be placed in code chunks in the `index.qmd` file: 
+Using `page-layout: full` in the YAML header lets us use a variety of `panel` options for each code chunk. For example, we'll place the variable input module in a code chunk with the `input` option, the display module with the `center` option, and the data/Quarto attribution in the `fill` option.[^page-layout]
+
+[^page-layout]: Read more about `page-layout` in the [Quarto documentation]https://quarto.org/docs/output-formats/page-layout.html#page-layout  
+
+{{< include _quarto_panel.qmd >}}
 
 ### [`context: server`]{style="font-size: 0.95em; font-weight: bold;"}
 
-::: {.column-body-outset-right}
+The code chunks with the `setup` and `panel` options will execute when the document is rendered. The `server` code chunk will execute when the document is served (not when it is rendered).
+
+{{< include _quarto_server.qmd >}}
+
+The chunks are run in separate R sessions, meaning we cannot access variables created in the first chunk within the second and vice versa (similar to to the `movies_ui()`, and `movies_server.R()`).
+
+To render our Quarto Shiny app, we can use the Run Document button or run: 
+
+
+
+:::{.column-body-outset-right}
 
 ![Movies Quarto Shiny App](images/external_quarto_app.png){width='100%' fig-align='center'}
 
