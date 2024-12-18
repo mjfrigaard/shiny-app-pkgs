@@ -55,52 +55,35 @@ co_box(
 
 During development, we have a variety of options for launching applications. Both RStudio ![](images/rstudio-icon.png){height=20} and Positron ![](images/positron.png){height=20} offer a single-click button to run our application the top of the **Source** pane/**Editor**. We can also launch the app by calling the standalone app function in the **Console**. Below we'll cover what happens behind the scenes when we click on these icons.
 
-:::: {.callout-tip collapse='true' appearance='default'}
-
-## [Accessing the code examples]{style='font-weight: bold; font-size: 1.15em;'}
-
-::: {style='font-size: 0.95em; color: #282b2d;'}
-
-I've created the [`shinypak` R package](https://mjfrigaard.github.io/shinypak/) In an effort to make each section accessible and easy to follow:
-  
-Install `shinypak` using `pak` (or `remotes`):
-
 ```{r}
-#| code-fold: false 
-#| message: false
-#| warning: false
-#| eval: false
-# install.packages('pak')
-pak::pak('mjfrigaard/shinypak')
+#| label: shinypak_apps
+#| echo: false
+#| results: asis
+#| eval: true
+shinypak_apps(regex = "08", branch = "08_launch-app")
 ```
 
-Review the chapters in each section:
-  
-```{r}
-#| code-fold: false 
-#| message: false
-#| warning: false
-#| collapse: true
-library(shinypak)
-list_apps(regex = '^08')
-```
 
-Launch an app: 
-
-```{r}
-#| code-fold: false 
-#| eval: false
-launch(app = "08_launch-app")
-```
-
-::: 
-
-::::
-
-
-## 'Running' apps
+## Running apps
 
 In the current branch of `sap`, the `app.R` file contains a call to `launch_app()`, which loads the package and passes the UI and server functions to `shinyApp()`.
+
+```{r}
+#| label: co_box_terminology
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b", 
+  look = "default", 
+  fold = FALSE,
+  hsize = "1.10", 
+  size = "1.05", 
+  header = "'Launch' vs. 'Run'",
+  contents = "
+I'll be using the term 'launch' to differentiate successfully displaying the application locally (either in the IDE window, viewer pane, or browser) from clicking on the **Run App**/**Run Shiny App** button or calling the `runApp()` function."
+)
+```
 
 ```{r}
 #| label: git_margin_box_06.2_pkg-imports
@@ -130,6 +113,10 @@ As we can see in the image below, this places the **Run App** icon in RStudio's 
 
 Clicking on either **Run App**/**Run Shiny App** buttons calls `runApp()` and launches our application, but with a `loadSupport()` warning. 
 
+The section below will cover the `loadSupport()` warning and why it appears when using the **Run App**/**Run Shiny App** buttons in RStudio ![](images/rstudio-icon.png){height=20} and Positron ![](images/positron.png){height=20}.
+
+### [`loadSupport()`]{style="font-size: 0.95em; font-weight: bold;"} warnings
+
 ```{r}
 #| label: co_box_load_support_warn
 #| echo: false
@@ -140,7 +127,7 @@ co_box(
   look = "default", 
   hsize = "1.10", 
   size = "1.05", 
-  fold = TRUE,
+  fold = FALSE,
   header = "loadSupport() warning",
   contents = "
 <br>
@@ -153,30 +140,6 @@ The warning in the **Console** is telling us `loadSupport()` has detected that `
 
 ")
 ```
-
-The section below will cover the `loadSupport()` warning and why it appears when using the **Run App**/**Run Shiny App** buttons in RStudio ![](images/rstudio-icon.png){height=20} and Positron ![](images/positron.png){height=20}.
-
-### [`loadSupport()`]{style="font-size: 0.95em; font-weight: bold;"} warnings
-
-```{r}
-#| label: co_box_terminology
-#| echo: false
-#| results: asis
-#| eval: true
-co_box(
-  color = "b", 
-  look = "default", 
-  fold = FALSE,
-  hsize = "1.10", 
-  size = "1.05", 
-  header = "'Launch' vs. 'Run'",
-  contents = "
-I'll be using the term 'launch' to differentiate successfully displaying the application locally (either in the IDE window, viewer pane, or browser) from clicking on the **Run App**/**Run Shiny App** button or calling the `runApp()` function."
-)
-```
-
-
-
 
 
 ::: {.panel-tabset}
@@ -254,6 +217,7 @@ As we saw above, clicking **Run Shiny App** in Positron ![](images/positron.png)
 
 ```{r}
 #| eval: false 
+#| code-fold: true
 #| code-summary: "show/hide Positron's runShinyApp.R script"
 usage <- "Usage: Rscript runShinyApp.R <path> <port> [--devmode]"
 
@@ -288,7 +252,7 @@ Shiny `devmode` will display *something like* the following messages the first t
 
 ```{bash}
 #| eval: false 
-#| code-fold: show 
+#| code-fold: true 
 #| code-summary: 'show/hide devmode options'
 shiny devmode - Using full shiny javascript file. To use the minified version, call `options(shiny.minified = TRUE)`
 This message is displayed once every 8 hours.
@@ -493,9 +457,9 @@ runApp(
 
 [^shiny-app-launchers]: It's worthwhile to read the documentation on  [`shinyApp()`, `shinyAppDir()`](https://shiny.posit.co/r/reference/shiny/0.14/shinyapp), and [`runApp()`](https://shiny.posit.co/r/reference/shiny/1.7.4/runapp).
 
-## Standalone app function 
+## Standalone function 
 
-We'll name our standalone app function `launch_app()` and include the options covered below:
+I tend to name the standalone app function `launch_app()` and include the options covered below (none of these are required, though).
 
 ```{r}
 #| label: git_box_08_launch-app
@@ -509,40 +473,15 @@ git_margin_box(
   repo = 'sap')
 ```
 
-### [`interactive()`]{style="font-size: 0.90em; font-weight: bold;"} 
+### App launching options 
 
-The first function option we'll include is a check to see if there is a "*[human operator to interact with](https://stat.ethz.ch/R-manual/R-devel/library/base/help/interactive.html)*" with `base::interactive()`:
-
-```{r}
-#| eval: false 
-#| code-fold: false
-if (interactive()) {
-  
-} else {
-   
-}
-```
-
-You have probably seen control flow like this in `shiny` help file examples (like `flowLayout()` below):
-
-:::{#fig-launch_if_interactive_examples}
-
-![`if (interactive())` in `flowLayout()` example](images/launch_if_interactive_examples.png){#fig-launch_if_interactive_examples width=100%}
-
-Running examples 'interactively' let's us see the app demo beneath the code
-:::
-
-Adding `if` and `interactive()` will allow our standalone app function to distinguish between 1) launching the app from a RStudio/Positron session (i.e., during development) and 2) deploying the application (i.e., like publishing the application on Posit Connect).
-
-### [`options`]{style="font-size: 0.90em; font-weight: bold;"} 
-
-An `options` argument can be passed to `shinyApp()` or `shinyAppDir()`. For example, one of the Shiny options we could include in our standalone app function is `test.mode`:
+`shinyApp()` or `shinyAppDir()` both have an `options` argument, so we should make this available in `launch_app()`. For example, one of the Shiny options we could include in our standalone app function is `test.mode`:
 
 > '*Should the application be launched in test mode? This is only used for recording or running automated tests. Defaults to the `shiny.testmode` option, or `FALSE` if the option is not set.*'
 
-`test.mode` lets us [export values from our application]((https://shiny.posit.co/r/reference/shiny/1.0.2/exporttestvalues)) when we're running tests (which we'll cover in-depth in the [Tests](@sec-tests) section). 
+The `test.mode` option lets us [export values from our application]((https://shiny.posit.co/r/reference/shiny/1.0.2/exporttestvalues)) when we're running tests (which we'll cover in-depth in the [Tests](@sec-tests) section). 
 
-We'll make `options` an argument (defaulting to an empty `list()`) in our updated  `launch_app()` function.
+We'll make `options` an argument that defaults to an empty `list()` in `launch_app()`:
 
 ```{r}
 #| eval: false 
@@ -559,7 +498,7 @@ launch_app <- function(options = list()) {
 2. Include `options` list   
 
 
-### [`shiny.launch.browser`]{style="font-size: 0.90em; font-weight: bold;"} 
+### Where to launch? 
 
 I've written a `display_type()` helper function to 1) check if the application is being run in RStudio and, if so, 2) control where the Shiny app is launched. The `run` argument in `display_type()` takes the following options: 
 
@@ -586,24 +525,31 @@ The option to access configuration is `shiny.launch.browser`:[^launch-shiny.laun
 #' @export
 #'
 display_type <- function(run = "w") {
-  if (Sys.getenv("RSTUDIO") == "1") { #<1>
-    switch(run, #<2>
-      p = options(shiny.launch.browser = .rs.invokeShinyPaneViewer),
-      b = options(shiny.launch.browser = .rs.invokeShinyWindowExternal),
-      w = options(shiny.launch.browser = .rs.invokeShinyWindowViewer),
-      NULL = options(shiny.launch.browser = NULL))#<2>
-    environment <- "RStudio"
-    shinyViewerType <- getOption('shiny.launch.browser') |> 
-                        attributes() |> 
-                        unlist() |> 
-                        unname()
-                      
-    cli::cli_alert_info("App running in {environment}")#<3>
-    cli::cli_alert_info("shinyViewerType set to {shinyViewerType}")#<4>
+  if (interactive()) {
+    if (Sys.getenv("RSTUDIO") == "1") { #<1>
+      
+      switch( #<2>
+        run,
+        p = options(shiny.launch.browser = .rs.invokeShinyPaneViewer),
+        b = options(shiny.launch.browser = .rs.invokeShinyWindowExternal),
+        w = options(shiny.launch.browser = .rs.invokeShinyWindowViewer),
+        NULL = options(shiny.launch.browser = NULL)
+      ) #<2>
+      environment <- "RStudio"
+      shinyViewerType <- getOption('shiny.launch.browser') |>
+        attributes() |>
+        unlist() |>
+        unname()
+      
+      cli::cli_alert_info("App running in {environment}") #<3>
+      cli::cli_alert_info("shinyViewerType set to {shinyViewerType}") #<4>
+    } else {
+      environment <- "RStudio"
+      cli::cli_alert_info("App not running in {environment}")
+    }
   } else {
-    environment <- "RStudio"
-    cli::cli_alert_info("App not running in {environment}")
-  } 
+    cli::cli_alert_info("App not running in interactive session")
+  }
 }
 ```
 1. Detect IDE 
@@ -627,26 +573,24 @@ The `cli` package is imported as part the `devtools`/`usethis` workflow but we w
 )
 ```
 
-### Updates to [`launch_app()`]{style="font-size: 0.90em"} {#sec-launch-standalone-app-function}
+### An updated [`launch_app()`]{style="font-size: 0.90em"} {#sec-launch-standalone-app-function}
 
-The `interactive()` check, `display_type()`, and `test.mode` options have been added to `launch_app()`:
+The `display_type()` and `options` list have been added to `launch_app()`:
 
 ```{r}
 #| eval: false 
 #| code-fold: false
-launch_app <- function(options = list(), run = "w") {
-  if (interactive()) { # <1>
-    display_type(run = run) # <2>
-  }
-    shinyApp( # <3>
+launch_app <- function(options = list(), run = "p") {
+    display_type(run = run) # <1>
+    shinyApp( 
       ui = movies_ui(),
       server = movies_server,
-      options = options
+      options = options # <2>
     ) # <3>
 }
 ```
-1. Check if interactive (Workbench) launch  
-2. Set `shinyViewerType` option with `display_type()`     
+1. Set `shinyViewerType` option with `display_type()`  
+2. Pass options  
 3. Launch app     
 
 After loading, documenting, and installing our package, we can see the documentation for our updated `launch_app()` function in RStudio ![](images/rstudio-icon.png){height=20} and Positron ![](images/positron.png){height=20}: 
@@ -659,17 +603,12 @@ After loading, documenting, and installing our package, we can see the documenta
 hot_key("all")
 ```
 
-:::{#fig-standalone}
-
 :::{layout="[40,60]" layout-valign="top"}
 
-![](images/launch_standalone_rstudio.png){#fig-standalone width='100%'}
+![Standalone app function in RStudio](images/launch_standalone_rstudio.png){width='100%'}
 
-![](images/launch_standalone_positron.png){width='100%'}
+![Standalone app function in Positron](images/launch_standalone_positron.png){width='100%'}
 
-:::
-
-Standalone app function in Positron and RStudio
 :::
 
 In RStudio ![](images/rstudio-icon.png){height=20}, we will confirm the app is launching without the `loadSupport()` warning, the message is printing to the **Console** from the `run` argument, and `test.mode` are implemented correctly.
@@ -694,19 +633,39 @@ We also want to confirm `launch_app()` works in Positron ![](images/positron.png
 
 When we're confident our standalone app function is working, we'll write the `app.R` file. 
 
-## The [`app.R`]{style="font-size: 0.95em"} file {#sec-launch-app-dot-r}
+## The [`app.R`]{style="font-size: 1.10em; font-weight: bold;"} file {#sec-launch-app-dot-r}
 
 The `app.R` file should contain any options or settings that we would use during development. There are multiple ways to launch an application from `app.R`, so I encourage you to explore the options below to find a method that works for your workflow/environment.  
 
-### Non-interactive sessions
+### Is this an interactive session?
 
-[What if the session isn't interactive?]{style="font-style: italic; color: #696969; "}
+The first condition we'll check to see if there is a "*[human operator to interact with](https://stat.ethz.ch/R-manual/R-devel/library/base/help/interactive.html)*" with `base::interactive()`:
 
-In this case, we'll divert all regular output to the standard error stream.
+```{r}
+#| eval: false 
+#| code-fold: false
+if (!interactive()) {
+  
+} else {
+   
+}
+```
 
-#### [`stderr()`]{style="font-size: 0.90em; font-weight: bold;"} 
+You have probably seen control flow like this in `shiny` help file examples (like `flowLayout()` below):
 
-The `sink()` function *"diverts R output to a connection"*, so the code below sends the output that would normally print to the console to the where error messages are written.
+:::{#fig-launch_if_interactive_examples}
+
+![`if (interactive())` in `flowLayout()` example](images/launch_if_interactive_examples.png){#fig-launch_if_interactive_examples width=100%}
+
+Running examples 'interactively' let's us see the app demo beneath the code
+
+:::
+
+Adding `if` and `interactive()` will allow our `app.R` file distinguish between 1) launching apps from a RStudio/Positron session (i.e., during development) and 2) deploying apps (i.e., like publishing the application on Posit Connect).
+
+#### Non-interactive sessions
+
+If the session is non-interactive, we'll divert all regular output to the standard error stream. The `sink()` function *"diverts R output to a connection"*, so the code below sends the output that would normally print to the console to the where error messages are written.
 
 ```{r}
 #| eval: false 
@@ -720,8 +679,6 @@ if (!interactive()) {
 
 
 This is useful in a non-interactive settings if we want to re-direct the error output for the console text-mode connection.
-
-#### [`tryCatch()`]{style="font-size: 0.90em; font-weight: bold;"} 
 
 `tryCatch()` is used for 'catching conditions' during the execution of an expression (`expr = `):
 
@@ -746,28 +703,31 @@ In this case, if `library(sap)` throws an error, the function specified after `e
 
 Written this way, in a non-interactive R session, `app.R` will re-direct the error output and attempt to load and attach `sap`, and if this fails, `app.R` will attempt to load all the files in the `R/` folder. 
 
-### Interactive sessions
+#### Interactive sessions
 
-If the session ***is*** interactive (i.e., `!interactive() == FALSE`), we want `app.R` to load all the code in the `R/` folder with `pkgload::load_all()`.
-
-#### [`pkgload`]{style="font-size: 0.90em; font-weight: bold;"} 
-
-`pkgload::load_all()` is the function that's actually called when we run `devtools::load_all()` (or use [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd>]{style="font-weight: bold; font-size: 0.75em"}), and this is somewhat analogous to running `library(sap)`
+If the session ***is*** interactive, we want `app.R` to load all the code in the `R/` folder with `pkgload::load_all()` before launching our app with `launch_app()` (and a few optional arguments).
 
 ```{r}
 #| eval: false 
 #| code-fold: false
 if (!interactive()) {
-   sink(stderr(), type = "output")
-   tryCatch(expr = {
+  sink(stderr(), type = "output")
+  tryCatch(
+    expr = {
       library(sap)
-   }, error = function(e) {
+    },
+    error = function(e) {
       pkgload::load_all()
-   })
+    }
+  )
 } else {
-   pkgload::load_all()
+  pkgload::load_all()
 }
+  sap::launch_app(
+    options = list(test.mode = TRUE), run = 'p')
 ```
+
+`pkgload::load_all()` is the function that's called when we run `devtools::load_all()` (or use [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd>]{style="font-weight: bold; font-size: 0.75em"}), and this is somewhat analogous to running `library(sap)`
 
 ```{r}
 #| label: co_box_pkgload
@@ -785,25 +745,9 @@ The `pkgload` package is imported as part the `devtools`/`usethis` workflow, oth
 )
 ```
 
-#### [`withr`]{style="font-size: 0.90em; font-weight: bold;"} 
+#### Dealing with [`loadSupport()`]{style="font-size: 0.95em; font-weight: bold;"}
 
 The [`withr` package](https://withr.r-lib.org/) is designed to '*run code with safely and temporarily modified global state*', and it comes in handy when launching shiny apps. For example, I want to turn off the `loadSupport()` behavior when launching the app from `app.R`.[^launch-r-folder]
-
-```{r}
-#| label: co_box_withr
-#| echo: false
-#| results: asis
-#| eval: true
-co_box(
-  color = "o", 
-  look = "default", hsize = "1.10", size = "1.05",
-  fold = TRUE,
-  header = "New dependency!",
-  contents = "
-The `withr` package is imported as part the `devtools`/`usethis` workflow, otherwise we'd want to add it the `Imports` field of the `DESCRIPTION` with `usethis::use_package('withr')`.
-  "
-)
-```
 
 
 [^launch-r-folder]: You can read more about the `shiny.autoload.r` option and `loadSupport()` in [this article](https://shiny.posit.co/r/articles/build/app-formats/index.html#the-r-directory)
@@ -813,13 +757,13 @@ We can use `withr::with_options()` to accomplish this using the following `new` 
 1. `new`: a named list of the *new options and their values*  
 2. `code`: the '*Code to execute in the temporary environment*
 
-We'll place the `withr::with_options()` at the top of `app.R` and pass contents of `app.R` into the `code` argument. Just to be sure no options for `shiny.autoload.r` previously exist, we'll also set this option to `NULL` *before* executing the rest of the code.
+We'll place the `withr::with_options()` at the top of `app.R` and pass `shiny.autoload.r = FALSE` to the `new` argument (the contents of our `app.R` are passed into the `code` argument).
 
 ```{r}
 #| eval: false 
 #| code-fold: false
 withr::with_options(new = list(shiny.autoload.r = FALSE), code = { # <1> 
-  if (!interactive()) { # <2> 
+  if (!interactive()) { # <2>
     sink(stderr(), type = "output")
     tryCatch(
       expr = {
@@ -829,12 +773,12 @@ withr::with_options(new = list(shiny.autoload.r = FALSE), code = { # <1>
         pkgload::load_all()
       }
     ) # <2>
-  } else { # <3> 
+  } else { # <3>
     pkgload::load_all()
-  } # <3> 
+  } # <3>
     sap::launch_app( # <4>
-      options = list(test.mode = TRUE), run = 'p')
-})
+      options = list(test.mode = TRUE), run = 'p') # <4>
+}) 
 
 ```
 1. Turn off `loadSupport()`  
@@ -852,7 +796,21 @@ Now that we've updated the `app.R` to account for the app-package structure, we'
 hot_key("all")
 ```
 
-
+```{r}
+#| label: co_box_withr
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "o", 
+  look = "default", hsize = "1.10", size = "1.05",
+  fold = TRUE,
+  header = "New dependency!",
+  contents = "
+The `withr` package is imported as part the `devtools`/`usethis` workflow, otherwise we'd want to add it the `Imports` field of the `DESCRIPTION` with `usethis::use_package('withr')`.
+  "
+)
+```
 
 ### Updated [`app.R`]{style="font-size: 0.90em"} 
 

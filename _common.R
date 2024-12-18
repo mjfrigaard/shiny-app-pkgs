@@ -3,71 +3,60 @@
 
 options(width = 50L, pillar.width = 50L)
 
-pkg_info <- function(pkg, gt = FALSE) {
-  
-  # read the 'DESCRIPTION' file
-  pkg_description <- readr::read_lines(system.file('DESCRIPTION', package = pkg))
-  
-  # initialize the empty 'info' list to store the results
-  info <- list(Package = NULL, Version = NULL, Title = NULL, Description = NULL)
-  
-  # iterate through each line to find and store the relevant fields
-  description_started <- FALSE
-  description_text <- ""
-  
-  for (line in pkg_description) {
-    if (startsWith(line, "Package:")) {
-      info$Package <- sub("Package: ", "", line)
-    } else if (startsWith(line, "Version:")) {
-      info$Version <- sub("Version: ", "", line)
-    } else if (startsWith(line, "Title:")) {
-      info$Title <- sub("Title: ", "", line)
-    } else if (startsWith(line, "Description:")) {
-      description_started <- TRUE
-      description_text <- sub("Description: ", "", line)
-    } else if (description_started) {
-      if (grepl("^\\s", line)) {  # Continuation of description
-        description_text <- paste0(description_text, " ", trimws(line))
-      } else {
-        # Stop if we hit a new field
-        break
-      }
-    }
-  }
-  
-  # store the complete description
-  info$Description <- trimws(description_text)
-  
-  # convert to a data frame
-  pkg_info_df <- as.data.frame(info, stringsAsFactors = FALSE)
-  
-  # return gt table
-  if (gt) {
-    # create the gt table
-    gt::gt(data = pkg_info_df) |>
-      gt::tab_style(
-        style = "vertical-align:top",
-        locations = gt::cells_body(columns = everything())
-      ) |>
-      gt::cols_align(
-        align = "left",
-        columns = everything()
-      )
-  } else {
-    pkg_info_df
-  }
-  
+shinypak_apps <- function(regex, branch = "02.1_shiny-app") {
+  cat(paste0(
+    "\n",
+    "::::{.callout-tip collapse='true' appearance='deafult'}",
+    "\n\n",
+    "## [Accessing applications]{style='font-weight: bold; font-size: 1.15em;'}",
+    "\n\n",
+    ":::{style='font-size: 0.95em; color: #282b2d;'}",
+    "\n\n",
+    "I've created the [`shinypak` R package](https://mjfrigaard.github.io/shinypak/) in an effort to make each section accessible and easy to follow:",
+    "\n\n",
+    "Install `shinypak` using `pak` (or `remotes`):",
+    "\n\n",
+    "```r",
+    "\n",
+    "# install.packages('pak')",
+    "\n",
+    "pak::pak('mjfrigaard/shinypak')",
+    "\n",
+    "```",
+    "\n\n",
+    "Review the chapters in each section:",
+    "\n\n",
+    "```r",
+    "\n",
+    "library(shinypak)",
+    "\n",
+    "pak::pak('mjfrigaard/shinypak')",
+    "\n",
+    "list_apps(regex = '", regex, "')",
+    "\n",
+    "```",
+    "\n\n",
+    "Launch an app with `launch()`",
+    "\n\n",
+    "```r",
+    "\n",
+    "launch(app = '", branch, "')",
+    "\n",
+    "```",
+    "\n\n",
+    "Download an app with `get_app()`",
+    "\n\n",
+    "```r",
+    "\n",
+    "get_app(app = '", branch, "')",
+    "\n",
+    "```",
+    "\n\n",
+    "::::",
+    "\n\n",
+    ":::"
+  ))
 }
-
-# Example usage:
-pkg_info("charpente", FALSE)
-
-
-
-  
-  
-
-
 
 co_box <- function(
   color = "b",

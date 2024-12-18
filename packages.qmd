@@ -56,7 +56,7 @@ Functional packages require three things:
 
 ::: {layout="[85, 15]" layout-valign="top"}
 
-This chapter covers the necessary ingredients of R packages. We'll start by exploring the differences between Shiny projects, R packages, and Shiny app-packages. Then, we'll dive into the requirements for 1) creating new Shiny app-packages, and 2) converting Shiny app projects into Shiny app-packages.
+This chapter covers the necessary ingredients of R packages. We'll start by exploring the differences between Shiny projects, R packages, and Shiny app-packages. Then, we'll dive into the requirements for 1) creating new Shiny app-packages from scratch, and 2) converting Shiny app projects into app-packages.
 
 ![](images/rpkg_icon_no_bkgrnd.png){fig-align="right" width='100%'}
 
@@ -112,23 +112,20 @@ get_app(app = "03.3_create-package")
 
 ::::
 
-Before we start, we should establish some operational definitions of what is meant by the terms 'project', 'package', and 'app-package'. 
+
+Before we start, we should establish some operational definitions of what is meant by the terms ‘project,’ ‘package,’ and ‘app-package.’
 
 
+-  **Shiny Projects** ![](images/rproj_icon.png){height=30} 
 
--   ![](images/rproj_icon.png){height=30} **Shiny Projects**
+    -   I consider a Shiny app project to be a directory containing a Shiny application (in an `app.R` file or `ui.R`/`server.R` files)[^shiny-rproj]   
 
-    -   This book will consider a Shiny app project to be a directory containing a Shiny application (in an `app.R` file or `ui.R`/`server.R` files)   
-    -   Shiny projects also include a Posit workbench project file (`.Rproj`)  
+-  **R Packages** ![](images/rpkg_small_v2.png){height=30} 
 
--   ![](images/rpkg_small_v2.png){height=30} **R Packages**
+    -   I'll use the term **R package** to describe a directory with the necessary dependency management (`NAMESPACE`), metadata files (`DESCRIPTION`), and R code to be successfully installed and loaded into an R session[^pkg-rproj]
 
-    -   I'll use the term **R package** to describe a directory of functions, documentation, or data that can be successfully installed and loaded into an R session    
-    -   An R package includes the necessary dependency management (`NAMESPACE`), metadata files (`DESCRIPTION`), Posit workbench project file (`.Rproj`), *and* has access to the package development tools in Posit Workbench    
-
--   ![](images/shinyap_small_v2.png){height=30} **Shiny app-packages**
-    -   A **Shiny app-package** (which you have probably already guessed) is an R package containing a Shiny application   
-    -   Shiny app-packages have all of the functionality of a standard R Package but also contain the files and folders required to successfully develop, run, and deploy a Shiny app   
+-  **Shiny app-packages** ![](images/shinyap_small_v2.png){height=30} 
+    -   A **Shiny app-package**--which you have probably already guessed--is an R package containing a Shiny application. 
 
 :::{.column-margin}
 
@@ -136,71 +133,70 @@ I'll differentiate Shiny app projects, R packages, and Shiny app-packages using 
 
 :::
 
-There are multiple reasons for deciding to develop a Shiny app-package, but if you're reading this book, you've likely found yourself in one of two circumstances:
+[^shiny-rproj]: If you're developing in RStudio ![](images/rstudio-icon.png){height=20}, your Shiny project might also include a Posit workbench project file (`.Rproj`).
+
+[^pkg-rproj]: If you're working in RStudio ![](images/rstudio-icon.png){height=20}, your R package will also likely include a project file (`.Rproj`).
+
+Shiny app-packages![](images/shinyap_small_v2.png){height=30} have all of the functionality of a standard R Package![](images/rpkg_small_v2.png){height=30} but also contain the files and folders required to successfully develop, run, and deploy a Shiny app. There are multiple reasons for deciding to develop a Shiny app-package, but if you're reading this book, you've likely found yourself in one of two circumstances:
 
 1. You want to develop a new app, but want it structured as an R package![](images/rpkg_small_v2.png){height=30}.  
 
-2. You've already developed a Shiny app project![](images/rproj_icon.png){height=30}, but now you need to convert it to a Shiny app-packages![](images/shinyap_small_v2.png){height=30}
+2. You've already developed a Shiny app project![](images/rproj_icon.png){height=30}, but now you need to convert it into an R package![](images/rpkg_small_v2.png){height=30}
 
 The previous chapters covered a few practices to adopt during development that improve the extensibility of your app and will make it easier to convert into a Shiny app-package.[^pkgs-shiny-development]
 
 [^pkgs-shiny-development]: Shiny app project features are covered in @sec-shiny-folders and @sec-shiny-files of the previous chapter.
 
-## Development Environment {#sec-pkgs-ides}
 
-![](images/rstudio-icon.png){height=30} RStudio (developed by [Posit, PBC](https://posit.co/)) is a popular integrated development environment (IDE) that streamlines many R package development tasks. I’ve purposely connected RStudio to the definitions above for R package and Shiny app-packages. Specifically, the package development tools provided in the **Build** pane and the `devtools` package.
+## R packages ![](images/rpkg_small_v2.png){height=20}
 
-Posit has recently released a new IDE: ![](images/positron.png){height=30}  [Positron.](https://github.com/posit-dev/positron). **This IDE is under active development**, so most of the chapters will focus on developing Shiny app-packages in the RStudio IDE. Future chapters will include descriptions of Positron if the development process or features are significantly different from RStudio.
-
-Developing R packages in RStudio (or using `.Rproj` files) is not required. There are alternative package development tools and processes outside of Posit Workbench, and many developers employ these setups.
-
-Package development outside RStudio would look almost identical to development in the IDE:
-
-1. Create the package structure (`R/` folder for `.R` scripts, `man/` folder for documentation, `data/` folder for datasets, etc.)
-  
-2. Create `DESCRIPTION` and `NAMESPACE` files, etc.
-  
-3. Ensure the package can be installed and loaded into an R session.
-
-It’s also possible to use many of the development workflow functions we’ll cover here outside of the IDE (`roxygen2::roxygenize()`, `devtools::check()`, `devtools::install()`, etc.).
-
-## R packages ![](images/rpkg_small_v2.png){height=45}
-
-R packages can be easily shared, reused, and reproduced because they all have a familiar structure, and each folder and file plays an essential role in extending R’s capabilities.[^pkgs-folder-trees]
-
-Below is a folder tree with some of the typical files and folders found in R packages:
+R packages can be easily shared, reused, and reproduced because they all have a similar structure, and each folder and file plays an essential role in extending R’s capabilities. Below is a folder tree with some of the typical files and folders found in R packages:[^pkgs-folder-trees]
 
 ```{bash}
 #| eval: false
 #| code-fold: false
 #| echo: true
 <R package>/
-    ├── DESCRIPTION
-    ├── <R package>.Rproj
-    ├── LICENSE 
-    ├── LICENSE.md 
-    ├── NAMESPACE 
-    ├── NEWS.md
-    ├── README.Rmd
-    ├── README.md
-    ├── renv.lock
-    ├── R/
-    ├── man/
-    ├── tests/
-    ├── data/ 
-    ├── data-raw/ 
-    ├── vignettes/ 
-    ├── inst/ 
-    └── renv/
+    ├── DESCRIPTION # <1>
+    ├── <R package>.Rproj # <2>
+    ├── LICENSE # <3>
+    ├── LICENSE.md # <3>
+    ├── NAMESPACE # <4>
+    ├── NEWS.md # <5>
+    ├── README.Rmd # <6>
+    ├── README.md # <6>
+    ├── renv.lock # <7>
+    ├── R/ # <8>
+    ├── man/ # <9>
+    ├── tests/ # <10>
+    ├── data/  # <11>
+    ├── data-raw/  # <12>
+    ├── vignettes/  # <13>
+    ├── inst/  # <14>
+    └── renv/ # <15>
   
 ```
-
+1. Metadata file with the package's purpose, dependencies, authors, and other essential information.  
+2. RStudio project file for managing and organizing the package's development environment. 
+3. Specifies the terms under which the package can be used, modified, and distributed. 
+4. Defines the functions and datasets exported by the package and the imports from other packages.  
+5. Contains a changelog detailing updates and changes made across package versions. 
+6. Provides an overview of the package, usage examples, and installation instructions (typically for display on GitHub).  
+7. Contains he exact package versions and dependencies for a reproducible development environment. 
+8. All the R scripts with the package's functions and main code.
+9. Documentation files for functions and datasets in `.Rd` format, generated using tools like `roxygen2`.  
+10. Stores unit tests to validate the functionality of the package, often using frameworks like `testthat`. 
+11. Includes preprocessed datasets provided with the package, saved in `.RData` or `.rda` format.
+12. Raw data and scripts for processing it into the format stored in the `data/` folder.
+13. Long-form documentation and tutorials, written in RMarkdown, explaining package usage in depth.  
+14. directory for additional files installed with the package, such as documentation, examples, or datasets.  
+15. Manages the package's dependencies in an isolated environment, ensuring reproducibility. 
 
 [^pkgs-folder-trees]: Fortunately, Shiny app-packages don't require *all* the files and folders displayed in the folder tree to gain the functionality and benefits of an R package. 
 
-This chapter will cover the minimum requirements for an R package, so you can handle both creating new Shiny app-packages and converting existing Shiny projects into Shiny app-packages.
+The sections below cover the minimum requirements for an R package, so you can handle both creating new Shiny app-packages and converting existing Shiny projects into Shiny app-packages.
 
-### *Functional* R packages {#sec-packages-essential-ingredients}
+### Essential ingredients {#sec-packages-essential-ingredients}
 
 If you've done some research on R packages, you've probably encountered one (or both) of the following statements, 
 
@@ -211,12 +207,6 @@ If you've done some research on R packages, you've probably encountered one (or 
 
 The `sap` directory has: 
 
-::: {layout="[45,55]" layout-valign="top"}
-
-### {.unnumbered}
-
-- [x] an `.Rproj` project file 
-
 - [x] a `DESCRIPTION` file 
 
 - [x] an `R/` directory
@@ -226,8 +216,8 @@ The `sap` directory has:
 #| code-fold: false
 sap/
 ├── DESCRIPTION # <1>
-├── sap.Rproj # <2>
-├── R/ # <3>
+├── sap.Rproj 
+├── R/ # <2>
 │   ├── mod_scatter_display.R
 │   ├── mod_var_input.R
 │   └── utils.R
@@ -240,16 +230,13 @@ sap/
 4 directories, 9 files
 ```
 1. `DESCRIPTION` file  
-2. `.Rproj` file   
-3. `R/` folder with `.R` files  
+2. `R/` folder with `.R` files  
 
-:::
-
-So, is `sap` a functioning R package? 
+So, is `sap` a functioning R package? We can test this with the following:
 
 #### Can we load it with [`devtools`]{style="font-size: 1.05em; font-weight: bold;"}?
 
-Package development kicks off with the `load_all()` function from `devtools`, which is similar to calling `library()` (we'll cover this function extensively in the `devtools` chapter). 
+Package development kicks off with the `load_all()` function from `devtools`, which is similar to calling `library()` (we'll cover this function extensively in the [Development](development.qmd) chapter). 
 
 However, when we attempt to load the code in the `R/` folder with `load_all()`, we see the following error:
 
@@ -261,33 +248,9 @@ library(devtools)
 devtools::load_all()
 ```
 
+![`devtools` is looking for the **`Package` field** in our `DESCRIPTION` file](images/pkgs_load_all_error.png){width="100%" fig-align="center"}
 
-::: {#fig-pkgs_load_all_error}
-![Load All Error](images/pkgs_load_all_error.png){#fig-pkgs_load_all_error width="100%" fig-align="center"}
-
-`devtools` is looking for the **`Package` field** in our `DESCRIPTION` file
-:::
-
-#### Can we use the **Build** pane?
-
-If you're using the RStudio IDE, then functioning R packages also have access to the **Build** pane, which allows us to quickly load, install, and test code.
-
-When we open `sap`, the **Build** pane is not displayed in the IDE:
-
-::: {#fig-pkgs_no_build_pane}
-![`sap` IDE](images/pkgs_no_build_pane.png){#fig-pkgs_no_build_pane width="100%" fig-align="center"}
-
-The **Build** pane is normally between **Connections** and **Git**.
-:::
-
-As we've just learned, the presence of the `DESCRIPTION` file and an `R/` folder are insufficient to turn a Shiny app project into a *functioning* R package that can be installed and loaded into an R session *and* has access to the **Build** pane in the IDE.
-
-
-> "*A project needs **a `DESCRIPTION` file with specific fields**, a directory of `R/` files, and **a properly configured `.Rproj` file** to be a **functioning** R package.*"
-
-Let's see how each of these requirements work together to convert the contents of `sap` from a Shiny project into a Shiny app-package.
-
-### Does it have a  [`DESCRIPTION`]{style="font-size: 1.05em; font-weight: bold;"}?
+#### Does it have a [`DESCRIPTION`]{style="font-size: 1.05em; font-weight: bold;"}?
 
 ```{r}
 #| label: git_box_3.1_description
@@ -346,38 +309,37 @@ utils::person(
 
 :::
 
-After adding the mandatory fields to the `DESCRIPTION` file, `devtools::load_all()` runs without the previous error, but the IDE still doesn't display the **Build** pane: 
-
-:::: {.column-body-outset-right}
-
-::: {#fig-pkgs_desc_no_build_pane}
-![`sap` IDE](images/pkgs_desc_no_build_pane.png){#fig-pkgs_desc_no_build_pane height="100%" width="100%" fig-align="center"}
-
-[Where is the **Build** pane?]{style="font-style: italic; font-size: 1.10em;"}
-:::
-
-::::
 
 
-## R Projects ![](images/rproj_icon.png){height=45} 
+### RStudio's Build pane ![](images/rstudio-icon.png){height=20}
 
-`.Rproj` files are plain text files with various settings for the IDE. We were able to run `devtools::load_all()` above *without* the presence of the **Build** pane because the IDE displays the **Build** pane after reading the fields in the `.Rproj` file.  
+If you're using RStudio, then functioning R packages also have access to the **Build** pane, which allows us to quickly load, install, and test code. When we open `sap`, the **Build** pane is not displayed in the IDE:
+
+
+![The **Build** pane is normally between **Connections** and **Git**](images/pkgs_no_build_pane.png){width="100%" fig-align="center"}
+
+After adding the seven mandatory fields to the `DESCRIPTION` file, `devtools::load_all()` runs without the previous error, but the IDE still doesn't display the **Build** pane: 
+
+![Where is the **Build** pane?](images/pkgs_desc_no_build_pane.png){height="100%" width="100%" fig-align="center"}
+
+
+#### RStudio projects ![](images/rproj_icon.png){height=20} 
+
+`.Rproj` files are plain text files with various configurations for the RStudio IDE. We were able to run `devtools::load_all()` above *without* the presence of the **Build** pane because RStudio displays the **Build** pane after reading the fields in the `.Rproj` file.  
 
 The quickest way to access the fields in the `.Rproj` file is under **Tools** > **Project Options...**.
 
-### R Project options 
+#### Project options 
 
-**Tools** > **Project Options...** provide access to the project-level options. For example, fields 2 - 4 are available under **General**, 5 - 8 affect the **Code** options, and the final two fields deal with **Sweave**. 
+Selecting **Tools** > **Project Options...** will provide us access to the project-level options. For example, fields 2 - 4 are available under **General**, 5 - 8 affect the **Code** options, and the final two fields deal with **Sweave**. 
 
-::: {#fig-pkgs_proj_options}
-![`sap.Rproj` fields](images/pkgs_proj_options.png){#fig-pkgs_proj_options width="100%" fig-align="center"}
 
-Field settings from `sap.Rproj` file
-:::
+![Field settings from `sap.Rproj` file](images/pkgs_proj_options.png){width="100%" fig-align="center"}
+
 
 The default settings were created when we selected the Shiny app project from the **New Project Wizard** in the last chapter.
 
-### Build tools
+#### Build tools
 
 I've placed the `.Rproj` file from `sap` with the example `.Rproj` file from [R Packages, (2ed)](https://r-pkgs.org/) side-by-side so you can compare them below:[^pkgs-11]
 
@@ -487,53 +449,67 @@ co_box(
 )
 ```
 
-### The **Build** pane
-
 When the new session starts, the new project-level options activate the **Build** pane in the IDE, and I can check the R package functionality by loading the code with **Build** > **Load All**
 
-::: {#fig-pkgs_build_menu}
-![Load the code in the `R/` folder](images/pkgs_build_menu.png){#fig-pkgs_build_menu width="100%" fig-align="center"}
 
-Identical to running `devtools::load_all()`
+![Identical to running `devtools::load_all()`](images/pkgs_build_menu.png){width="100%" fig-align="center"}
+
+### Positron's workspaces ![](images/positron.png){height=20}
+
+Positron doesn't recognize RStudio's project files (`.Rproj`) or their build tools configuration. Instead, Positron organizes files and paths around workspaces.[^positron-conf-2024] 
+
+A workspace is any folder that contains your project's files. You can open an existing folder or create a new one from Positron's welcome pane:
+
+![](images/pkgs_positron_welcome.png){width="100%" fig-align="center"}
+
+#### Positron projects
+
+The **Welcome** pane also offers an option for creating a **New Project**, but this shouldn't be confused with creating an RStudio project.
+
+If we follow the steps for a new project by specifying the type, name, and location: 
+
+
+:::{layout="[50,50]" layout-valign="top"}
+
+![](images/pkgs_positron_project_type.png){width="100%" fig-align="center"}
+
+
+![](images/pkgs_positron_project_name_location.png){width="100%" fig-align="center"}
+
 :::
 
-I should see the following in the **Console**:
+We see this opens a folder in the IDE *without* an `.Rproj` file:
 
-```{verbatim}
-#| eval: false 
-#| code-fold: false
-ℹ Loading sap
-```
+:::{layout="[50,50]" layout-valign="top"}
 
-There you have it--`sap` is a functional app-package!
+![](images/pkgs_positron_project_config.png){width="100%" fig-align="center"}
 
-### Functional app-packages 
+![](images/pkgs_positron_project_open.png){width="100%" fig-align="center"}
+:::
 
-In a functional app-package ![](images/shinyap_small_v2.png){height=30}: 
+If you're building your Shiny app from scratch, this is still a great way to get started because it makes it easy to adopt best practices (i.e., using Git and `renv`).
+
+#### Build tools
+
+In Positron, all of the package development tools from `devtools` are available, but they are executed and handled a little differently by the IDE. We'll cover these differences more in the [Development](development.qmd), [Degbug](debug.qmd), and [Tests](tests.qmd) chapters. 
+
+
+[^positron-conf-2024]: Learn more about this in [Jenny Bryan's discussion](https://youtu.be/8uRcB34Hhsw?si=jqdj-TTMak3nGTnL&t=3169) in the [Introducing Positron, a new data science IDE](https://www.youtube.com/watch?v=8uRcB34Hhsw) presentation at `posit::conf(2024)`.
+
+### R packages recap
+
+As we've just learned, the presence of the `DESCRIPTION` file and an `R/` folder are insufficient to turn a Shiny app project into a 'functioning' R package that can be installed and loaded into an R session. In a functional app-package ![](images/shinyap_small_v2.png){height=30}: 
 
 1.   The `DESCRIPTION` file contains the seven mandatory fields[^desc-fields-mandatory], making running the necessary `devtools` functions possible. 
 
 [^desc-fields-mandatory]: The [mandatory fields](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#The-DESCRIPTION-file) `DESCRIPTION` fields are: `Package`, `Version`, `License`, `Description`, `Title`, `Author`, and `Maintainer`
 
-2.   The `.Rproj` file contains the three package configuration fields[^pkg-config-fields], which makes the **Build** pane accessible and functional.
+2.   if we're using RStudio, the `.Rproj` file must contain the three package configuration fields[^pkg-config-fields], which makes the **Build** pane accessible and functional.
 
 [^pkg-config-fields]: The `.Rproj` package configuration fields are `BuildType: Package`, `PackageUseDevtools: Yes`, and `PackageInstallArgs: --no-multiarch --with-keep.source`.
 
-Think of the two items above as a two-part process: the `DESCRIPTION` requires specific fields, and the IDE requires `.Rproj` fields to trigger the **Build** pane.
 
-
-:::: {.column-body-outset-right}
-
-::: {#fig-pkgs_functional_app_pkg}
-![**Shiny app-package** (with `DESCRIPTION` and **Build** pane)](images/pkgs_functional_app_pkg.png){#fig-pkgs_functional_app_pkg width="100%" fig-align="center"}
-
-Fully functional **Shiny app-package**
-:::
-
-::::
-
-
-## App-packages ![](images/shinyap_small_v2.png){height=45}
+## App-packages ![](images/shinyap_small_v2.png){height=20}
 
 The Posit documentation lists the following way(s) to create R packages:[^pkgs-15a] 
 
@@ -855,7 +831,7 @@ co_box(
 
 -   `usethis::create_package()` can be used to create a new R package and to convert an existing Shiny project into a Shiny app-package.
 
--   The IDE reads Posit Workbench (`.Rproj`) files and determines R session settings at the project-level (i.e., working directory, workspace, history, code formatting, etc.)
+-   The RStudio IDE reads project (`.Rproj`) files and determines R session settings at the project-level (i.e., working directory, workspace, history, code formatting, etc.)
 
     -   Package development settings can be accessed via **Project Options** > **Build Tools**.
   
