@@ -46,61 +46,20 @@ Package development involves three habits:
 
 ::: {layout="[85, 15]"}
 
-After creating a `DESCRIPTION` file with the mandatory fields, moving the `.R` files into the `R/` folder (and--if we're using RStudio--configuring the project build tools in `.Rproj`). Now we're ready to start developing our app-package with [`devtools`](https://devtools.r-lib.org/).
+Developing an R package is similar to building a Shiny app--both involve writing code to perform specific outputs. We evaluate the outputs against our expectations and adjust as needed (either to the code or our expectations). While Shiny app development involves saving the code files and re-running the app, R package creation involves additional steps, which this chapter will cover. 
 
 ![](images/devtools.svg){width="220"}
 
 :::
 
-:::: {.callout-tip collapse='true' appearance='default' icon-=false}
-
-## [Accessing applications]{style='font-weight: bold; font-size: 1.15em;'}
-
-::: {style='font-size: 0.95em; color: #282b2d;'}
-
-I've created the [`shinypak` R package](https://mjfrigaard.github.io/shinypak/) In an effort to make each section accessible and easy to follow:
-  
-Install `shinypak` using `pak` (or `remotes`):
-
 ```{r}
-#| code-fold: false 
-#| message: false
-#| warning: false
-#| eval: false
-# install.packages('pak')
-pak::pak('mjfrigaard/shinypak')
+#| label: shinypak_apps
+#| echo: false
+#| results: asis
+#| eval: true
+shinypak_apps(regex = "^04", branch = "04_devtools")
 ```
 
-Review the chapters in each section:
-  
-```{r}
-#| code-fold: false 
-#| message: false
-#| warning: false
-#| collapse: true
-library(shinypak)
-list_apps(regex = '^04')
-```
-
-Launch the app: 
-
-```{r}
-#| code-fold: false 
-#| eval: false
-launch("04_devtools")
-```
-
-Download the app: 
-
-```{r}
-#| code-fold: false 
-#| eval: false
-get("04_devtools")
-```
-
-::: 
-
-::::
 
 If you'd like a refresher on the Shiny and R package chapters, I've provided a refresher of these topics below:
 
@@ -137,10 +96,6 @@ co_box(
 )
 ```
 
-By ‘functionality’, I mean our app-package can call the `devtools` functions for loading the code in `R/`, creating documentation, and successfully installing the package from the source files.
-
-## [`devtools`]{style="font-size: 1.10em"} (and friends!)
-
 If you’re new to package development, having a little background on the `devtools` package is helpful. Earlier versions of `devtools` contained most of the functions used for package development. In version 2.0, `devtools` went under a [conscious uncoupling](https://www.tidyverse.org/blog/2018/10/devtools-2-0-0/#conscious-uncoupling), which means there was a "division of labor" for its core functionality:
 
 -   The [`usethis`](https://usethis.r-lib.org/) package contains the functions for *creating* package folders and files (`.R` files, tests, vignettes, etc.). `usethis` is also automatically loaded when you call `library(devtools)`.
@@ -157,89 +112,7 @@ You don't have to install all of these packages (they will be loaded with `devto
 
 We will cover this topic more in the [dependencies chapter.](dependencies.qmd).
 
-Let's assume we're continuing with a Shiny project from the [previous branch](https://github.com/mjfrigaard/sap/tree/03.1_description)  of `sap` (the files and folders are below).
-
-```{r}
-#| label: git_box_03.1_description
-#| echo: false
-#| results: asis
-#| eval: true
-git_margin_box(
-  fig_pw = '70%', 
-  branch = "03.1_description", 
-  repo = 'sap')
-```
-
-```{bash}
-#| eval: false 
-#| code-fold: false
-sap/ 
-  ├── DESCRIPTION
-  ├── R
-  │   ├── mod_scatter_display.R
-  │   ├── mod_var_input.R
-  │   └── utils.R
-  ├── README.md
-  ├── app.R
-  ├── man
-  ├── movies.RData
-  ├── sap.Rproj
-  └── www
-      └── shiny.png
-
-4 directories, 9 files
-```
-
-### Getting started
-
-We'll revert to the previous version of `sap` we created by manually editing the `DESCRIPTION` file[^dev-0] to show the connection between the `devtools` functions and specific fields in the `DESCRIPTION` file.[^dev-1]
-
-[^dev-0]: View the `DESCRIPTION` file in the `03.1_description` branch [here](https://github.com/mjfrigaard/sap/tree/03.1_description/DESCRIPTION).
-
-[^dev-1]: If you create or convert your Shiny app project with `usethis::create_package()`, a few fields (i.e., `Roxygen` and `RoxygenNote`) are added automatically without explaining their role or purpose.
-
-```{bash}
-#| eval: false 
-#| code-fold: false
-Package: sap
-Version: 0.0.0.9000
-Type: Package
-Title: Shiny App-Packages
-Description: An R package with a collection of Shiny applications.
-Author: John Smith [aut, cre]
-Maintainer: John Smith <John.Smith@email.io>
-License: GPL-3
-                                                        
-```
-
-:::{.column-margin}
-
-Leave an empty final line in the `DESCRIPTION`
-
-:::
-
-However, the `.Rproj` file in this branch is still configured to work with a Shiny project.[^dev-2]
-
-[^dev-2]: If you created your Shiny app using the **New Project Wizard**, your `.Rproj` file has been configured to work with an RStudio project, not an R package. 
-
-
-The differences between developing an R package and a Shiny app can be boiled down to a handful [habits]{style="font-weight: bold; color: #5f2042;"}, each of which calls a `devtools` function: 
-
-::: {.column-margin}
-
-I'll use [this font style]{style="font-weight: bold; color: #5f2042;"} to indicate each `devtools` habit and accompanying function.
-
-:::
-
-1. [Load]{style="font-weight: bold; color: #5f2042;"} all the functions and data in your app-package with `load_all()`
-
-2. [Document]{style="font-weight: bold; color: #5f2042;"} the app-package functions and data with `document()`
-
-3. [Install]{style="font-weight: bold; color: #5f2042;"} the app-package with `install()`
-
-In the sections below, I'll cover each function and some opinions about how they should be used when your Shiny app transitions to an app-package.[^dev-3]
-
-[^dev-3]: The topics covered in this section shouldn't be considered a replacement for the ['Whole Game' chapter in R packages (2 ed)](https://r-pkgs.org/whole-game.html) or the ['Workflow' section of Mastering Shiny](https://mastering-shiny.org/scaling-packaging.html#workflow) (and I highly recommend reading both).
+## Getting started
 
 Before we can start developing, we need to install `devtools`:
 
@@ -258,26 +131,73 @@ library(devtools)
 Loading required package: usethis
 ```
 
+
+Let's assume we're continuing with a Shiny project from the [previous branch](https://github.com/mjfrigaard/sap/tree/03.1_description)  of `sap`. Our Shiny project has a `DESCRIPTION` file and the code has been placed in the `R/` folder, so we're ready to start developing our app-package with [`devtools`](https://devtools.r-lib.org/) (the files and folders are below).
+
 ```{r}
-#| label: co_box_keyboard_shortcuts
+#| label: git_box_03.1_description
 #| echo: false
 #| results: asis
 #| eval: true
-co_box(
-  color = "r", look = "default", 
-  hsize = "1.15", size = "1.05", fold = FALSE,
-  header = "Keyboard shortcuts",
-  contents = "I strongly recommend using the keyboard shortcuts for each `devtools` function. Shortcuts reduce typing and bundle all those keystrokes into a single action. They also create a kind of 'muscle memory' for each step.
+git_margin_box(
+  fig_pw = '70%', 
+  branch = "03.1_description", 
+  repo = 'sap')
+```
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+sap/ 
+  ├── DESCRIPTION # <1>
+  ├── R
+  │   ├── mod_scatter_display.R
+  │   ├── mod_var_input.R
+  │   └── utils.R
+  ├── README.md
+  ├── app.R
+  ├── man
+  ├── movies.RData
+  ├── sap.Rproj # <2>
+  └── www
+      └── shiny.png
+
+4 directories, 9 files
+```
+1. The [`DESCRIPTION` file](https://github.com/mjfrigaard/sap/tree/03.1_description/DESCRIPTION) contains the required fields: `Package`, `Version`, `License`, `Description`, `Title`, `Author`, and `Maintainer`.  
+2. The [`.Rproj` file](https://github.com/mjfrigaard/sap/blob/03.1_description/sap.Rproj) is still configured to work with a Shiny project (not an R package).
+
+### Keyboard shortcuts
+
+I strongly recommend using the keyboard shortcuts for each `devtools` function. Shortcuts reduce typing and bundle all those keystrokes into a single action. They also create a kind of 'muscle memory' for each step.
   
 In RStudio ![](images/rstudio-icon.png){height=20}, new keyboard shortcuts can be created using the [`shrtcts` package](https://pkg.garrickadenbuie.com/shrtcts/) or by clicking on **Tools** > **Modify Keyboard Shortcuts**.
 
-In Positron ![](images/positron.png){height=20}, the `devtools` functions covered below are already mapped to the keyboard shortcuts. Follow the instructions [found in Positron's Wiki](https://github.com/posit-dev/positron/wiki/Keyboard-Shortcuts) to add new shortcuts."
-)
-```
+In Positron ![](images/positron.png){height=20}, the `devtools` functions covered below are already mapped to the keyboard shortcuts. Follow the instructions [found in Positron's Wiki](https://github.com/posit-dev/positron/wiki/Keyboard-Shortcuts) to add new shortcuts.
+
+### Habits
+
+The differences between developing an R package and a Shiny app can be boiled down to a handful of [habits]{style="font-weight: bold; color: #5f2042;"}, each of which calls a `devtools` function: 
+
+::: {.column-margin}
+
+I'll use [this font style]{style="font-weight: bold; color: #5f2042;"} to indicate each habit and accompanying function.
+
+:::
+
+1. [Load]{style="font-weight: bold; color: #5f2042;"} all the functions and data in your app-package with `load_all()`
+
+2. [Document]{style="font-weight: bold; color: #5f2042;"} the app-package functions and data with `document()`
+
+3. [Install]{style="font-weight: bold; color: #5f2042;"} the app-package with `install()`
+
+In the sections below, I'll cover each `devtools` function and my habits around their use when my Shiny app transitions to an app-package.[^dev-3]
+
+[^dev-3]: The topics covered in this section shouldn't be considered a replacement for the ['Whole Game' chapter in R packages (2 ed)](https://r-pkgs.org/whole-game.html) or the ['Workflow' section of Mastering Shiny](https://mastering-shiny.org/scaling-packaging.html#workflow) (and I highly recommend reading both).
  
 ## [Load]{style="font-weight: bold;"} {#sec-dev-load}
 
-`load_all()` is the most common `devtools` function we'll use during development because we should [load the package when anything changes in the `R/` folder.]{style="font-weight: bold; font-size: 1.10em;"} 
+`load_all()` is the most common `devtools` function used during development. I will [load the package when anything changes in the `R/` folder.]{style="font-weight: bold; font-size: 1.10em; color: #5f2042;"} 
 
 > '*`load_all()` removes friction from the development workflow and eliminates the temptation to use workarounds that often lead to mistakes around namespace and dependency management*' - [Benefits of `load_all()`, R Packages, 2ed](https://r-pkgs.org/workflow101.html#benefits-of-load_all)
 
@@ -313,7 +233,7 @@ The `document()` function from `devtools` serves two purposes:
 
 2. Creates the help files in the `man/` folder 
 
-[Document the package whenever changes are made to any `roxygen2` syntax (or settings).]{style="font-weight: bold; font-size: 1.10em;"} 
+[I will document a package whenever I make changes to the `roxygen2` syntax or `DESCRIPTION`.]{style="font-weight: bold; font-size: 1.10em; color: #5f2042;"} 
 
 <br>
 
@@ -341,7 +261,7 @@ First time using roxygen2. Upgrading automatically...
 Setting `RoxygenNote` to "7.3.2"
 ```
 
-You may have noticed calling `document()` also [calls `load_all()`](https://github.com/r-lib/devtools/blob/2c642ab44f4fb9d4117f0e198dfcf42ad79e432a/R/document.R#L22), which scans the loaded package contents for special documentation syntax before writing the `NAMESPACE` file (we'll cover the `NAMESPACE` in the chapter on Dependencies). 
+You may have noticed calling `document()` also [calls `load_all()`](https://github.com/r-lib/devtools/blob/2c642ab44f4fb9d4117f0e198dfcf42ad79e432a/R/document.R#L22), which scans the loaded package contents for special documentation syntax before writing the `NAMESPACE` file (we'll cover the `NAMESPACE` in the [Dependencies](dependencies.qmd) chapter). 
 
 ```{verbatim}
 #| eval: false 
@@ -370,34 +290,26 @@ roxygen2 requires Encoding: "UTF-8"
 
 `devtools` won't automatically add `Encoding` (like it did with `RoxygenNote` above), so we’ll need to add it to the `DESCRIPTION` file manually:
 
-:::{.column-margin}
-
-Always leave an empty final line in the `DESCRIPTION`    
-
-:::
-
 ```{bash}
 #| eval: false 
 #| code-fold: false
 Package: sap
 Version: 0.0.0.9000
 Type: Package
-Title: movies app
-Description: A movies data Shiny application.
+Title: Shiny App-Packages
+Description: An R package with a collection of Shiny applications.
 Author: John Smith [aut, cre]
 Maintainer: John Smith <John.Smith@email.io>
 License: GPL-3
 RoxygenNote: 7.2.3
-Encoding: UTF-8                                       # <1>
-
+Encoding: UTF-8  # <1>                                     
+                                                      
 ```
 1. The `Encoding` value shouldn't include quotes like the warning message above (i.e., `UTF-8`)   
 
-After adding the required fields to the `DESCRIPTION` file,[^dev-4] we'll `document()` the package again using the keyboard shortcut:
+After adding the required fields to the `DESCRIPTION` file,[^dev-4] we'll `document()` the package again and we should see the following:
 
 [^dev-4]: Always leave an empty final line in the `DESCRIPTION` file.
-
-In the **Build** pane, we see the following:
 
 ```{verbatim}
 #| eval: false 
@@ -409,27 +321,13 @@ In the **Build** pane, we see the following:
 Documentation completed
 ```
 
-## [Install]{style="font-weight: bold;"}  {#sec-dev-install}
 
-```{r}
-#| label: co_box_positron_version
-#| echo: false
-#| results: asis
-#| eval: true
-co_box(
-  color = "b", 
-  look = "simple", 
-  hsize = "1.10", 
-  size = "1.05",
-  header = "![](images/positron.png){height=20} Positron Version", 
-  fold = TRUE,
-  contents = "At the time of this writing, the [2024.09.0-1](https://github.com/posit-dev/positron/releases/tag/2024.09.0-1) pre-release of Positron was available for testing."
-)
-```
+
+## [Install]{style="font-weight: bold;"}  {#sec-dev-install}
 
 The final development habit checking if our app-package can be installed locally with `devtools::install()` or `pak::local_install(upgrade = FALSE)` (depending on the IDE you're using).
 
-[Install a package after the initial setup, after major changes to the code, documentation, or dependencies, and before committing or sharing.]{style='font-weight: bold; font-size: 1.10em;'}
+[I will install a package after the initial setup, after major changes to the code, documentation, or dependencies, and before committing or sharing.]{style='font-weight: bold; font-size: 1.10em; color: #5f2042;'}
 
 <br>
 
@@ -443,9 +341,9 @@ The final development habit checking if our app-package can be installed locally
 
 :::
 
-::: {.panel-tabset}
 
-### RStudio ![](images/rstudio-icon.png){height=20}
+
+### In RStudio ![](images/rstudio-icon.png){height=30}
 
 <br>
 
@@ -478,11 +376,11 @@ No man pages found in package  ‘sap’  # <4>
 7. Checks to see if package stores the install location 
 8.  `DONE (sap)` means `sap` was successfully installed!   
 
-### Positron ![](images/positron.png){height=20}
+### In Positron ![](images/positron.png){height=30}
 
 <br>
 
-In Positron, <kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>B</kbd> will call `pak::local_install(upgrade = FALSE)`. This command will be run in a new Terminal window:
+In Positron, <kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>B</kbd> will call `pak::local_install(upgrade = FALSE)`. This command will be run in a new **Terminal** window:
 
 ```{verbatim}
 #| eval: false
@@ -538,15 +436,13 @@ Type 'q()' to quit R. # <2>
 10. Close Terminal message 
 
 
-:::
-
 <br>
 
 #### What's the difference? {.unnumbered}
 
-`devtools::install()` focuses on helping package developers by managing all necessary steps for installation, including rebuilding documentation and running tests. `devtools::install()` also automatically updates outdated dependencies during installation unless `dependencies` is set to `FALSE`. 
+`devtools::install()` focuses on helping package developers by managing all necessary steps for installation, including rebuilding documentation and running tests. `install()` also automatically updates outdated dependencies during installation unless `dependencies` is set to `FALSE`. 
 
-`pak::local_install()` is designed to use parallel downloads and more efficient dependency resolution, making faster and more reliable than `devtools` in many cases.[^pak-performance] The `upgrade = FALSE` installs a package without upgrading its dependencies, keeping the current package versions intact.
+`pak::local_install()` is designed to use parallel downloads and more efficient dependency resolution, making it faster and more reliable than `devtools::install()` in many cases.[^pak-performance] The `upgrade = FALSE` installs a package without upgrading its dependencies, keeping the current package versions intact.
 
 [^pak-performance]: It stands to reason that installing a package with `pak::local_install()` in Positron would be faster than installing a package using `devtools::install()` in RStudio, but this has not been my experience. 
 
@@ -745,7 +641,7 @@ After installing and loading `devtools`:
   1. [Load the package whenever changes occur in the `R/` folder]{style='font-weight: bold; font-size: 1.0em;'}.\n 
       - [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd>]{style='font-weight: bold; font-size: 0.75em'} load all the code in the package.\n
   
-  2. [Document the package whenever changes are made to any `roxygen2` syntax (or settings)]{style='font-weight: bold; font-size: 1.0em;'}.\n 
+  2. [Document the package whenever changes are made to any `roxygen2` syntax or the `DESCRIPTION` file.]{style='font-weight: bold; font-size: 1.0em;'}.\n 
       - [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd>]{style='font-weight: bold; font-size: 0.75em'} record the documentation and dependencies.\n
   
   3. [Install the package after the initial setup, after major changes to the code, documentation, or dependencies, and before committing or sharing]{style='font-weight: bold; font-size: 1.0em;'}.\n  
@@ -753,7 +649,7 @@ After installing and loading `devtools`:
       - `pak::local_install()` benefits from optimized dependency resolution and download methods 
       - `devtools::install()` handles a broader range of tasks during installation (including rebuilding documentation and running tests) 
   
-Habits require repetition to develop, and I hope the workflow above can be applied to your Shiny app-packages, provided you're using `devtools` and Posit workbench.
+Habits require repetition to develop, but things like keyboard shortcuts can help minimize the friction we all experience with change.
   
   ", 
   fold = FALSE
