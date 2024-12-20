@@ -103,11 +103,11 @@ Dependencies are handled with in the `NAMESPACE` directives (generated via `roxy
 %%| fig-cap: 'The `NAMESPACE` and `DESCRIPTION` handle package dependencies'
 %%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'Inconsolata'}}}%%
 flowchart TD
-    sap["Our app-package uses <code>fun()</code>\n in function <code>foo()</code>"]
-    Pkg("R Package <code>pkg</code> with \nfunction <code>fun()</code>")
-    Users("Users load <code>sap</code> and \nuse <code>foo()</code>")
+    sap["We use <code>fun()</code> in <code>foo()</code>"]
+    Pkg("R Package <code>pkg</code> has function <code>fun()</code>")
+    Users("Users install/load <code>sap</code> to use <code>foo()</code>")
 
-    Pkg -->|Imports <code>pkg</code>| sap
+    Pkg -->|import <code>pkg</code>| sap
     sap -->|export <code>foo</code>| Users
     
     style sap fill:#89D6FB,color:#000000,stroke:none,rx:10,ry:10;
@@ -339,7 +339,7 @@ sap/
 
 :::
 
-## Exports {#sec-depends-exports} 
+## Package exports {#sec-depends-exports} 
 
 The error above is telling us that despite having documentation for `launch_app()` in the `R/` folder *and* generating the corresponding `.Rd` file in `man/`, `launch_app()` isn't being **exported** from `sap`.
 
@@ -382,7 +382,7 @@ To make the `launch_app()` function available to users of our package, we need t
     
     -   Read more [here](https://r-pkgs.org/dependencies-in-practice.html#exports)
     
-### Export [`launch_app()`]{style="font-size: 1.00em;"}
+### Export [`launch_app()`]{style="font-size: 1.00em;"} {.unnumbered}
 
 Let's start by exporting the `launch_app()` function from `sap` by placing the `@export` tag above the function in `R/launch_app.R`:
 
@@ -493,7 +493,7 @@ Using `@keywords internal` *without* `@export` will result in a helpfile, but th
 ```
 
 
-### What [`@export`]{style="font-size: 1.00em;"} does
+### What [`@export`]{style="font-size: 1.00em;"} does {.unnumbered}
 
 We'll pause here to notice a few things about what `@export` does. After loading and documenting our package, the `NAMESPACE` is updated with `export(launch_app)`, and the **Console** automatically calls `library(sap)`.
 
@@ -520,11 +520,14 @@ We'll pause here to notice a few things about what `@export` does. After loading
 %%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'Inconsolata', 'primaryColor': '#89D6FB', 'edgeLabelBackground':'#02577A'}}}%%
 
 flowchart TD
-  Tag("Tag function with\n <code>@export</code>")
-  LoadAll("Run <code>devtools::load_all()</code>")
-  Document("Run <code>devtools::document()</code>")
-  Exported("Function exported\n in namespace")
-  NAMESPACE("<code>NAMESPACE</code> updated with\n <code>export(launch_app)</code>")
+  Tag("Tag function with
+       <code>@export</code>")
+  LoadAll("Run <code>load_all()</code>")
+  Document("Run <code>document()</code>")
+  Exported("Function exported 
+            to <code>NAMESPACE</code>")
+  NAMESPACE("<code>NAMESPACE</code> updated
+            with <code>export(launch_app)</code>")
   RdFile("<code>.Rd</code> file created")
 
   Tag --> LoadAll
@@ -556,7 +559,7 @@ ls(name = "package:sap")
 [1] "launch_app"
 ```
 
-#### The [`search()`]{style="font-size: 1.00em;"} list
+#### The [`search()`]{style="font-size: 1.00em;"} list {.unnumbered}
 
 `library(sap)` attaches `sap` to the search list. We can view all the attached packages in the string returned from `search()`:
 
@@ -644,7 +647,7 @@ Examples in `scatter_plot()` function without exporting
 
 The message at the top of the **Help** pane is informative because it tells us that despite `scatter_plot()` being functional when we run `launch_app()`, it's not part of the package namespace (and thus, not accessible to users in the help file). 
 
-#### Export [`scatter_plot()`]{style="font-size: 1.0em;"}
+### Export [`scatter_plot()`]{style="font-size: 1.0em;"} {.unnumbered}
 
 Let's add the `@export` tag to `R/scatter_plot.R` so it's exported from `sap`.
 
@@ -712,7 +715,7 @@ Below, we confirm users can access the help file for `scatter_plot()` and run th
 ![Running examples in `?scatter_plot`](images/dep_run_examples_scatter_plot.png){width='100%' fig-align='center'}
 
 
-#### [`loadedNamespaces()`]{style="font-size: 0.95em;"} 
+#### [`loadedNamespaces()`]{style="font-size: 0.95em;"} {.unnumbered}
 
 We've already confirmed that `ggplot2` isn't attached with `sap` (and hence, it is not included in the `search()` list)
 
@@ -761,7 +764,7 @@ Functions that are not exported (i.e., do not include the `@export` tag) are sti
 )
 ```
 
-### What to [`@export`]{style="font-size: 1.00em"}
+### What to [`@export`]{style="font-size: 1.00em"} {.unnumbered}
 
 > *'Always err on the side of caution, and simplicity. It's easier to give people more functionality than it is to take away stuff they're used to'* - [What to export, R Packages, 2ed](https://r-pkgs.org/dependencies-in-practice.html#what-to-export)
 
@@ -775,7 +778,7 @@ In app-packages, I'll take the following general approach:
 
 I rarely want to export *everything* from an R package, but it could be helpful if the primary audience for your app-package is other developers within your organization. See the **Low-key `@export`s with `@keywords internal`** box below for exporting functions without including them in your package index.
 
-## Imports {#sec-depends-imports}
+## Package imports {#sec-depends-imports}
 
 ```{r}
 #| label: git_box_06.2_pkg-imports
@@ -795,21 +798,21 @@ Managing imports is slightly more involved than exports because imported depende
 
 +   The `NAMESPACE` manages  **function-level access**, importing functions from add-on packages to be used in our app-package, and--as we've seen above--exporting functions from our app-package for others to use.
 
-### Package-level depencencies
+### Package-level depencencies {.unnumbered}
 
 The `DESCRIPTION` file manages dependencies with three fields: `Depends`, `Imports`, and `Suggests`. [^package-remotes] 
 
-#### [`Depends`]{style="font-size: 1.00em"} {#sec-pkg-depends-description}
+#### [`Depends`]{style="font-size: 1.00em"} {#sec-pkg-depends-description .unnumbered}
 
 Packages listed under `Depends` are essential for our app-package to work. These packages will be attached *before* our package when `library(sap)` is called.
 
-#### [`Imports`]{style="font-size: 1.00em"} {#sec-pkg-imports-description}
+#### [`Imports`]{style="font-size: 1.00em"} {#sec-pkg-imports-description .unnumbered}
 
 Packages listed under `Imports` are necessary for our app-package to work. These packages are loaded (but not attached) when our app-package is installed.
 
 -   Most add-on packages belong under the `Imports` field (i.e., functions from these packages are used in the code below `R/`). 
 
-#### [`Suggests`]{style="font-size: 1.00em"} {#sec-pkg-suggests-description}
+#### [`Suggests`]{style="font-size: 1.00em"} {#sec-pkg-suggests-description .unnumbered}
 
 The `Suggests` field should include any packages that enhance our app-package, but aren't necessary for the basic functionality. This might include packages used in examples, vignettes, tests, etc. 
 
@@ -826,19 +829,19 @@ co_box(
   contents = "Generally speaking, you want to keep your app-package lightweight (i.e., limit the number of add-on/third-party dependencies, other than `base`-R packages and `shiny`). Doing this ensures you'll be able to safely use this app-packages as a dependencies in the next app-packages. We'll cover tracking and exploring dependencies in @sec-entanglement.")
 ```
 
-### Function-level access
+### Function-level access {.unnumbered}
 
 Function-level access is managed using namespace-qualified references (or 'explicit namespacing') in the code below `R/`. The `NAMESPACE` can also be used to include add-on packages or functions with the `@import` and `@importFrom` tags.[^imports-rpkgs-importFrom-import]
 
-#### [`pkg::fun()`]{style="font-size: 1.0em"} {#sec-depends-pkg-fun-syntax}
+#### [`pkg::fun()`]{style="font-size: 1.0em"} {#sec-depends-pkg-fun-syntax .unnumbered}
 
 Refer to add-on package functions using `pkg::fun()` syntax in the code below `R/`.  
 
-#### [`@importFrom`]{style="font-size: 1.0em"} {#sec-depends-import-from}
+#### [`@importFrom`]{style="font-size: 1.0em"} {#sec-depends-import-from .unnumbered}
 
 `@importFrom` should be used when 1) *"You can't call an operator from another package via `::`"* 2) *"importing a function makes your code much more readable"* (**not** easier to write)
 
-#### [`@import`]{style="font-size: 1.00em"} {#sec-depends-import}
+#### [`@import`]{style="font-size: 1.00em"} {#sec-depends-import .unnumbered}
 
 `@import` should be used if *"you make such heavy use of so many functions from another package that you want to import its entire namespace"*
 
@@ -846,7 +849,7 @@ Refer to add-on package functions using `pkg::fun()` syntax in the code below `R
 
 [^imports-rpkgs-importFrom-import]: Read more about this in the section titled, ['In code below R/' in R Packages, 2ed](https://r-pkgs.org/dependencies-in-practice.html#sec-dependencies-in-imports-r-code)
 
-### Handling imports 
+### Handling imports {.unnumbered}
 
 The workflow I use to manage add-on dependencies comes from the advice in the `roxygen2` documentation.[^imports-roxygen2-docs] 
 
@@ -1066,7 +1069,7 @@ When we run `launch_app()`, we see the application launches and we can still run
 Confirming we still have full functionality in `sap`
 :::
 
-### What [`@import`]{style="font-size: 1.00em; font-weight: bold;"} does
+### What [`@import`]{style="font-size: 1.00em; font-weight: bold;"} does {.unnumbered}
 
 The figure below attempts to capture some of confusion between the dependencies listed in the `NAMESPACE` and the `Imports` field in the `DESCRIPTION` file.[^imports-confusion-r-packages]
 
@@ -1099,10 +1102,14 @@ The figure below attempts to capture some of confusion between the dependencies 
 %%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'Inconsolata'}}}%%
 
 flowchart TD
-  Imports("List package under <code>Imports</code>\n in <code>DESCRIPTION</code>")
-  Reference("Reference <code>package::function()</code>\n in code")
-  LoadAll("Run <code>devtools::load_all()</code>")
-  Document("Run <code>devtools::document()</code>")
+  Imports("List package 
+          under <code>Imports</code>
+          in <code>DESCRIPTION</code>")
+  Reference("Reference as
+            <code>pkg::fun()</code>
+            in code")
+  LoadAll("Run <code>load_all()</code>")
+  Document("Run <code>document()</code>")
   NamespaceUpdated("<code>NAMESPACE</code> updated")
   RdFileUpdated("<code>.Rd</code> file updated")
 
@@ -1153,7 +1160,7 @@ Imports:
     stringr
 ```
 
-#### The [`search()`]{style="font-size: 1.0em; font-weight: bold;"} list
+#### The [`search()`]{style="font-size: 1.0em; font-weight: bold;"} list {.unnumbered}
 
 Are these packages on the search list?
 
@@ -1172,7 +1179,12 @@ pkgs %in% search()
 [1] FALSE FALSE FALSE FALSE FALSE
 ```
 
-This demonstrates that none of these packages are attached with `sap`. However, the `rlang` and `shiny` packages are included in the `loadedNamespaces()` (because we included them with `@import`/`@importFrom`). 
+This demonstrates that none of these packages are attached with `sap`. 
+
+
+#### [`loadedNamespaces()`]{style="font-size: 0.95em;"} {.unnumbered}
+
+However, the `rlang` and `shiny` packages are included in the `loadedNamespaces()` (because we included them with `@import`/`@importFrom`). 
 
 ```{r}
 #| eval: false
@@ -1206,53 +1218,55 @@ ggplot2::ggplot(data = mtcars,
 
 
 
-## More information on imports 
+## More information on imports {.unnumbered}
 
 Below are handful of questions and answers I've encountered regarding package imports:
 
-***How can I include an add-on package to my `DESCRIPTION` file?***
+***Question: How can I include an add-on package to my `DESCRIPTION` file?***
 
--   `usethis::use_package()` automatically adds a package in the `Imports` section, and has options for specifying the minimum version
+Answer: `usethis::use_package()` automatically adds a package in the `Imports` section, and has options for specifying the minimum version.
 
-***Will users of my app-package have access to the packages listed in the `Imports` field of my `DESCRIPTION` file?***
+***Question: Will users of my app-package have access to the packages listed in the `Imports` field of my `DESCRIPTION` file?***
 
--   `library(pkg)` loads the namespace of imported packages, but they are not attached to the `search()` path[^desc-add-on-access] 
+Answer: `library(pkg)` loads the namespace of imported packages, but they are not attached to the `search()` path.[^desc-add-on-access] 
 
-[^desc-add-on-access]: Users can access functions from add-on packages with the `pkg::fun` syntax
+[^desc-add-on-access]: Users can access functions from add-on packages with the `pkg::fun` syntax.
 
-***How can I tell the difference between functions written by a package author and imported functions in the code below `R/`?***
+***Question: How can I tell the difference between functions written by a package author and imported functions in the code below `R/`?***
 
--   Using `pkg::fun()` makes calls to add-on packages explicit and easy to differentiate from the native functions developed in `sap`[^rpks-pkg-fun-syntax]
+Answer: using `pkg::fun()` makes calls to add-on packages explicit and easy to differentiate from the native functions developed in `sap`.[^rpks-pkg-fun-syntax]
 
-[^rpks-pkg-fun-syntax]: "*Our recommended default is to call external functions using the `package::function()` syntax*" - [R Packages, 2ed](https://r-pkgs.org/dependencies-in-practice.html#sec-dependencies-in-imports)
+[^rpks-pkg-fun-syntax]: "*Our recommended default is to call external functions using the `package::function()` syntax.*" - [R Packages, 2ed](https://r-pkgs.org/dependencies-in-practice.html#sec-dependencies-in-imports)
 
-***What does the `NAMESPACE` do when my package is installed by a user?***
+***Question: What does the `NAMESPACE` do when my package is installed by a user?***
 
--   Managing the `NAMESPACE` ensures your app-package works when it's installed and loaded on another machine, because R will read your package namespace to find what it imports and exports[^ns-lookup]
+Answer: managing the `NAMESPACE` ensures your app-package works when it's installed and loaded on another machine, because R will read your package namespace to find what it imports and exports.[^ns-lookup]
 
 [^ns-lookup]: *The namespace controls the search strategy for variables used by functions in the package. If not found locally, R searches the package namespace first, then the imports, then the base namespace and then the normal search path (so the base namespace precedes the normal search rather than being at the end of it).* - [Writing R Extensions](https://cran.r-project.org/doc/manuals/R-exts.html#Package-namespaces)
 
-***Where should I place the `@importFrom` tag in the code below R/?***
+***Question: Where should I place the `@importFrom` tag in the code below R/?***
 
-- Place the `@importFrom pkg fun` tag directly above the code using the add-on function.
+Answer: place the `@importFrom pkg fun` tag directly above the code using the add-on function. You can also consolidate all `@import` and `@importFrom` tags into a single package doc file (i.e., `R/[sap]-package.R`) by calling `usethis::use_package_doc()`.
 
-- You can also consolidate all `@import` and `@importFrom` tags into a single package doc file (i.e., `R/[sap]-package.R`) by calling `usethis::use_package_doc()`.
+***Question: Should I be using `@importFrom` or `@import` from?***
 
-***Should I be using `@importFrom` or `@import` from?***
-
-- Prefer `@importFrom` over `@import` (but try to avoid using either [^r-ext-imports] [^r-pkgs-imports])
+Answer: prefer `@importFrom` over `@import`, but try to avoid using either[^r-ext-imports] [^r-pkgs-imports].
 
 [^r-ext-imports]: "*Using `importFrom` selectively rather than `Imports` is good practice and recommended notably [when importing from packages with more than a dozen exports and especially from those written by others (so what they export can change in future)]{style="font-weight: bold;"}.*" - [Specifying imports and exports](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Specifying-imports-and-exports). 
 
 [^r-pkgs-imports]: "*Specifically, we recommend that you [default to not importing anything from [add-on packages] into your namespace]{style="font-weight: bold;"}. This makes it very easy to identify which functions live outside of your package, which is especially useful when you read your code in the future. This also eliminates any concerns about name conflicts between [add-on packages] and your package.*" - [R Packages, 2ed](https://r-pkgs.org/dependencies-in-practice.html#sec-dependencies-in-imports)
 
-***Where can I find more information about package namespaces and imports?***
+***Question: Where can I find more information about package namespaces and imports?***
 
--   Imports are described briefly in R Packages, 2ed[^r-pkgs-fun-lookup] and covered in-depth in Advanced R, 2ed[^advr-imports] 
+Answer: Imports are described briefly in R Packages, 2ed[^r-pkgs-fun-lookup] and covered in-depth in Advanced R, 2ed.[^advr-imports] 
+
 <br><br>
-    -    *"Each namespace has an **imports** environment that can contain bindings to functions used by the package that are defined in another package."*    
+
+- *"Each namespace has an **imports** environment that can contain bindings to functions used by the package that are defined in another package."*  
+
 <br>
-    -   *"The **imports** environment is controlled by the package developer with the `NAMESPACE` file. Specifically, directives such as `importFrom()` and `imports()` populate this environment"* 
+
+- *"The **imports** environment is controlled by the package developer with the `NAMESPACE` file. Specifically, directives such as `importFrom()` and `imports()` populate this environment."* 
     
 [^advr-imports]: See the [Package environments and the search path](https://adv-r.hadley.nz/environments.html#search-path) of [Advanced R, 2ed](https://adv-r.hadley.nz/index.html)
 
@@ -1260,7 +1274,7 @@ Below are handful of questions and answers I've encountered regarding package im
 
 In order for app-package to work, users needs to have access to any add-on packages that are called in the code below `R/`. Knowing when, why, how and what happens to imports helps you decide how to fit these habits into your package development workflow. 
 
-## Checking dependencies 
+## Checking dependencies {.unnumbered}
 
 With all the moving parts in dependency management, it can be easy to forget if you've documented everything correctly. So far we haven't covered using `devtools::check()` as part of your app-package habits (which [is fine](https://mastering-shiny.org/scaling-packaging.html#r-cmd-check)), but this is one area it's particularly helpful. 
 
