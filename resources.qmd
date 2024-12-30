@@ -1,4 +1,4 @@
-# Resources {#sec-inst}
+# Resources {#sec-resources}
 
 ```{r}
 #| eval: true 
@@ -78,7 +78,7 @@ shinypak_apps(regex = "09", branch = "09.1_inst-www")
 
 [^external-common-problem]: This is a common problem developers encounter when converting shiny app into app-packages. See [this popular thread](https://community.rstudio.com/t/shiny-app-as-a-package-directory-structure-and-www-folder/135323/8) on Posit Community.
 
-## Package files 
+## Package files {.unnumbered}
 
 While developing, we get used to accessing and interacting with our package files from the **Files** pane or **Explorer** window:
 
@@ -190,51 +190,11 @@ sap/
 
 Some of the source folders and files we’ve been working with remain in the installed version of our package (i.e., the `DESCRIPTION`, `NAMESPACE`, and `extdata/movies.fst`). Still, the majority have been converted to the installed package version format.
 
-### [`system.file()`]{style="font-size: 0.95em;"} {#sec-external-system-file}
-
 Hopefully, seeing an installed package's contents demystifies what happens when we run `devtools::install()`. When we want to add non-R package files to our app (like the `shiny.png` logo), we store these files in the `inst/`folder and access them with `system.file()`.[^inst-r-pkgs] 
 
 [^inst-r-pkgs]: Read more about sub-directories to avoid in `inst/` in [R Packages, 2ed](https://r-pkgs.org/misc.html#sec-misc-inst).
 
 > "*The contents of the `inst/` subdirectory will be copied recursively to the installation directory. Subdirectories of `inst/` should not interfere with those used by R (currently, `R/`, `data/`, `demo/`, `exec/`, `libs/`, `man/`, `help/`, `html/` and `Meta/`, and earlier versions used `latex/`, `R-ex/`).*" - [Writing R extensions, Package subdirectories](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Package-subdirectories)
-
-`system.file()` gives us access to the package files _on installation_ (i.e., the files we saw in the folder tree above). We used `system.file()` in the previous [chapter on data](data.qmd) to access the `movies.fst` file in `inst/extdata/`:
-
-
-
-```{r}
-#| eval: false 
-#| code-fold: show
-#| code-summary: 'system.file() is accessing movies.fst from the installed location'
-fst::read_fst(
-  path = system.file("extdata/", "movies.fst", 
-                     package = "sap")
-  )
-```
-
-In essence, `movies.fst` has the ‘source’ package and the ‘installed’ locations.
-
-:::{layout="[45,55]" layout-valign="top"}
-
-#### Source package files {.unnumbered}
-
-
-``` sh
-# What we see
-inst/
-  └── extdata/
-        └── movies.fst
-```
-
-#### Installed package files {.unnumbered}
-
-``` sh
-# What R sees
-└── extdata/
-      └── movies.fst
-```
-
-:::
 
 ```{r}
 #| label: co_box_install
@@ -303,13 +263,53 @@ shiny::runExample(example = '11_timer')
 ")
 ```
 
-## Image files {#sec-external-add-resources}
+## Image files {#sec-resources-image-files}
 
 To include the contents of `www/` in our app-package, we’ll need to move `www/` into `inst/`, and then access its contents with `system.file()`.[^inst-view]
 
 [^inst-view]: The key takeaway here is that the `inst/` subfolders and files are available *unchanged* in the installed version (with the `inst/` folder omitted.).
 
-### [`addResourcePath()`]{style="font-size: 0.95em;"} {#sec-external-add-resource-path}
+### [`system.file()`]{style="font-size: 0.95em;"} {#sec-resources-system-file}
+
+`system.file()` gives us access to the package files _on installation_ (i.e., the files we saw in the folder tree above). We used `system.file()` in the previous [chapter on data](data.qmd) to access the `movies.fst` file in `inst/extdata/`:
+
+
+
+```{r}
+#| eval: false 
+#| code-fold: show
+#| code-summary: 'system.file() is accessing movies.fst from the installed location'
+fst::read_fst(
+  path = system.file("extdata/", "movies.fst", 
+                     package = "sap")
+  )
+```
+
+In essence, `movies.fst` has the ‘source’ package and the ‘installed’ locations.
+
+:::{layout="[45,55]" layout-valign="top"}
+
+#### Source package files {.unnumbered}
+
+
+``` sh
+# What we see
+inst/
+  └── extdata/
+        └── movies.fst
+```
+
+#### Installed package files {.unnumbered}
+
+``` sh
+# What R sees
+└── extdata/
+      └── movies.fst
+```
+
+:::
+
+### [`addResourcePath()`]{style="font-size: 0.95em;"} {#sec-resources-add-resource-path}
 
 The `addResourcePath()` function will add a “*directory of static resources to Shiny’s web server.*”[^add-resource-path-4] In `sap`, we want to add the `www` directory, which includes the `shiny.png` file.
 
@@ -653,7 +653,7 @@ This alternate version of `launch_app()` uses the same modules and utility funct
 
 The `inst/` folder is a versatile tool for storing various files needed in our application (logos or images, CSS styling, JavaScript functions, HTML, etc.). The example above was simple, but using `inst/` to hold resources for alternate UIs that can be displayed with a single argument is handy for demoing versions for stakeholders.
 
-## Data files {#sec-external-inst-dev}
+## Data files {#sec-resources-inst-dev}
 
 It is not uncommon to develop an application that can handle data from multiple sources. In these situations, we can sometimes store the alternative data files in the `inst/` folder.[^external-data]
 
@@ -762,7 +762,7 @@ All of the functions from `sap` are available in the `tidy-movies/` app with exp
 
 [^export-modules]: This requires exporting `mod_var_input_server()` with `@export` in the `R/` folder.
 
-### Launching [`tidy-movies`]{style="font-size: 0.95em;"} {#sec-inst-tidy-movies-launch}
+### Launching [`tidy-movies`]{style="font-size: 0.95em;"} {#sec-resources-tidy-movies-launch}
 
 Finally, we'll launch the `tidy_movies` data app with the `app` argument in our standalone function. This conditional argument is similar to the `app = "bslib"` option, but we use  `shinyAppDir()` to launch the app stored in `inst/tidy-movies` (which we locate with `system.file()`).
 
@@ -841,7 +841,7 @@ co_box(
 ```
 
 
-## Quarto apps {#sec-external-inst-quarto}
+## Quarto apps {#sec-resources-inst-quarto}
 
 Shiny apps can also be built inside [Quarto documents](https://quarto.org/docs/interactive/shiny/), in which case we could also use the `inst/` folder to store and load resources (images, CSS, etc.).
 
@@ -1004,7 +1004,7 @@ launch_app(app = "quarto")
 ```
 
 
-## Production {#sec-external-inst-prod}
+## Production {#sec-resources-inst-prod}
 
 Finally, it's also possible to have a folder dedicated for deploying a production version of our application from our app-package. I recommend naming this folder something like `inst/prod/` or `inst/deploy`, and it can contain a version of your application that's 'fit for public consumption.' In `inst/prod/app` I've created an `app.R` file:
 
@@ -1045,7 +1045,7 @@ launch_app(app = "bslib", options = list(test.mode = FALSE))
 
 I'll use the `"bslib"` version from above to differentiate it from the other applications in `sap`. 
 
-### [Deploying `inst/prod/`]{style="font-size: 0.95em;"} {#sec-inst-prod-deploy}
+### [Deploying `inst/prod/`]{style="font-size: 0.95em;"} {#sec-resources-prod-deploy}
 
 Back in the our `app.R` file, we'll use `shinyAppDir()` and `system.file()` to return the app object from `prod/app/app.R`:
 
