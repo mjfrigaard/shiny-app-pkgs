@@ -52,7 +52,7 @@ co_box(
 [^debug-other-resources]: For an introduction to the IDE's debugging tools, see [Debugging with the RStudio IDE](https://support.posit.co/hc/en-us/articles/205612627-Debugging-with-the-RStudio-IDE). Debugging is also covered in [Advanced R, 2ed](https://adv-r.hadley.nz/debugging.html) and [Mastering Shiny.](https://mastering-shiny.org/action-workflow.html#debugging)
 
 
-## Debugging with `browser()` {#sec-debug-browser}
+## Interactive debugging {#sec-debug-browser}
 
 Interactive debugging (e.g., using `browser()` or setting a breakpoint) allows us to ‘peek inside’ a function's scope to view intermediate values/variables and break down the execution line by line.  
 
@@ -71,43 +71,99 @@ Interactive debugging (e.g., using `browser()` or setting a breakpoint) allows u
 ```
 
 ```{mermaid}
-%%| label: function_exec_browser
 %%| fig-align: center
+%%| fig-cap: 'Interactive debugger with `browser()` or breakpoint'
 %%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'monospace'}}}%%
 flowchart TD
- subgraph Function["Scope"]
-        Running["Execution"] --> Browser("Encounters <code>browser()</code>")
-        Browser --> Debugger("View 
-                              variables/values")
-    subgraph Browse["Interactive Debugger"]
-        Debugger <--> Step["Execute 
-                           line-by-line"]
+    subgraph FunctionScope [<strong>Function Scope</strong>]
+    style FunctionScope fill:#FFF,color:#000,stroke:#333,font-size:14px
+        Start(Execution)
+        style Start fill:#FFF,stroke:#333,stroke-width:1px,color:#000,font-size:14px
+        Browser{Breakpoint<br>or <code>browser</code>?}
+        style Browser fill:#ffcccb,stroke:#e60000,stroke-width:3px,color:#000,font-size:14px
+        subgraph Debugger [<strong>Debugger</strong>]
+        style Debugger fill:#F8F8FA,stroke:#4CB7DB,stroke-width:3px,rx:10,ry:10,font-size:14px
+            Step1(Inspect<br>Variables)
+            style Step1 fill:#4CB7DB,color:#000,stroke:none,rx:15,ry:15,font-size:14px
+            Step1 --> Step2(Step Through<br>Code)
+            style Step2 fill:#4CB7DB,color:#000,stroke:none,rx:15,ry:15,font-size:14px
+           Step2 --> Debug{End<br>Debugging?}
+            style Debug fill:#ffcccb,stroke:#e60000,stroke-width:3px,color:#000,font-size:14px
+            Debug -->|No| Step1
+            Debug -->|Yes| Exit(Exit Debugger)
+            style Exit fill:#4CB7DB,color:#000,stroke:none,rx:15,ry:15,font-size:14px
+        end
+        Resume(Resume Execution)
+        style Resume fill:#FFF,stroke:#333,stroke-width:1px,color:#000,font-size:14px
     end
-    Step --> Exit("Exit 
-                   <code>browser()</code>")
-    Exit --> Exec["Resume
-                   execution"]
-  end
+    Start --> Browser
+    Browser -->|Yes| Debugger
+    Exit --> Resume
+    Browser -->|No| Resume
+```
+
+Unfortunately, using `browser()` and breakpoints are not as straightforward within reactive contexts. `browser()` interacts with the R interpreter by temporarily suspending execution and redirecting the input to evaluate R expressions in the context of the function or script that called it. 
+
+```{=html}
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+</style>
+```
+
+```{mermaid}
+%%| fig-align: center
+%%| fig-cap: 'How `browser()` works in regular R function'
+%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'monospace'}}}%%
+flowchart TD
+    subgraph Function["<strong>Function Scope</strong>"]
+        Running("Execution")
+        Running --> Encounter
+        
+        subgraph BrowserStep["<strong>browser()<strong>"]
+            Encounter("Encounter<br><code>browser()</code>") --> Step1
+            
+            subgraph Debugger["<strong>Debugger</strong>"]
+                Step1("View<br>variables/values") --> Step2("Execute code<br>line-by-line")
+            end
+            Step2 --> ExitBrowser("Exit the<br><code>browser()</code>")
+            
+        end
+        ExitBrowser --> Resume("Resume execution")
+        
+    end
     
-    style Function fill:#FFFFFF
-    style Debugger fill:#4CB7DB,stroke:none,rx:10,ry:10
-    style Exit fill:#4CBB9D,stroke:none,rx:10,ry:10
-    style Step fill:#4CB7DB,stroke:none,rx:10,ry:10
-    style Running fill:none,stroke:none,rx:10,ry:10
-    style Browse fill:#F8F8FA,stroke:#333,stroke-width:1px,rx:5,ry:5
-    style Browser fill:#4CBB9D,stroke:none,rx:10,ry:10
-    style Exec fill:none,stroke:none,rx:10,ry:10
+    %% subgraphs
+    style Function fill:#FFF,color:#000,stroke:#333,font-size:14px
+    style BrowserStep stroke:#4CBB9D,color:#000,stroke-width:3px,rx:10,ry:10,font-size:14px
+    style Debugger fill:#F8F8FA,color:#000,stroke:#4CB7DB,stroke-width:3px,rx:10,ry:10,font-size:14px
+    
+    %% nodes 
+    style Running fill:#FFF,color:#000,stroke:#333,rx:10,ry:10,font-size:14px
+    style Encounter fill:#4CBB9D,color:#FFFFFF,stroke:none,rx:10,ry:10,font-size:14px
+    style Step1 fill:#4CB7DB,color:#000,stroke:none,rx:15,ry:15,font-size:14px
+    style Step2 fill:#4CB7DB,color:#000,stroke:none,rx:10,ry:10,font-size:14px
+    style ExitBrowser fill:#4CBB9D,color:#FFFFFF,stroke:none,rx:20,ry:10,font-size:14px
+    style Resume fill:#FFF,color:#000,stroke:#333,rx:10,ry:10,font-size:14px
+    
 ```
 
 <br>
 
-Unfortunately, using `browser()` and breakpoints are not as straightforward within reactive contexts, because `browser()` can disrupt the reactive flow, making maintaining an interactive debugging session challenging. 
+Shiny's asynchronous execution makes it difficult for `browser()` to pause the flow of execution, making maintaining an interactive debugging session challenging.  
 
 ### Reactive browsing
 
-In a Shiny context, we want to pause execution without altering or stopping the reactive flow. Fortunately, Shiny already has a function that performs this: `observe()`.
+In a Shiny context, code inside the server function is executed asynchronously in response to user inputs or reactive dependencies. Shiny does not directly expose the control flow to the user, but we want to pause this execution without altering or stopping the reactive flow. 
 
-Within a Shiny `server()` function, any call to `observe()` creates a reactive observer that 'listens' for changes to reactive dependencies (and runs any enclosed code whenever those dependencies change). 
+Fortunately, Shiny already has a function that performs this: `observe()`. Within a Shiny `server()` function, any call to `observe()` creates a reactive observer that 'listens' for changes to reactive dependencies (and runs any enclosed code whenever those dependencies change). 
 
 ```{=html}
 
@@ -127,32 +183,49 @@ Within a Shiny `server()` function, any call to `observe()` creates a reactive o
 
 ```{mermaid}
 %%| fig-align: center
+%%| fig-cap: 'Reacting `browser`ing in an `observe`er'
 %%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'monospace'}}}%%
 flowchart TD
-subgraph Function["Server Scope"]
-    Fun["Reactive flow"] --> Obs["<code>observe()</code>"]
-    subgraph Observer["Observer Scope"]
-        Obs --> Browser["<code>browser()</code>"]
-        subgraph Debugger["Interactive Debugger"]
-        Browser -- Invalidates Observer --> View["View variables/reactives"]
-        View --> ExitBrowser["Exit <code>browser()</code>"]
+    subgraph Server["server() Scope"]
+        StartReact("Reactive Execution")
+        StartReact --> ObserveExecution("browser()</code><br>invalidates observer")
+        subgraph Observer["<strong>observe() Scope</strong>"]
+            ObserveExecution("browser()</code><br>invalidates observer")  
+            ObserveExecution --> Browser
+            subgraph Browse["<strong>browser() Scope</strong>"]
+                Browser("<code>observe</code> scope<br>execution paused")
+                Browser --> Step
+                subgraph Debugger["<strong>Debugger</strong>"]
+                    Step("View variables<br>& reactives")
+                end
+                    ExitBrowser("Exit<br><code>browser()</code>")
+                    Step --> ExitBrowser
+                
+            end
+                ExitObserver("Exit<br><code>observe()</code>")
+                ExitBrowser --> ExitObserver
         end
-        ExitBrowser --> ExitObserver["Exit <code>observe()</code>"]
+            ExitObserver --> EndReact("Resume Reactive<br>Execution")
+    
     end
-    Fun <--> ExitObserver
-end
 
-style Function fill:#E5E6EB
-style Fun fill:none,stroke:#E5E6EB,stroke-width:3px,rx:10,ry:10
-style Debugger fill:#F8F8FA,stroke:none,rx:5,ry:5
-style Observer fill:#FFFFFF,stroke:#4CBB9D,stroke-width:3px,rx:10,ry:10
-style Browser fill:#4CB7DB,stroke:none,rx:3,ry:3
-style View fill:#4CB7DB,stroke:none,rx:3,ry:3
-style ExitBrowser fill:#4CB7DB,stroke:none,rx:3,ry:3
-style Obs fill:#FFFFFF,stroke:#4CBB9D,stroke-width:3px,rx:10,ry:10
-style ExitObserver fill:#FFFFFF,stroke:#4CBB9D,stroke-width:3px,rx:10,ry:10
+    style Server fill:#FFF,color:#000,stroke:#333,font-size:14px
+    style StartReact fill:#FFF,color:#000,stroke:#333,font-size:14px
+    style EndReact fill:#FFF,color:#000,stroke:#333,font-size:14px
 
+    style Observer fill:#FFF,stroke:#FEDBC1,stroke-width:3px,font-size:14px
+    style ObserveExecution fill:#FEDBC1,stroke:none,rx:10,ry:10,font-size:14px
+    
+    style Browser fill:#4CBB9D,color:#000,stroke:none,rx:20,ry:10,font-size:14px
+    style Browse stroke:#4CBB9D,color:#000,fill:#FFF,stroke-width:3px,rx:10,ry:10,font-size:14px
+    
+    style Debugger fill:#F8F8FA,stroke:#4CB7DB,stroke-width:3px,rx:10,ry:10,font-size:14px
+    style Step fill:#4CB7DB,stroke:none,rx:10,ry:10
+
+    style ExitBrowser fill:#4CBB9D,color:#000,stroke:none,rx:20,ry:10,font-size:14px
+    style ExitObserver fill:#FEDBC1,color:#000,stroke:none,rx:20,ry:10,font-size:14px
 ```
+
 
 When `browser()` is called from ***within the `observe()` scope***, the code execution pauses and temporarily suspends the reactive flow so we can inspect the environment (without altering or stopping the reactive flow). 
 
@@ -179,7 +252,7 @@ This allows us to interactively examine variables and reactive expressions (with
 
 ## Example: `ggplot2movies` app
 
-In the [Resources](resources.qmd) we developed an application using the `ggplot2movies` data.[^ggp2-callback] In the following sections we're going to use the interactive debugger to see the inner workings of the 'Remove missing' checkbox.
+In the [Resources](resources.qmd) chapter we developed a slight variation of our app with the `ggplot2movies` data.[^ggp2-callback] In the following sections we're going to use the interactive debugger to see the inner workings of the 'Remove missing' checkbox.
 
 [^ggp2-callback]: You can refresh your memory on the `ggplot2movies` application in @sec-resources-inst-dev.
 
@@ -189,7 +262,7 @@ We'll begin by placing the `observe()` and `browser()` breakpoint *inside* the m
 
 ```{r}
 #| eval: false 
-#| code-fold: show
+#| code-fold: true
 #| code-summary: 'show/hide debugging functions in the module server function' 
 dev_mod_scatter_server <- function(id, var_inputs) {
   moduleServer(id, function(input, output, session) {
@@ -269,7 +342,7 @@ And launch the app using:
 ```{r}
 #| eval: false 
 #| code-fold: false
-ggp2_launch_app(options = list(test.mode = TRUE))
+launch_app(app = "ggp2")
 ```
 
 ```{r}
@@ -325,7 +398,9 @@ As noted above, `browser()` pauses code execution and activates the interactive 
 
 ### IDE Changes
 
-When the app is launched, Positron ![](images/positron.png){height=20} alerts us that we're in debugging mode by making a few changes to the IDE: 
+When the app is launched, Positron ![](images/positron.png){height=20} alerts us that we're in debugging mode by making a few changes to the IDE:[^positron-video] 
+
+[^positron-video]: Watch [this video](https://youtu.be/8uRcB34Hhsw?si=OMJz4_043sCPnx8x&t=2452) to learn more about Positron. 
 
 1. The **Run and Debug** sidebar menu item is displayed and the footer is [highlighted in blue]{style="background-color: #6CAAD9; font-weight: bold;"}[^highlight-footer]
 
@@ -370,17 +445,17 @@ Browse[1]> n
 
 As we 'step through' the function, Positron's ![](images/positron.png){height=20} **Console** displays the `debug at` location, followed by the code line number: 
 
-![Full path and line number to the file containing our call to `browser()` (click to enlarge)](images/debug_positron_step.png){width='80%' fig-align='center'}
+![Full path and line number to the file containing our call to `browser()` (click to enlarge)](images/debug_positron_step.png){fig-align='center'}
 
 In the **Editor**, the same line of code is [highlighted in yellow]{style="background-color: #FAFFC1; font-weight: bold;"}:
 
-![Corresponding line number in **Editor** (click to enlarge)](images/debug_positron_highlight_next_exec.png){width='80%' fig-align='center'}
+![Corresponding line number in **Editor** (click to enlarge)](images/debug_positron_highlight_next_exec.png){fig-align='center'}
 
 The line creating `graph_data` gives us a hint for how the missing data are removed (i.e., with `bindEvent()`), but we'll explore this more in [Print debugging](debug_print.qmd).
 
 Under *Locals* in the **DEBUG VARIABLES** sidebar, we can see `all_data` is listed as a `<data.frame>`, and `graph_data` are listed as a `<reactive.event>`:
 
-![Click to enlarge **DEBUG VARIABLES** in sidebar](images/debug_positron_reactive_event.png){width='80%' fig-align='center'}
+![Click to enlarge **DEBUG VARIABLES** in sidebar](images/debug_positron_reactive_event.png){fig-align='center'}
 
 
 ### Inspecting variables
