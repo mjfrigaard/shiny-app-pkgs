@@ -22,62 +22,32 @@ co_box(
 ```
 
 
-:::: {.callout-tip collapse='true' appearance='default'}
-
-## [Accessing applications]{style='font-weight: bold; font-size: 1.15em;'}
-
-::: {style='font-size: 0.95em; color: #282b2d;'}
-
-I've created the [`shinypak` R package](https://mjfrigaard.github.io/shinypak/) In an effort to make each section accessible and easy to follow:
-  
-Install `shinypak` using `pak` (or `remotes`):
-
 ```{r}
-#| code-fold: false 
-#| message: false
-#| warning: false
-#| eval: false
-# install.packages('pak')
-pak::pak('mjfrigaard/shinypak')
+#| label: shinypak_apps
+#| echo: false
+#| results: asis
+#| eval: true
+shinypak_apps(regex = "11", branch = "11_debug-print")
 ```
 
-Review the chapters in each section:
-  
-```{r}
-#| code-fold: false 
-#| message: false
-#| warning: false
-#| collapse: true
-library(shinypak)
-list_apps(regex = 'debug')
-```
 
-Launch the app: 
+In the previous chapter we covered the interactive debugger in Positron ![](images/positron.png){height=20} with `browser()` and `observe()`. In this chapter, we'll explore another commonly used technique for identifying and resolving issues or errors in your code: print debugging. 
+
+## Exposing variables and values {#sec-debug-print}
 
 ```{r}
-#| code-fold: false 
-#| eval: false
-launch(app = "11_debug-print")
+#| label: git_box_11_debug-print
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  fig_pw = '65%', 
+  branch = "11_debug-print", 
+  repo = 'sap')
 ```
 
-Download the app: 
-
-```{r}
-#| code-fold: false 
-#| eval: false
-get_app(app = "11_debug-print")
-```
-
-::: 
-
-::::
-
-
-In the previous chapter we explored triggering the interactive debugger in Positron ![](images/positron.png){height=20} with `browser()` and `observe()`. In this chapter, we'll explore another commonly used technique for identifying and resolving issues in code: print debugging. 
-
-## Debugging with `print()` {#sec-debug-print}
-
-Print debugging is a different approach than the interactive debugger, and it's suited for a different types of development workflow. Print debugging involves inserting a `print()` (or `cat()`) statement into the body of a function to output variables, values, or other important information at various points.
+Print debugging uses a simpler approach than the interactive debugger, and it's well-suited for a variety of development workflows. Print debugging involves inserting a `print()` (or `cat()`) statement into the body of a function to output variables, values, or other important information at various points.
 
 
 ```{=html}
@@ -98,77 +68,310 @@ Print debugging is a different approach than the interactive debugger, and it's 
 
 ```{mermaid}
 %%| label: print_statement
-%%| fig-width: 5
-%%| fig-height: 6
 %%| fig-align: center
+%%| fig-cap: 'Print debugging with `print()` or `cat()`'
 %%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'monospace'}}}%%
 flowchart TD
-    Start["Function Executes"] --> Print["<code>print()</code> / <code>cat()</code>"]
-    Print --> Issue{"<strong>Output reveals issue?</strong>"}
-    Issue -- Yes --> Mod[Modify Function]
-    Mod --> Start
-    Issue -- No --> Start
-
-style Start fill:#E5E6EB,stroke:none,rx:3,ry:3
-style Print fill:#4CBB9D,stroke:none,rx:3,ry:3
-style Issue fill:#FF7F00,stroke:#FF7F00,stroke-width:5px,color:#FFFFFF
-style Mod fill:#4CB7DB,stroke:#4CB7DB,rx:10,ry:10
+    subgraph FunctionScope [<strong>Function Scope</strong>]
+    style FunctionScope fill:#FFF,color:#000,stroke:#333,font-size:14px
+        Print("Encounter<br><code>print()</code> or<br><code>cat()</code>")
+        style Print fill:#4CBB9D,stroke:none,color:#000,rx:10,ry:10
+        Start("Execute") --> Print("Encounter<br><code>print()</code> or<br><code>cat()</code>")
+        style Start fill:#FFF,stroke:#333,stroke-width:1px,color:#000,font-size:14px
+        Print --> Issue{"<strong>Output<br>reveals<br>issue?</strong>"}
+        style Issue fill:#ffcccb,stroke:#e60000,stroke-width:3px,color:#000,font-size:14px
+        Issue -- Yes --> Mod("Modify<br>Function")
+        style Mod fill:#FFF,stroke:#333,stroke-width:1px,color:#000,font-size:14px
+        Issue -- No --> Debug("Adjust<br><code>print()</code> or<br><code>cat()</code>")
+        style Debug fill:#FFF,stroke:#333,stroke-width:1px,color:#000,font-size:14px
+    end
 ```
-
-<!--
-style ExitBrowser fill:#4CB7DB,stroke:none,rx:3,ry:3
-style Obs fill:#FFFFFF,stroke:#4CBB9D,stroke-width:3px,rx:10,ry:10
-style ExitObserver fill:#FFFFFF,stroke:#4CBB9D,stroke-width:3px,rx:10,ry:10
--->
 
 <br>
 
-Using well-placed calls to `print()` or `cat()` allows us to display variable values, which helps us to understand the inner-workings of the function. After running the function, we can view the output in the **Console** (or log file).
+## Reactive printing 
 
-### Reactive printing 
+To track reactivity, we need to place the print functions in a reactive expression, observer, or event handler. This allows us to see when these values are triggered (and any other values they work with). 
 
-`print()` and `cat()` can only provide a snapshot of values or variables *at the location and time of the print call*, limiting their usefulness in exploring the other parts of the environment or interacting with the running application. 
+```{=html}
 
-In Shiny apps, a powerful tool for capturing and printing input values is `reactiveValuesToList()`. 
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+
+</style>
+```
+
+```{mermaid}
+%%| label: reactive_print_statement
+%%| fig-align: center
+%%| fig-cap: 'Reactive print debugging with `print()` or `cat()`'
+%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'monospace'}}}%%
+flowchart TD
+    subgraph FunctionScope [<strong>Function Scope</strong>]
+    style FunctionScope fill:#FFF,color:#000,stroke:#333,font-size:14px
+        subgraph Reactive["Reactive Context"]
+        style Reactive fill:#fff,stroke:#FEDBC1,stroke-width:3px,color:#000,font-size:14px
+            Print("Encounter<br><code>print()</code> or<br><code>cat()</code>")
+            style Print fill:#4CBB9D,stroke:none,color:#000,rx:10,ry:10
+        end
+        Start("Execute") --> Print("Encounter<br><code>print()</code> or<br><code>cat()</code>")
+        style Start fill:#FFF,stroke:#333,stroke-width:1px,color:#000,font-size:14px
+        Print --> Issue{"<strong>Output<br>reveals<br>issue?</strong>"}
+        style Issue fill:#ffcccb,stroke:#e60000,stroke-width:3px,color:#000,font-size:14px
+        Issue -- Yes --> Mod("Modify<br>Function")
+        style Mod fill:#FFF,stroke:#333,stroke-width:1px,color:#000,font-size:14px
+        Issue -- No --> Debug("Adjust<br><code>print()</code> or<br><code>cat()</code>")
+        style Debug fill:#FFF,stroke:#333,stroke-width:1px,color:#000,font-size:14px
+    end
+```
+
+Using well-placed calls to `print()` or `cat()` allows us to display input values, which helps us to understand the inner-workings of our application. 
+
+For example, placing the code below in the server function of our variable input module will print the selected variables to the console: 
 
 ```{r}
 #| code-fold: false
 #| eval: false
-reactiveValuesToList(x = , all.names = )
-```
+mod_var_input_server <- function(id) {
 
-If we combine `reactiveValuesToList()` with `verbatimTextOutput()`, and `renderPrint()`, we can convert Shiny reactive values (i.e., user inputs) into a list that can be printed and displayed back in the UI.
+  moduleServer(id, function(input, output, session) {
+
+    observe({ #<1>
+      cat("Selected x, y, and color:\n") #<2>
+      print(c('x' = input$x, #<3>
+              'y' = input$y, 
+              'color' = input$z)) #<3>
+    }) |> #<1>
+      bindEvent(c(input$x, input$y, input$x)) #<4>
+    
+    return(
+      reactive({
+        list(
+          "y" = input$y,
+          "x" = input$x,
+          "z" = input$z,
+          "alpha" = input$alpha,
+          "size" = input$size,
+          "plot_title" = input$plot_title
+        )
+      })
+    )
+
+  })
+}
+
+```
+1. Wrap in `observe()` to provide reactive context for printing  
+2. Print message with `cat()` 
+3. Print reactives with `print()`  
+4. Bind this event to print whenever the variable inputs change 
+
+After running the function, we can view the output in the **Console** (or log file).
+
+![Variables printed to **Console** (click to enlarge)](images/print_debug_print_vars.png){width='100%' fig-align='center'}
+
+
+
+Unfortunately, `print()` and `cat()` can only provide a snapshot of values or variables *at the location and time of the print call*. This limits their usefulness in exploring the other parts of the environment or interacting with the running application. 
+
+However, we can place `verbatimTextOutput()` in our module UI function: 
 
 ```{r}
-#| label: git_box_11_debug-print
+#| code-fold: show 
+#| code-summary: 'show/hide updated mod_var_input_ui()'
+#| eval: false
+mod_var_input_ui <- function(id) {
+  ns <- NS(id)
+  tagList(
+    selectInput(
+      inputId = ns("y"),
+      label = "Y-axis:",
+      choices = c(
+        "IMDB rating" = "imdb_rating",
+        "IMDB number of votes" = "imdb_num_votes",
+        "Critics Score" = "critics_score",
+        "Audience Score" = "audience_score",
+        "Runtime" = "runtime"
+      ),
+      selected = "audience_score"
+    ),
+    selectInput(
+      inputId = ns("x"),
+      label = "X-axis:",
+      choices = c(
+        "IMDB rating" = "imdb_rating",
+        "IMDB number of votes" = "imdb_num_votes",
+        "Critics Score" = "critics_score",
+        "Audience Score" = "audience_score",
+        "Runtime" = "runtime"
+      ),
+      selected = "imdb_rating"
+    ),
+    selectInput(
+      inputId = ns("z"),
+      label = "Color by:",
+      choices = c(
+        "Title Type" = "title_type",
+        "Genre" = "genre",
+        "MPAA Rating" = "mpaa_rating",
+        "Critics Rating" = "critics_rating",
+        "Audience Rating" = "audience_rating"
+      ),
+      selected = "mpaa_rating"
+    ),
+    verbatimTextOutput(ns("vars")),#<1>
+    sliderInput(
+      inputId = ns("alpha"),
+      label = "Alpha:",
+      min = 0, max = 1, step = 0.1,
+      value = 0.5
+    ),
+    sliderInput(
+      inputId = ns("size"),
+      label = "Size:",
+      min = 0, max = 5,
+      value = 2
+    ),
+    textInput(
+      inputId = ns("plot_title"),
+      label = "Plot title",
+      placeholder = "Enter plot title"
+    )
+  )
+}
+```
+1. Print the values to the UI   
+
+And an accompanying `renderPrint()` in the module server function to print the values in the UI:
+
+```{r}
+#| code-fold: show 
+#| code-summary: 'show/hide updated mod_var_input_server()'
+#| eval: false
+
+mod_var_input_server <- function(id) {
+
+  moduleServer(id, function(input, output, session) {
+
+    observe({ #<1>
+      cat("Selected x, y, and color:\n") #<2>
+      print(c('x' = input$x, #<3>
+              'y' = input$y, 
+              'color' = input$z)) #<3>
+      
+      output$vars <- renderPrint({ #<4>
+        list('x' = input$x, 
+             'y' = input$y, 
+             'color' = input$z) 
+      }) #<4>
+    }) |> #<1>
+      bindEvent(c(input$x, input$y, input$x)) #<5>
+    
+    return(
+      reactive({
+        list(
+          "y" = input$y,
+          "x" = input$x,
+          "z" = input$z,
+          "alpha" = input$alpha,
+          "size" = input$size,
+          "plot_title" = input$plot_title
+        )
+      })
+    )
+
+  })
+}
+
+```
+1. Reactive context 
+2. Print message with `cat()`
+3. Print to inputs with `print()`
+4. Print inputs to UI  
+5. Bind this event to print whenever the variable inputs change 
+
+![Variables printed to **UI** (click to enlarge)](images/print_debug_print_vars_ui.png){width='100%' fig-align='center'}
+
+This allows us to view the inputs in the UI as they change in the server.
+
+## Reactive values 
+
+A powerful tool for capturing and printing input values in the server is `reactiveValuesToList()`:
+
+```{r}
+#| code-fold: false
+#| eval: false
+reactiveValuesToList(x = , all.names = ) #<1>
+```
+1. I recommend setting `all.names` to `TRUE`.
+
+This function can be used inside server-side code (modules or server functions) to collect all the input values. When placed in the app server function, the function will return the inputs from both modules. 
+
+Below is an example of using `reactiveValuesToList()` inside the our app server function:
+
+```{r}
+#| code-fold: false
+#| eval: false
+movies_server <- function(input, output, session) {
+
+      output$vals <- renderPrint({
+        app_vals <- reactiveValuesToList(x = input, all.names = TRUE)
+        str(app_vals)
+      })
+      
+      selected_vars <- mod_var_input_server("vars")
+
+      mod_scatter_display_server("plot", var_inputs = selected_vars)
+      
+}
+```
+
+We'll also add the following to the `bslib = TRUE` section of `movies_ui()` to print the output of the reactive list to the UI:
+
+```{r}
+#| code-fold: false
+#| eval: false
+# ...movies_ui() code omitted...
+bslib::card_body(fillable = TRUE,
+  verbatimTextOutput(outputId = "vals"),
+  mod_scatter_display_ui("plot")
+)
+# ...movies_ui() code omitted...
+```
+
+After loading the changes to our package, we can view the application with the captured and printed reactive values:
+
+![Click to enlarge](images/print_debug_app_vals.png){width='100%' fig-align='center'}
+
+Note the difference between the two printed values: the output in the sidebar has been printed from within the module server function, so the input names are contained within that namespace (i.e., `x`, `y`, etc.). However, the list returned from `reactiveValuesToList()` has been placed in the app server function, so we can see the module `id` appended to the input name (i.e., `vars-y`, `vars-x`, etc.).
+
+## Recap {.unnumbered}
+
+```{r}
+#| label: co_box_recap
 #| echo: false
 #| results: asis
 #| eval: true
-git_margin_box(
-  contents = "launch",
-  fig_pw = '65%', 
-  branch = "25.4_debug-print", 
-  repo = 'sap')
+co_box(
+  color = "g", 
+  fold = FALSE,
+  look = "default", hsize = "1.10", size = "1.05", 
+  header = "Recap: Print Debugging",
+  contents = "
+The advantages of print debugging are 1) it’s easy to insert a few lines of code and run the program, 2) it works in any programming environment, even if sophisticated debugging tools aren’t available, and 3) it doesn’t require special configurations or debugging tools.
+
+However, the downside is we can’t pause execution or inspect the app state in real-time. We only can see what we explicitly print, and if we miss a key variable or condition, we have to to insert, remove, or adjust print functions, which can be time-consuming. Excessive print functions can also  clutter the code and output especially in large or complex application.")
 ```
 
-Advantages:
 
-- Simplicity: It’s very easy to implement. Just insert a few lines of code and run the program.
+ 
 
-- Universal: Works in any programming environment, even if sophisticated debugging tools aren’t available.
-
-- Non-intrusive: It doesn’t require special configurations or debugging tools.
-  
-Disadvantages:
-
-- Limited context: You only see what you explicitly print. If you miss a key variable or condition, you may need to add more print statements.
-
-- Manual effort: It can be time-consuming to insert, remove, and adjust print statements, especially in large or complex codebases.
-
-- Clutter: Excessive use of print statements can clutter the code and output.
-
-- No runtime control: You can’t pause execution or inspect the program state in real-time.
-
-## Recap 
-
-If we want to see what's happening 'behind the scenes', we can collect the reactive values and print them in the UI while the app is running.
+ 

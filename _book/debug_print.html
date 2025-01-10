@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2024-12-30">
+<meta name="dcterms.date" content="2025-01-10">
 <meta name="description" content="Getting your app into an R package">
 
 <title>11&nbsp; Print debugging – Shiny App-Packages</title>
@@ -77,6 +77,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="site_libs/bootstrap/bootstrap-7cb4b303de7ee40d7b7b73459d742b02.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -492,11 +495,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">Contents</h2>
    
   <ul>
-  <li><a href="#sec-debug-print" id="toc-sec-debug-print" class="nav-link active" data-scroll-target="#sec-debug-print"><span class="header-section-number">11.1</span> Debugging with <code>print()</code></a>
-  <ul>
-  <li><a href="#reactive-printing" id="toc-reactive-printing" class="nav-link" data-scroll-target="#reactive-printing"><span class="header-section-number">11.1.1</span> Reactive printing</a></li>
-  </ul></li>
-  <li><a href="#recap" id="toc-recap" class="nav-link" data-scroll-target="#recap"><span class="header-section-number">11.2</span> Recap</a></li>
+  <li><a href="#sec-debug-print" id="toc-sec-debug-print" class="nav-link active" data-scroll-target="#sec-debug-print"><span class="header-section-number">11.1</span> Exposing variables and values</a></li>
+  <li><a href="#reactive-printing" id="toc-reactive-printing" class="nav-link" data-scroll-target="#reactive-printing"><span class="header-section-number">11.2</span> Reactive printing</a></li>
+  <li><a href="#reactive-values" id="toc-reactive-values" class="nav-link" data-scroll-target="#reactive-values"><span class="header-section-number">11.3</span> Reactive values</a></li>
+  <li><a href="#recap" id="toc-recap" class="nav-link" data-scroll-target="#recap">Recap</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/mjfrigaard/shiny-app-pkgs/edit/main/debug_print.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/mjfrigaard/shiny-app-pkgs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -516,7 +518,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">2024-12-30</p>
+      <p class="date">2025-01-10</p>
     </div>
   </div>
   
@@ -552,49 +554,37 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <i class="callout-icon no-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span style="font-weight: bold; font-size: 1.15em;">Accessing applications</span>
+<span style="font-weight: bold; font-size: 1.15em;">Access the applications in this chapter</span>
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
 <div id="callout-2" class="callout-2-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <div style="font-size: 0.95em; color: #282b2d;">
-<p>I’ve created the <a href="https://mjfrigaard.github.io/shinypak/"><code>shinypak</code> R package</a> In an effort to make each section accessible and easy to follow:</p>
-<p>Install <code>shinypak</code> using <code>pak</code> (or <code>remotes</code>):</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># install.packages('pak')</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>pak<span class="sc">::</span><span class="fu">pak</span>(<span class="st">'mjfrigaard/shinypak'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<p>Review the chapters in each section:</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(shinypak)</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">list_apps</span>(<span class="at">regex =</span> <span class="st">'debug'</span>)</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="do">## # A tibble: 6 × 2</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="do">##   branch                   last_updated       </span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="do">##   &lt;chr&gt;                    &lt;dttm&gt;             </span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="do">## 1 10_debugger              2024-12-15 03:02:26</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="do">## 2 11_debug-print           2024-11-20 22:09:54</span></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="do">## 3 15_debug-util-funs       2024-09-04 10:06:57</span></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="do">## 4 25.1_debug-selected_vars 2024-01-15 10:29:25</span></span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="do">## 5 25.2_debug-var_inputs    2024-01-15 10:25:12</span></span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="do">## 6 25.4_debug-print         2024-01-15 10:04:21</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<p>Launch the app:</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">launch</span>(<span class="at">app =</span> <span class="st">"11_debug-print"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<p>Download the app:</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">get_app</span>(<span class="at">app =</span> <span class="st">"11_debug-print"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>I’ve created the <a href="https://mjfrigaard.github.io/shinypak/"><code>shinypak</code> R package</a> in an effort to make each section accessible and easy to follow. Install <code>shinypak</code> using <code>pak</code> (or <code>remotes</code>):</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">'pak'</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>pak<span class="sc">::</span><span class="fu">pak</span>(<span class="st">'mjfrigaard/shinypak'</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(shinypak)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>List the apps in this chapter:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">list_apps</span>(<span class="at">regex =</span> <span class="st">'11'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Launch apps with <code>launch()</code></p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">launch</span>(<span class="at">app =</span> <span class="st">'11_debug-print'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Download apps with <code>get_app()</code></p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">get_app</span>(<span class="at">app =</span> <span class="st">'11_debug-print'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </div>
 </div>
 </div>
-</div>
-<p>In the previous chapter we explored triggering the interactive debugger in Positron <img src="images/positron.png" height="20"> with <code>browser()</code> and <code>observe()</code>. In this chapter, we’ll explore another commonly used technique for identifying and resolving issues in code: print debugging.</p>
+<p>In the previous chapter we covered the interactive debugger in Positron <img src="images/positron.png" height="20"> with <code>browser()</code> and <code>observe()</code>. In this chapter, we’ll explore another commonly used technique for identifying and resolving issues or errors in your code: print debugging.</p>
 <section id="sec-debug-print" class="level2 page-columns page-full" data-number="11.1">
-<h2 data-number="11.1" class="anchored" data-anchor-id="sec-debug-print"><span class="header-section-number">11.1</span> Debugging with <code>print()</code></h2>
-<p>Print debugging is a different approach than the interactive debugger, and it’s suited for a different types of development workflow. Print debugging involves inserting a <code>print()</code> (or <code>cat()</code>) statement into the body of a function to output variables, values, or other important information at various points.</p>
+<h2 data-number="11.1" class="anchored" data-anchor-id="sec-debug-print"><span class="header-section-number">11.1</span> Exposing variables and values</h2>
+
+<div class="no-row-height column-margin column-container"><div class="">
+<p>Launch app with the <a href="https://mjfrigaard.github.io/shinypak/articles/getting-started.html"><code>shinypak</code> package</a>:</p>
+<div style="font-size: 0.65rem;">
+<div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">launch</span>(<span class="st">'11_debug-print'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</div></div><p>Print debugging uses a simpler approach than the interactive debugger, and it’s well-suited for a variety of development workflows. Print debugging involves inserting a <code>print()</code> (or <code>cat()</code>) statement into the body of a function to output variables, values, or other important information at various points.</p>
 
 <style>
 
@@ -608,66 +598,364 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 }
 
 </style>
-<div class="cell" data-fig-width="5" data-fig-height="6" data-layout-align="center">
+<div class="cell" data-layout-align="center">
 <div class="cell-output-display">
 <div id="print_statement">
 <div>
 <pre class="mermaid mermaid-js" data-label="print_statement">%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'monospace'}}}%%
 flowchart TD
-    Start["Function Executes"] --&gt; Print["&lt;code&gt;print()&lt;/code&gt; / &lt;code&gt;cat()&lt;/code&gt;"]
-    Print --&gt; Issue{"&lt;strong&gt;Output reveals issue?&lt;/strong&gt;"}
-    Issue -- Yes --&gt; Mod[Modify Function]
-    Mod --&gt; Start
-    Issue -- No --&gt; Start
-
-style Start fill:#E5E6EB,stroke:none,rx:3,ry:3
-style Print fill:#4CBB9D,stroke:none,rx:3,ry:3
-style Issue fill:#FF7F00,stroke:#FF7F00,stroke-width:5px,color:#FFFFFF
-style Mod fill:#4CB7DB,stroke:#4CB7DB,rx:10,ry:10
+    subgraph FunctionScope [&lt;strong&gt;Function Scope&lt;/strong&gt;]
+    style FunctionScope fill:#FFF,color:#000,stroke:#333,font-size:14px
+        Print("Encounter&lt;br&gt;&lt;code&gt;print()&lt;/code&gt; or&lt;br&gt;&lt;code&gt;cat()&lt;/code&gt;")
+        style Print fill:#4CBB9D,stroke:none,color:#000,rx:10,ry:10
+        Start("Execute") --&gt; Print("Encounter&lt;br&gt;&lt;code&gt;print()&lt;/code&gt; or&lt;br&gt;&lt;code&gt;cat()&lt;/code&gt;")
+        style Start fill:#FFF,stroke:#333,stroke-width:1px,color:#000,font-size:14px
+        Print --&gt; Issue{"&lt;strong&gt;Output&lt;br&gt;reveals&lt;br&gt;issue?&lt;/strong&gt;"}
+        style Issue fill:#ffcccb,stroke:#e60000,stroke-width:3px,color:#000,font-size:14px
+        Issue -- Yes --&gt; Mod("Modify&lt;br&gt;Function")
+        style Mod fill:#FFF,stroke:#333,stroke-width:1px,color:#000,font-size:14px
+        Issue -- No --&gt; Debug("Adjust&lt;br&gt;&lt;code&gt;print()&lt;/code&gt; or&lt;br&gt;&lt;code&gt;cat()&lt;/code&gt;")
+        style Debug fill:#FFF,stroke:#333,stroke-width:1px,color:#000,font-size:14px
+    end
 </pre>
 </div>
+<p>Print debugging with <code>print()</code> or <code>cat()</code></p>
 </div>
 </div>
 </div>
-<!--
-style ExitBrowser fill:#4CB7DB,stroke:none,rx:3,ry:3
-style Obs fill:#FFFFFF,stroke:#4CBB9D,stroke-width:3px,rx:10,ry:10
-style ExitObserver fill:#FFFFFF,stroke:#4CBB9D,stroke-width:3px,rx:10,ry:10
--->
 <p><br></p>
-<p>Using well-placed calls to <code>print()</code> or <code>cat()</code> allows us to display variable values, which helps us to understand the inner-workings of the function. After running the function, we can view the output in the <strong>Console</strong> (or log file).</p>
-<section id="reactive-printing" class="level3 page-columns page-full" data-number="11.1.1">
-<h3 data-number="11.1.1" class="anchored" data-anchor-id="reactive-printing"><span class="header-section-number">11.1.1</span> Reactive printing</h3>
-<p><code>print()</code> and <code>cat()</code> can only provide a snapshot of values or variables <em>at the location and time of the print call</em>, limiting their usefulness in exploring the other parts of the environment or interacting with the running application.</p>
-<p>In Shiny apps, a powerful tool for capturing and printing input values is <code>reactiveValuesToList()</code>.</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">reactiveValuesToList</span>(<span class="at">x =</span> , <span class="at">all.names =</span> )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<p>If we combine <code>reactiveValuesToList()</code> with <code>verbatimTextOutput()</code>, and <code>renderPrint()</code>, we can convert Shiny reactive values (i.e., user inputs) into a list that can be printed and displayed back in the UI.</p>
+</section>
+<section id="reactive-printing" class="level2" data-number="11.2">
+<h2 data-number="11.2" class="anchored" data-anchor-id="reactive-printing"><span class="header-section-number">11.2</span> Reactive printing</h2>
+<p>To track reactivity, we need to place the print functions in a reactive expression, observer, or event handler. This allows us to see when these values are triggered (and any other values they work with).</p>
 
-<div class="no-row-height column-margin column-container"><div class="">
-<p>Launch app with the <a href="https://mjfrigaard.github.io/shinypak/articles/getting-started.html"><code>shinypak</code> package</a>:</p>
-<div style="font-size: 0.65rem;">
-<div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">launch</span>(<span class="st">'25.4_debug-print'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+
+</style>
+<div class="cell" data-layout-align="center">
+<div class="cell-output-display">
+<div id="reactive_print_statement">
+<div>
+<pre class="mermaid mermaid-js" data-label="reactive_print_statement">%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'monospace'}}}%%
+flowchart TD
+    subgraph FunctionScope [&lt;strong&gt;Function Scope&lt;/strong&gt;]
+    style FunctionScope fill:#FFF,color:#000,stroke:#333,font-size:14px
+        subgraph Reactive["Reactive Context"]
+        style Reactive fill:#fff,stroke:#FEDBC1,stroke-width:3px,color:#000,font-size:14px
+            Print("Encounter&lt;br&gt;&lt;code&gt;print()&lt;/code&gt; or&lt;br&gt;&lt;code&gt;cat()&lt;/code&gt;")
+            style Print fill:#4CBB9D,stroke:none,color:#000,rx:10,ry:10
+        end
+        Start("Execute") --&gt; Print("Encounter&lt;br&gt;&lt;code&gt;print()&lt;/code&gt; or&lt;br&gt;&lt;code&gt;cat()&lt;/code&gt;")
+        style Start fill:#FFF,stroke:#333,stroke-width:1px,color:#000,font-size:14px
+        Print --&gt; Issue{"&lt;strong&gt;Output&lt;br&gt;reveals&lt;br&gt;issue?&lt;/strong&gt;"}
+        style Issue fill:#ffcccb,stroke:#e60000,stroke-width:3px,color:#000,font-size:14px
+        Issue -- Yes --&gt; Mod("Modify&lt;br&gt;Function")
+        style Mod fill:#FFF,stroke:#333,stroke-width:1px,color:#000,font-size:14px
+        Issue -- No --&gt; Debug("Adjust&lt;br&gt;&lt;code&gt;print()&lt;/code&gt; or&lt;br&gt;&lt;code&gt;cat()&lt;/code&gt;")
+        style Debug fill:#FFF,stroke:#333,stroke-width:1px,color:#000,font-size:14px
+    end
+</pre>
 </div>
-</div></div><p>Advantages:</p>
-<ul>
-<li><p>Simplicity: It’s very easy to implement. Just insert a few lines of code and run the program.</p></li>
-<li><p>Universal: Works in any programming environment, even if sophisticated debugging tools aren’t available.</p></li>
-<li><p>Non-intrusive: It doesn’t require special configurations or debugging tools.</p></li>
-</ul>
-<p>Disadvantages:</p>
-<ul>
-<li><p>Limited context: You only see what you explicitly print. If you miss a key variable or condition, you may need to add more print statements.</p></li>
-<li><p>Manual effort: It can be time-consuming to insert, remove, and adjust print statements, especially in large or complex codebases.</p></li>
-<li><p>Clutter: Excessive use of print statements can clutter the code and output.</p></li>
-<li><p>No runtime control: You can’t pause execution or inspect the program state in real-time.</p></li>
-</ul>
+<p>Reactive print debugging with <code>print()</code> or <code>cat()</code></p>
+</div>
+</div>
+</div>
+<p>Using well-placed calls to <code>print()</code> or <code>cat()</code> allows us to display input values, which helps us to understand the inner-workings of our application.</p>
+<p>For example, placing the code below in the server function of our variable input module will print the selected variables to the console:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="annotated-cell-1"><pre class="sourceCode r code-annotation-code code-with-copy code-annotated"><code class="sourceCode r"><span id="annotated-cell-1-1"><a href="#annotated-cell-1-1" aria-hidden="true" tabindex="-1"></a>mod_var_input_server <span class="ot">&lt;-</span> <span class="cf">function</span>(id) {</span>
+<span id="annotated-cell-1-2"><a href="#annotated-cell-1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-1-3"><a href="#annotated-cell-1-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">moduleServer</span>(id, <span class="cf">function</span>(input, output, session) {</span>
+<span id="annotated-cell-1-4"><a href="#annotated-cell-1-4" aria-hidden="true" tabindex="-1"></a></span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="1">1</button><span id="annotated-cell-1-5" class="code-annotation-target"><a href="#annotated-cell-1-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">observe</span>({</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="2">2</button><span id="annotated-cell-1-6" class="code-annotation-target"><a href="#annotated-cell-1-6" aria-hidden="true" tabindex="-1"></a>      <span class="fu">cat</span>(<span class="st">"Selected x, y, and color:</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="3">3</button><span id="annotated-cell-1-7" class="code-annotation-target"><a href="#annotated-cell-1-7" aria-hidden="true" tabindex="-1"></a>      <span class="fu">print</span>(<span class="fu">c</span>(<span class="st">'x'</span> <span class="ot">=</span> input<span class="sc">$</span>x,</span>
+<span id="annotated-cell-1-8"><a href="#annotated-cell-1-8" aria-hidden="true" tabindex="-1"></a>              <span class="st">'y'</span> <span class="ot">=</span> input<span class="sc">$</span>y, </span>
+<span id="annotated-cell-1-9"><a href="#annotated-cell-1-9" aria-hidden="true" tabindex="-1"></a>              <span class="st">'color'</span> <span class="ot">=</span> input<span class="sc">$</span>z))</span>
+<span id="annotated-cell-1-10"><a href="#annotated-cell-1-10" aria-hidden="true" tabindex="-1"></a>    }) <span class="sc">|&gt;</span></span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="4">4</button><span id="annotated-cell-1-11" class="code-annotation-target"><a href="#annotated-cell-1-11" aria-hidden="true" tabindex="-1"></a>      <span class="fu">bindEvent</span>(<span class="fu">c</span>(input<span class="sc">$</span>x, input<span class="sc">$</span>y, input<span class="sc">$</span>x))</span>
+<span id="annotated-cell-1-12"><a href="#annotated-cell-1-12" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="annotated-cell-1-13"><a href="#annotated-cell-1-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(</span>
+<span id="annotated-cell-1-14"><a href="#annotated-cell-1-14" aria-hidden="true" tabindex="-1"></a>      <span class="fu">reactive</span>({</span>
+<span id="annotated-cell-1-15"><a href="#annotated-cell-1-15" aria-hidden="true" tabindex="-1"></a>        <span class="fu">list</span>(</span>
+<span id="annotated-cell-1-16"><a href="#annotated-cell-1-16" aria-hidden="true" tabindex="-1"></a>          <span class="st">"y"</span> <span class="ot">=</span> input<span class="sc">$</span>y,</span>
+<span id="annotated-cell-1-17"><a href="#annotated-cell-1-17" aria-hidden="true" tabindex="-1"></a>          <span class="st">"x"</span> <span class="ot">=</span> input<span class="sc">$</span>x,</span>
+<span id="annotated-cell-1-18"><a href="#annotated-cell-1-18" aria-hidden="true" tabindex="-1"></a>          <span class="st">"z"</span> <span class="ot">=</span> input<span class="sc">$</span>z,</span>
+<span id="annotated-cell-1-19"><a href="#annotated-cell-1-19" aria-hidden="true" tabindex="-1"></a>          <span class="st">"alpha"</span> <span class="ot">=</span> input<span class="sc">$</span>alpha,</span>
+<span id="annotated-cell-1-20"><a href="#annotated-cell-1-20" aria-hidden="true" tabindex="-1"></a>          <span class="st">"size"</span> <span class="ot">=</span> input<span class="sc">$</span>size,</span>
+<span id="annotated-cell-1-21"><a href="#annotated-cell-1-21" aria-hidden="true" tabindex="-1"></a>          <span class="st">"plot_title"</span> <span class="ot">=</span> input<span class="sc">$</span>plot_title</span>
+<span id="annotated-cell-1-22"><a href="#annotated-cell-1-22" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="annotated-cell-1-23"><a href="#annotated-cell-1-23" aria-hidden="true" tabindex="-1"></a>      })</span>
+<span id="annotated-cell-1-24"><a href="#annotated-cell-1-24" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="annotated-cell-1-25"><a href="#annotated-cell-1-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-1-26"><a href="#annotated-cell-1-26" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="annotated-cell-1-27"><a href="#annotated-cell-1-27" aria-hidden="true" tabindex="-1"></a>}</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-annotation">
+<dl class="code-annotation-container-hidden code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-1" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-1" data-code-lines="5,10" data-code-annotation="1">Wrap in <code>observe()</code> to provide reactive context for printing<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-1" data-target-annotation="2">2</dt>
+<dd>
+<span data-code-cell="annotated-cell-1" data-code-lines="6" data-code-annotation="2">Print message with <code>cat()</code></span>
+</dd>
+<dt data-target-cell="annotated-cell-1" data-target-annotation="3">3</dt>
+<dd>
+<span data-code-cell="annotated-cell-1" data-code-lines="7,9" data-code-annotation="3">Print reactives with <code>print()</code><br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-1" data-target-annotation="4">4</dt>
+<dd>
+<span data-code-cell="annotated-cell-1" data-code-lines="11" data-code-annotation="4">Bind this event to print whenever the variable inputs change</span>
+</dd>
+</dl>
+</div>
+</div>
+<p>After running the function, we can view the output in the <strong>Console</strong> (or log file).</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/print_debug_print_vars.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Variables printed to Console (click to enlarge)"><img src="images/print_debug_print_vars.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Variables printed to Console (click to enlarge)"></a></p>
+</figure>
+</div>
+<figcaption>Variables printed to <strong>Console</strong> (click to enlarge)</figcaption>
+</figure>
+</div>
+<p>Unfortunately, <code>print()</code> and <code>cat()</code> can only provide a snapshot of values or variables <em>at the location and time of the print call</em>. This limits their usefulness in exploring the other parts of the environment or interacting with the running application.</p>
+<p>However, we can place <code>verbatimTextOutput()</code> in our module UI function:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>show/hide updated mod_var_input_ui()</summary>
+<div class="sourceCode cell-code" id="annotated-cell-2"><pre class="sourceCode r code-annotation-code code-with-copy code-annotated"><code class="sourceCode r"><span id="annotated-cell-2-1"><a href="#annotated-cell-2-1" aria-hidden="true" tabindex="-1"></a>mod_var_input_ui <span class="ot">&lt;-</span> <span class="cf">function</span>(id) {</span>
+<span id="annotated-cell-2-2"><a href="#annotated-cell-2-2" aria-hidden="true" tabindex="-1"></a>  ns <span class="ot">&lt;-</span> <span class="fu">NS</span>(id)</span>
+<span id="annotated-cell-2-3"><a href="#annotated-cell-2-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tagList</span>(</span>
+<span id="annotated-cell-2-4"><a href="#annotated-cell-2-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">selectInput</span>(</span>
+<span id="annotated-cell-2-5"><a href="#annotated-cell-2-5" aria-hidden="true" tabindex="-1"></a>      <span class="at">inputId =</span> <span class="fu">ns</span>(<span class="st">"y"</span>),</span>
+<span id="annotated-cell-2-6"><a href="#annotated-cell-2-6" aria-hidden="true" tabindex="-1"></a>      <span class="at">label =</span> <span class="st">"Y-axis:"</span>,</span>
+<span id="annotated-cell-2-7"><a href="#annotated-cell-2-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">choices =</span> <span class="fu">c</span>(</span>
+<span id="annotated-cell-2-8"><a href="#annotated-cell-2-8" aria-hidden="true" tabindex="-1"></a>        <span class="st">"IMDB rating"</span> <span class="ot">=</span> <span class="st">"imdb_rating"</span>,</span>
+<span id="annotated-cell-2-9"><a href="#annotated-cell-2-9" aria-hidden="true" tabindex="-1"></a>        <span class="st">"IMDB number of votes"</span> <span class="ot">=</span> <span class="st">"imdb_num_votes"</span>,</span>
+<span id="annotated-cell-2-10"><a href="#annotated-cell-2-10" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Critics Score"</span> <span class="ot">=</span> <span class="st">"critics_score"</span>,</span>
+<span id="annotated-cell-2-11"><a href="#annotated-cell-2-11" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Audience Score"</span> <span class="ot">=</span> <span class="st">"audience_score"</span>,</span>
+<span id="annotated-cell-2-12"><a href="#annotated-cell-2-12" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Runtime"</span> <span class="ot">=</span> <span class="st">"runtime"</span></span>
+<span id="annotated-cell-2-13"><a href="#annotated-cell-2-13" aria-hidden="true" tabindex="-1"></a>      ),</span>
+<span id="annotated-cell-2-14"><a href="#annotated-cell-2-14" aria-hidden="true" tabindex="-1"></a>      <span class="at">selected =</span> <span class="st">"audience_score"</span></span>
+<span id="annotated-cell-2-15"><a href="#annotated-cell-2-15" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="annotated-cell-2-16"><a href="#annotated-cell-2-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">selectInput</span>(</span>
+<span id="annotated-cell-2-17"><a href="#annotated-cell-2-17" aria-hidden="true" tabindex="-1"></a>      <span class="at">inputId =</span> <span class="fu">ns</span>(<span class="st">"x"</span>),</span>
+<span id="annotated-cell-2-18"><a href="#annotated-cell-2-18" aria-hidden="true" tabindex="-1"></a>      <span class="at">label =</span> <span class="st">"X-axis:"</span>,</span>
+<span id="annotated-cell-2-19"><a href="#annotated-cell-2-19" aria-hidden="true" tabindex="-1"></a>      <span class="at">choices =</span> <span class="fu">c</span>(</span>
+<span id="annotated-cell-2-20"><a href="#annotated-cell-2-20" aria-hidden="true" tabindex="-1"></a>        <span class="st">"IMDB rating"</span> <span class="ot">=</span> <span class="st">"imdb_rating"</span>,</span>
+<span id="annotated-cell-2-21"><a href="#annotated-cell-2-21" aria-hidden="true" tabindex="-1"></a>        <span class="st">"IMDB number of votes"</span> <span class="ot">=</span> <span class="st">"imdb_num_votes"</span>,</span>
+<span id="annotated-cell-2-22"><a href="#annotated-cell-2-22" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Critics Score"</span> <span class="ot">=</span> <span class="st">"critics_score"</span>,</span>
+<span id="annotated-cell-2-23"><a href="#annotated-cell-2-23" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Audience Score"</span> <span class="ot">=</span> <span class="st">"audience_score"</span>,</span>
+<span id="annotated-cell-2-24"><a href="#annotated-cell-2-24" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Runtime"</span> <span class="ot">=</span> <span class="st">"runtime"</span></span>
+<span id="annotated-cell-2-25"><a href="#annotated-cell-2-25" aria-hidden="true" tabindex="-1"></a>      ),</span>
+<span id="annotated-cell-2-26"><a href="#annotated-cell-2-26" aria-hidden="true" tabindex="-1"></a>      <span class="at">selected =</span> <span class="st">"imdb_rating"</span></span>
+<span id="annotated-cell-2-27"><a href="#annotated-cell-2-27" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="annotated-cell-2-28"><a href="#annotated-cell-2-28" aria-hidden="true" tabindex="-1"></a>    <span class="fu">selectInput</span>(</span>
+<span id="annotated-cell-2-29"><a href="#annotated-cell-2-29" aria-hidden="true" tabindex="-1"></a>      <span class="at">inputId =</span> <span class="fu">ns</span>(<span class="st">"z"</span>),</span>
+<span id="annotated-cell-2-30"><a href="#annotated-cell-2-30" aria-hidden="true" tabindex="-1"></a>      <span class="at">label =</span> <span class="st">"Color by:"</span>,</span>
+<span id="annotated-cell-2-31"><a href="#annotated-cell-2-31" aria-hidden="true" tabindex="-1"></a>      <span class="at">choices =</span> <span class="fu">c</span>(</span>
+<span id="annotated-cell-2-32"><a href="#annotated-cell-2-32" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Title Type"</span> <span class="ot">=</span> <span class="st">"title_type"</span>,</span>
+<span id="annotated-cell-2-33"><a href="#annotated-cell-2-33" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Genre"</span> <span class="ot">=</span> <span class="st">"genre"</span>,</span>
+<span id="annotated-cell-2-34"><a href="#annotated-cell-2-34" aria-hidden="true" tabindex="-1"></a>        <span class="st">"MPAA Rating"</span> <span class="ot">=</span> <span class="st">"mpaa_rating"</span>,</span>
+<span id="annotated-cell-2-35"><a href="#annotated-cell-2-35" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Critics Rating"</span> <span class="ot">=</span> <span class="st">"critics_rating"</span>,</span>
+<span id="annotated-cell-2-36"><a href="#annotated-cell-2-36" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Audience Rating"</span> <span class="ot">=</span> <span class="st">"audience_rating"</span></span>
+<span id="annotated-cell-2-37"><a href="#annotated-cell-2-37" aria-hidden="true" tabindex="-1"></a>      ),</span>
+<span id="annotated-cell-2-38"><a href="#annotated-cell-2-38" aria-hidden="true" tabindex="-1"></a>      <span class="at">selected =</span> <span class="st">"mpaa_rating"</span></span>
+<span id="annotated-cell-2-39"><a href="#annotated-cell-2-39" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-2" data-target-annotation="1">1</button><span id="annotated-cell-2-40" class="code-annotation-target"><a href="#annotated-cell-2-40" aria-hidden="true" tabindex="-1"></a>    <span class="fu">verbatimTextOutput</span>(<span class="fu">ns</span>(<span class="st">"vars"</span>)),</span>
+<span id="annotated-cell-2-41"><a href="#annotated-cell-2-41" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sliderInput</span>(</span>
+<span id="annotated-cell-2-42"><a href="#annotated-cell-2-42" aria-hidden="true" tabindex="-1"></a>      <span class="at">inputId =</span> <span class="fu">ns</span>(<span class="st">"alpha"</span>),</span>
+<span id="annotated-cell-2-43"><a href="#annotated-cell-2-43" aria-hidden="true" tabindex="-1"></a>      <span class="at">label =</span> <span class="st">"Alpha:"</span>,</span>
+<span id="annotated-cell-2-44"><a href="#annotated-cell-2-44" aria-hidden="true" tabindex="-1"></a>      <span class="at">min =</span> <span class="dv">0</span>, <span class="at">max =</span> <span class="dv">1</span>, <span class="at">step =</span> <span class="fl">0.1</span>,</span>
+<span id="annotated-cell-2-45"><a href="#annotated-cell-2-45" aria-hidden="true" tabindex="-1"></a>      <span class="at">value =</span> <span class="fl">0.5</span></span>
+<span id="annotated-cell-2-46"><a href="#annotated-cell-2-46" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="annotated-cell-2-47"><a href="#annotated-cell-2-47" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sliderInput</span>(</span>
+<span id="annotated-cell-2-48"><a href="#annotated-cell-2-48" aria-hidden="true" tabindex="-1"></a>      <span class="at">inputId =</span> <span class="fu">ns</span>(<span class="st">"size"</span>),</span>
+<span id="annotated-cell-2-49"><a href="#annotated-cell-2-49" aria-hidden="true" tabindex="-1"></a>      <span class="at">label =</span> <span class="st">"Size:"</span>,</span>
+<span id="annotated-cell-2-50"><a href="#annotated-cell-2-50" aria-hidden="true" tabindex="-1"></a>      <span class="at">min =</span> <span class="dv">0</span>, <span class="at">max =</span> <span class="dv">5</span>,</span>
+<span id="annotated-cell-2-51"><a href="#annotated-cell-2-51" aria-hidden="true" tabindex="-1"></a>      <span class="at">value =</span> <span class="dv">2</span></span>
+<span id="annotated-cell-2-52"><a href="#annotated-cell-2-52" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="annotated-cell-2-53"><a href="#annotated-cell-2-53" aria-hidden="true" tabindex="-1"></a>    <span class="fu">textInput</span>(</span>
+<span id="annotated-cell-2-54"><a href="#annotated-cell-2-54" aria-hidden="true" tabindex="-1"></a>      <span class="at">inputId =</span> <span class="fu">ns</span>(<span class="st">"plot_title"</span>),</span>
+<span id="annotated-cell-2-55"><a href="#annotated-cell-2-55" aria-hidden="true" tabindex="-1"></a>      <span class="at">label =</span> <span class="st">"Plot title"</span>,</span>
+<span id="annotated-cell-2-56"><a href="#annotated-cell-2-56" aria-hidden="true" tabindex="-1"></a>      <span class="at">placeholder =</span> <span class="st">"Enter plot title"</span></span>
+<span id="annotated-cell-2-57"><a href="#annotated-cell-2-57" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="annotated-cell-2-58"><a href="#annotated-cell-2-58" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="annotated-cell-2-59"><a href="#annotated-cell-2-59" aria-hidden="true" tabindex="-1"></a>}</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-annotation">
+<dl class="code-annotation-container-hidden code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-2" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-2" data-code-lines="40" data-code-annotation="1">Print the values to the UI</span>
+</dd>
+</dl>
+</div>
+</div>
+<p>And an accompanying <code>renderPrint()</code> in the module server function to print the values in the UI:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>show/hide updated mod_var_input_server()</summary>
+<div class="sourceCode cell-code" id="annotated-cell-3"><pre class="sourceCode r code-annotation-code code-with-copy code-annotated"><code class="sourceCode r"><span id="annotated-cell-3-1"><a href="#annotated-cell-3-1" aria-hidden="true" tabindex="-1"></a>mod_var_input_server <span class="ot">&lt;-</span> <span class="cf">function</span>(id) {</span>
+<span id="annotated-cell-3-2"><a href="#annotated-cell-3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-3-3"><a href="#annotated-cell-3-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">moduleServer</span>(id, <span class="cf">function</span>(input, output, session) {</span>
+<span id="annotated-cell-3-4"><a href="#annotated-cell-3-4" aria-hidden="true" tabindex="-1"></a></span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-3" data-target-annotation="1">1</button><span id="annotated-cell-3-5" class="code-annotation-target"><a href="#annotated-cell-3-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">observe</span>({</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-3" data-target-annotation="2">2</button><span id="annotated-cell-3-6" class="code-annotation-target"><a href="#annotated-cell-3-6" aria-hidden="true" tabindex="-1"></a>      <span class="fu">cat</span>(<span class="st">"Selected x, y, and color:</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-3" data-target-annotation="3">3</button><span id="annotated-cell-3-7" class="code-annotation-target"><a href="#annotated-cell-3-7" aria-hidden="true" tabindex="-1"></a>      <span class="fu">print</span>(<span class="fu">c</span>(<span class="st">'x'</span> <span class="ot">=</span> input<span class="sc">$</span>x,</span>
+<span id="annotated-cell-3-8"><a href="#annotated-cell-3-8" aria-hidden="true" tabindex="-1"></a>              <span class="st">'y'</span> <span class="ot">=</span> input<span class="sc">$</span>y, </span>
+<span id="annotated-cell-3-9"><a href="#annotated-cell-3-9" aria-hidden="true" tabindex="-1"></a>              <span class="st">'color'</span> <span class="ot">=</span> input<span class="sc">$</span>z))</span>
+<span id="annotated-cell-3-10"><a href="#annotated-cell-3-10" aria-hidden="true" tabindex="-1"></a>      </span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-3" data-target-annotation="4">4</button><span id="annotated-cell-3-11" class="code-annotation-target"><a href="#annotated-cell-3-11" aria-hidden="true" tabindex="-1"></a>      output<span class="sc">$</span>vars <span class="ot">&lt;-</span> <span class="fu">renderPrint</span>({</span>
+<span id="annotated-cell-3-12"><a href="#annotated-cell-3-12" aria-hidden="true" tabindex="-1"></a>        <span class="fu">list</span>(<span class="st">'x'</span> <span class="ot">=</span> input<span class="sc">$</span>x, </span>
+<span id="annotated-cell-3-13"><a href="#annotated-cell-3-13" aria-hidden="true" tabindex="-1"></a>             <span class="st">'y'</span> <span class="ot">=</span> input<span class="sc">$</span>y, </span>
+<span id="annotated-cell-3-14"><a href="#annotated-cell-3-14" aria-hidden="true" tabindex="-1"></a>             <span class="st">'color'</span> <span class="ot">=</span> input<span class="sc">$</span>z) </span>
+<span id="annotated-cell-3-15"><a href="#annotated-cell-3-15" aria-hidden="true" tabindex="-1"></a>      })</span>
+<span id="annotated-cell-3-16"><a href="#annotated-cell-3-16" aria-hidden="true" tabindex="-1"></a>    }) <span class="sc">|&gt;</span></span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-3" data-target-annotation="5">5</button><span id="annotated-cell-3-17" class="code-annotation-target"><a href="#annotated-cell-3-17" aria-hidden="true" tabindex="-1"></a>      <span class="fu">bindEvent</span>(<span class="fu">c</span>(input<span class="sc">$</span>x, input<span class="sc">$</span>y, input<span class="sc">$</span>x))</span>
+<span id="annotated-cell-3-18"><a href="#annotated-cell-3-18" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="annotated-cell-3-19"><a href="#annotated-cell-3-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(</span>
+<span id="annotated-cell-3-20"><a href="#annotated-cell-3-20" aria-hidden="true" tabindex="-1"></a>      <span class="fu">reactive</span>({</span>
+<span id="annotated-cell-3-21"><a href="#annotated-cell-3-21" aria-hidden="true" tabindex="-1"></a>        <span class="fu">list</span>(</span>
+<span id="annotated-cell-3-22"><a href="#annotated-cell-3-22" aria-hidden="true" tabindex="-1"></a>          <span class="st">"y"</span> <span class="ot">=</span> input<span class="sc">$</span>y,</span>
+<span id="annotated-cell-3-23"><a href="#annotated-cell-3-23" aria-hidden="true" tabindex="-1"></a>          <span class="st">"x"</span> <span class="ot">=</span> input<span class="sc">$</span>x,</span>
+<span id="annotated-cell-3-24"><a href="#annotated-cell-3-24" aria-hidden="true" tabindex="-1"></a>          <span class="st">"z"</span> <span class="ot">=</span> input<span class="sc">$</span>z,</span>
+<span id="annotated-cell-3-25"><a href="#annotated-cell-3-25" aria-hidden="true" tabindex="-1"></a>          <span class="st">"alpha"</span> <span class="ot">=</span> input<span class="sc">$</span>alpha,</span>
+<span id="annotated-cell-3-26"><a href="#annotated-cell-3-26" aria-hidden="true" tabindex="-1"></a>          <span class="st">"size"</span> <span class="ot">=</span> input<span class="sc">$</span>size,</span>
+<span id="annotated-cell-3-27"><a href="#annotated-cell-3-27" aria-hidden="true" tabindex="-1"></a>          <span class="st">"plot_title"</span> <span class="ot">=</span> input<span class="sc">$</span>plot_title</span>
+<span id="annotated-cell-3-28"><a href="#annotated-cell-3-28" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="annotated-cell-3-29"><a href="#annotated-cell-3-29" aria-hidden="true" tabindex="-1"></a>      })</span>
+<span id="annotated-cell-3-30"><a href="#annotated-cell-3-30" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="annotated-cell-3-31"><a href="#annotated-cell-3-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-3-32"><a href="#annotated-cell-3-32" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="annotated-cell-3-33"><a href="#annotated-cell-3-33" aria-hidden="true" tabindex="-1"></a>}</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-annotation">
+<dl class="code-annotation-container-hidden code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-3" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-3" data-code-lines="5,16" data-code-annotation="1">Reactive context</span>
+</dd>
+<dt data-target-cell="annotated-cell-3" data-target-annotation="2">2</dt>
+<dd>
+<span data-code-cell="annotated-cell-3" data-code-lines="6" data-code-annotation="2">Print message with <code>cat()</code></span>
+</dd>
+<dt data-target-cell="annotated-cell-3" data-target-annotation="3">3</dt>
+<dd>
+<span data-code-cell="annotated-cell-3" data-code-lines="7,9" data-code-annotation="3">Print to inputs with <code>print()</code></span>
+</dd>
+<dt data-target-cell="annotated-cell-3" data-target-annotation="4">4</dt>
+<dd>
+<span data-code-cell="annotated-cell-3" data-code-lines="11,15" data-code-annotation="4">Print inputs to UI<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-3" data-target-annotation="5">5</dt>
+<dd>
+<span data-code-cell="annotated-cell-3" data-code-lines="17" data-code-annotation="5">Bind this event to print whenever the variable inputs change</span>
+</dd>
+</dl>
+</div>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/print_debug_print_vars_ui.png" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="Variables printed to UI (click to enlarge)"><img src="images/print_debug_print_vars_ui.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Variables printed to UI (click to enlarge)"></a></p>
+</figure>
+</div>
+<figcaption>Variables printed to <strong>UI</strong> (click to enlarge)</figcaption>
+</figure>
+</div>
+<p>This allows us to view the inputs in the UI as they change in the server.</p>
 </section>
+<section id="reactive-values" class="level2" data-number="11.3">
+<h2 data-number="11.3" class="anchored" data-anchor-id="reactive-values"><span class="header-section-number">11.3</span> Reactive values</h2>
+<p>A powerful tool for capturing and printing input values in the server is <code>reactiveValuesToList()</code>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="annotated-cell-4"><pre class="sourceCode r code-annotation-code code-with-copy code-annotated"><code class="sourceCode r"><button class="code-annotation-anchor" data-target-cell="annotated-cell-4" data-target-annotation="1">1</button><span id="annotated-cell-4-1" class="code-annotation-target"><a href="#annotated-cell-4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">reactiveValuesToList</span>(<span class="at">x =</span> , <span class="at">all.names =</span> )</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-annotation">
+<dl class="code-annotation-container-hidden code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-4" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-4" data-code-lines="1" data-code-annotation="1">I recommend setting <code>all.names</code> to <code>TRUE</code>.</span>
+</dd>
+</dl>
+</div>
+</div>
+<p>This function can be used inside server-side code (modules or server functions) to collect all the input values. When placed in the app server function, the function will return the inputs from both modules.</p>
+<p>Below is an example of using <code>reactiveValuesToList()</code> inside the our app server function:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>movies_server <span class="ot">&lt;-</span> <span class="cf">function</span>(input, output, session) {</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>      output<span class="sc">$</span>vals <span class="ot">&lt;-</span> <span class="fu">renderPrint</span>({</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>        app_vals <span class="ot">&lt;-</span> <span class="fu">reactiveValuesToList</span>(<span class="at">x =</span> input, <span class="at">all.names =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>        <span class="fu">str</span>(app_vals)</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>      })</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>      selected_vars <span class="ot">&lt;-</span> <span class="fu">mod_var_input_server</span>(<span class="st">"vars"</span>)</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>      <span class="fu">mod_scatter_display_server</span>(<span class="st">"plot"</span>, <span class="at">var_inputs =</span> selected_vars)</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>We’ll also add the following to the <code>bslib = TRUE</code> section of <code>movies_ui()</code> to print the output of the reactive list to the UI:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ...movies_ui() code omitted...</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>bslib<span class="sc">::</span><span class="fu">card_body</span>(<span class="at">fillable =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">verbatimTextOutput</span>(<span class="at">outputId =</span> <span class="st">"vals"</span>),</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mod_scatter_display_ui</span>(<span class="st">"plot"</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co"># ...movies_ui() code omitted...</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>After loading the changes to our package, we can view the application with the captured and printed reactive values:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/print_debug_app_vals.png" class="lightbox" data-gallery="quarto-lightbox-gallery-3" title="Click to enlarge"><img src="images/print_debug_app_vals.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Click to enlarge"></a></p>
+</figure>
+</div>
+<figcaption>Click to enlarge</figcaption>
+</figure>
+</div>
+<p>Note the difference between the two printed values: the output in the sidebar has been printed from within the module server function, so the input names are contained within that namespace (i.e., <code>x</code>, <code>y</code>, etc.). However, the list returned from <code>reactiveValuesToList()</code> has been placed in the app server function, so we can see the module <code>id</code> appended to the input name (i.e., <code>vars-y</code>, <code>vars-x</code>, etc.).</p>
 </section>
-<section id="recap" class="level2" data-number="11.2">
-<h2 data-number="11.2" class="anchored" data-anchor-id="recap"><span class="header-section-number">11.2</span> Recap</h2>
-<p>If we want to see what’s happening ‘behind the scenes’, we can collect the reactive values and print them in the UI while the app is running.</p>
+<section id="recap" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="recap">Recap</h2>
+<div class="callout callout-style-default callout-tip no-icon callout-titled">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-3-contents" aria-controls="callout-3" aria-expanded="true" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span style="font-weight: bold; font-size: 1.10em;">Recap: Print Debugging</span>
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-3" class="callout-3-contents callout-collapse collapse show">
+<div class="callout-body-container callout-body">
+<div style="font-size: 1.05em; color: #282b2d;">
+<p>The advantages of print debugging are 1) it’s easy to insert a few lines of code and run the program, 2) it works in any programming environment, even if sophisticated debugging tools aren’t available, and 3) it doesn’t require special configurations or debugging tools.</p>
+<p>However, the downside is we can’t pause execution or inspect the app state in real-time. We only can see what we explicitly print, and if we miss a key variable or condition, we have to to insert, remove, or adjust print functions, which can be time-consuming. Excessive print functions can also clutter the code and output especially in large or complex application.</p>
+</div>
+</div>
+</div>
+</div>
 
 
 </section>
@@ -1142,8 +1430,40 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
   </div>
 </nav>
 </div> <!-- /content -->
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/mjfrigaard/shiny-app-pkgs/edit/main/debug_print.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/mjfrigaard/shiny-app-pkgs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer><script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
 
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/mjfrigaard/shiny-app-pkgs/edit/main/debug_print.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/mjfrigaard/shiny-app-pkgs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
+</body></html>
