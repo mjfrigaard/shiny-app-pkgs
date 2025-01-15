@@ -604,6 +604,44 @@ mod_var_input_server <- function(id) {
 5. `size` numeric value for size  
 6. `plot_title` text 
 
+```{=html}
+
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+
+</style>
+```
+
+```{mermaid}
+%%| fig-align: center
+%%| fig-cap: 'Variable input module'
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace',"fontSize":"13px"}}}%%
+flowchart LR
+    UI["<code>mod_var_input_ui()</code> Collects inputs"] -->|"<strong>UI Inputs</strong>"| Server["<code>mod_var_input_server()</code> Returns reactives"]
+    subgraph Inputs["<code>inputs$</code>"]
+        Axes("X, Y & Color")
+        Aes("Transparency")
+        Size("Point Size")
+        Title("Plot Title")
+    end
+    UI --> Axes
+    UI --> Aes
+    UI --> Size
+    UI -.-> Title
+    Axes -->|String| Server
+    Aes -->|Numeric| Server
+    Size -->|Numeric| Server
+    Title -.->|String| Server
+```
+
 #### Display
 
 `mod_scatter_display_ui()` creates a dedicated namespace for the plot output (along with some help text):
@@ -630,8 +668,7 @@ mod_scatter_display_ui <- function(id) {
 
 1. Namespaced module `id` for plot in UI
 
-`mod_scatter_display_server()` loads the `movies` data and collects the returned values from  `mod_var_input_server()` as `inputs()`. The `inputs()` reactive is passed to the `scatter_plot()` utility function, creates the `plot` object, and adds the `plot_title()` and theme:
-
+`mod_scatter_display_server()` loads the `movies` data and collects the returned reactive list (`var_inputs()`) from `mod_var_input_server()` as `inputs()`. The `inputs()` reactive is passed to the utility function (`scatter_plot()`), then creates the `plot` object and adds the `plot_title()` and theme:
 
 ```{r}
 #| eval: false 
@@ -681,12 +718,52 @@ mod_scatter_display_server <- function(id, var_inputs) {
   })
 }
 ```
-
 1. loading the `movies` data
 2. assembling the returned values from  `mod_var_input_server()`, and creating the `input()` reactive
 3. `scatter_plot()` utility function creates the `plot` object 
 4. adds the `plot_title()`
 5. add `theme` to layers 
+
+
+```{=html}
+
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+
+</style>
+```
+
+```{mermaid}
+%%| fig-align: center
+%%| fig-cap: 'Display module'
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"13px"}}}%%
+flowchart TD
+    UI["<code>mod_scatter_display_ui</code><br>Plot display interface"] 
+    Server["<code>mod_scatter_display_server()</code><br>Creates graph <code>inputs()</code>"]
+    Server -->|Calls utility<br>function| PlotUtility[["<code>scatter_plot()</code><br>Generates plot"]]
+    subgraph VarInputs["<code>mod_var_input_server()</code>"]
+        Axis("X, Y and Color")
+        Alpha("Transparency")
+        Size("Point Size")
+        Title["Plot Title"]
+    end
+    VarInputs -->|"Returns reactive"| Inputs
+    Inputs("<code>var_inputs()</code>") -->|"Input argument"|Server
+    PlotUtility -->|"Outputs"|UI
+    UI -->|"Displays"|Display(["Rendered scatter plot"])
+    
+    style UI stroke-width:2px,rx:10,ry:10
+    style Server stroke-width:2px,rx:10,ry:10
+    style PlotUtility stroke-width:2px,rx:10,ry:10
+```
 
 Both UI and server module functions are combined into a single `.R` file, and all modules are placed in the `R/` folder so they are sourced when the application is run. 
 
@@ -701,8 +778,92 @@ R/
 
 ### Standalone app function {#sec-shiny-standalone-app-fun}
 
-To launch our app, we place the call to `shinyApp()` in a `launch_app()` function in `app.R`. Both module functions are combined in the `ui` and `server` arguments of `shinyApp()`. The `id` arguments (`"vars"` and `"plot"`) connect the UI functions to their server counterparts, and the output from `mod_var_input_server()` is the `var_inputs` argument in `mod_scatter_display_server()`.
+Instead of using `shiny::shinyApp()` (or the **Run App** icon), we'll want a custom standalone app function to launch our application. This give us more flexibility and control with our modules (and makes debugging easier).
 
+```{r}
+#| eval: false
+#| code-fold: true 
+#| code-summary: 'show/hide launch_app()'
+launch_app <- function() { 
+  shiny::shinyApp(
+    ui = shiny::fluidPage(
+      shiny::titlePanel(
+        shiny::div(
+          shiny::img(
+            src = "shiny.png",
+            height = 60,
+            width = 55,
+            style = "margin:10px 10px"
+            ), 
+         "Movies Reviews"
+        )
+      ),
+      shiny::sidebarLayout(
+        shiny::sidebarPanel(
+          mod_var_input_ui("vars") # <1>
+        ),
+        shiny::mainPanel(
+          mod_scatter_display_ui("plot") # <2>
+        )
+      )
+    ),
+    server = function(input, output, session) {
+      
+      selected_vars <- mod_var_input_server("vars") # <3>
+
+      mod_scatter_display_server("plot", var_inputs = selected_vars) # <4>
+    }
+  )
+}
+```
+1. Variable input UI module 
+2. Graph display UI module 
+3. Variable input server module 
+4. Graph display server module 
+
+The `id` arguments (`"vars"` and `"plot"`) connect the UI functions to their server counterparts, and the output from `mod_var_input_server()` is the `var_inputs` argument in `mod_scatter_display_server()`.
+
+```{=html}
+
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+
+</style>
+```
+
+```{mermaid}
+%%| fig-align: center
+%%| fig-cap: 'Standalone app function'
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"13px"}}}%%
+flowchart LR
+    subgraph Launch["<code>launch_app()</code>"]
+        subgraph VarNS["Variable (<code>vars</code>) Namespace"]
+            VarInpuUI["UI Module:<br><code>mod_var_input_ui()</code>"]
+            VarInpuServer["Server Module:<br><code>mod_var_input_server()</code>"]
+            VarInpuUI <--> VarInpuServer
+        end
+        subgraph GraphNS["Graph (<code>plot</code>) Namespace"]
+        DisplayUI["UI Module:<br><code>mod_scatter_display_ui()</code>"]
+        DisplayServer["Server Module:<br><code>mod_scatter_display_server()</code>"]
+        PlotUtil["Utility Function:<br><code>scatter_plot()</code>"]
+        VarInpuServer <-->|"selected_vars"|DisplayServer
+        DisplayServer <-.-> PlotUtil <--> DisplayUI
+        end
+    end
+
+    VarNS <==>|"Communicates<br>across namespaces"| GraphNS
+
+```
+
+To launch our app, we place the call to `shinyApp()` in a `launch_app()` function in `app.R`. Both module functions are combined in the `ui` and `server` arguments of `shinyApp()`. 
 
 ```{r}
 #| eval: false

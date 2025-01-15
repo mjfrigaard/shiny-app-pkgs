@@ -1,0 +1,1202 @@
+# Documentation {#sec-doc}
+
+```{r}
+#| eval: true 
+#| echo: false 
+#| include: false
+source("_common.R")
+```
+
+```{r}
+#| label: co_box_tldr
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b", 
+  look = "default", hsize = "1.10", size = "1.05",
+  header = " ![](images/roxygen2.png){height=40}&emsp;TLDR", 
+  fold = TRUE,
+  contents = "
+Documenting app-package functions:
+  
+  1. Make sure each function has documentation for the `@title`, `@description`, `@param`(s), `@return`, and `@examples` (if applicable)\n
+  
+  2. Use Markdown for code, emphasis, hyperlinks, etc.\n
+  
+  3. Regularly load and document to preview the help files:\n
+
+&emsp; &emsp; [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd> / <kbd>D</kbd>]{style='font-weight: bold; font-size: 0.75em;'}
+  
+  4. Link modules with `@seealso` and group functions with `@family`\n
+  
+  5. Include any additional information in a new `@section`\n
+  
+  "
+)
+```
+
+---
+
+This chapter covers function documentation in an app-package by introducing the basic fundamentals of the `roxygen2` syntax (i.e., the 'bare minimum' to include for each function). I'll also touch on a few helpful `roxygen2` tags specific to Shiny modules and standalone app functions.  
+
+```{r}
+#| label: shinypak_apps
+#| echo: false
+#| results: asis
+#| eval: true
+shinypak_apps(regex = "^05", branch = "05_roxygen2")
+```
+
+The current structure of our `sap` package is displayed in the folder tree below: 
+
+``` sh
+sap/
+├── DESCRIPTION
+├── NAMESPACE
+├── R
+│   ├── mod_scatter_display.R
+│   ├── mod_var_input.R
+│   └── utils.R
+├── README.md
+├── app.R
+├── man
+├── movies.RData
+├── sap.Rproj
+└── www
+    └── shiny.png
+
+4 directories, 10 files
+```
+(*the `rsconnect/` folder from deploying `sap` has been removed*)
+
+If you recall, the output from the previous call to `install()` returned the following message regarding the documentation:
+
+::: {style='font-weight: bold; font-size: 1.15em;'}
+
+> *`No man pages found in package ‘sap’`*
+
+:::
+
+Documenting the functions in the `R/` folder will address this message, and I strongly encourage checking out the [`roxygen2` vignettes](https://roxygen2.r-lib.org/articles/rd.html) and the [chapter in R Packages, 2ed](https://r-pkgs.org/man.html#roxygen2-basics) for more information on documenting your app-package. 
+
+## roxygen2 intro {#sec-intro-roxygen2}
+
+```{r}
+#| label: git_box_04_devtools
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "standard",
+  fig_pw = '60%', 
+  branch = "04_devtools", 
+  repo = 'sap')
+```
+
+[`roxygen2`](https://roxygen2.r-lib.org/) connects the package code (i.e., the `.R` files in the `R/` folder) to its documentation files (i.e., the `.Rd` files in the `man/` folder). Two pieces of `roxygen2` syntax to know are **comment blocks** and **tags**: 
+
+-   Comment blocks are any lines beginning with `#' `
+
+    ```{r}
+    #| eval: false 
+    #| code-fold: false
+    #' 
+    #' 
+    #' 
+    ```
+
+-   Tags begin with `@`
+
+    ```{r}
+    #| eval: false 
+    #| code-fold: false
+    #' 
+    #' @tag
+    #' 
+    ```
+
+
+The `roxygen2` tags and comment blocks are placed above functions and used with `devtools::document()` to create help documentation: 
+
+```{r}
+#| eval: false 
+#| code-fold: false
+#' 
+#' @tag
+#' 
+my_fun <- function() {
+  
+}
+```
+
+```{=html}
+
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+
+</style>
+```
+
+```{mermaid}
+%%| fig-cap: '`roxygen2` creates the `NAMESPACE` and help files in the  `man/` folder'
+%%| fig-align: center
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"13px"}}}%%
+flowchart TB
+  subgraph Code["R/ Folder"]
+   Roxy2("<code>roxygen2</code> comments (<code>#'</code>)<br> & tags (<code>@</code>)")
+   end
+  Roxy2 --> Doc[["<strong>Run <code>devtools::document()</code></strong>"]]
+  Doc --> Parse("Parses <code>roxygen2</code> comments and tags")
+   
+   subgraph Man["man/ Folder"]
+    Rd(".Rd Files")
+   end
+   
+   subgraph Root["Package Root Folder"]
+    NS("NAMESPACE")
+   end
+
+   Parse --> Man 
+   Parse --> Root
+  
+  %% style Code fill:#8dd38d,stroke:none,rx:10,ry:10,font-size:13px
+  %% style Roxy2 fill:#8dd38d,stroke:none,rx:10,ry:10,font-size:13px
+  %% style Doc fill:#89D6FB,stroke:none,rx:10,ry:10,font-size:13px
+  %% style Parse fill:#89D6FB,stroke:none,rx:10,ry:10,font-size:13px
+  %% style Man fill:#8dd38d,stroke:none,rx:10,ry:10,font-size:13px
+  %% style NS fill:#8dd38d,stroke:none,rx:10,ry:10,font-size:13px
+```
+
+In the following sections, we'll cover some `roxygen2` basics using the `scatter_plot()` function in the `R/utils.R` file. 
+
+```{r}
+#| label: co_box_tab_roxygen2_skeletons
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g", 
+  look = "default", hsize = "1.10", size = "1.05",
+  header = "Inserting roxygen2 skeletons", 
+  contents = "
+  
+In RStudio ![](images/rstudio-icon.png){height=20}, you can insert an `roxygen2` skeleton into your function using **Code** > **Insert Roxygen Skeleton**
+
+![Standard `roxygen2` skeleton](images/roxygen2_skeleton.png){width='100%' fig-align='center'} 
+  
+  ", 
+  fold = TRUE
+)
+```
+
+### Markdown support {#sec-roxygen2-md-support}
+
+When we created our app-package with `usethis::create_package()`, support for markdown formatting in package help files was automatically included by adding `Roxygen: list(markdown = TRUE)` to the `DESCRIPTION` file: 
+
+``` sh
+Package: sap
+Version: 0.0.0.9000
+Type: Package
+Title: movies app
+Description: A movies data Shiny application.
+Author: John Smith [aut, cre]
+Maintainer: John Smith <John.Smith@email.io>
+License: GPL-3
+DisplayMode: Showcase
+RoxygenNote: 7.2.3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+# Always leave at least one empty final line in the DESCRIPTION file
+```
+
+
+
+### Title & description {#sec-roxygen2-title}
+
+The first two sections of `roxygen2` documentation are the title and description. These sections don't require tags--`roxygen2` will detect each section as long as there is at least one `#'` line separating them (and their contents don't extend past the length indicated in parentheses below):
+
+```{r}
+#| eval: false 
+#| code-fold: false
+#' function title (one line)
+#'
+#' A short description... (one paragraph)
+#' 
+```
+
+The `@title` and `@description` for the `scatter_plot()` function stored in `R/utils.R` might look like this:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+#' Create scatter plot 
+#'
+#' Custom [`ggplot2`](https://ggplot2.tidyverse.org/) function for building scatter plots in `sap`.
+#' 
+```
+
+
+```{r}
+#| label: co_box_desc_details
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g", 
+  fold = TRUE,
+  look = "default", hsize = "1.10", size = "1.05",
+  header = "Function **@description** and **@details**", 
+  contents = "
+
+If the contents in the `@description` for a function requires more complicated formatting than a single paragraph (i.e., multiple paragraphs, lists, etc.), you can use the `@details` tag:
+
+\`\`\`r
+#' Create scatter plot  
+#' 
+#' @description
+#' Custom [`ggplot2`](https://ggplot2.tidyverse.org/) function for building scatter plots in `sap`.
+#' 
+#' @details
+#' `scatter_plot()` is a custom `ggplot2` function written to handle string arguments from reactive inputs (i.e., `input$x` or `input$y`)
+\`\`\`
+")
+```
+
+### Parameters & return objects {#sec-roxygen2-param-return}
+
+Document function arguments and outputs with `@param` and `@return`:
+
+-   **`@param`**: should include the name and description of each function input (i.e., their type and what they do)
+    
+    ```{r}
+    #| eval: false 
+    #| code-fold: false
+    #' @param name description of its action
+    ```
+    
+    -   Read more about `@param` in the [arguments chapter](https://r-pkgs.org/man.html#arguments) of R Packages, 2ed.
+
+-   **`@return`**: these describe the type (or class) and structure of the function output
+
+    ```{r}
+    #| eval: false 
+    #| code-fold: false
+    #' @return type/structure of the output
+    ```
+    
+    -   Read more about `@return` in the  [return value chapter](https://r-pkgs.org/man.html#sec-man-returns) of R Packages, 2ed.
+    
+Below are examples for `@param` and `@return` in the `scatter_plot()` function stored in `R/utils.R`:
+    
+```{r}
+#| eval: false 
+#| code-fold: false
+#' 
+#' @param df `data.frame` or `tibble`
+#' @param x_var string variable mapped to `x` axis
+#' @param y_var string variable mapped to `y` axis
+#' @param col_var string variable mapped to `color`
+#' @param alpha_var number for point `alpha`
+#' @param size_var number for point `size` 
+#' 
+#' @return A `ggplot2` plot object
+```
+
+To view how the `roxygen2` syntax will appear in the `.Rd` file, I'll document `sap`:
+
+:::{.column-margin}
+
+[To reduce the amount of repetitive code, I'll just be showing the keyboard shortcuts for each `devtools` function from this point forward]{style="font-style: italic; font-size: 1.05em"}
+
+:::
+
+```{r}
+#| label: dev_key_document_basics
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key("D")
+```
+
+
+I can see the `scatter_plot.Rd` file is written to the `man/` folder:
+
+``` sh
+ℹ Updating sap documentation
+ℹ Loading sap
+Writing scatter_plot.Rd
+Documentation completed
+```
+
+#### File name alignment {.unnumbered}
+
+Shiny apps (and most R projects) often contain utility functions in `helper.R` or `utils.R` files. Placing non-Shiny code in these files isn't a bad practice--it's is even encouraged in [Mastering Shiny](https://mastering-shiny.org/scaling-functions.html#file-organisation):
+
+> "*You might want to collect smaller, simpler, functions into one place. I often use `R/utils.R` for this...*"
+
+However, because we'll want to develop tests for `scatter_plot()`, we should follow the advice in [R Packages](https://r-pkgs.org/code.html#sec-code-style-organising),[^document-utils] and rename `R/utils.R` to `R/scatter_plot.R` as we transition to an app-package.[^document-test-files] 
+
+
+
+[^document-utils]: *'More often, a single `.R` file will contain multiple function definitions: such as a main function and its supporting helpers, a family of related functions, or some combination of the two.'* - [Organise functions into files, R Packages, 2ed](https://r-pkgs.org/code.html#sec-code-style-organising)
+
+[^document-test-files]: Making `.R` file/function names brief but descriptive will also make writing and running tests easier. 
+
+```{r}
+#| label: co_box_utils_files
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b",
+  header = "**R/utils.R**", 
+  look = "default", hsize = "1.10", size = "1.05",
+  contents = "
+  
+From now on, I've renamed `R/utils.R` to `R/scatter_plot.R`, so it aligns with the naming conventions in other R packages.
+  
+For a deep dive on `R/utils.R` files in R packages, I recommend reading [Dissecting R Package “Utility Belts”](https://rud.is/b/2018/04/08/dissecting-r-package-utility-belts/)
+  
+  ", 
+  fold = TRUE
+)
+```
+
+R documentation (`.Rd`) files have a formatting style similar to [(La)TeX](https://www.latex-project.org/), but `roxygen2` saves us from having to learn this syntax by automatically generating the `.Rd` files. When we open `man/scatter_plot.Rd`, we see it already contains the following: 
+
+
+:::: {.column-body-outset-right}
+
+![The `scatter_plot.Rd` documentation file](images/doc_scatter_plot_man_rd.png){width='90%' fig-align='center'}
+
+::::
+
+```{r}
+#| label: co_box_tab_rd_syntax
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b", 
+  look = "default", hsize = "1.10", size = "1.05",
+  header = ".Rd file syntax", 
+  fold = TRUE,
+  contents = "
+
+`roxygen2` graciously generates the `scatter_plot.Rd` file (and warns us not to edit it by hand). 
+  
+![`roxygen2` tag syntax in `.Rd` file](images/doc_scatter_plot_man_rd.png){width='100%' fig-align='center'}
+  
+Note the following items were added without needing tags:
+
+-   `\\name`: the name of the function (as it appears in the index)
+
+-   `\\alias`: used to group 'topics' and provides a look-up in the package index
+
+-   `\\arguments`: function arguments (header)
+
+    -   `\\item`: description of argument
+    
+The following two items are a result of the markdown syntax we used: 
+
+-   `\\href`: used for hyperlinks
+
+-   `\\code`: code formatting
+
+")
+```
+
+To view the help file, I can enter `?scatter_plot` in the console: 
+
+```{r}
+#| eval: false
+#| code-fold: false
+?scatter_plot
+```
+
+And an informative message tells me that the development version `scatter_plot.Rd` is being rendered:
+
+``` sh
+ℹ Rendering development documentation for "scatter_plot"
+```
+
+:::: {.column-body-outset-right}
+
+![Help file](images/doc_scatter_plot_rd.png){width='90%' fig-align='center'}
+
+::::
+
+Previewing the development versions of our documentation is a great way to verify the content in each `.Rd` file meets our expectations.  
+
+### Examples {#sec-roxygen2-examples}
+
+`@examples` are unique because they include executable code that demonstrates how a particular function works. In the Posit Workbench IDE, `@examples` are especially helpful because they come with a clickable hyperlink (the `@examples` from `ggplot2::aes()` are below):
+
+:::: {.column-body-outset-right}
+
+::: {#fig-doc_aes_run_examples layout-nrow=2}
+
+![**Run examples** hyperlink](images/doc_aes_examples.png){#fig-doc_aes_run_examples width='90%' fig-align='center'}
+
+![Executed `@examples` code](images/doc_aes_run_examples.png){#fig-doc_aes_run_examples width='90%' fig-align='center'}
+
+**Run examples** in help files
+:::
+
+::::
+
+Below is an example demonstrating how the `scatter_plot()` utility function works:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+#' @examples
+#' scatter_plot(mtcars, 
+#'     x_var = "mpg", 
+#'     y_var = "disp", 
+#'     col_var = "cyl", 
+#'     alpha_var = 0.5, 
+#'     size_var = 3)
+```
+
+```{r}
+#| label: co_box_tags_tab_completion
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g", 
+  look = "default", hsize = "1.10", size = "1.05",
+  header = "Tab-completion for @tags", 
+  contents = "
+  If you're documenting your package functions in Posit Workbench, tab-completion is your friend! The help text displayed with each tag ensures you're including the correct version (see `@example` vs. `@examples` below).
+  
+![Tab completion for `@example`](images/roxygen2_example.png){width=90%}
+  
+Read more [here](https://r-pkgs.org/man.html#sec-man-examples). 
+  
+  ", 
+  fold = TRUE
+)
+```
+
+To preview the `@examples` in the help file, I'll `document()` and open the development `.Rd` file:
+
+```{r}
+#| label: dev_key_document_examples
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key("D")
+```
+
+``` sh
+?scatter_plot
+ℹ Rendering development documentation for "scatter_plot"
+```
+
+:::: {.column-body-outset-right}
+
+![Preview of examples](images/doc_scatter_plot_examples.png){width='90%' fig-align='center'}
+
+::::
+
+The **Run examples** hyperlink won't be active in the `.Rd` file preview, but reviewing the code in `@examples` allows me to correct any errors or typos early.
+
+The `scatter_plot()` function now has a **Title**, **Description**, **Usage**, **Arguments**, **Value**, and **Examples** documented. I consider these tags the minimum documentation to include for functions I’m making available to other users.
+
+## Documenting app functions {#sec-document-app-functions}
+
+Your app-package will likely contain at least two functions specific to Shiny: modules and a standalone app function. `roxygen2` has tags that can make the documentation for these functions more informative for readers.  
+
+Below are a few things to consider when documenting module functions:
+
+-   Modules will typically include two functions in a single `.R` file: one for the UI and a counterpart in the server.
+
+-   Every module function will include at least one `@param` for the shared `id`.
+
+-   Returned objects are critical in Shiny's reactive programming model, so I recommend extending the `@description` to include whether or not the returned output is reactive.
+
+-   If the returned output is an input (i.e. `@param`) for another function, link to that documentation functions with `@seealso` or `@family`.
+
+### See also {#sec-roxygen2-seealso}
+
+When documenting Shiny modules, I tend to think of the audience as anyone looking to understand the *execution path* through an application. For example, in our `sap` application, the inputs are collected in the UI with the `var_input` module, then passed to the `scatter_display` module to render in the UI:
+
+```{=html}
+
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+
+</style>
+```
+
+```{mermaid}
+%%| fig-align: center
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"13px"}}}%%
+flowchart 
+    input(input module) --> seealso["<code>@seealso</code>"] -->  display(display module)
+    
+  %%style input fill:#8dd38d,stroke:none,rx:10,ry:10;
+  %%style display fill:#8dd38d,stroke:none,rx:10,ry:10;
+  %%style seealso fill:#89D6FB,stroke:#000000,rx:1,ry:1;
+```
+
+
+The `@seealso` tag can be used to connect `mod_var_input_ui()` to it's  server function counterpart. The hyperlink to `mod_var_input_server()` from `mod_var_input_ui()` is created by placing the destination function in square brackets `[fun()]`:
+
+```{r}
+#| eval: false 
+#| code-fold: show 
+#| code-summary: 'show/hide mod_var_input_ui() roxygen2'
+#' Variable input module (UI)
+#' 
+#' @description
+#' `var_input` collects the following graph inputs:
+#'  * `input$x`
+#'  * `input$y`
+#'  * `input$z`
+#'  * `input$alpha`
+#'  * `input$size`
+#'  * `input$plot_title`
+#'
+#' @param id UI module id
+#'
+#' @return module UI (HTML)
+#' 
+#' @seealso [mod_var_input_server()]
+#' 
+```
+
+
+```{r}
+#| label: dev_key_document_seealso
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key("D")
+```
+
+`@seealso` creates a hyperlink readers can use to open the next module in the execution path. 
+
+
+![Link values from `var_input` to `scatter_display`](images/doc_see_also.png){width='50%' fig-align='center'}
+
+
+In `mod_var_input_server()`, a link can be made to `mod_scatter_display_server()` (the module function collecting the returned values) using the square brackets in the `@return` section (without `@seealso`):
+
+```{r}
+#| eval: false 
+#| code-fold: show 
+#| code-summary: 'show/hide mod_var_input_server() roxygen2'
+#' Variable input module (server)
+#'
+#' @param id server module id
+#' 
+#' @seealso [mod_var_input_ui()]
+#'
+#' @return reactive inputs are returned in a `list()`: 
+#'  * `"y" = input$y`
+#'  * `"x" = input$x`
+#'  * `"z" = input$z`
+#'  * `"alpha" = input$alpha`
+#'  * `"size" = input$size`
+#'  * `"plot_title" = input$plot_title`
+#'  
+#' These become in the `var_inputs()` argument in [mod_scatter_display_server()]
+#' 
+```
+
+```{r}
+#| label: dev_key_document_seealso_02
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key("D")
+```
+
+
+::: {#fig-doc_see_also_mod_var_input layout="[30,70]" layout-valign="top"}
+
+![](images/doc_see_also.png){#fig-doc_see_also_mod_var_input fig-align='center'}
+
+![](images/doc_see_also_mod_var_input.png){#fig-doc_see_also_mod_var_input fig-align='center'}
+
+Link values from (a) `mod_var_input_ui()` to (b) `mod_var_input_server()`
+:::
+
+
+
+### Family {#sec-roxygen2-family}
+
+Module functions can also be grouped into families using `@family {"description"}`. Below is an example of grouping the *"scatter plot module functions"* into a family:
+
+```{r}
+#| eval: false 
+#| code-fold: show 
+#| code-summary: 'show/hide mod_scatter_display_ui() roxygen2'
+#' Scatter plot display module (UI)
+#'
+#' @param id UI module id
+#' 
+#'
+#' @return module UI (HTML)
+#' 
+#' @family {"scatter plot module functions"}
+#' 
+```
+
+### Section {#sec-roxygen2-section}
+
+The `@section` tag will create a level two header (`##`/`<h2></h2>`) section, which can help organize topics (like how to use an input or argument).
+
+`@seealso` can also be used to link back to the `scatter_plot()` utility function:
+
+```{r}
+#| eval: false 
+#| code-fold: show 
+#| code-summary: 'show/hide mod_scatter_display_server() roxygen2'
+#' Scatter plot display module (server)
+#' 
+#'
+#' @param id server module id 
+#' @param var_inputs returned reactive list from [mod_var_input_server()].
+#' 
+#' @section Referring to `var_inputs`: 
+#' Refer to the reactive returned values from `mod_var_input_server()` as:
+#'  * `var_inputs()$x`
+#'  * `var_inputs()$y`
+#'  * `var_inputs()$z`
+#'  * `var_inputs()$alpha`
+#'  * `var_inputs()$size`
+#'  * `var_inputs()$plot_title`
+#' 
+#'
+#' @return rendered plot and title output from [scatter_plot()]
+#' 
+#' @family {"scatter plot module functions"}
+#' 
+```
+
+
+```{r}
+#| label: dev_key_document_family
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key("D")
+```
+
+
+:::: {.column-body-outset-right}
+
+::: {#fig-doc_family layout="[45,55]" layout-valign="top"}
+
+![](images/doc_family.png){#fig-doc_family fig-align='center' width='100%'}
+
+![](images/doc_usage_seealso.png){#fig-doc_family fig-align='center' width='100%'}
+
+`@family` in `mod_scatter_display_ui()` (a) and `@seealso` in `mod_scatter_display_server()` (b)
+:::
+
+::::
+
+The figure above shows how the `@seealso` links can create a path for the graph parameters through the `var_input` and `scatter_display` modules. It also demonstrates how `@family` groups the `scatter_display` UI and server functions. 
+
+The `scatter_plot()` utility function should also include a `@seealso` tag for the module function it's used in.
+
+```{r}
+#| eval: false 
+#| code-fold: show 
+#| code-summary: 'show/hide scatter_plot() roxygen2'
+#' Create scatter plot 
+#'
+#' Custom [`ggplot2`](https://ggplot2.tidyverse.org/) function for building scatter plots in `sap`.
+#' 
+#' 
+#' @param df `data.frame` or `tibble`
+#' @param x_var string variable mapped to `x` axis
+#' @param y_var string variable mapped to `y` axis
+#' @param col_var string variable mapped to `color`
+#' @param alpha_var number for point `alpha`
+#' @param size_var number for point `size` 
+#' 
+#' @return A `ggplot2` plot object
+#' 
+#' 
+#' @examples
+#' scatter_plot(mtcars, 
+#'     x_var = "mpg", 
+#'     y_var = "disp", 
+#'     col_var = "cyl", 
+#'     alpha_var = 0.5, 
+#'     size_var = 3)
+#'     
+#' @seealso [mod_scatter_display_server()]
+#' 
+```
+
+
+```{r}
+#| label: dev_key_document_seealso_03
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key("D")
+```
+
+::: {layout="[48,52]" layout-valign="top"}
+
+![](images/doc_usage_seealso.png){fig-align='center'}
+
+![](images/doc_scatter_plot_seealso.png){fig-align='center'}
+
+Connections between (a) modules and (b) utility function
+:::
+
+The goal when cross-referencing functions in your app-package is for anyone reading your documentation to follow the links and better understand any modules, their inputs, reactive values, and outputs.
+
+In this case, linking to the `scatter_plot()` function gives readers an interactive example to preview the output.
+
+## UI & Server functions
+
+Splitting the standalone app function in `app.R` into separate UI and server functions has multiple benefits:
+
+1. Developing and loading each function will be easier when it's stored in the `R/` folder.
+
+2. Having dedicated UI, server, and app function means we can develop them independently.
+
+3. Standalone app functions means we can have multiple applications in the same app-package.
+
+I’ve split the UI and server from `launch_app()` into separate `movies_ui()` and `movies_server()` below.
+
+The `movies_ui()` doesn't have any arguments--the only change is wrapping the `shiny::fluidPage()` in `shiny::tagList()`:
+
+```{r}
+#| eval: false 
+#| code-fold: false 
+movies_ui <- function() {
+  shiny::tagList(
+    shiny::fluidPage(
+      theme = shinythemes::shinytheme("spacelab"),
+      shiny::titlePanel(
+        shiny::div(
+          shiny::img(
+            src = "shiny.png",
+            height = 60,
+            width = 55,
+            style = "margin:10px 10px"
+            ), 
+         "Movies Reviews"
+        )
+      ),
+      shiny::sidebarLayout(
+        shiny::sidebarPanel(
+          mod_var_input_ui("vars")
+        ),
+        shiny::mainPanel(
+          mod_scatter_display_ui("plot")
+        )
+      )
+    )
+  )
+} 
+```
+
+`movies_server()` is written to be passed to the `server` argument in `shinyApp()`:
+
+```{r}
+#| eval: false 
+#| code-fold: false 
+movies_server <- function(input, output, session) {
+
+      selected_vars <- mod_var_input_server("vars")
+
+      mod_scatter_display_server("plot", var_inputs = selected_vars)
+      
+}
+```
+
+```{r}
+#| label: co_box_usage
+#| echo: false
+#| results: asis
+#| eval: false
+co_box(
+  color = "r",
+  look = "default", hsize = "1.10", size = "1.05",
+  header = "Revise using @usage",
+  contents = "
+  Come up with a better way to include `shiny::shinyApp()`
+  
+  ", 
+  fold = FALSE
+)
+```
+
+### Usage {#sec-roxygen2-usage}
+
+I'll explicitly describe the use of `movies_ui()` and [set `@usage` to `NULL`](https://roxygen2.r-lib.org/articles/rd.html#usage) (note the use of a code block). I'll also use `@section` to describe each module UI function (and link to the server functions with `@seealso`). 
+
+```{r}
+#| eval: false 
+#| code-fold: show 
+#| code-summary: 'show/hide roxygen2 for movies_ui()'
+#' Movies UI function
+#' 
+#' UI function for standalone app function 
+#' 
+#' @usage NULL
+#' 
+#' @details
+#' The [launch_app()] function is as a wrapper for `shiny::shinyApp()`: 
+#'  
+#' ```
+#' shinyApp(ui = movies_ui, server = movies_server)
+#' ```
+#' 
+#' In [launch_app()]:
+#'  * UI is stored in `movies_ui()`    
+#'  * server is stored in [movies_server()]
+#'  
+#' @section `var_input` module: 
+#' [mod_var_input_ui()] is used to collect the following inputs:
+#'  * `input$x`
+#'  * `input$y`
+#'  * `input$z`
+#'  * `input$alpha`
+#'  * `input$size`
+#'  * `input$plot_title`
+#'  
+#' @seealso [mod_var_input_server()]
+#' 
+#' 
+#' @section `scatter_display` module: 
+#' [mod_scatter_display_ui()] displays the graph output using [scatter_plot()]
+#' 
+#' @seealso [mod_scatter_display_server()]
+#'
+#' @return `ui` argument in `shiny::shinyApp()` 
+#' 
+
+```
+
+```{r}
+#| label: dev_key_document_movies_ui
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key("D")
+```
+
+
+::: {layout-valign="top"}
+
+![`movies_ui()`](images/doc_movies_ui.png){width='90%' fig-align='center'}
+
+:::
+
+The documentation for `movies_server()` is very similar to the Ui function--each module server function is documented in it's own `@section`. 
+
+Still, I'll include a `@section` for `Communication` that describes how values are passed between `mod_var_input_server()` and `mod_scatter_display_server()`. 
+
+```{r}
+#| eval: false 
+#| code-fold: show 
+#| code-summary: 'show/hide roxygen2 for movies_server()'
+#' Movies server function
+#' 
+#' Server function for standalone app function 
+#' 
+#' @usage NULL
+#' 
+#' @details
+#' The [launch_app()] function is as a wrapper for `shiny::shinyApp()`: 
+#' 
+#' ```
+#' shinyApp(movies_ui, movies_server)
+#' ```
+#' 
+#' In [launch_app()]:
+#'  * UI is stored in [movies_ui()]   
+#'  * server is stored in `movies_server()`
+#'  
+#' @section `var_input` module: 
+#' [mod_var_input_server()] returns following reactive values:
+#'  * `x`
+#'  * `y`
+#'  * `z`
+#'  * `alpha`
+#'  * `size`
+#'  * `plot_title`
+#' 
+#' @seealso [mod_var_input_ui()]
+#' 
+#' @section `scatter_display` module: 
+#' [mod_scatter_display_server()] displays the `ggplot2` graph with the [scatter_plot()] function.
+#' 
+#' @seealso [mod_scatter_display_ui()]
+#' 
+#' @section Communication: 
+#' The output from [mod_var_input_server()] should be supplied to the 
+#' `var_inputs` argument of [mod_scatter_display_server()].
+#
+#' @return `server` argument in `shiny::shinyApp()`
+#' 
+```
+
+```{r}
+#| label: dev_key_document_movies_server
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key("D")
+```
+
+::: {layout-valign="top"}
+
+![`movies_server()`](images/doc_movies_server.png){width='90%' fig-align='center'}
+
+:::
+
+
+### [`launch_app()`]{style="font-size: 0.90em; font-weight: bold;"}
+
+The standalone app function (`launch_app()`) automatically calls `shinyApp()`, with the `movies_ui` and `movies_server` functions supplied to `ui` and `server` (without parentheses).
+
+```{r}
+#| eval: false 
+#| code-fold: false 
+launch_app <- function() {
+  shiny::shinyApp(ui = movies_ui, server = movies_server)
+}
+```
+
+The documentation for the standalone app function can be minimal--as long as it provides links to the UI and server.
+
+```{r}
+#| eval: false 
+#| code-fold: false 
+#' Movies app standalone function
+#'
+#' Wrapper function for `shiny::shinyApp()`
+#'
+#' @return Shiny app
+#' 
+#' 
+#' @seealso [mod_var_input_ui()], [mod_var_input_server()], [mod_scatter_display_ui()], [mod_scatter_display_server()]
+#'
+```
+
+
+```{r}
+#| label: dev_key_document_movies_app
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key("D")
+```
+
+
+::: {layout-valign="top"}
+
+![`launch_app()`](images/doc_launch_app.png){width='90%' fig-align='center'}
+
+
+:::
+
+The contents of `app.R` can be changed to the following: 
+
+```{r}
+#| eval: false 
+#| code-fold: false
+# pkgs <- c("shiny", "shinythemes", "stringr", "ggplot2", "rlang")
+# install.packages(pkgs, quiet = TRUE)
+
+# packages ------------------------------------
+library(shiny)
+library(shinythemes)
+library(stringr)
+library(ggplot2)
+library(rlang)
+
+# launch_app ------------------------------------
+launch_app()
+```
+
+Now that we've documented everything in `R/`, we'll `load()`, `document()`, and `install()` our package:
+
+```{r}
+#| label: dev_key_load_all
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key("L")
+```
+
+```{r}
+#| eval: false 
+#| code-fold: false
+devtools::load_all(".")
+```
+
+``` sh
+ℹ Loading sap
+```
+
+```{r}
+#| label: dev_key_document_all
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key("D")
+```
+
+``` sh
+==> devtools::document(roclets = c('rd', 'collate', 'namespace'))
+
+ℹ Updating sap documentation
+ℹ Loading sap
+Documentation completed
+```
+
+```{r}
+#| label: dev_key_install_all
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key("B")
+```
+
+``` sh
+==> R CMD INSTALL --preclean --no-multiarch --with-keep.source sap
+
+* installing to library ‘/path/to/local/install/sap-090c61fc/R-4.2/x86_64-apple-darwin17.0’
+* installing *source* package ‘sap’ ...
+** using staged installation
+** R
+** byte-compile and prepare package for lazy loading
+** help
+*** installing help indices
+** building package indices
+** testing if installed package can be loaded from temporary location
+** testing if installed package can be loaded from final location
+** testing if installed package keeps a record of temporary installation path
+* DONE (sap)
+```
+
+In the **Console**, we should see the following: 
+
+``` sh
+Restarting R session...
+> library(sap)
+```
+
+The `roxygen2` documentation for `sap` is saved in the [`02-roxygen` branch](https://github.com/mjfrigaard/sap/tree/05_roxygen2). As we can see, calling `devtools::document()` generates the `.Rd` files in the `man/` folder for each function in the `R/` folder:
+
+::: {layout-ncol=2}
+
+``` sh
+R/
+├── launch_app.R
+├── mod_scatter_display.R
+├── mod_var_input.R
+├── movies_server.R
+├── movies_ui.R
+└── scatter_plot.R
+
+1 directory, 6 files
+```
+
+``` sh
+man/
+├── launch_app.Rd
+├── mod_scatter_display_server.Rd
+├── mod_scatter_display_ui.Rd
+├── mod_var_input_server.Rd
+├── mod_var_input_ui.Rd
+├── movies_server.Rd
+├── movies_ui.Rd
+└── scatter_plot.Rd
+
+1 directory, 8 files
+```
+
+:::
+
+## Recap {.unnumbered}
+
+Good documentation aims to make it as easy as possible for others (and future you) to understand what your function does and how to use it.
+
+```{r}
+#| label: git_box_05_roxygen2
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  fig_pw = '75%', 
+  branch = "05_roxygen2", 
+  repo = 'sap')
+```
+
+Below is a recap of the topics covered in this chapter.
+
+```{r}
+#| label: co_box_recap
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g", 
+  look = "default", hsize = "1.10", size = "1.05",
+  header = "&emsp; ![](images/roxygen2.png){width='45' height='50'} Documentation Recap",
+  contents = "
+  This chapter covered: 
+  
+  - **Function `@title` and `@description`**: The `@title` should be a short one-line description of the function, followed by a more detailed paragraph `@description`. These tags should give users an idea of what the function does (you can also use `@details`)
+  
+  - **Arguments (`@param`) and outputs (`@return`)**: List all function arguments with `@param`. Include the argument type (e.g., integer, character, etc.) and a brief description of what the argument does. Be sure to mention any default or optional arguments. Function outputs should be listed with `@return` and describe the type or class of the object, whether or not it's reactive, and mention any related functions.
+  
+  - **Examples**: `@examples` provide executable R code that captures how the function is used in your app-package. These are incredibly valuable for new users trying to understand how a function (and your app-package) works.
+  
+  App-package specific considerations: 
+  
+  - **Connect functions with`@seealso` and `@family`**: Use `@seealso` to provide links to related functions (i.e., modules) so users can click through a 'guided tour' of your application's code--group similar functions using  `@family {description}`.
+  
+  - **Give more info with `@section`**s: Use `@section` to give in-depth explanations and specific details about how a function works, including any information about the `@usage` or its `@param`s.
+  
+  - **`@usage`**: This field will be automatically generated by `roxygen2`, but in some circumstances, it makes sense to set it to `NULL` and describe a function's use explicitly.
+  
+  ", 
+  fold = FALSE
+)
+```
+
+
+In the next section, we'll use `roxygen2` to manage our app-package dependencies. 
+
+```{r}
+#| label: git_contrib_box
+#| echo: false
+#| results: asis
+#| eval: true
+git_contrib_box()
+```
