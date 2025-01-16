@@ -37,51 +37,16 @@ co_box(
 
 ---
 
-In the previous chapters we covered how to document functions and manage dependencies. In this chapter, we're going to cover how make sure our data file (`movie.RData`) becomes part of our app-package and can be loaded into our application. We'll also discuss other locations and purposes for app-package data files. 
+The previous chapters in this section covered how documenting functions and managing dependencies. In this chapter, we'll discuss how data files (like `movies.RData`) become part of an app-package so they can be loaded into our application. We'll also cover the various locations and purposes for app-package data files. 
 
-
-:::: {.callout-tip collapse='true' appearance='default'}
-
-## [Accessing the code examples]{style='font-weight: bold; font-size: 1.15em;'}
-
-::: {style='font-size: 0.95em; color: #282b2d;'}
-
-I've created the [`shinypak` R package](https://mjfrigaard.github.io/shinypak/) In an effort to make each section accessible and easy to follow:
-  
-Install `shinypak` using `pak` (or `remotes`):
 
 ```{r}
-#| code-fold: false 
-#| message: false
-#| warning: false
-#| eval: false
-# install.packages('pak')
-pak::pak('mjfrigaard/shinypak')
+#| label: shinypak_apps
+#| echo: false
+#| results: asis
+#| eval: true
+shinypak_apps(regex = "^07", branch = "07_data")
 ```
-
-Review the chapters in each section:
-  
-```{r}
-#| code-fold: false 
-#| message: false
-#| warning: false
-#| collapse: true
-library(shinypak)
-list_apps(regex = '^07')
-```
-
-Launch an app: 
-
-```{r}
-#| code-fold: false 
-#| eval: false
-launch(app = "07_data")
-```
-
-::: 
-
-::::
-
 
 Data in R packages are typically stored in one of three folders: `data/`, `data-raw/`, and `inst/extdata/`.[^data-pkgs-1] The folder you use will depend on the format, accessibility, and intended purpose of the data file.[^app-data-chapter]
 
@@ -89,7 +54,7 @@ Data in R packages are typically stored in one of three folders: `data/`, `data-
 
 [^data-pkgs-1]: Read more about the data folder in the ['Data in packages' section of Writing R Extenstions](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Data-in-packages) and the ['Data' chapter of R Packages, 2ed](https://r-pkgs.org/data.html).
 
-## The [`data/`]{style="font-size: 1.05em; font-weight: bold;"} folder {#sec-data-data}
+## The [data/]{style="font-size: 1.05em; font-weight: bold;"} folder {#sec-data-data}
 
 The primary location for data is the `data/` folder. Objects in `data/` folder are available in your package namespace when it's installed and loaded, and can be accessed with the `::` syntax. See the example below of the `storms` data from `dplyr`:
 
@@ -103,93 +68,124 @@ head(dplyr::storms)
 
 ### LazyData
 
-Data files become part of a package when they're added to the `data/` folder and `LazyData: true` is added to the `DESCRIPTION` file. 
+Data files become part of a package when they're added to the `data/` folder and `LazyData: true` is added to the `DESCRIPTION` file. Enabling `LazyData` means the data are only loaded into memory if they are explicitly accessed by the user or a function in the package. Until then, only the dataset name is loaded. This user-friendly practice is the default for most R  packages.
 
--   `LazyData: true`: this means the data are only loaded into memory if they are explicitly accessed by the user or a function in the package. Until then, only the dataset names is loaded. This user-friendly practice is the default for most R  packages.
+Omitting `LazyData` (or setting it to `false`) means we would have to access the data file from the package by explicitly loading it with the `data()` function.
 
--   `LazyData: false` (or omitted): accessing a data file from the package requires explicitly loading it using the `data()` function.
+### [`use_data()`]{style="font-size: 1.05em; font-weight: bold;"}
 
-Files in `data/` should be in the `.rda` or `.RData` format. Below are the steps for adding `movies` to `sap`:
-
-1. Move the `movies.RData` file into a newly created the `data/` folder:
-
-``` sh
-sap/
-    └──data/
-        └── movies.RData
-```
-
-2. Include `LazyData: true` in the `DESCRIPTION` file (I've added it above `Imports:`):
-
-``` sh
-Package: sap
-Version: 0.0.0.9000
-Type: Package
-Title: Shiny App-Packages
-Description: An R package with a collection of Shiny applications.
-Author: John Smith [aut, cre]
-Maintainer: John Smith <John.Smith@email.io>
-License: GPL-3
-RoxygenNote: 7.2.3
-Encoding: UTF-8
-Roxygen: list(markdown = TRUE)
-LazyData: true
-Imports:
-  shiny,
-  ggplot2,
-  rlang,
-  stringr,
-  tools
-```
-
-3. Load, document, and install.
+The [`usethis::use_data()` function](https://usethis.r-lib.org/reference/use_data.html) simplifies adding data to packages. To use `usethis::use_data()`, we can load the data into the global environment with `load("movies.RData")`, then run `usethis::use_data(movies)`:
 
 ```{r}
-#| label: data_hot_key_01
+#| eval: false
+#| code-fold: false
+usethis::use_data(movies)
+```
+
+```sh
+✔ Adding R to Depends field in DESCRIPTION.
+✔ Creating data/.
+✔ Setting LazyData to "true" in DESCRIPTION.
+✔ Saving "movies" to "data/movies.rda".
+☐ Document your data (see <https://r-pkgs.org/data.html>).
+```
+
+We can see `use_data()` added two fields in the `DESCRIPTION` and stored `movies.rda` in the `data/` folder. After loading and installing `sap`, we can see `movies` is now part the package `NAMESPACE`.
+
+
+If we run `devtools::load_all()`, any data in the `data/` folder are not lazy-loaded at this stage. However, the data are directly available in our environment for testing during development. 
+
+```{r}
+#| label: data_hot_key_load_1
 #| echo: false
 #| results: asis
 #| eval: true
 hot_key("L")
 ```
 
-
-``` sh
-ℹ Loading sap
-```
+If we want data to be part of the lazyload DB, we need to install the package.
 
 ```{r}
-#| label: data_hot_key_02
-#| echo: false
-#| results: asis
-#| eval: true
-hot_key("D")
-```
-
-``` sh
-==> devtools::document(roclets = c('rd', 'collate', 'namespace'))
-
-ℹ Updating sap documentation
-ℹ Loading sap
-Documentation completed
-```
-
-```{r}
-#| label: data_hot_key_03
+#| label: data_hot_key_doc_1
 #| echo: false
 #| results: asis
 #| eval: true
 hot_key("B")
 ```
 
-In the **Build** pane, you'll notice a few new `** data` lines of output after adding data:
+When the package is installed, we'll see the following outputs related to data processing:
 
-``` sh
+```{bash}
+#| eval: false 
+#| code-fold: false
 ** data
 *** moving datasets to lazyload DB
 ** byte-compile and prepare package for lazy loading
 ```
 
-The diagram below captures what happens to the package files and namespace after adding `LazyData: true` to the `DESCRIPTION` file and exporting `movies` from `sap`.
+`movies` is now part of `sap`'s namespace:
+
+![`sap::movies`](images/data_movies_namespace.png){width='100%' fig-align='center'}
+
+### Installed package
+
+The lazyload DB is located in the *installed version* of the `sap` package. Installation begins by reading and parsing the `DESCRIPTION` file to extract metadata such as the package name, version, and dependencies (e.g., `Depends`, `Imports`, `Suggests`). After checking the dependencies (and downloading and installing any that are missing), our source package is extracted, and the files are organized into specific folders: 
+
+1. `Meta/`: information about datasets, help files, and general package metadata.
+
+2. `R/`: byte-compiled R code stored as `.rdb` and `.rdx` files
+
+3. `data/`: datasets serialized into a lazyload database (stored as `.rdb` and `.rdx` files in the `R/` directory)
+
+4. `help/`: binary help files 
+
+5. `html/`: html and css files for help files 
+
+The installed folders and files can be viewed using the file path accessor function, `system.file()`. 
+
+To view the path to the R folder in our installed package, we can use: 
+
+```{r}
+#| eval: false 
+#| code-fold: false
+system.file("R", package = "sap")
+```
+
+```sh
+path/to/installed/pkg/library/R-4.4/sap/R
+```
+
+If we combine this with `fs::dir_tree()`, we can see the files contained in the `R/` folder: 
+
+```{r}
+#| eval: false 
+#| code-fold: false
+fs::dir_tree(system.file("R", package = "sap"))
+```
+
+```sh
+path/to/installed/pkg/library/R-4.4/sap/R
+├── sap
+├── sap.rdb
+└── sap.rdx
+```
+
+During installation, data in the `data/` folder are converted to `.rdb` and `.rdx` file formats and moved to the binary database stored in the `R/` folder.
+
+```{r}
+#| eval: false 
+#| code-fold: false
+fs::dir_tree(system.file("data", package = "sap"))
+```
+
+```sh
+path/to/installed/pkg/library/R-4.4/sap/data
+├── Rdata.rdb
+├── Rdata.rds
+└── Rdata.rdx
+```
+
+The lazyload database stores data objects in serialized form for fast retrieval (i.e., data are loaded only when explicitly requested, optimizing memory usage). The diagram below illustrates the development workflow for adding data to an app-package:  
 
 ```{=html}
 
@@ -210,132 +206,125 @@ The diagram below captures what happens to the package files and namespace after
 ```{mermaid}
 %%| fig-align: center
 %%| fig-cap: 'LazyData field in the DESCRIPTION file'
-%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'monospace', 'primaryColor': '#33a02c', 'edgeLabelBackground':'#02577A'}}}%%
-
-flowchart
-  AddLazyData("<code>LazyData: true</code>
-              to <code>DESCRIPTION</code>")
-  LoadAll("Run <code>load_all()</code>")
-  Document("Run <code>document()</code>")
-  Install("Run <code>install()</code>")
-  UpdateNamespace("Update <code>NAMESPACE</code> 
-                   with <code>LazyData</code>")
-  BuildBinary("Build package binary")
-  LoadData("Load data into 
-            <code>NAMESPACE</code>")
-  UpdateDocs("Update documentation")
-  InstallPackage("Install package")
-
-  AddLazyData --> LoadAll
-  AddLazyData --> Document
-  AddLazyData --> Install
-  LoadAll --> UpdateNamespace
-  UpdateNamespace --> LoadData
-  Document --> UpdateDocs
-  Install --> BuildBinary
-  BuildBinary --> LoadData
-  LoadData --> InstallPackage
-  UpdateDocs --> InstallPackage
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"13px"}}}%%
+flowchart TD
+    subgraph DESC["<strong>DESCRIPTION</strong>"]
+        LazyData("Add <code>LazyData: true</code>")
+    end
+    subgraph Data["<strong>data/ folder</strong>"]
+        app_data[("<br><code>app_data.rda</code>")]
+    end
+    subgraph Global["<strong>Global Environment</strong>"]
+        load_data[("<br><code>app_data</code>")]
+    end
+    subgraph Lazy["<strong>lazyload DB</strong>"]
+        app_data_lazy[("<br>Serialized<br> (<code>.rdb</code>/<code>.rds</code>/<code>.rdx</code>)")]
+    end
+    load("<code>devtools::load_all()</code>")
+    inst("<code>devtools::install()</code>")
+    
+    DESC -->|"<code>usethis::use_data(app_data)</code>"|Data
+    Data --> load & inst
+    load --> |"Direct access for testing"|Global
+    inst --> |"Loaded only when<br>explicitly requested"|Lazy
   
-  style AddLazyData fill:#8dd38d,stroke:none,rx:10,ry:10;
-  style LoadAll fill:#89D6FB,stroke:none,rx:10,ry:10;
-  style Document fill:#89D6FB,stroke:none,rx:10,ry:10;
-  style Install fill:#89D6FB,stroke:none,rx:10,ry:10;
-  style UpdateNamespace fill:#FFDD67,stroke:none,rx:10,ry:10;
-  style BuildBinary fill:#FFDD67,stroke:none,rx:10,ry:10;
-  style LoadData fill:#FFDD67,stroke:none,rx:10,ry:10;
-  style UpdateDocs fill:#FFDD67,stroke:none,rx:10,ry:10;
-  style InstallPackage fill:#FFDD67,stroke:none,rx:10,ry:10;
 ```
 
-We can check to see if movies has been included in `sap` using the `package::data` syntax: 
 
 
-![`movies` is now part of `sap`](images/data_movies_namespace.png){#fig-data_movies_namespace width='100%' fig-align='center'}
+## [data-raw/]{style="font-size: 1.0em; font-weight: bold;"} {#sec-data-data-raw}
 
-### usethis::use_data()
+The `data-raw` folder is not an official directory in the standard R package structure, but it's a common location for any data processing or cleaning scripts, and the raw data file for datasets stored in `data/`.[^data-raw-2]
 
-If you'd prefer to store data using the `.rda` format, the `usethis` package has the [`use_data()` function](https://usethis.r-lib.org/reference/use_data.html) that will automatically store an object in `data/` in the `.rda` format.
+[^data-raw-2]: Read more about the `data-raw` folder in [R Packages, 2ed](https://r-pkgs.org/data.html#sec-data-data-raw)
 
-To use `usethis::use_data()`, we can load the `movies` data into the global environment with `load("movies.RData")`, then run  `usethis::use_data(movies)`: 
+We'll move the `movies.RData` file into `data-raw/`. 
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+├── data
+│   └── movies.rda
+└── data-raw
+    └── movies.RData
+```
 
 ```{r}
-#| eval: false 
-#| code-fold: false
-usethis::use_data(movies)
+#| label: co_box_data_raw
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "o", fold = TRUE, look = "default",
+  hsize = "1.10", size = "1.05",
+  header = "Scripts for creating `movies` data",
+  contents = "
+The code used to produce the `movies` dataset in the `data/` directory might* come from [this GitHub repo](https://github.com/mine-cetinkaya-rundel/rotten). If so, the `data-raw` folder is where [the data processing and preparation scritps](https://github.com/mine-cetinkaya-rundel/rotten/tree/master/working) would be stored (along with a copy of the data in `.csv` format) before saving a copy in the `data/` folder. 
+  
+*I say 'might' because it's not clear if the `movies.RData` is the output from these `.R` files (although many of the column names match).
+
+  "
+)
 ```
+
+### A [data-raw/]{style="font-size: 1.0em; font-weight: bold;"} example
+
+If we look at the data in the [`dplyr` package](https://github.com/tidyverse/dplyr), we can see the [`data-raw/` folder](https://github.com/tidyverse/dplyr/tree/main/data-raw) contains a combination of `.R` and `.csv` files: 
 
 ```{verbatim}
 #| eval: false 
-#| code-fold: false
-✔ Setting active project to '/path/to/sap'
-✔ Adding 'R' to Depends field in DESCRIPTION
-✔ Creating 'data/'
-✔ Saving 'movies' to 'data/movies.rda'
-• Document your data (see 'https://r-pkgs.org/data.html')
+#| code-fold: true 
+data-raw/
+├── band_members.R
+├── starwars.R
+├── starwars.csv
+└── storms.R
+
+1 directory, 4 files
 ```
 
-The `Depends:` field is added to the `DESCRIPTION` file with an R version (this ensures the data files will be loaded)
+In this example, the [`starwars.R` script](https://github.com/tidyverse/dplyr/blob/main/data-raw/starwars.R) downloads & prepares `starwars`, then saves a `.csv` copy of the data [in `data-raw`]((https://github.com/tidyverse/dplyr/blob/main/data-raw/starwars.csv)).
 
-```{verbatim}
-#| eval: false 
-#| code-fold: false
-Depends: 
-    R (>= 2.10)
-```
+## Documenting data {#sec-document-data}
 
-*`use_data()` will also add `LazyData: true` to the `DESCRIPTION`*
-
-## Documenting [`data/`]{style="font-size: 1.05em; font-weight: bold;"} {#sec-document-data}
-
-Documenting data can be tedious, but it's worth the effort if you'll be sharing your package with collaborators. There are multiple ways to store dataset documentation. A common approach is to create a `data.R` file in the `R/` folder.[^data-ggplot2-example]
+Documenting data can be tedious, but it's worth the effort if you'll be sharing your package with collaborators. There are multiple ways to store dataset documentation, but we'll cover using a `R/data.R` file.[^data-ggplot2-example]
 
 [^data-ggplot2-example]: The `ggplot2` package has a great example of documenting datasets in the [R/data.R](https://github.com/tidyverse/ggplot2/blob/main/R/data.R) file
 
-```{r}
-#| eval: false 
-#| code-fold: false
-fs::file_create("R/data.R")
-```
-
-In `data.R`, we provide a `@title`, `@description`, and `@details` for the data (with or without the tags), followed by `@format`:
+In `R/data.R`, provide a title, description, a `@details` tag for more information:
 
 ```{r}
 #| eval: false 
 #| code-fold: false
-#' @title IMDB movies data 
+#' IMDB movies data 
 #'
-#' @description
-#' Movie review data. Note: these data come from the [Building Web Applications with Shiny course](https://rstudio-education.github.io/shiny-course/). 
+#' Movie review data from the Building Web Applications with Shiny 
+#' [course](https://rstudio-education.github.io/shiny-course/). 
 #' 
 #' @details
-#' Read more about acquiring these data in the ['Web Scraping and programming' section of Data science in a box](https://datasciencebox.org/02-exploring-data#web-scraping-and-programming)   
-#'
-#' @format
-
+#' Read more about acquiring these data in the 'Web Scraping and programming' 
+#' section of [Data science in a box](https://datasciencebox.org/02-exploring-data#web-scraping-and-programming) 
+#' 
 ```
 
-### [`@format`]{style="font-size: 1.0em;"}
-
-The text following `@format` is a one-sentence description of the data (with it's dimensions).
+Below `@details`, include a `@format` tag with a one-sentence description of the data (and it's dimensions).
 
 ```{r}
 #| eval: false 
 #| code-fold: false
-#' @title IMDB movies data 
+#' IMDB movies data 
 #'
-#' @description
-#' Movie review data. Note: these data come from the [Building Web Applications with Shiny course](https://rstudio-education.github.io/shiny-course/). 
+#' Movie review data from the Building Web Applications with Shiny 
+#' [course](https://rstudio-education.github.io/shiny-course/). 
 #' 
 #' @details
-#' Read more about acquiring these data in the ['Web Scraping and programming' section of Data science in a box](https://datasciencebox.org/02-exploring-data#web-scraping-and-programming) 
+#' Read more about acquiring these data in the 'Web Scraping and programming' 
+#' section of [Data science in a box](https://datasciencebox.org/02-exploring-data#web-scraping-and-programming)  
 #' 
 #' @format A data frame with [] rows and [] variables:
 
 ```
 
-
-### [`\describe`]{style="font-size: 1.0em;"} & [`\item`]{style="font-size: 1.0em;"}
 
 Each variable (column) in the data is documented with a combination of `\describe` and `\item` (**pay close attention to the curly brackets**):
 
@@ -347,20 +336,19 @@ Each variable (column) in the data is documented with a combination of `\describ
 #' }
 ```
 
-After closing the curly brackets in `\describe`, place the name of the data in quotes (`"movies"`) on the following line. 
-
-Below is the documentation for the first five columns in the `movies` dataset:
+After closing the curly brackets in `\describe`, place the name of the data in quotes (`"movies"`) on the following line. Below is the documentation for the first five columns in the `movies` dataset:
 
 ```{r}
 #| eval: false 
 #| code-fold: false
-#' @title IMDB movies data 
+#' IMDB movies data 
 #'
-#' @description
-#' Movie review data. Note: these data come from the [Building Web Applications with shiny course](https://rstudio-education.github.io/shiny-course/). 
+#' Movie review data from the Building Web Applications with Shiny 
+#' [course](https://rstudio-education.github.io/shiny-course/). 
 #' 
 #' @details
-#' Read more about acquiring these data in the ['Web Scraping and programming' section of Data science in a box](https://datasciencebox.org/02-exploring-data#web-scraping-and-programming) 
+#' Read more about acquiring these data in the 'Web Scraping and programming' 
+#' section of [Data science in a box](https://datasciencebox.org/02-exploring-data#web-scraping-and-programming)  
 #'
 #' @format A data frame with 651 rows and 34 variables:
 #' \describe{
@@ -384,30 +372,12 @@ If we load and document `sap`, we can see a preview of the help file:
 hot_key("L")
 ```
 
-
-```{verbatim}
-#| eval: false
-#| code-fold: false
-ℹ Loading sap
-```
-
 ```{r}
 #| label: data_hot_key_05
 #| echo: false
 #| results: asis
 #| eval: true
 hot_key("D")
-```
-
-```{verbatim}
-#| eval: false 
-#| code-fold: false
-==> devtools::document(roclets = c('rd', 'collate', 'namespace'))
-
-ℹ Updating sap documentation
-ℹ Loading sap
-Writing movies.Rd
-Documentation completed
 ```
 
 We can view the documentation using the following in the **Console:**
@@ -420,7 +390,7 @@ We can view the documentation using the following in the **Console:**
 
 
 ::: {#fig-data_data_help}
-![The `movies` help file](images/data_data_help.png){#fig-09_data_rd width='100%' fig-align='center'}
+![The `movies` help file](images/data_data_help.png){#fig-09_data_rd width='85%' fig-align='center'}
 
 Documentation for the `movies` dataset
 :::
@@ -431,13 +401,14 @@ I've provided documentation for the full `movies` dataset below.
 #| eval: false 
 #| code-fold: true 
 #| code-summary: 'show/hide full movies data documenation'
-#' @title IMDB movies data 
+#' IMDB movies data 
 #'
-#' @description
-#' Movie review data. Note: these data come from the [Building Web Applications with Shiny course](https://rstudio-education.github.io/shiny-course/). 
+#' Movie review data from the Building Web Applications with Shiny 
+#' [course](https://rstudio-education.github.io/shiny-course/). 
 #' 
 #' @details
-#' Read more about acquiring these data in the ['Web Scraping and programming' section of Data science in a box](https://datasciencebox.org/02-exploring-data#web-scraping-and-programming) 
+#' Read more about acquiring these data in the 'Web Scraping and programming' 
+#' section of [Data science in a box](https://datasciencebox.org/02-exploring-data#web-scraping-and-programming) 
 #'
 #' @format A data frame with 651 rows and 34 variables:
 #' \describe{
@@ -480,61 +451,42 @@ I've provided documentation for the full `movies` dataset below.
 "movies"
 ```
 
-### Using `movies`
-
-After documenting the movies data in `R/data.R`, we'll remove the call to `load()` in the `mod_scatter_display_server()` function and replace it with a direct call to the dataset:
-
 ```{r}
-#| eval: false 
-#| code-fold: false 
-mod_scatter_display_server <- function(id, var_inputs) {
-  shiny::moduleServer(id, function(input, output, session) {
+#| label: co_box_documenting_data
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g", fold = TRUE, look = "default",
+  hsize = "1.10", size = "1.05",
+  header = "Documenting data",
+  contents = "
 
-  inputs <- reactive({
-    plot_title <- tools::toTitleCase(var_inputs()$plot_title)
-      list(
-        x = var_inputs()$x,
-        y = var_inputs()$y,
-        z = var_inputs()$z,
-        alpha = var_inputs()$alpha,
-        size = var_inputs()$size,
-        plot_title = plot_title
-      )
-  })
-  output$scatterplot <- renderPlot({
-    plot <- scatter_plot(
-      df = movies, # <1>
-      x_var = inputs()$x,
-      y_var = inputs()$y,
-      col_var = inputs()$z,
-      alpha_var = inputs()$alpha,
-      size_var = inputs()$size
-    )
-    plot +
-      ggplot2::labs(
-        title = inputs()$plot_title,
-        x = stringr::str_replace_all(tools::toTitleCase(inputs()$x), "_", " "),
-        y = stringr::str_replace_all(tools::toTitleCase(inputs()$y), "_", " ")
-      ) +
-      ggplot2::theme_minimal() +
-      ggplot2::theme(legend.position = "bottom")
-  })
-})
-}
+Documenting data requires the following `roxygen2` structure:
+
+\`\`\`r
+#' 
+#' @title single-sentence describing [data]
+#' 
+#' @description
+#' Single-paragraph describing [data]
+#' 
+#' @format [data] number of rows and columns:
+#' \\describe{
+#'  \\item{variable}{description}
+#'  \\item{variable}{description}
+#' }
+#'
+\"[data]\"
+\`\`\`
+
+
+Replace `[data]` with the name of your dataset.")
 ```
-1. The `movies` data from our package namespace
 
-After loading, documenting, and installing the package, we see the following application: 
+### Documentation example
 
-:::: {.column-body-outset-right}
-
-![`launch_app()` with `movies` data file](images/data_launch_app.png){#fig-data_launch_app width='100%' fig-align='center'}
-
-::::
-
-### More examples
-
-To illustrate other options for data documentation, we'll use the [`dplyr` package.](https://github.com/tidyverse/dplyr) `dplyr` stores its data in the `data/` folder:  
+To illustrate other options for data documentation, we'll use the [`dplyr` package](https://github.com/tidyverse/dplyr) again. As we can see from the folder tree below, `dplyr` stores its data in the `data/` folder:  
 
 ```{verbatim}
 #| eval: false 
@@ -564,7 +516,7 @@ The three `band_` datasets have documented in a single file, [`data-bands.R`](ht
 
 ```{r}
 #| code-summary: 'show/hide documentation for dplyr::band_ datasets'
-#| code-fold: true
+#| code-fold: show
 #| eval: false
 # from the dplyr github repo: 
 # https://github.com/tidyverse/dplyr/blob/main/R/data-bands.R
@@ -600,90 +552,15 @@ In the example above, note that two of the datasets (`band_instruments` and `ban
 
 Either method works--what's important is that each dataset in your package *has* documentation.
 
-```{r}
-#| label: co_box_documenting_data
-#| echo: false
-#| results: asis
-#| eval: true
-co_box(
-  color = "g", fold = TRUE, look = "default",
-  hsize = "1.10", size = "1.05",
-  header = "Documenting data",
-  contents = "
+## External data {#sec-data-inst-extdata}
 
-Documenting data requires the following `roxygen2` structure:
-
-\`\`\`r
-#' 
-#' @title single-sentence describing [data]
-#' 
-#' @description
-#' Single-paragraph describing [data]
-#' 
-#' @format [data] number of rows and columns:
-#' \\describe{
-#'  \\item{variable}{description}
-#'  \\item{variable}{description}
-#' }
-#'
-\"[data]\"
-\`\`\`
-
-
-Replace `[data]` with the name of your dataset.")
-```
-
-
-## The [`data-raw/`]{style="font-size: 1.0em; font-weight: bold;"} folder {#sec-data-data-raw}
-
-The `data-raw` folder is not an official directory in the standard R package structure, but it's a common location for any data processing or cleaning scripts, and the raw data file for datasets stored in `data/`.[^data-raw-2]
-
-[^data-raw-2]: Read more about the `data-raw` folder in [R Packages, 2ed](https://r-pkgs.org/data.html#sec-data-data-raw)
-
-```{r}
-#| label: co_box_data_raw
-#| echo: false
-#| results: asis
-#| eval: true
-co_box(
-  color = "o", fold = TRUE, look = "default",
-  hsize = "1.10", size = "1.05",
-  header = "Scripts for creating `movies` data",
-  contents = "
-The code used to produce the `movies` dataset in the `data/` directory might* come from [this GitHub repo](https://github.com/mine-cetinkaya-rundel/rotten). If so, the `data-raw` folder is where [the data processing and preparation scritps](https://github.com/mine-cetinkaya-rundel/rotten/tree/master/working) would be stored (along with a copy of the data in `.csv` format) before saving a copy in the `data/` folder. 
-  
-*I say 'might' because it's not clear if the `movies.RData` is the output from these `.R` files (although many of the column names match).
-
-  "
-)
-```
-
-
-### More examples
-
-If we look at the data in the [`dplyr` package](https://github.com/tidyverse/dplyr) again, we can see the [`data-raw/` folder](https://github.com/tidyverse/dplyr/tree/main/data-raw) contains a combination of `.R` and `.csv` files: 
-
-```{verbatim}
-#| eval: false 
-#| code-fold: true 
-data-raw/
-├── band_members.R
-├── starwars.R
-├── starwars.csv
-└── storms.R
-
-1 directory, 4 files
-```
-
-In this example, the [`starwars.R` script](https://github.com/tidyverse/dplyr/blob/main/data-raw/starwars.R) downloads & prepares `starwars`, then saves a `.csv` copy of the data [in `data-raw`]((https://github.com/tidyverse/dplyr/blob/main/data-raw/starwars.csv)).
-
-## [`inst/extdata/`]{style="font-size: 1.05em; font-weight: bold;"} {#sec-data-inst-extdata}
-
-The `extdata` folder (inside `inst/`) can be used for external datasets in other file formats (`.csv`, `.tsv`, `.txt`, `.xlsx`, etc).[^inst-extdata-3] The data files in `inst/extdata/` aren't directly loadable using the `package::data` syntax or the `data()` function like with the `data/` directory. These files can be imported using the file path accessor function,  `system.file()`.
+The `inst/extdata` folder is used for external datasets in other file formats (`.csv`, `.tsv`, `.txt`, `.xlsx`, etc).[^inst-extdata-3] These data files aren't directly loadable using the `package::data` syntax or `data()` like with the `data/` directory, but we can access them using `system.file()`.
 
 [^inst-extdata-3]: Read more about the `inst/extdata/` folder in [R Packages, 2ed](https://r-pkgs.org/data.html#sec-data-extdata)
 
-For example, if we create the `inst/extdata/` and save a copy of `movies` as a [`.fst` file](https://www.fstpackage.org/fst/): 
+### [inst/extdata/]{style="font-size: 1.05em; font-weight: bold;"}
+
+We'll create the `inst/extdata/` folder and save a copy of `movies` in the [`.fst` file](https://www.fstpackage.org/fst/) format: 
 
 ```{r}
 #| eval: false 
@@ -733,28 +610,32 @@ tibble::as_tibble(
   )
 ```
 
-```{r}
-## A tibble: 651 × 34
-#    title  title_type genre runtime mpaa_rating studio thtr_rel_date      
-#    <chr>  <fct>      <fct>   <dbl> <fct>       <fct>  <dttm>             
-#  1 Filly… Feature F… Drama      80 R           Indom… 2013-04-18 21:00:00
-#  2 The D… Feature F… Drama     101 PG-13       Warne… 2001-03-13 21:00:00
-#  3 Waiti… Feature F… Come…      84 R           Sony … 1996-08-20 21:00:00
-#  4 The A… Feature F… Drama     139 PG          Colum… 1993-09-30 21:00:00
-#  5 Malev… Feature F… Horr…      90 R           Ancho… 2004-09-09 21:00:00
-#  6 Old P… Documenta… Docu…      78 Unrated     Shcal… 2009-01-14 21:00:00
-#  7 Lady … Feature F… Drama     142 PG-13       Param… 1985-12-31 21:00:00
-#  8 Mad D… Feature F… Drama      93 R           MGM/U… 1996-11-07 21:00:00
-#  9 Beaut… Documenta… Docu…      88 Unrated     Indep… 2012-09-06 21:00:00
-# 10 The S… Feature F… Drama     119 Unrated     IFC F… 2012-03-01 21:00:00
-## ℹ 641 more rows
-## ℹ 27 more variables: thtr_rel_year <dbl>, thtr_rel_month <dbl>,
-##   thtr_rel_day <dbl>, dvd_rel_date <dttm>, dvd_rel_year <dbl>,
-##   dvd_rel_month <dbl>, dvd_rel_day <dbl>, imdb_rating <dbl>,
-##   imdb_num_votes <int>, critics_rating <fct>, critics_score <dbl>,
-##   audience_rating <fct>, audience_score <dbl>, best_pic_nom <fct>,
-##   best_pic_win <fct>, best_actor_win <fct>, best_actress_win <fct>, …
-## ℹ Use `print(n = ...)` to see more rows
+```{verbatim}
+#| eval: false 
+#| code-fold: false 
+fstcore package v0.9.18
+(OpenMP was not detected, using single threaded mode)
+# A tibble: 651 × 34
+   title                  title_type genre runtime mpaa_rating studio
+   <chr>                  <fct>      <fct>   <dbl> <fct>       <fct>
+ 1 Filly Brown            Feature F… Drama      80 R           Indom…
+ 2 The Dish               Feature F… Drama     101 PG-13       Warne…
+ 3 Waiting for Guffman    Feature F… Come…      84 R           Sony …
+ 4 The Age of Innocence   Feature F… Drama     139 PG          Colum…
+ 5 Malevolence            Feature F… Horr…      90 R           Ancho…
+ 6 Old Partner            Documenta… Docu…      78 Unrated     Shcal…
+ 7 Lady Jane              Feature F… Drama     142 PG-13       Param…
+ 8 Mad Dog Time           Feature F… Drama      93 R           MGM/U…
+ 9 Beauty Is Embarrassing Documenta… Docu…      88 Unrated     Indep…
+10 The Snowtown Murders   Feature F… Drama     119 Unrated     IFC F…
+# ℹ 641 more rows
+# ℹ 28 more variables: thtr_rel_date <dttm>, thtr_rel_year <dbl>,
+#   thtr_rel_month <dbl>, thtr_rel_day <dbl>, dvd_rel_date <dttm>,
+#   dvd_rel_year <dbl>, dvd_rel_month <dbl>, dvd_rel_day <dbl>,
+#   imdb_rating <dbl>, imdb_num_votes <int>, critics_rating <fct>,
+#   critics_score <dbl>, audience_rating <fct>,
+#   audience_score <dbl>, best_pic_nom <fct>, best_pic_win <fct>, …
+# ℹ Use `print(n = ...)` to see more rows
 ```
 
 We'll cover `inst/` and `system.file()` in more detail in the next chapter.
@@ -770,6 +651,101 @@ git_margin_box(
   branch = "07_data", 
   repo = 'sap')
 ```
+
+## Using `movies`
+
+After documenting the movies data in `R/data.R`, we'll remove the call to `load()` in the `mod_scatter_display_server()` function and replace it with a direct call to the dataset:
+
+```{r}
+#| eval: false 
+#| code-fold: false 
+#' Plot Display Module - Server
+#'
+#' Handles the server-side logic for rendering a scatter plot.
+#'
+#' @param id *(character)* Namespace ID for the module.
+#' @param var_inputs *(reactive)* A reactive expression containing 
+#'  user-selected variables and attributes.
+#'
+#' @return No direct return value. This function generates a plot output.
+#'
+#' @section Details: 
+#' `mod_scatter_display_server()`:
+#' - Uses `var_inputs` to dynamically generate a scatter plot with 
+#'   user-selected variables.
+#' - Reads from the `sap::movies` dataset  #<1>
+#' - Processes plot titles and axis labels to improve readability.
+#'
+#' @section Reactive Inputs:
+#' - `var_inputs()$x`: X-axis variable.
+#' - `var_inputs()$y`: Y-axis variable.
+#' - `var_inputs()$z`: Color aesthetic variable.
+#' - `var_inputs()$alpha`: Transparency level.
+#' - `var_inputs()$size`: Size of points.
+#' - `var_inputs()$plot_title`: Title of the plot.
+#'
+#' @seealso
+#' - [`mod_var_input_server()`] for variable selection.
+#' - [`scatter_plot()`] for generating the scatter plot.
+#'
+#' @family **Plot Display Module**
+#'
+#' @examples
+#' if (interactive()) {
+#'   shiny::shinyApp(
+#'     ui = shiny::fluidPage(
+#'       mod_var_input_ui("vars"),
+#'       mod_scatter_display_ui("plot")
+#'     ),
+#'     server = function(input, output, session) {
+#'       selected_vars <- mod_var_input_server("vars")
+#'       mod_scatter_display_server("plot", selected_vars)
+#'     }
+#'   )
+#' }
+#'
+mod_scatter_display_server <- function(id, var_inputs) {
+  shiny::moduleServer(id, function(input, output, session) {
+
+    inputs <- shiny::reactive({
+      plot_title <- tools::toTitleCase(var_inputs()$plot_title)
+      list(
+        x = var_inputs()$x,
+        y = var_inputs()$y,
+        z = var_inputs()$z,
+        alpha = var_inputs()$alpha,
+        size = var_inputs()$size,
+        plot_title = plot_title
+      )
+    })
+    output$scatterplot <- shiny::renderPlot({
+      plot <- scatter_plot(
+        df = movies, #<2>
+        x_var = inputs()$x,
+        y_var = inputs()$y,
+        col_var = inputs()$z,
+        alpha_var = inputs()$alpha,
+        size_var = inputs()$size
+      )
+      plot +
+        ggplot2::labs(
+          title = inputs()$plot_title,
+          x = stringr::str_replace_all(tools::toTitleCase(inputs()$x), "_", " "),
+          y = stringr::str_replace_all(tools::toTitleCase(inputs()$y), "_", " ")
+        ) +
+        ggplot2::theme_minimal() +
+        ggplot2::theme(legend.position = "bottom")
+    })
+  })
+}
+```
+1. Updated `roxygen2` documentation  
+2. The `movies` data from our package namespace
+
+
+After loading, documenting, and installing the package, we see the following application: 
+
+![`launch_app()` with `movies` data file](images/data_launch_app.png){#fig-data_launch_app width='100%' fig-align='center'}
 
 ## Recap {.unnumbered}
 
