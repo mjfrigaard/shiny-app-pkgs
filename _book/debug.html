@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2025-01-02">
+<meta name="dcterms.date" content="2025-01-17">
 <meta name="description" content="Getting your app into an R package">
 
 <title>Debug – Shiny App-Packages</title>
@@ -81,7 +81,7 @@ ul.task-list li input[type="checkbox"] {
 
 </head>
 
-<body class="nav-sidebar floating slimcontent">
+<body class="nav-sidebar floating">
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
@@ -456,11 +456,17 @@ ul.task-list li input[type="checkbox"] {
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active" data-toc-expanded="99">
+    <h2 id="toc-title">Contents</h2>
+   
+  <ul>
+  <li><a href="#shiny-bugs" id="toc-shiny-bugs" class="nav-link active" data-scroll-target="#shiny-bugs">Shiny bugs</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/mjfrigaard/shiny-app-pkgs/edit/main/debug.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/mjfrigaard/shiny-app-pkgs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
-<main class="content page-columns page-full" id="quarto-document-content">
+<main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
@@ -475,7 +481,7 @@ ul.task-list li input[type="checkbox"] {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">2025-01-02</p>
+      <p class="date">2025-01-17</p>
     </div>
   </div>
   
@@ -576,6 +582,7 @@ ul.task-list li input[type="checkbox"] {
 <li><a href="data.html#sec-data-data" class="quarto-xref"><span>7.1 The data/ folder</span></a>
 <ul>
 <li><a href="data.html#sec-document-data" class="quarto-xref"><span>7.3 Documenting data</span></a></li>
+<li><a href="data.html#sec-data-system-file" class="quarto-xref"><span>7.1.3 Installed package files</span></a></li>
 </ul></li>
 <li><a href="data.html#sec-data-data-raw" class="quarto-xref"><span>7.2 data-raw/</span></a><br>
 </li>
@@ -628,7 +635,6 @@ ul.task-list li input[type="checkbox"] {
 <ul>
 <li><a href="resources.html#sec-resources-image-files" class="quarto-xref"><span>9.1 Image files</span></a>
 <ul>
-<li><a href="resources.html#sec-resources-system-file" class="quarto-xref"><span>9.1.1 system.file()</span></a></li>
 <li><a href="resources.html#sec-resources-add-resource-path" class="quarto-xref"><span>9.1.2 addResourcePath()</span></a></li>
 </ul></li>
 <li>Other uses of <code>inst/</code>:
@@ -641,7 +647,7 @@ ul.task-list li input[type="checkbox"] {
 </div>
 </div>
 </div>
-<p>Debugging is the process of identifying, analyzing, and fixing errors in our code.<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> In Shiny apps, debugging can be challenging because the reactive model involves dynamic interactions and a non-linear flow of execution between inputs, reactive expressions, and outputs. Consider the diagram below that illustrates the reactive flow for the scatter plot graph in our application:</p>
+<p>Debugging is the process of identifying, analyzing, and fixing errors in our code.<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> In Shiny apps, debugging can be challenging because the reactive model involves dynamic interactions and a non-linear flow of execution between inputs, reactive expressions, and outputs. Consider the diagram below that illustrates the function/module tree for our application:</p>
 
 <style>
 
@@ -660,56 +666,31 @@ ul.task-list li input[type="checkbox"] {
 <div>
 <p></p><figure class="figure"><p></p>
 <div>
-<pre class="mermaid mermaid-js">%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'monospace', 'primaryColor': '#33a02c', 'edgeLabelBackground':'#02577A'}}}%%
-flowchart
-    subgraph Inputs["Inputs"]
-        A1["Variables 
-           &amp; Aesthetics"]
-    end
-    subgraph React["Reactives"]
-        R1["&lt;code&gt;var_inputs()&lt;/code&gt;"]
-        R2["&lt;code&gt;inputs()&lt;/code&gt;"]
-    end
-    subgraph Output["Output"]
-        O1[Graph]
-    end
-    Inputs --&gt; React
-    R1 --&gt; R2
-    React --&gt; Output
+<pre class="mermaid mermaid-js">%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"14px"}}}%%
+flowchart LR
+        subgraph launch_app["&lt;code&gt;launch_app()&lt;/code&gt;"]
+            display_type["&lt;code&gt;display_type()&lt;/code&gt;"]
+            subgraph UI["&lt;code&gt;movies_ui()&lt;/code&gt;"]
+                mod_var_input_ui["&lt;code&gt;mod_var_input_ui()&lt;/code&gt;"]
+                mod_scatter_display_ui["&lt;code&gt;mod_scatter_display_ui()&lt;/code&gt;"]
+            end
+            subgraph Server["&lt;code&gt;movies_server()&lt;/code&gt;"]
+                mod_var_input_server["&lt;code&gt;mod_var_input_server()&lt;/code&gt;"]
+                subgraph mod_scatter_display_server["&lt;code&gt;mod_scatter_display_server()&lt;/code&gt;"]
+                scatter_plot("&lt;code&gt;scatter_plot()&lt;/code&gt;")
+                end
+            end
+        end
+        
+        style var_input stroke:#333,stroke-width:1px,rx:5,ry:5 
 
-    style Inputs fill:#FFFFFF,color:#000000,stroke:#333,stroke-width:1px,rx:10,ry:10
-    style A1 fill:#4CBB9D,color:#FFFFFF,rx:5,ry:5
-    style React fill:#FFFFFF,color:#000000,stroke:#333,stroke-width:1px,rx:5,ry:5
-    style R1 fill:#4CBB9D,color:#FFFFFF,rx:5,ry:5
-    style R2 fill:#4CBB9D,color:#FFFFFF,rx:5,ry:5
-    style Output fill:#FFFFFF,color:#000000,stroke:#333,stroke-width:1px,rx:5,ry:5
-    style O1 fill:#4CBB9D,color:#FFFFFF,rx:5,ry:5
 </pre>
 </div>
 <p></p><figcaption> Debugging</figcaption> </figure><p></p>
 </div>
 </div>
 </div>
-<p>The inputs are collected by the variable input module<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a> (as <code>var_inputs()</code>) and passed to the scatter display module<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>, where they become the <code>inputs()</code> for our graph utility function.<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a></p>
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><a href="images/debug_positron_launch_app.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1"><img src="images/debug_positron_launch_app.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%"></a></p>
-</figure>
-</div>
-
-<div class="no-row-height column-margin column-container"><div class="">
-<p>Our application launches with pre-selected values for the <code>x</code>, <code>y</code> and <code>color</code> graph inputs, along with values for the size and opacity (alpha) of the points.</p>
-</div></div><p>Users can change the graph inputs or add a title, but by having pre-selected values, we guarantee the graph renders when the application launches.</p>
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><a href="images/debug_positron_update_launch_app.png" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="The new title is passed with var_inputs() to inputs() and updates the graph to display the text."><img src="images/debug_positron_update_launch_app.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="The new title is passed with var_inputs() to inputs() and updates the graph to display the text."></a></p>
-</figure>
-</div>
-<figcaption><em>The new title is passed with <code>var_inputs()</code> to <code>inputs()</code> and updates the graph to display the text.</em></figcaption>
-</figure>
-</div>
+<p>The inputs are collected by the variable input module<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a> and passed to the graph display module(as <code>var_inputs()</code>),<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a> where they become <code>inputs()</code> to the graph utility function before finally being rendered.<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a></p>
 
 <style>
 
@@ -725,49 +706,112 @@ flowchart
 </style>
 <div class="cell" data-layout-align="center">
 <div class="cell-output-display">
-<div id="function_exec_browser">
 <div>
-<pre class="mermaid mermaid-js" data-label="function_exec_browser">%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'monospace'}}}%%
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"13px"}}}%%
 flowchart TD
     subgraph Inputs["Inputs"]
-        VarInput[Variables/aesthetics]
-        TitleInput["'new plot title'"]
+        subgraph Variables["Variables"]
+        var_input[/"&lt;code&gt;input$x&lt;/code&gt;&lt;br&gt;&lt;code&gt;input$y&lt;/code&gt;&lt;br&gt;&lt;code&gt;input$z&lt;/code&gt;"/]
+        end
+        subgraph Aesthetics["Aesthetics"]
+        aes_input[/"&lt;code&gt;input$alpha&lt;/code&gt;&lt;br&gt;&lt;code&gt;input$size&lt;/code&gt;"/]
+        end
         
     end
     subgraph React["Reactives"]
-        R1["&lt;code&gt;var_inputs()&lt;/code&gt; "]
-        R2["&lt;code&gt;inputs()&lt;/code&gt;"]
-        R3["Updates &lt;code&gt;var_inputs&lt;/code&gt;"]
-        R4["Adds title 
-            with &lt;code&gt;labs()&lt;/code&gt;"]
+        var_inputs&gt;"&lt;code&gt;var_inputs()&lt;/code&gt; "]
+        inputs&gt;"&lt;code&gt;inputs()&lt;/code&gt;"]
     end
     subgraph Output["Output"]
-        O1[Graph]
+        output[\"output$scatterplot"\]
     end
-    VarInput --&gt; R1
-    TitleInput &lt;--&gt; R3
-    R1 --&gt; R2
-    R2 &lt;--&gt; R4
-    R3 &lt;--&gt; R2
-    R2 --&gt; O1
-    R4 &lt;--&gt; O1
 
-    style Inputs fill:#FFFFFF,stroke:#333,stroke-width:1px,rx:5,ry:5
-    style React fill:#FFFFFF,stroke:#333,stroke-width:1px,rx:5,ry:5
-    style Output fill:#FFFFFF,stroke:#333,stroke-width:1px,rx:5,ry:5
-    style VarInput fill:#4CBB9D
-    style TitleInput fill:#4CB7DB
-    style R1 fill:#4CBB9D
-    style R2 fill:#4CB7DB
-    style R3 fill:#4CB7DB
-    style R4 fill:#4CB7DB
-    style O1 fill:#4CB7DB
+    var_input &amp; aes_input &lt;==&gt; |"UI"|var_inputs 
+    var_inputs &lt;==&gt; |"Server"|inputs
+    inputs &lt;==&gt; |"UI"|output
+    
+    style var_input stroke:#333,stroke-width:1px,rx:5,ry:5 
+    style aes_input stroke:#333,stroke-width:1px,rx:5,ry:5
 </pre>
 </div>
-<p><em>Updating the plot title</em></p>
+<p></p><figcaption> Reactive flow in Movies App</figcaption> </figure><p></p>
 </div>
 </div>
 </div>
+<p>Our application launches with pre-selected values for the <code>x</code>, <code>y</code> and <code>color</code> graph inputs, along with values for the <code>size</code> and opacity (<code>alpha</code>) of the points.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/debug_positron_launch_app.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1"><img src="images/debug_positron_launch_app.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%"></a></p>
+</figure>
+</div>
+<p>Users can add a title or change the graph inputs, but by having pre-selected values, we guarantee the graph renders when the application launches.</p>
+
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+
+</style>
+<div class="cell" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"13px"}}}%%
+flowchart TD
+    subgraph Inputs["Inputs"]
+        subgraph Variables["Variables"]
+        var_input[/"&lt;code&gt;input$x&lt;/code&gt;&lt;br&gt;&lt;code&gt;input$y&lt;/code&gt;&lt;br&gt;&lt;code&gt;input$z&lt;/code&gt;"/]
+        end
+        subgraph Aesthetics["Aesthetics"]
+        aes_input[/"&lt;code&gt;input$alpha&lt;/code&gt;&lt;br&gt;&lt;code&gt;input$size&lt;/code&gt;"/]
+        end
+        subgraph Title["Title"]
+        plot_title[/"&lt;code&gt;input$plot_title&lt;/code&gt;"/]
+        end
+        
+    end
+    subgraph React["Reactives"]
+        var_inputs&gt;"&lt;code&gt;var_inputs()&lt;/code&gt; "]
+        inputs&gt;"&lt;code&gt;inputs()&lt;/code&gt;"]
+    end
+    subgraph Output["Output"]
+        output[\"output$scatterplot"\]
+    end
+
+    var_input &amp; aes_input &lt;==&gt; |"UI"|var_inputs 
+    plot_title &lt;-.-&gt; |"UI"|var_inputs 
+    var_inputs &lt;==&gt; |"Server"|inputs
+    inputs &lt;==&gt; |"UI"|output
+    
+    style var_input stroke:#333,stroke-width:1px,rx:5,ry:5 
+    style aes_input stroke:#333,stroke-width:1px,rx:5,ry:5
+</pre>
+</div>
+<p></p><figcaption> <em>Updating the plot title</em></figcaption> </figure><p></p>
+</div>
+</div>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/debug_positron_update_launch_app.png" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="The new title is passed with var_inputs() to inputs() and updates the graph to display the text."><img src="images/debug_positron_update_launch_app.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="The new title is passed with var_inputs() to inputs() and updates the graph to display the text."></a></p>
+</figure>
+</div>
+<figcaption><em>The new title is passed with <code>var_inputs()</code> to <code>inputs()</code> and updates the graph to display the text.</em></figcaption>
+</figure>
+</div>
+<section id="shiny-bugs" class="level3">
+<h3 class="anchored" data-anchor-id="shiny-bugs">Shiny bugs</h3>
 <p>Shiny is inherently asynchronous, so bugs can originate from reactive dependencies, execution order, utility functions, hidden states, lazy evaluation, and invalidation (i.e., <code>reactive()</code>, <code>observe()</code>, <code>isolate()</code>, etc.).</p>
 <p>For example, we could have an incorrectly defined <code>inputId</code>s or <code>outputId</code>s in the UI, which causes our graph utility function to fail. We could also have missing parentheses on reactive values in the server. Finally, the bug could be originating from the output/render point.</p>
 
@@ -785,78 +829,46 @@ flowchart TD
 </style>
 <div class="cell" data-layout-align="center">
 <div class="cell-output-display">
-<div id="bugs_reactive">
 <div>
-<pre class="mermaid mermaid-js" data-label="bugs_reactive">%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'monospace'}}}%%
-flowchart 
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"13px"}}}%%
+flowchart TD
     subgraph Inputs["Inputs"]
-        InputsVars["Variables &amp; 
-                   aesthetics"]
-        InputsTitle[" 'New plot title' "]
-        
+        var_input[/"&lt;code&gt;input$x&lt;/code&gt;
+                   &lt;code&gt;input$y&lt;/code&gt; 
+                   &lt;code&gt;input$z&lt;/code&gt; 
+                   &lt;code&gt;input$alpha&lt;/code&gt;
+                   &lt;code&gt;input$size&lt;/code&gt;
+                   &lt;code&gt;input$plot_title&lt;/code&gt;"/]
     end
-    
     subgraph React["Reactives"]
-        ReactVarInput["&lt;code&gt;var_inputs()&lt;/code&gt;"]
-        ReactInput["&lt;code&gt;inputs()&lt;/code&gt;"]
-        ReactUpdateVarInput["Update
-                             &lt;code&gt;var_inputs()&lt;/code&gt;"]
-        ReactLabsTitle["Adds title 
-                        with &lt;code&gt;labs()&lt;/code&gt;"]
-        BugIds["Incorrect &lt;code&gt;inputId&lt;/code&gt; or &lt;code&gt;outputId&lt;/code&gt;"]
-        BugObsListen["&lt;code&gt;observe()&lt;/code&gt; 
-                      listener error"]
-        BugPlotFun["&lt;code&gt;scatter_plot()&lt;/code&gt; 
-                    bug"]
+        var_inputs&gt;"&lt;code&gt;var_inputs()&lt;/code&gt; "]
+        inputs&gt;"&lt;code&gt;inputs()&lt;/code&gt;"]
+        
+        
         
     end
-    
     subgraph Output["Output"]
-        OutputGraph[Graph]
-        BugRenderFuns["&lt;code&gt;render_*&lt;/code&gt; 
-                       function 
-                       error"]
+        output[\"output$scatterplot"\]
+        
     end
 
-    InputsVars --&gt; ReactVarInput
-    Inputs --&gt; BugIds &lt;--&gt; ReactVarInput 
-    Inputs --&gt; BugIds &lt;--&gt; ReactUpdateVarInput
-    InputsTitle &lt;--&gt; ReactUpdateVarInput
-
-    ReactVarInput --&gt; ReactInput 
-    ReactUpdateVarInput &lt;--&gt; BugObsListen
-    BugObsListen &lt;--&gt; ReactInput
-    ReactInput &lt;--&gt; BugPlotFun &lt;--&gt; ReactLabsTitle
-
-    ReactLabsTitle &lt;--&gt; BugRenderFuns &lt;--&gt; OutputGraph
-
-    style Inputs fill:#FFFFFF,stroke:#333,stroke-width:1px,rx:10,ry:10
-    style React fill:#FFFFFF,stroke:#333,stroke-width:1px,rx:10,ry:10
-    style Output fill:#FFFFFF,stroke:#333,stroke-width:1px,rx:10,ry:10
+    Inputs &lt;==&gt; |"Incorrect &lt;code&gt;inputId&lt;/code&gt;&lt;br&gt;or &lt;code&gt;outputId&lt;/code&gt;"|var_inputs 
+    var_inputs &lt;==&gt; |"&lt;code&gt;observe()&lt;/code&gt;&lt;br&gt;listener error"|inputs
+    inputs &lt;==&gt; |"&lt;code&gt;render_*&lt;/code&gt;&lt;br&gt;function error"|output
     
-    style InputsVars fill:#4CBB9D,rx:5,ry:5
-    style InputsTitle fill:#4CB7DB,rx:5,ry:5
-
-    style ReactVarInput fill:#4CBB9D
-    style ReactInput fill:#4CB7DB
-    style ReactUpdateVarInput fill:#4CB7DB
-    style ReactLabsTitle fill:#4CB7DB
-    
-    style BugIds fill:#FFFFFF,color:#931314,stroke:#931314,stroke-width:2px,rx:10,ry:10
-    style BugPlotFun fill:#FFFFFF,color:#931314,stroke:#931314,stroke-width:2px,rx:10,ry:10
-    style BugObsListen fill:#FFFFFF,color:#931314,stroke:#931314,stroke-width:2px,rx:10,ry:10
-    style BugRenderFuns fill:#FFFFFF,color:#931314,stroke:#931314,stroke-width:2px,rx:10,ry:10
-
-    style OutputGraph fill:#4CBB9D
+    style var_input stroke:#333,stroke-width:1px,rx:5,ry:5 
 </pre>
 </div>
-<p><em>Possible locations of bugs in a reactive model</em></p>
+<p></p><figcaption> <em>Possible locations of bugs in a reactive model</em></figcaption> </figure><p></p>
 </div>
 </div>
 </div>
 <p>Understanding the interplay of reactivity, lazy evaluation, asynchronous execution, and hidden states will help us diagnose and resolve bugs in our Shiny app-packages. We have to employ specific strategies and tools to handle Shiny bugs effectively, and some of the traditional debugging approaches can fall short in reactive contexts. The chapters in this section will cover how to adapt common methods for debugging R code to use with our Shiny application.</p>
 
 
+</section>
 <section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
 <hr>
 <ol>
@@ -1337,7 +1349,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
   </div>
 </nav>
 </div> <!-- /content -->
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions"><ul><li><a href="https://github.com/mjfrigaard/shiny-app-pkgs/edit/main/debug.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/mjfrigaard/shiny-app-pkgs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer><script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/mjfrigaard/shiny-app-pkgs/edit/main/debug.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/mjfrigaard/shiny-app-pkgs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer><script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
 (function() {
   let previousOnload = window.onload;
   window.onload = () => {

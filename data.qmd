@@ -127,7 +127,7 @@ When the package is installed, we'll see the following outputs related to data p
 
 ![`sap::movies`](images/data_movies_namespace.png){width='100%' fig-align='center'}
 
-### Installed package
+### Installed package files {#sec-data-system-file}
 
 The lazyload DB is located in the *installed version* of the `sap` package. Installation begins by reading and parsing the `DESCRIPTION` file to extract metadata such as the package name, version, and dependencies (e.g., `Depends`, `Imports`, `Suggests`). After checking the dependencies (and downloading and installing any that are missing), our source package is extracted, and the files are organized into specific folders: 
 
@@ -141,9 +141,20 @@ The lazyload DB is located in the *installed version* of the `sap` package. Inst
 
 5. `html/`: html and css files for help files 
 
-The installed folders and files can be viewed using the file path accessor function, `system.file()`. 
+The installed folders and files can be viewed using the file path accessor function, `system.file()`.[^system-file] 
 
-To view the path to the R folder in our installed package, we can use: 
+```{r}
+#| eval: false 
+#| code-fold: false
+system.file(..., package = "", mustWork = FALSE)
+```
+
+
+Passing `"."` to the `...` argument of `system.file()` will return the installed location of the root folder of `package`. 
+
+[^system-file]: This is similar to `find.package("sap)`. Read more about [`system.file()`](https://stat.ethz.ch/R-manual/R-devel/library/base/html/system.file.html) and [`find.package()`](https://stat.ethz.ch/R-manual/R-devel/library/base/html/find.package.html).
+
+To view the path to the `R/` folder in our installed package, we can use: 
 
 ```{r}
 #| eval: false 
@@ -204,8 +215,8 @@ The lazyload database stores data objects in serialized form for fast retrieval 
 ```
 
 ```{mermaid}
-%%| fig-align: center
 %%| fig-cap: 'LazyData field in the DESCRIPTION file'
+%%| fig-align: center
 %%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"13px"}}}%%
 flowchart TD
     subgraph DESC["<strong>DESCRIPTION</strong>"]
@@ -248,6 +259,39 @@ We'll move the `movies.RData` file into `data-raw/`.
 └── data-raw
     └── movies.RData
 ```
+
+We can create a script to document `sap::movies` using `usethis::use_data_raw("movies")`:
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+✔ Adding "^data-raw$" to .Rbuildignore.
+✔ Writing data-raw/movies.R.
+☐ Modify data-raw/movies.R.
+☐ Finish writing the data preparation script in data-raw/movies.R.
+☐ Use `usethis::use_data()` to add prepared data to package.
+```
+
+In the `data-raw/movies.R` file, we find the following:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+## code to prepare `movies` dataset goes here
+
+usethis::use_data(movies, overwrite = TRUE)
+```
+
+We'll adapt the script for the `movies.RData` file.
+
+```{r}
+#| eval: false 
+#| code-fold: false
+## code to prepare `movies` dataset goes here
+load("data-raw/movies.RData")
+usethis::use_data(movies, overwrite = TRUE)
+```
+
 
 ```{r}
 #| label: co_box_data_raw
@@ -548,7 +592,7 @@ The three `band_` datasets have documented in a single file, [`data-bands.R`](ht
 "band_instruments2"
 ```
 
-In the example above, note that two of the datasets (`band_instruments` and `band_instruments2`) have the `@format` set to `NULL`, and define the help search name with `@rdname`. The `@examples` tag can be used to view the dataset when users click '**Run Examples**' 
+In the example above, note that two of the datasets (`band_instruments` and `band_instruments2`) have the `@format` set to `NULL`, and define the help search name with `@rdname`. The `@examples` tag can be used to view the dataset when users click '**Run Examples**.' 
 
 Either method works--what's important is that each dataset in your package *has* documentation.
 
