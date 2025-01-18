@@ -67,25 +67,17 @@ Print debugging uses a simpler approach than the interactive debugger, and it's 
 ```
 
 ```{mermaid}
-%%| label: print_statement
+%%| fig-cap: "Print debugging with `print()` function calls"
 %%| fig-align: center
-%%| fig-responsive: false
-%%| fig-cap: 'Print debugging with `print()` or `cat()`'
-%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'monospace', 'fontSize': '12px' }}}%%
-flowchart TD
-    subgraph FunctionScope [<strong>Function<br>Scope</strong>]
-    style FunctionScope fill:#FFF,color:#000,stroke:#333,font-size:14px
-        Print("Encounter<br><code>print()</code> or<br><code>cat()</code>")
-        style Print fill:#4CBB9D,stroke:none,color:#000,rx:10,ry:10,font-size:12px
-        Start("Execute") --> Print("Encounter<br><code>print()</code> or<br><code>cat()</code>")
-        style Start fill:#FFF,stroke:#333,stroke-width:1px,color:#000,font-size:12px
-        Print --> Issue{"<strong>Output<br>reveals<br>issue?</strong>"}
-        style Issue fill:#ffcccb,stroke:#e60000,stroke-width:3px,color:#000,font-size:12px
-        Issue -- Yes --> Mod("Modify<br>Function")
-        style Mod fill:#FFF,stroke:#333,stroke-width:1px,color:#000,font-size:12px
-        Issue -- No --> Debug("Adjust<br><code>print()</code> or<br><code>cat()</code>")
-        style Debug fill:#FFF,stroke:#333,stroke-width:1px,color:#000,font-size:12px
-    end
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"13px"}}}%%
+flowchart LR
+    Insert(["Insert call<br>to <code>print()</code><br>"])
+    Print("Encounter<br><code>print()</code> or<br><code>cat()</code>")
+    Insert --> Exec
+    Exec("Execute<br>function") --> Print("Encounter<br><code>print()</code>")  
+    Print --> Issue{{"<strong><em>Output<br>reveals<br>issue?</em></strong>"}}
+    Issue -- "Yes" --> Mod(["Modify<br>function"])
+    Issue -- "No" --> Insert
 ```
 
 <br>
@@ -111,27 +103,20 @@ To track reactivity, we need to place the print functions in a reactive expressi
 ```
 
 ```{mermaid}
-%%| label: reactive_print_statement
+%%| fig-cap: "Reactive print debugging with `print()` function calls"
 %%| fig-align: center
-%%| fig-cap: 'Reactive print debugging with `print()` or `cat()`'
-%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'monospace'}}}%%
-flowchart TD
-    subgraph FunctionScope [<strong>Function Scope</strong>]
-    style FunctionScope fill:#FFF,color:#000,stroke:#333,font-size:12px
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"13px"}}}%%
+flowchart LR
+        Insert(["Insert call<br>to <code>print()</code>"]) 
+        Exec("Execute<br>function") 
+        Insert --> Exec --> Print("Encounter<br><code>print()</code>") 
         subgraph Reactive["Reactive Context"]
-        style Reactive fill:#fff,stroke:#FEDBC1,stroke-width:3px,color:#000,font-size:12px
-            Print("Encounter<br><code>print()</code> or<br><code>cat()</code>")
-            style Print fill:#4CBB9D,stroke:none,color:#000,rx:10,ry:10,font-size:12px
+            Print 
+            Issue{{"<strong><em>Output<br>reveals<br>issue?</em></strong>"}}
+            Print --> Issue
         end
-        Start("Execute") --> Print("Encounter<br><code>print()</code> or<br><code>cat()</code>")
-        style Start fill:#FFF,stroke:#333,stroke-width:1px,color:#000,font-size:12px
-        Print --> Issue{"<strong>Output<br>reveals<br>issue?</strong>"}
-        style Issue fill:#ffcccb,stroke:#e60000,stroke-width:3px,color:#000,font-size:12px
-        Issue -- Yes --> Mod("Modify<br>Function")
-        style Mod fill:#FFF,stroke:#333,stroke-width:1px,color:#000,font-size:12px
-        Issue -- No --> Debug("Adjust<br><code>print()</code> or<br><code>cat()</code>")
-        style Debug fill:#FFF,stroke:#333,stroke-width:1px,color:#000,font-size:12px
-    end
+        Issue -- "Yes" --> Mod(["Modify<br>function"])
+        Issue -- "No" --> Insert
 ```
 
 Using well-placed calls to `print()` or `cat()` allows us to display input values, which helps us to understand the inner-workings of our application. 
@@ -340,13 +325,90 @@ We'll also add the following to the `bslib = TRUE` section of `movies_ui()` to p
 ```{r}
 #| code-fold: false
 #| eval: false
-# ...movies_ui() code omitted...
-bslib::card_body(fillable = TRUE,
-  verbatimTextOutput(outputId = "vals"),
-  mod_scatter_display_ui("plot")
-)
-# ...movies_ui() code omitted...
+movies_ui <- function(bslib = FALSE) {
+  addResourcePath(
+    prefix = 'www',
+    directoryPath = system.file('www/', package = 'sap'))
+  if (isFALSE(bslib)) {
+    tagList(
+        bslib::page_fillable(
+          h1("Movie Reviews"),
+          bslib::layout_sidebar(
+            sidebar =
+              bslib::sidebar(
+                title = tags$h4("Sidebar inputs"),
+                img(
+                  src = "www/shiny.png",
+                  height = 60,
+                  width = 55,
+                  style = "margin:10px 10px"
+                ),
+                mod_var_input_ui("vars")
+              ),
+            bslib::card(
+              full_screen = TRUE,
+              bslib::card_header(
+                tags$h4("Scatter Plot")
+              ),
+              bslib::card_body(fillable = TRUE,
+                mod_scatter_display_ui("plot")
+              ),
+              bslib::card_footer(
+                tags$blockquote(
+                  tags$em(
+                    tags$p(
+                      "The data for this application comes from the ",
+                      tags$a("Building web applications with Shiny",
+                        href = "https://rstudio-education.github.io/shiny-course/"
+                      ),
+                      "tutorial"
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+  } else {
+    tagList(
+      bslib::page_fillable(
+        title = "Movie Reviews (bslib)",
+        theme = bslib::bs_theme(
+          bg = "#101010",
+          fg = "#F6F5F5",
+          primary = "#EE6F57",
+          secondary = "#32E0C4",
+          success = "#FF4B5C",
+          base_font = sass::font_google("Ubuntu"),
+          heading_font = sass::font_google("Ubuntu")
+        ),
+        bslib::layout_sidebar(
+          sidebar = bslib::sidebar(
+            mod_var_input_ui("vars")
+          ),
+          bslib::card(
+            full_screen = TRUE,
+                bslib::card_header(
+                  tags$img(
+                  src = "www/bootstrap.png",
+                  height = 80,
+                  width = 100,
+                  style = "margin:10px 10px"
+                )
+              ),
+             bslib::card_body(
+              verbatimTextOutput(outputId = "vals"), # <1>
+              mod_scatter_display_ui("plot")
+            )
+          )
+        )
+      )
+    )
+  }
+} 
 ```
+1. Printed reactive value outputs
 
 After loading the changes to our package, we can view the application with the captured and printed reactive values:
 

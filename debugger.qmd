@@ -21,7 +21,30 @@ co_box(
 )
 ```
 
-Bugs can cause our app to crash, produce incorrect results or displays, and result in other unexpected behaviors. Fixing bugs in our app-package is an important step to ensure our application continues behaving as expected. This chapter will cover how to use an interactive debugger to help us find the root cause of bugs and errors.  
+
+
+Bugs can cause our app to crash, produce incorrect results or displays, and result in other unexpected behaviors. Fixing bugs in our app-package is an important step to ensure our application continues behaving as expected. This chapter will cover how to use an interactive debugger to help us find the root cause of bugs and errors.
+
+:::{.bugbox}
+::::{.bugbox-header}
+
+TLDR: Interactive Debugger & Shiny Apps
+
+::::
+::::{.bugbox-container}
+
+Placing a call to `browser()` inside `observe()` will trigger the interactive debugger when the observer is invalidated.
+
+```r
+observe({
+  browser()
+})
+```
+
+This allows us to interactively examine variables and reactive expressions (within the scope of the `observe()` function).
+
+::::
+:::
 
 Debugging in RStudio ![](images/rstudio-icon.png){height=20} is covered elsewhere,[^debug-other-resources] so we'll focus on debugging our Shiny app code using Positron's ![](images/positron.png){height=20} interactive debugger.
 
@@ -73,29 +96,24 @@ Interactive debugging (e.g., using `browser()` or setting a breakpoint) allows u
 ```{mermaid}
 %%| fig-cap: 'Interactive debugger with `browser()` or breakpoint'
 %%| fig-align: center
-%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"13px"}}}%%
-flowchart TD
-    subgraph FunctionScope [<strong>Function Scope</strong>]
-        Start("Execution")
-        Browser{"Breakpoint<br>or <code>browser</code>?"}
-    
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
+flowchart LR
+        Start(["Begin<br>Execution"])
+        Browser{{"Breakpoint<br>or <code>browser</code>?"}}
         subgraph Debugger ["<strong>Debugger</strong>"]
-    
-            Step1("Inspect<br>Variables")
-            Step1 --> Step2("Step Through<br>Code")
-            Step2 --> Debug{"End<br>Debugging?"}
+            Step("Enter<br>debugger")
+            Step --> |"Step Through<br>Code"|Debug{{"Done<br>debugging?"}}
 
-            Debug -->|"No"| Step1
-            Debug -->|"Yes"| Exit(Exit Debugger)
+            Debug -->|"No"| Step
+            Debug -->|"Yes"| Exit("Exit<br>debugger")
     
         end
-        Resume("Resume Execution")
+        Resume(["Resume<br>Execution"])
     
-    end
     Start --> Browser
-    Browser -->|Yes| Debugger
+    Browser -->|"Yes"| Debugger
     Exit --> Resume
-    Browser -->|No| Resume
+    Browser -->|"No"| Resume
     
     %% style FunctionScope fill:#FFF,color:#000,stroke:#333,font-size:14px
     %% style Start fill:#FFF,stroke:#333,stroke-width:1px,color:#000,font-size:14px
@@ -130,19 +148,19 @@ Unfortunately, using `browser()` and breakpoints are not as straightforward with
 %%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"13px"}}}%%
 flowchart TD
     subgraph Function["<strong>Function Scope</strong>"]
-        Running("Execution")
+        Running(["Being<br>execution"])
         Running --> Encounter
         
-        subgraph BrowserStep["<strong>browser()<strong>"]
-            Encounter("Encounter<br><code>browser()</code>") --> Step1
+        subgraph BrowserStep["<strong>browser() Scope<strong>"]
+            Encounter("Encounter<br><code>browser()</code>") --> Step
             
-            subgraph Debugger["<strong>Debugger</strong>"]
-                Step1("View<br>variables/values") --> Step2("Execute code<br>line-by-line")
+            subgraph Debugger["<strong>Interactive Debugger</strong>"]
+                Step[\"Inspect variables"/]
             end
-            Step2 --> ExitBrowser("Exit the<br><code>browser()</code>")
+            Step --> ExitBrowser("Exit <br><code>browser()</code>")
             
         end
-        ExitBrowser --> Resume("Resume execution")
+        ExitBrowser --> Resume(["Resume<br>execution"])
         
     end
     
@@ -192,27 +210,22 @@ Fortunately, Shiny already has a function that performs this: `observe()`. Withi
 %%| fig-align: center
 %%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"13px"}}}%%
 flowchart TD
-    subgraph Server["server() Scope"]
-        StartReact("Reactive Execution")
-        StartReact --> ObserveExecution("browser()</code><br>invalidates observer")
-        subgraph Observer["<strong>observe() Scope</strong>"]
-            ObserveExecution("browser()</code><br>invalidates observer")  
-            ObserveExecution --> Browser
-            subgraph Browse["<strong>browser() Scope</strong>"]
-                Browser("<code>observe</code> scope<br>execution paused")
-                Browser --> Step
-                subgraph Debugger["<strong>Debugger</strong>"]
-                    Step("View variables<br>& reactives")
-                end
-                    ExitBrowser("Exit<br><code>browser()</code>")
-                    Step --> ExitBrowser
-                
+    subgraph Function["<strong>Function Scope</strong>"]
+        Running(["Being<br>execution"])
+        Running --> EncounterObs
+        subgraph ObserveStep["<strong>observe() Scope</strong>"]
+            EncounterObs("Encounter<br><code>observe()</code>") --> Browse
+            subgraph Browser["<strong><code>browser()</code> Scope</strong>"]
+                Browse("Encounter<br><code>browser()</code>") --> Step
+                subgraph Debugger["<strong>Interactive Debugger</strong>"]
+                 Step[\"Inspect variables<br>and reactives"/]
             end
-                ExitObserver("Exit<br><code>observe()</code>")
-                ExitBrowser --> ExitObserver
+                Step --> ExitBrowser("Exit <br><code>browser()</code>")
+            end
+            ExitBrowser --> ExitObserve("Exit <br><code>observe()</code>")
+            
         end
-            ExitObserver --> EndReact("Resume Reactive<br>Execution")
-    
+        ExitObserve --> Resume(["Resume<br>execution"])
     end
 
     %% style Server fill:#FFF,color:#000,stroke:#333,font-size:14px
@@ -235,27 +248,6 @@ flowchart TD
 
 When `browser()` is called from ***within the `observe()` scope***, the code execution pauses and temporarily suspends the reactive flow so we can inspect the environment (without altering or stopping the reactive flow). 
 
-:::{.bugbox}
-::::{.bugbox-header}
-
-Interactive Debugger & Shiny Apps
-
-::::
-::::{.bugbox-container}
-
-Placing a call to `browser()` inside `observe()` will trigger the interactive debugger when the observer is invalidated.
-
-```r
-observe({
-  browser()
-})
-```
-
-This allows us to interactively examine variables and reactive expressions (within the scope of the `observe()` function).
-
-::::
-:::
-
 ## Example: `ggplot2movies` app
 
 In the [Resources](resources.qmd) chapter we developed a slight variation of our app with the `ggplot2movies` data.[^ggp2-callback] In the following sections we're going to use the interactive debugger to see the inner workings of the 'Remove missing' checkbox.
@@ -268,7 +260,7 @@ We'll begin by placing the `observe()` and `browser()` breakpoint *inside* the m
 
 ```{r}
 #| eval: false 
-#| code-fold: true
+#| code-fold: show
 #| code-summary: 'show/hide debugging functions in the module server function' 
 dev_mod_scatter_server <- function(id, var_inputs) {
   moduleServer(id, function(input, output, session) {
@@ -408,26 +400,37 @@ When the app is launched, Positron ![](images/positron.png){height=20} alerts us
 
 [^positron-video]: Watch [this video](https://youtu.be/8uRcB34Hhsw?si=OMJz4_043sCPnx8x&t=2452) to learn more about Positron. 
 
+#### Sidebar {.unnumbered}
+
 1. The **Run and Debug** sidebar menu item is displayed and the footer is [highlighted in blue]{style="background-color: #6CAAD9; font-weight: bold;"}[^highlight-footer]
 
 ![Positron IDE in debugger mode (click to enlarge)](images/debug_positron_all.png){width='100%' fig-align='center'}
 
 [^highlight-footer]: Previous versions of Positron highlighted the footer in red.
 
-2. The `dev_mod_scatter.R` file in the **Editor** [highlights the call to `browser()` in yellow]{style="background-color: #FAFFC1; font-weight: bold;"}
+#### Editor {.unnumbered}
 
-![Debugger in file **Editor** (click to enlarge)](images/debugger_positron_editor.png){width='80%' fig-align='center'}
+The `dev_mod_scatter.R` file in the **Editor** highlights the `browser()` function [in yellow]{style="background-color: #FAFFC1; font-weight: bold;"}
 
-3. The **Console** displays the interactive debugger prompt: [`Browse[1]>`]{style="font-weight: bold;"}
+![Debugger in file **Editor** (click to enlarge)](images/debugger_positron_editor.png){width='100%' fig-align='center'}
 
-![Debugger in **Console** (click to enlarge)](images/debugger_positron_console.png){width='80%' fig-align='center'}
+#### Console {.unnumbered}
 
+The **Console** tells us `browser()` was '`Called from: observe()`' and displays the interactive debugger prompt: 
+
+![Debugger in file **Editor** (click to enlarge)](images/debugger_positron_initial_console.png){width='75%' fig-align='center'}
 
 `observe()` does not inherently pause or interrupt other reactive processes—it just triggers when changes occur within its scope. So when we're using `observe()` for debugging, we need to define the context (or scope) for its behavior. 
 
-The output in the **Console** (shown above) tells us the `tidy_movies.fst` data are downloaded, but our placement suspends the execution of the application *before* these data are loaded and the graph is rendered in the UI (shown below).
+The output in the **Console** tells us the `tidy_movies.fst` data are downloaded, but our placement suspends the execution of the application *before* these data are loaded and the graph is rendered in the UI.
 
-![Suspended `ggplot2movies` data app (click to enlarge)](images/debug_browser_suspend_app.png){width='100%' fig-align='center'}
+::: {layout-ncol=2 layout-valign="top"}
+
+![Debugger in **Console** (click to enlarge)](images/debugger_positron_console.png){width='100%'}
+
+![Suspended `ggplot2movies` data app (click to enlarge)](images/debug_browser_suspend_app.png){width='100%'}
+
+:::
 
 The interactive debugger can only access variables and values inside the `observe()` scope, but this process can be incredibly useful for addressing bugs (and for exploring how an application works). In the next sections, we'll 'step through' the module function to explore how the missing values are removed from the graph. 
 
@@ -453,15 +456,19 @@ As we 'step through' the function, Positron's ![](images/positron.png){height=20
 
 ![Full path and line number to the file containing our call to `browser()` (click to enlarge)](images/debug_positron_step.png){fig-align='center'}
 
-In the **Editor**, the same line of code is [highlighted in yellow]{style="background-color: #FAFFC1; font-weight: bold;"}:
+In the **Editor**, the same line of code is highlighted [in yellow]{style="background-color: #FAFFC1; font-weight: bold;"}:
 
 ![Corresponding line number in **Editor** (click to enlarge)](images/debug_positron_highlight_next_exec.png){fig-align='center'}
 
 The line creating `graph_data` gives us a hint for how the missing data are removed (i.e., with `bindEvent()`), but we'll explore this more in [Print debugging](debug_print.qmd).
 
-Under *Locals* in the **DEBUG VARIABLES** sidebar, we can see `all_data` is listed as a `<data.frame>`, and `graph_data` are listed as a `<reactive.event>`:
+![`graph_data()` reactive creation (click to enlarge)](images/debugger_positron_graph_data.png){fig-align='center'}
+
+Under **Locals** in the **DEBUG VARIABLES** sidebar, we can see `all_data` is listed as a `<data.frame>`, and `graph_data` are listed as a `<reactive.event>`:
 
 ![Click to enlarge **DEBUG VARIABLES** in sidebar](images/debug_positron_reactive_event.png){fig-align='center'}
+
+In the next section, we'll explore these variables (and the reactive inputs).
 
 
 ### Inspecting variables

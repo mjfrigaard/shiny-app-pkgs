@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2025-01-16">
+<meta name="dcterms.date" content="2025-01-17">
 <meta name="description" content="Getting your app into an R package">
 
 <title>10&nbsp; Debuggers – Shiny App-Packages</title>
@@ -501,7 +501,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </ul></li>
   <li><a href="#example-ggplot2movies-app" id="toc-example-ggplot2movies-app" class="nav-link" data-scroll-target="#example-ggplot2movies-app"><span class="header-section-number">10.2</span> Example: <code>ggplot2movies</code> app</a>
   <ul>
-  <li><a href="#ide-changes" id="toc-ide-changes" class="nav-link" data-scroll-target="#ide-changes"><span class="header-section-number">10.2.1</span> IDE Changes</a></li>
+  <li><a href="#ide-changes" id="toc-ide-changes" class="nav-link" data-scroll-target="#ide-changes"><span class="header-section-number">10.2.1</span> IDE Changes</a>
+  <ul>
+  <li><a href="#sidebar" id="toc-sidebar" class="nav-link" data-scroll-target="#sidebar">Sidebar</a></li>
+  <li><a href="#editor" id="toc-editor" class="nav-link" data-scroll-target="#editor">Editor</a></li>
+  <li><a href="#console" id="toc-console" class="nav-link" data-scroll-target="#console">Console</a></li>
+  </ul></li>
   <li><a href="#variables-and-values" id="toc-variables-and-values" class="nav-link" data-scroll-target="#variables-and-values"><span class="header-section-number">10.2.2</span> Variables and values</a></li>
   <li><a href="#inspecting-variables" id="toc-inspecting-variables" class="nav-link" data-scroll-target="#inspecting-variables"><span class="header-section-number">10.2.3</span> Inspecting variables</a></li>
   <li><a href="#inspecting-values" id="toc-inspecting-values" class="nav-link" data-scroll-target="#inspecting-values"><span class="header-section-number">10.2.4</span> Inspecting values</a></li>
@@ -526,7 +531,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">2025-01-16</p>
+      <p class="date">2025-01-17</p>
     </div>
   </div>
   
@@ -557,6 +562,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <p>Bugs can cause our app to crash, produce incorrect results or displays, and result in other unexpected behaviors. Fixing bugs in our app-package is an important step to ensure our application continues behaving as expected. This chapter will cover how to use an interactive debugger to help us find the root cause of bugs and errors.</p>
+<div class="bugbox">
+<div class="bugbox-header">
+<p>TLDR: Interactive Debugger &amp; Shiny Apps</p>
+</div>
+<div class="bugbox-container">
+<p>Placing a call to <code>browser()</code> inside <code>observe()</code> will trigger the interactive debugger when the observer is invalidated.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">observe</span>({</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">browser</span>()</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This allows us to interactively examine variables and reactive expressions (within the scope of the <code>observe()</code> function).</p>
+</div>
+</div>
 <p>Debugging in RStudio <img src="images/rstudio-icon.png" height="20"> is covered elsewhere,<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> so we’ll focus on debugging our Shiny app code using Positron’s <img src="images/positron.png" height="20"> interactive debugger.</p>
 <div class="callout callout-style-default callout-tip no-icon callout-titled">
 <div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="false" aria-label="Toggle callout">
@@ -572,15 +589,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="callout-body-container callout-body">
 <div style="font-size: 0.95em; color: #282b2d;">
 <p>I’ve created the <a href="https://mjfrigaard.github.io/shinypak/"><code>shinypak</code> R package</a> in an effort to make each section accessible and easy to follow. Install <code>shinypak</code> using <code>pak</code> (or <code>remotes</code>):</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">'pak'</span>)</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>pak<span class="sc">::</span><span class="fu">pak</span>(<span class="st">'mjfrigaard/shinypak'</span>)</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(shinypak)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">'pak'</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>pak<span class="sc">::</span><span class="fu">pak</span>(<span class="st">'mjfrigaard/shinypak'</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(shinypak)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>List the apps in this chapter:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">list_apps</span>(<span class="at">regex =</span> <span class="st">'10'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">list_apps</span>(<span class="at">regex =</span> <span class="st">'10'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>Launch apps with <code>launch()</code></p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">launch</span>(<span class="at">app =</span> <span class="st">'10_debugger'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">launch</span>(<span class="at">app =</span> <span class="st">'10_debugger'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>Download apps with <code>get_app()</code></p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">get_app</span>(<span class="at">app =</span> <span class="st">'10_debugger'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">get_app</span>(<span class="at">app =</span> <span class="st">'10_debugger'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </div>
 </div>
@@ -622,29 +639,24 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div>
 <p></p><figure class="figure"><p></p>
 <div>
-<pre class="mermaid mermaid-js">%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"13px"}}}%%
-flowchart TD
-    subgraph FunctionScope [&lt;strong&gt;Function Scope&lt;/strong&gt;]
-        Start("Execution")
-        Browser{"Breakpoint&lt;br&gt;or &lt;code&gt;browser&lt;/code&gt;?"}
-    
+<pre class="mermaid mermaid-js">%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
+flowchart LR
+        Start(["Begin&lt;br&gt;Execution"])
+        Browser{{"Breakpoint&lt;br&gt;or &lt;code&gt;browser&lt;/code&gt;?"}}
         subgraph Debugger ["&lt;strong&gt;Debugger&lt;/strong&gt;"]
-    
-            Step1("Inspect&lt;br&gt;Variables")
-            Step1 --&gt; Step2("Step Through&lt;br&gt;Code")
-            Step2 --&gt; Debug{"End&lt;br&gt;Debugging?"}
+            Step("Enter&lt;br&gt;debugger")
+            Step --&gt; |"Step Through&lt;br&gt;Code"|Debug{{"Done&lt;br&gt;debugging?"}}
 
-            Debug --&gt;|"No"| Step1
-            Debug --&gt;|"Yes"| Exit(Exit Debugger)
+            Debug --&gt;|"No"| Step
+            Debug --&gt;|"Yes"| Exit("Exit&lt;br&gt;debugger")
     
         end
-        Resume("Resume Execution")
+        Resume(["Resume&lt;br&gt;Execution"])
     
-    end
     Start --&gt; Browser
-    Browser --&gt;|Yes| Debugger
+    Browser --&gt;|"Yes"| Debugger
     Exit --&gt; Resume
-    Browser --&gt;|No| Resume
+    Browser --&gt;|"No"| Resume
     
     %% style FunctionScope fill:#FFF,color:#000,stroke:#333,font-size:14px
     %% style Start fill:#FFF,stroke:#333,stroke-width:1px,color:#000,font-size:14px
@@ -681,19 +693,19 @@ flowchart TD
 <pre class="mermaid mermaid-js">%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"13px"}}}%%
 flowchart TD
     subgraph Function["&lt;strong&gt;Function Scope&lt;/strong&gt;"]
-        Running("Execution")
+        Running(["Being&lt;br&gt;execution"])
         Running --&gt; Encounter
         
-        subgraph BrowserStep["&lt;strong&gt;browser()&lt;strong&gt;"]
-            Encounter("Encounter&lt;br&gt;&lt;code&gt;browser()&lt;/code&gt;") --&gt; Step1
+        subgraph BrowserStep["&lt;strong&gt;browser() Scope&lt;strong&gt;"]
+            Encounter("Encounter&lt;br&gt;&lt;code&gt;browser()&lt;/code&gt;") --&gt; Step
             
-            subgraph Debugger["&lt;strong&gt;Debugger&lt;/strong&gt;"]
-                Step1("View&lt;br&gt;variables/values") --&gt; Step2("Execute code&lt;br&gt;line-by-line")
+            subgraph Debugger["&lt;strong&gt;Interactive Debugger&lt;/strong&gt;"]
+                Step[\"Inspect variables"/]
             end
-            Step2 --&gt; ExitBrowser("Exit the&lt;br&gt;&lt;code&gt;browser()&lt;/code&gt;")
+            Step --&gt; ExitBrowser("Exit &lt;br&gt;&lt;code&gt;browser()&lt;/code&gt;")
             
         end
-        ExitBrowser --&gt; Resume("Resume execution")
+        ExitBrowser --&gt; Resume(["Resume&lt;br&gt;execution"])
         
     end
     
@@ -742,27 +754,22 @@ flowchart TD
 <div>
 <pre class="mermaid mermaid-js">%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"13px"}}}%%
 flowchart TD
-    subgraph Server["server() Scope"]
-        StartReact("Reactive Execution")
-        StartReact --&gt; ObserveExecution("browser()&lt;/code&gt;&lt;br&gt;invalidates observer")
-        subgraph Observer["&lt;strong&gt;observe() Scope&lt;/strong&gt;"]
-            ObserveExecution("browser()&lt;/code&gt;&lt;br&gt;invalidates observer")  
-            ObserveExecution --&gt; Browser
-            subgraph Browse["&lt;strong&gt;browser() Scope&lt;/strong&gt;"]
-                Browser("&lt;code&gt;observe&lt;/code&gt; scope&lt;br&gt;execution paused")
-                Browser --&gt; Step
-                subgraph Debugger["&lt;strong&gt;Debugger&lt;/strong&gt;"]
-                    Step("View variables&lt;br&gt;&amp; reactives")
-                end
-                    ExitBrowser("Exit&lt;br&gt;&lt;code&gt;browser()&lt;/code&gt;")
-                    Step --&gt; ExitBrowser
-                
+    subgraph Function["&lt;strong&gt;Function Scope&lt;/strong&gt;"]
+        Running(["Being&lt;br&gt;execution"])
+        Running --&gt; EncounterObs
+        subgraph ObserveStep["&lt;strong&gt;observe() Scope&lt;/strong&gt;"]
+            EncounterObs("Encounter&lt;br&gt;&lt;code&gt;observe()&lt;/code&gt;") --&gt; Browse
+            subgraph Browser["&lt;strong&gt;&lt;code&gt;browser()&lt;/code&gt; Scope&lt;/strong&gt;"]
+                Browse("Encounter&lt;br&gt;&lt;code&gt;browser()&lt;/code&gt;") --&gt; Step
+                subgraph Debugger["&lt;strong&gt;Interactive Debugger&lt;/strong&gt;"]
+                 Step[\"Inspect variables&lt;br&gt;and reactives"/]
             end
-                ExitObserver("Exit&lt;br&gt;&lt;code&gt;observe()&lt;/code&gt;")
-                ExitBrowser --&gt; ExitObserver
+                Step --&gt; ExitBrowser("Exit &lt;br&gt;&lt;code&gt;browser()&lt;/code&gt;")
+            end
+            ExitBrowser --&gt; ExitObserve("Exit &lt;br&gt;&lt;code&gt;observe()&lt;/code&gt;")
+            
         end
-            ExitObserver --&gt; EndReact("Resume Reactive&lt;br&gt;Execution")
-    
+        ExitObserve --&gt; Resume(["Resume&lt;br&gt;execution"])
     end
 
     %% style Server fill:#FFF,color:#000,stroke:#333,font-size:14px
@@ -787,18 +794,6 @@ flowchart TD
 </div>
 </div>
 <p>When <code>browser()</code> is called from <strong><em>within the <code>observe()</code> scope</em></strong>, the code execution pauses and temporarily suspends the reactive flow so we can inspect the environment (without altering or stopping the reactive flow).</p>
-<div class="bugbox">
-<div class="bugbox-header">
-<p>Interactive Debugger &amp; Shiny Apps</p>
-</div>
-<div class="bugbox-container">
-<p>Placing a call to <code>browser()</code> inside <code>observe()</code> will trigger the interactive debugger when the observer is invalidated.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">observe</span>({</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">browser</span>()</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>This allows us to interactively examine variables and reactive expressions (within the scope of the <code>observe()</code> function).</p>
-</div>
-</div>
 </section>
 </section>
 <section id="example-ggplot2movies-app" class="level2 page-columns page-full" data-number="10.2">
@@ -816,7 +811,7 @@ flowchart TD
 </div>
 <p>We’ll begin by placing the <code>observe()</code> and <code>browser()</code> breakpoint <em>inside</em> the module server function containing the ‘Remove missing’ input (right after the <code>moduleServer()</code> function). We’ll close the <code>observe()</code> scope after the reactive <code>inputs()</code> are created:</p>
 <div class="cell">
-<details class="code-fold">
+<details open="" class="code-fold">
 <summary>show/hide debugging functions in the module server function</summary>
 <div class="sourceCode cell-code" id="annotated-cell-1"><pre class="sourceCode r code-annotation-code code-with-copy code-annotated"><code class="sourceCode r"><span id="annotated-cell-1-1"><a href="#annotated-cell-1-1" aria-hidden="true" tabindex="-1"></a>dev_mod_scatter_server <span class="ot">&lt;-</span> <span class="cf">function</span>(id, var_inputs) {</span>
 <span id="annotated-cell-1-2"><a href="#annotated-cell-1-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">moduleServer</span>(id, <span class="cf">function</span>(input, output, session) {</span>
@@ -961,6 +956,8 @@ flowchart TD
 <section id="ide-changes" class="level3" data-number="10.2.1">
 <h3 data-number="10.2.1" class="anchored" data-anchor-id="ide-changes"><span class="header-section-number">10.2.1</span> IDE Changes</h3>
 <p>When the app is launched, Positron <img src="images/positron.png" height="20"> alerts us that we’re in debugging mode by making a few changes to the IDE:<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a></p>
+<section id="sidebar" class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="sidebar">Sidebar</h4>
 <ol type="1">
 <li>The <strong>Run and Debug</strong> sidebar menu item is displayed and the footer is <span style="background-color: #6CAAD9; font-weight: bold;">highlighted in blue</span><a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a></li>
 </ol>
@@ -974,45 +971,61 @@ flowchart TD
 <figcaption>Positron IDE in debugger mode (click to enlarge)</figcaption>
 </figure>
 </div>
-<ol start="2" type="1">
-<li>The <code>dev_mod_scatter.R</code> file in the <strong>Editor</strong> <span style="background-color: #FAFFC1; font-weight: bold;">highlights the call to <code>browser()</code> in yellow</span></li>
-</ol>
+</section>
+<section id="editor" class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="editor">Editor</h4>
+<p>The <code>dev_mod_scatter.R</code> file in the <strong>Editor</strong> highlights the <code>browser()</code> function <span style="background-color: #FAFFC1; font-weight: bold;">in yellow</span></p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><a href="images/debugger_positron_editor.png" class="lightbox" data-gallery="quarto-lightbox-gallery-3" title="Debugger in file Editor (click to enlarge)"><img src="images/debugger_positron_editor.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%" alt="Debugger in file Editor (click to enlarge)"></a></p>
+<p><a href="images/debugger_positron_editor.png" class="lightbox" data-gallery="quarto-lightbox-gallery-3" title="Debugger in file Editor (click to enlarge)"><img src="images/debugger_positron_editor.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Debugger in file Editor (click to enlarge)"></a></p>
 </figure>
 </div>
 <figcaption>Debugger in file <strong>Editor</strong> (click to enlarge)</figcaption>
 </figure>
 </div>
-<ol start="3" type="1">
-<li>The <strong>Console</strong> displays the interactive debugger prompt: <span style="font-weight: bold;"><code>Browse[1]&gt;</code></span></li>
-</ol>
+</section>
+<section id="console" class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="console">Console</h4>
+<p>The <strong>Console</strong> tells us <code>browser()</code> was ‘<code>Called from: observe()</code>’ and displays the interactive debugger prompt:</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><a href="images/debugger_positron_console.png" class="lightbox" data-gallery="quarto-lightbox-gallery-4" title="Debugger in Console (click to enlarge)"><img src="images/debugger_positron_console.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%" alt="Debugger in Console (click to enlarge)"></a></p>
+<p><a href="images/debugger_positron_initial_console.png" class="lightbox" data-gallery="quarto-lightbox-gallery-4" title="Debugger in file Editor (click to enlarge)"><img src="images/debugger_positron_initial_console.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:75.0%" alt="Debugger in file Editor (click to enlarge)"></a></p>
 </figure>
 </div>
-<figcaption>Debugger in <strong>Console</strong> (click to enlarge)</figcaption>
+<figcaption>Debugger in file <strong>Editor</strong> (click to enlarge)</figcaption>
 </figure>
 </div>
 <p><code>observe()</code> does not inherently pause or interrupt other reactive processes—it just triggers when changes occur within its scope. So when we’re using <code>observe()</code> for debugging, we need to define the context (or scope) for its behavior.</p>
-<p>The output in the <strong>Console</strong> (shown above) tells us the <code>tidy_movies.fst</code> data are downloaded, but our placement suspends the execution of the application <em>before</em> these data are loaded and the graph is rendered in the UI (shown below).</p>
+<p>The output in the <strong>Console</strong> tells us the <code>tidy_movies.fst</code> data are downloaded, but our placement suspends the execution of the application <em>before</em> these data are loaded and the graph is rendered in the UI.</p>
+<div>
+
+</div>
+<div class="quarto-layout-panel" data-layout-ncol="2">
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><a href="images/debug_browser_suspend_app.png" class="lightbox" data-gallery="quarto-lightbox-gallery-5" title="Suspended ggplot2movies data app (click to enlarge)"><img src="images/debug_browser_suspend_app.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Suspended ggplot2movies data app (click to enlarge)"></a></p>
+<p><a href="images/debugger_positron_console.png" class="lightbox" data-gallery="quarto-lightbox-gallery-5" title="Debugger in Console (click to enlarge)"><img src="images/debugger_positron_console.png" class="img-fluid figure-img" style="width:100.0%" alt="Debugger in Console (click to enlarge)"></a></p>
+<figcaption>Debugger in <strong>Console</strong> (click to enlarge)</figcaption>
 </figure>
 </div>
+</div>
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/debug_browser_suspend_app.png" class="lightbox" data-gallery="quarto-lightbox-gallery-6" title="Suspended ggplot2movies data app (click to enlarge)"><img src="images/debug_browser_suspend_app.png" class="img-fluid figure-img" style="width:100.0%" alt="Suspended ggplot2movies data app (click to enlarge)"></a></p>
 <figcaption>Suspended <code>ggplot2movies</code> data app (click to enlarge)</figcaption>
 </figure>
 </div>
+</div>
+</div>
+</div>
 <p>The interactive debugger can only access variables and values inside the <code>observe()</code> scope, but this process can be incredibly useful for addressing bugs (and for exploring how an application works). In the next sections, we’ll ‘step through’ the module function to explore how the missing values are removed from the graph.</p>
+</section>
 </section>
 <section id="variables-and-values" class="level3 page-columns page-full" data-number="10.2.2">
 <h3 data-number="10.2.2" class="anchored" data-anchor-id="variables-and-values"><span class="header-section-number">10.2.2</span> Variables and values</h3>
@@ -1028,35 +1041,46 @@ flowchart TD
 <figure class="figure">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><a href="images/debug_positron_step.png" class="lightbox" data-gallery="quarto-lightbox-gallery-6" title="Full path and line number to the file containing our call to browser() (click to enlarge)"><img src="images/debug_positron_step.png" class="img-fluid quarto-figure quarto-figure-center figure-img" alt="Full path and line number to the file containing our call to browser() (click to enlarge)"></a></p>
+<p><a href="images/debug_positron_step.png" class="lightbox" data-gallery="quarto-lightbox-gallery-7" title="Full path and line number to the file containing our call to browser() (click to enlarge)"><img src="images/debug_positron_step.png" class="img-fluid quarto-figure quarto-figure-center figure-img" alt="Full path and line number to the file containing our call to browser() (click to enlarge)"></a></p>
 </figure>
 </div>
 <figcaption>Full path and line number to the file containing our call to <code>browser()</code> (click to enlarge)</figcaption>
 </figure>
 </div>
-<p>In the <strong>Editor</strong>, the same line of code is <span style="background-color: #FAFFC1; font-weight: bold;">highlighted in yellow</span>:</p>
+<p>In the <strong>Editor</strong>, the same line of code is highlighted <span style="background-color: #FAFFC1; font-weight: bold;">in yellow</span>:</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><a href="images/debug_positron_highlight_next_exec.png" class="lightbox" data-gallery="quarto-lightbox-gallery-7" title="Corresponding line number in Editor (click to enlarge)"><img src="images/debug_positron_highlight_next_exec.png" class="img-fluid quarto-figure quarto-figure-center figure-img" alt="Corresponding line number in Editor (click to enlarge)"></a></p>
+<p><a href="images/debug_positron_highlight_next_exec.png" class="lightbox" data-gallery="quarto-lightbox-gallery-8" title="Corresponding line number in Editor (click to enlarge)"><img src="images/debug_positron_highlight_next_exec.png" class="img-fluid quarto-figure quarto-figure-center figure-img" alt="Corresponding line number in Editor (click to enlarge)"></a></p>
 </figure>
 </div>
 <figcaption>Corresponding line number in <strong>Editor</strong> (click to enlarge)</figcaption>
 </figure>
 </div>
 <p>The line creating <code>graph_data</code> gives us a hint for how the missing data are removed (i.e., with <code>bindEvent()</code>), but we’ll explore this more in <a href="./debug_print.html">Print debugging</a>.</p>
-<p>Under <em>Locals</em> in the <strong>DEBUG VARIABLES</strong> sidebar, we can see <code>all_data</code> is listed as a <code>&lt;data.frame&gt;</code>, and <code>graph_data</code> are listed as a <code>&lt;reactive.event&gt;</code>:</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><a href="images/debug_positron_reactive_event.png" class="lightbox" data-gallery="quarto-lightbox-gallery-8" title="Click to enlarge DEBUG VARIABLES in sidebar"><img src="images/debug_positron_reactive_event.png" class="img-fluid quarto-figure quarto-figure-center figure-img" alt="Click to enlarge DEBUG VARIABLES in sidebar"></a></p>
+<p><a href="images/debugger_positron_graph_data.png" class="lightbox" data-gallery="quarto-lightbox-gallery-9" title="graph_data() reactive creation (click to enlarge)"><img src="images/debugger_positron_graph_data.png" class="img-fluid quarto-figure quarto-figure-center figure-img" alt="graph_data() reactive creation (click to enlarge)"></a></p>
+</figure>
+</div>
+<figcaption><code>graph_data()</code> reactive creation (click to enlarge)</figcaption>
+</figure>
+</div>
+<p>Under <strong>Locals</strong> in the <strong>DEBUG VARIABLES</strong> sidebar, we can see <code>all_data</code> is listed as a <code>&lt;data.frame&gt;</code>, and <code>graph_data</code> are listed as a <code>&lt;reactive.event&gt;</code>:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/debug_positron_reactive_event.png" class="lightbox" data-gallery="quarto-lightbox-gallery-10" title="Click to enlarge DEBUG VARIABLES in sidebar"><img src="images/debug_positron_reactive_event.png" class="img-fluid quarto-figure quarto-figure-center figure-img" alt="Click to enlarge DEBUG VARIABLES in sidebar"></a></p>
 </figure>
 </div>
 <figcaption>Click to enlarge <strong>DEBUG VARIABLES</strong> in sidebar</figcaption>
 </figure>
 </div>
+<p>In the next section, we’ll explore these variables (and the reactive inputs).</p>
 </section>
 <section id="inspecting-variables" class="level3" data-number="10.2.3">
 <h3 data-number="10.2.3" class="anchored" data-anchor-id="inspecting-variables"><span class="header-section-number">10.2.3</span> Inspecting variables</h3>
