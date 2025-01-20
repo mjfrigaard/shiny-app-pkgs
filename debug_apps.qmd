@@ -19,503 +19,970 @@ co_box(
 )
 ```
 
-In the previous chapters we demonstrated how to combine `browser()` and `observe()` for interactive debugging. We also covered how to combine `print()`, `reactiveValuesToList()`, `verbatimTextOutput()`, and `renderPrint()` to view reactive values in the **Console** and the UI. 
+In the previous chapters we demonstrated how to combine `browser()` and `observe()` for interactive debugging. We also covered how to combine `reactiveValuesToList()`, `verbatimTextOutput()`, and `renderPrint()` to view reactive values in the UI. 
 
-For debugging Shiny apps, it's likely you'll use a combination of these methods (depending on the bug or issue).
+When debugging Shiny apps, it's likely you'll use a combination of these methods (depending on the bug or issue). 
 
 ```{r}
 #| label: shinypak_apps
 #| echo: false
 #| results: asis
 #| eval: true
-shinypak_apps(regex = "12", branch = "12_debug-apps")
+shinypak_apps(regex = "12", branch = "12.1_debug-mods")
 ```
 
+## Abstract syntax trees {#sec-debug-apps-abstract-syntax-trees .unnumbered}
 
-Capturing reactive values with `reactiveValuesToList()` and sending output to the UI. The benefits of print debugging is that it's easy to implement, doesn't require any special tools or setup, and it provides a direct view of variable states and program flow at specific points.
+Shiny app-packages can quickly become a complex and intertwined web of functions: utility functions, modules, user interface (UI) elements, server logic, etc. Before we jump into debugging modules, we'll revisit their function and purpose by considering the following description of namespaces from the [`NS()` function documentation](https://shiny.posit.co/r/reference/shiny/latest/ns.html):
 
-One of the best tried and tested methods of debugging is simply adding a `cat()` or `print()` call somewhere in your code to print variables or objects to the R console. This is a basic but effective way to track variable changes.
+> "*a namespace is to an ID as a directory is to a file.*"
 
-In [`mod_var_input`](https://github.com/mjfrigaard/sap/blob/18d_debugging/R/mod_var_input.R): 
+To visualize the hierarchical relationship between the functions in our app, we'll use abstract syntax trees (`ast()`) from the `lobstr` package.[^debug-lobstr] 
 
--   Place a `verbatimTextOutput()` in the ui function. 
-
-```{r}
-#| eval: false 
-#| code-fold: false 
-    code("module reactive values"), # <1> 
-    verbatimTextOutput(outputId = ns("mod_vals")) # <2> 
-  )
-```
-1. Optional label  
-2. Include the `ns()` for the `inputId`
-
--   In a `renderPrint()`, use `reactiveValuesToList()` to gather the `inputId`s and pass them to `print()` (I'm actually using `lobstr::tree()` to give a clearer display).
-
-```{r}
-#| eval: false 
-#| code-fold: false 
-  output$mod_vals <- renderPrint({
-    lobstr::tree( # <2> 
-      reactiveValuesToList( # <1> 
-        x = input,
-        all.names = TRUE # <3> 
-      ) # <1> 
-    ) # <2> 
-  })
-```
-1. Collect reactive values in module  
-2. Print these values to the UI   
-3. Include all reactive objects    
-
-Load the package and run the app:
-
-```{r}
-#| label: hot_key_print_module
-#| echo: false
-#| results: asis
-#| eval: true
-hot_key(fun = "L")
-```
-
-```{verbatim}
-#| eval: false 
-#| code-fold: false
-ℹ Loading sap
-```
-
-```{r}
-#| eval: false 
-#| code-fold: false
-launch_app(options = list(test.mode = FALSE), run = 'p')
-```
-
-
-
-
-Now we can see the reactive values from our module in the application sidebar! 
-
-We can also use this 'print' method to explore reactive values at various locations in our application. For example, if we wanted to print the reactive values for multiple modules in an app, we can use these methods in the top level `movies_ui()` and `movies_server()` functions.
-
-In the `bslib` portion of [`movies_ui()`](https://github.com/mjfrigaard/sap/blob/18d_debugging/R/movies_ui.R): 
-
--   Add `verbatimTextOutput()` with an optional label  
-
-    ```{r}
-    #| eval: false 
-    #| code-fold: false
-    code("reactive values"),
-    verbatimTextOutput(outputId = 'vals')
-    )
-    ```
-
-In [`movies_server()`](https://github.com/mjfrigaard/sap/blob/18d_debugging/R/movies_server.R):
-
--   Collect all the `inputId`s with `reactiveValuesToList()` and print with `print()` or `lobstr::ast()`
-
-    ```{r}
-    #| eval: false 
-    #| code-fold: false
-    all_vals <- reactive({
-      reactiveValuesToList(x = input, all.names = TRUE)
-    })
-    
-    output$vals <- renderPrint({
-      lobstr::tree(all_vals())
-    })
-    ```
-
-
-Load the package and run the app:
-
-```{r}
-#| label: hot_key_print_app
-#| echo: false
-#| results: asis
-#| eval: true
-hot_key(fun = "L")
-```
-
-```{verbatim}
-#| eval: false 
-#| code-fold: false
-ℹ Loading sap
-```
-
-```{r}
-#| eval: false 
-#| code-fold: false
-launch_app(options = list(test.mode = FALSE), 
-  run = 'p', bslib = TRUE)
-```
-
-
-
-
-Here we can see both levels of reactive values (from the module and the UI/server functions). The handy thing about this method is that the values change when we interact with the application.
-
-## Debugging modules {#sec-debug-modules}
-
-The contents of your Shiny app-package can quickly become a complicated and intertwined combination of functions: utility, modules, UI, server, etc. I like to display the relationship between the functions with abstract syntax trees:[^debug-lobstr] 
-
-[^debug-lobstr]: Create abstract syntax trees with the [`ast()` function](https://lobstr.r-lib.org/reference/ast.html) from the [`lobstr` package](https://lobstr.r-lib.org/). 
+[^debug-lobstr]: Create abstract syntax trees with the [`ast()` function](https://lobstr.r-lib.org/reference/ast.html) and read the *Code is a tree* section in [Advanced R, 2ed.](https://adv-r.hadley.nz/meta-big-picture.html#code-tree) 
 
 :::{layout="[50,50]" layout-valign="top"}
 
-For example, we know `scatter_plot()` is called from *within* the scatter plot display module function: 
-
-``` sh
-█─mod_scatter_display_server 
-└─█─scatter_plot
-```
-
-:::
+For example, `launch_app()` calls the `display_type()` utility function, then `movies_ui()` and `movies_server()`:
 
 ```{r}
-#| eval: false
-#| include: false 
+#| eval: true
+#| include: true 
+#| echo: false
 lobstr::ast(
-  mod_scatter_display_server(
-    scatter_plot()
+  launch_app(
+    display_type(),
+    movies_ui(),
+    movies_server()
     )
   )
 ```
 
-:::{layout="[50,50]" layout-valign="top"}
-
-And `mod_scatter_display_server()` is called within `movies_server()`: 
-
-``` sh
-█─movies_server 
-├─█─mod_scatter_display_server 
-│ └─█─scatter_plot 
-└─█─mod_var_input_server 
-```
-
 :::
-
-```{r}
-#| eval: false
-#| include: false 
-lobstr::ast(
-    movies_server(
-      mod_scatter_display_server(
-        scatter_plot()
-        ),
-      mod_var_input_server()
-      )
-)
-```
 
 :::{layout="[50,50]" layout-valign="top"}
 
-Which is called from inside `launch_app()`:
-
-``` sh
-█─launch_app 
-├─█─display_type
-├─█─movies_ui 
-│ ├─█─mod_var_input_ui 
-│ └─█─mod_scatter_display_ui 
-└─█─movies_server 
-  ├─█─mod_scatter_display_server 
-  │ └─█─scatter_plot 
-  └─█─mod_var_input_server
-```
-
-:::
+`movies_ui()` and `movies_server()` call their respective UI and server module functions:  
 
 ```{r}
-#| eval: false
-#| include: false 
+#| eval: true
+#| include: true 
+#| echo: false
 lobstr::ast(
   launch_app( 
+    display_type(),
     movies_ui(
       mod_var_input_ui(),
       mod_scatter_display_ui()
     ),
     movies_server(
+      mod_var_input_server(),
+      mod_scatter_display_server()
+      )
+    )
+  )
+```
+:::
+
+
+:::{layout="[50,50]" layout-valign="top"}
+
+And `mod_scatter_display_server()` calls the `scatter_plot()` utility function:
+
+```{r}
+#| eval: true
+#| include: true 
+#| echo: false
+lobstr::ast(
+  launch_app(
+    display_type(),
+    movies_ui(
+      mod_var_input_ui(),
+      mod_scatter_display_ui()
+    ),
+    movies_server(
+      mod_var_input_server(),
       mod_scatter_display_server(
         scatter_plot()
-        ),
-      mod_var_input_server()
+        )
       )
     )
   )
 ```
 
-I find these abstract folder trees helpful when I'm debugging or testing Shiny functions. I can use them to try and anticipate the application call stack (especially when I end up with multiple utility functions or nested modules).
-
-We'll add `browser()` and `observe()` in the `movies_server()` function to capture the behaviors of both modules: 
+:::
 
 
+Abstract folder trees can be used to help construct a simplified call stack for applications (especially if we are using multiple utility functions or nested modules).
+
+## Debugging modules {#sec-debug-apps-modules}
+
+In this branch of `sap`, the inputs has been split into two separate modules: variable inputs and aesthetic inputs. 
+
+### Variable inputs module
+
+```{r}
+#| eval: false 
+#| code-fold: show 
+#| code-summary: 'show/hide R/mod_var_input.R' 
+mod_var_input_ui <- function(id) {
+  ns <- NS(id)
+  tagList(
+    selectInput(
+      inputId = ns("y"),
+      label = "Y-axis:",
+      choices = c(
+        "IMDB rating" = "imdb_rating",
+        "IMDB number of votes" = "imdb_num_votes",
+        "Critics Score" = "critics_score",
+        "Audience Score" = "audience_score",
+        "Runtime" = "runtime"
+      ),
+      selected = "audience_score"
+    ),
+    selectInput(
+      inputId = ns("x"),
+      label = "X-axis:",
+      choices = c(
+        "IMDB rating" = "imdb_rating",
+        "IMDB number of votes" = "imdb_num_votes",
+        "Critics Score" = "critics_score",
+        "Audience Score" = "audience_score",
+        "Runtime" = "runtime"
+      ),
+      selected = "imdb_rating"
+    ),
+    selectInput(
+      inputId = ns("z"),
+      label = "Color by:",
+      choices = c(
+        "Title Type" = "title_type",
+        "Genre" = "genre",
+        "MPAA Rating" = "mpaa_rating",
+        "Critics Rating" = "critics_rating",
+        "Audience Rating" = "audience_rating"
+      ),
+      selected = "mpaa_rating"
+    )
+  )
+}
+
+mod_var_input_server <- function(id) {
+
+  moduleServer(id, function(input, output, session) {
+    
+    return(
+      reactive({
+        list(
+          "y" = input$y, # <1>
+          "x" = input$x, # <2>
+          "z" = input$z # <3>
+        )
+      })
+    )
+
+  })
+}
+```
+1. Returned x axis variable   
+2. Returned y axis variable   
+3. Returned color variable   
+
+### Aesthetic inputs module
+
+```{r}
+#| eval: false 
+#| code-fold: show 
+#| code-summary: 'show/hide R/mod_aes_input.R' 
+mod_aes_input_ui <- function(id) {
+  ns <- NS(id)
+  tagList(
+    sliderInput(
+      inputId = ns("alpha"),
+      label = "Alpha:",
+      min = 0, max = 1, step = 0.1,
+      value = 0.5
+    ),
+    sliderInput(
+      inputId = ns("size"),
+      label = "Size:",
+      min = 0, max = 5,
+      value = 2
+    ),
+    textInput(
+      inputId = ns("x"),
+      label = "Plot title",
+      placeholder = "Enter plot title"
+    )
+  )
+}
+
+mod_aes_input_server <- function(id) {
+
+  moduleServer(id, function(input, output, session) {
+    
+    return(
+      reactive({
+        list(
+          "alpha" = input$alpha, # <1>
+          "size" = input$size, # <2>
+          "plot_title" = input$x # <3>
+        )
+      })
+    )
+
+  })
+}
+```
+1. Returned alphs aesthetic   
+2. Returned size aesthetic   
+3. Returned plot title  
+
+This also requires a minor adjustment to the `mod_scatter_display_server()` and `movies_server()` functions: 
+
+```{r}
+#| eval: false 
+#| code-fold: show 
+#| code-summary: 'show/hide mod_scatter_display_server()' 
+mod_scatter_display_server <- function(id, var_inputs, aes_inputs) {
+
+  moduleServer(id, function(input, output, session) {
+
+    inputs <- reactive({
+      plot_title <- tools::toTitleCase(aes_inputs()$plot_title) # <1>
+        list(
+          x = var_inputs()$x, # <2>
+          y = var_inputs()$y,
+          z = var_inputs()$z, # <2>
+          alpha = aes_inputs()$alpha, # <3>
+          size = aes_inputs()$size,
+          plot_title = plot_title # <3>
+        
+        )
+    })
+    
+    output$scatterplot <- renderPlot({
+      plot <- scatter_plot(
+        # data --------------------
+        df = movies,
+        x_var = inputs()$x,
+        y_var = inputs()$y,
+        col_var = inputs()$z,
+        alpha_var = inputs()$alpha,
+        size_var = inputs()$size
+      )
+      plot +
+        ggplot2::labs(
+          title = inputs()$plot_title,
+            x = stringr::str_replace_all(tools::toTitleCase(inputs()$x), "_", " "),
+            y = stringr::str_replace_all(tools::toTitleCase(inputs()$y), "_", " ")
+        ) +
+        ggplot2::theme_minimal() +
+        ggplot2::theme(legend.position = "bottom")
+    })
+  })
+}
+```
+1. Convert title to character  
+2. Variable reactive inputs  
+3. Aesthitic reactive inputs 
+
+```{r}
+movies_server <- function(input, output, session) {
+      
+      selected_vars <- mod_var_input_server("vars") # <1>
+  
+      selected_aes <- mod_aes_input_server("aes") # <2>
+
+      mod_scatter_display_server("plot", 
+                                  var_inputs = selected_vars, # <3>
+                                  aes_inputs = selected_aes) # <4>
+      
+}
+```
+1. Collected variable inputs     
+2. Collected aesthetic inputs     
+3. Variable input argument for graph display   
+4. Aesthetic input argument for graph display   
+
+This updates our abstract syntax tree to the following: 
+
+```{r}
+#| eval: true
+#| include: true 
+#| echo: false
+lobstr::ast(
+  launch_app(
+    display_type(),
+    movies_ui(
+      mod_var_input_ui(),
+      mod_aes_input_ui(),
+      mod_scatter_display_ui()
+    ),
+    movies_server(
+      mod_var_input_server(),
+      mod_aes_input_server(),
+      mod_scatter_display_server(
+        scatter_plot()
+        )
+      )
+    )
+  )
+```
+
+Uncoupling these two modules will make it easier to independently modify (and debug) the corresponding graph elements. 
+
+### UI function debugging
+
+In [`mod_var_input_ui()`](https://github.com/mjfrigaard/sap/blob/12.1_debug-mods/R/mod_var_input.R) and [`mod_aes_input_ui()`](https://github.com/mjfrigaard/sap/blob/12.1_debug-mods/R/mod_aes_input.R), the `NS()` function is used to encapsulate input IDs within a namespace. 
+
+We will place a `verbatimTextOutput()` in both UI module functions:[^review-chp-11]
+
+```{r}
+#| eval: false 
+#| code-fold: false 
+mod_var_input_ui <- function(id) {
+  ns <- NS(id)
+  tagList(
+    selectInput(
+      inputId = ns("y"),
+      label = "Y-axis:",
+      choices = c(
+        "IMDB rating" = "imdb_rating",
+        "IMDB number of votes" = "imdb_num_votes",
+        "Critics Score" = "critics_score",
+        "Audience Score" = "audience_score",
+        "Runtime" = "runtime"
+      ),
+      selected = "audience_score"
+    ),
+    selectInput(
+      inputId = ns("x"),
+      label = "X-axis:",
+      choices = c(
+        "IMDB rating" = "imdb_rating",
+        "IMDB number of votes" = "imdb_num_votes",
+        "Critics Score" = "critics_score",
+        "Audience Score" = "audience_score",
+        "Runtime" = "runtime"
+      ),
+      selected = "imdb_rating"
+    ),
+    selectInput(
+      inputId = ns("z"),
+      label = "Color by:",
+      choices = c(
+        "Title Type" = "title_type",
+        "Genre" = "genre",
+        "MPAA Rating" = "mpaa_rating",
+        "Critics Rating" = "critics_rating",
+        "Audience Rating" = "audience_rating"
+      ),
+      selected = "mpaa_rating"
+    ),
+    strong( #<1>
+      code("var_input"),
+      "module reactive ",
+      code("inputs")
+      ), #<1>
+    verbatimTextOutput(ns("vals")) #<2>
+  )
+}
+```
+1. Optional label  
+2. Include the `ns()` for the `inputId`
+
+```{r}
+#| eval: false 
+#| code-fold: false 
+mod_aes_input_ui <- function(id) {
+  ns <- NS(id)
+  tagList(
+    sliderInput(
+      inputId = ns("alpha"),
+      label = "Alpha:",
+      min = 0, max = 1, step = 0.1,
+      value = 0.5
+    ),
+    sliderInput(
+      inputId = ns("size"),
+      label = "Size:",
+      min = 0, max = 5,
+      value = 2
+    ),
+    textInput(
+      inputId = ns("x"),
+      label = "Plot title",
+      placeholder = "Enter plot title"
+    ),
+    strong( #<1>
+      code("aes_input"),
+      "module reactive ",
+      code("inputs")
+      ), #<1>
+    verbatimTextOutput(ns("vals")) #<2>
+  )
+}
+```
+1. Optional label  
+2. Include the `ns()` for the `inputId`
+
+### Server function debugging
+
+In the corresponding server functions, we'll capture the reactive values and print the list using `lobstr::tree()`:[^review-chp-11]
+
+[^review-chp-11]: We covered using `reactiveValuesToList()`, `renderPrint()` and `verbatimTextOutput()` in @sec-print-debug-reactive-values-to-list.
+
+```{r}
+#| eval: false 
+#| code-fold: false 
+mod_var_input_server <- function(id) {
+
+  moduleServer(id, function(input, output, session) {
+
+    observe({
+      output$vals <- renderPrint({ #<2>
+        all_vals <- reactiveValuesToList(input, #<1>
+                                         all.names = TRUE) #<3>
+        lobstr::tree(all_vals) #<4>
+      })
+    }) |> 
+      bindEvent(c(input$x, input$y, input$x)) #<5>
+    
+    return(
+      reactive({
+        list(
+          "y" = input$y,
+          "x" = input$x,
+          "z" = input$z
+        )
+      })
+    )
+
+  })
+}
+```
+1. Collect reactive values in module  
+2. Print these values to the UI   
+3. Include all reactive objects  
+4. Visualize using `lobstr::tree()`  
+5. Bind to inputs 
+
+
+```{r}
+#| eval: false 
+#| code-fold: false 
+mod_aes_input_server <- function(id) {
+
+  moduleServer(id, function(input, output, session) {
+
+    observe({
+      output$vals <- renderPrint({ #<2>
+        all_vals <- reactiveValuesToList(input, #<1>
+                                         all.names = TRUE) #<3>
+        lobstr::tree(all_vals) #<4>
+      })
+    }) |> 
+      bindEvent(c(input$alpha, input$size, input$x)) #<5>
+    
+    return(
+      reactive({
+        list(
+          "alpha" = input$alpha,
+          "size" = input$size,
+          "plot_title" = input$x
+        )
+      })
+    )
+
+  })
+}
+```
+1. Collect reactive values in module  
+2. Print these values to the UI   
+3. Include all reactive objects  
+4. Visualize using `lobstr::tree()`  
+5. Bind to inputs   
+
+We see the following in the sidebar after loading, documenting, installing and launching our app;
+
+```{r}
+#| label: hot_key_01
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key(fun = "all")
+```
+
+:::{layout="[50,50]" layout-valign="top"}
+
+Reactive values for the variable input module:
+
+![Reactive values in variable input module](images/debug_apps_var_input_module.png){fig-align='center'}
+
+:::
+
+:::{layout="[50,50]" layout-valign="top"}
+
+Reactive values for the aesthetic input module:
+
+![Reactive values in aesthetics input module](images/debug_apps_aes_input_module.png){fig-align='center'}
+
+:::
+
+
+In the variable and aesthetic module namespaces, `NS()` ensures all the inputs are unique *within the module* (even when multiple modules are used in the same application). 
+
+```{bash}
+#| eval: false
+#| code-fold: false
+<list>
+├─y: "audience_score"
+├─x: "imdb_rating"
+└─z: "mpaa_rating"
+```
+
+You probably noticed that I've renamed the `inputId` for the plot title to `x`, but we avoid any namespace collisions because each ID is stored safely within a module.
+
+```{bash}
+#| eval: false
+#| code-fold: false
+<list>
+├─alpha: 0.5
+├─size: 2
+└─x: ""
+```
+
+**This encapsulation is similar to how a directory provides a distinct context for files, preventing naming conflicts within a file system.**  
+
+If we repeat this method in  [`movies_ui()`](https://github.com/mjfrigaard/sap/blob/12_debug-apps/R/movies_ui.R) and [`movies_server()`](https://github.com/mjfrigaard/sap/blob/12_debug-apps/R/movies_server.R): 
+
+```{r}
+#| eval: false 
+#| code-fold: show
+#| code-summary: 'show/hide movies_ui()'
+movies_ui <- function(bslib = FALSE) {
+  addResourcePath(
+    prefix = 'www',
+    directoryPath = system.file('www/', package = 'sap'))
+  if (isFALSE(bslib)) {
+    tagList(
+        bslib::page_fillable(
+          h1("Movie Reviews"),
+          bslib::layout_sidebar(
+            sidebar =
+              bslib::sidebar(
+                title = tags$h4("Sidebar inputs"),
+                img(
+                  src = "www/shiny.png",
+                  height = 60,
+                  width = 55,
+                  style = "margin:10px 10px"
+                ),
+                mod_var_input_ui("vars"),
+                mod_aes_input_ui("aes")
+              ),
+            bslib::card(
+              full_screen = TRUE,
+              bslib::card_header(
+                tags$h4("Scatter Plot")
+              ),
+              bslib::card_body(fillable = TRUE,
+                strong( # <1>
+                  code("movies_server()"),
+                  "reactive values"
+                  ), # <1>
+                verbatimTextOutput(outputId = "vals"), # <1>
+                mod_scatter_display_ui("plot")
+              ),
+              bslib::card_footer(
+                tags$blockquote(
+                  tags$em(
+                    tags$p(
+                      "The data for this application comes from the ",
+                      tags$a("Building web applications with Shiny",
+                        href = "https://rstudio-education.github.io/shiny-course/"
+                      ),
+                      "tutorial"
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+  } else {
+    tagList(
+      bslib::page_fillable(
+        title = "Movie Reviews (bslib)",
+        theme = bslib::bs_theme(
+          bg = "#101010",
+          fg = "#F6F5F5",
+          primary = "#EE6F57",
+          secondary = "#32E0C4",
+          success = "#FF4B5C",
+          base_font = sass::font_google("Ubuntu"),
+          heading_font = sass::font_google("Ubuntu")
+        ),
+        bslib::layout_sidebar(
+          sidebar = bslib::sidebar(
+            mod_var_input_ui("vars"),
+            mod_aes_input_ui("aes")
+          ),
+          bslib::card(
+            full_screen = TRUE,
+                bslib::card_header(
+                  tags$img(
+                  src = "www/bootstrap.png",
+                  height = 80,
+                  width = 100,
+                  style = "margin:10px 10px"
+                )
+              ),
+             bslib::card_body(
+              strong( # <2>
+                code("movies_server()"),
+                "reactive values"
+                ), 
+              verbatimTextOutput(outputId = "vals"), # <2>
+              mod_scatter_display_ui("plot")
+            )
+          )
+        )
+      )
+    )
+  }
+} 
+```
+1. Label and output for printed reactive values   
+2. Label and output for printed reactive values (`bslib` UI option)  
+
+```{r}
+#| eval: false 
+#| code-fold: show
+#| code-summary: 'show/hide movies_server()'
+movies_server <- function(input, output, session) {
+
+      output$vals <- renderPrint({ #<2>
+        app_vals <- reactiveValuesToList(x = input, #<1>
+                                      all.names = TRUE) #<1>
+        lobstr::tree(app_vals) #<3>
+      })
+      
+      selected_vars <- mod_var_input_server("vars")
+      selected_aes <- mod_aes_input_server("aes")
+
+      mod_scatter_display_server("plot", 
+                                  var_inputs = selected_vars, 
+                                  aes_inputs = selected_aes)
+}
+```
+1. Capture reactive values  
+2. Render reactive values   
+3. Print list as folder tree     
+
+Load the package and run the app:
+
+```{r}
+#| label: hot_key_02
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key(fun = "all")
+```
+
+The printed output from `movies_ui()` and` movies_server()` is prefixed with the namespace (i.e., `vars-` or `aes-`), reflecting the hierarchical organization of the input IDs, **much like file paths in a directory structure**.
+
+![Reactive values in `movies_ui()`](images/debug_apps_movies_ui_server.png){width='100%' fig-align='center'}
+
+By using `reactiveValuesToList()` and `lobstr::tree()` in combination with `verbatimTextOutput()` and `renderPrint()`, we are effectively debugging and inspecting the module’s reactive inputs.  
+
+```{bash}
+#| eval: false
+#| code-fold: false
+<list>
+├─vars-y: "audience_score"
+├─vars-x: "imdb_rating"
+├─vars-z: "mpaa_rating"
+├─aes-alpha: 0.5
+├─aes-size: 2
+└─aes-x: ""
+```
+
+Capturing and rendering reactive values in the UI gives us the benefits of print debugging while our Shiny app is running. When it's combined with `observe()` and `browser()`, we can get a direct view of the application state and the program flow at specific execution points.
+
+```{r}
+#| label: git_box_12.1
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  fig_pw = '65%', 
+  branch = "12.1_debug-mods", 
+  repo = 'sap')
+```
+
+## Module communication {#sec-debug-apps-module-comms}
+
+When we load, document, install and view the application in this branch we find an error with the graph display: 
+
+![Error in graph display](images/debug_apps_graph_error.png){width='100%' fig-align='center'}
+
+The call stack (printed to the **Console**) displays the following information: 
+
+```{bash}
+#| eval: false 
+#| code-fold: false
+Warning: Error in tools::toTitleCase: 'text' must be a character vector
+  208: stop
+  207: tools::toTitleCase
+  206: <reactive>
+  204: .func
+  201: contextFunc
+  200: env$runWith
+  189: ctx$run
+  188: self$.updateValue
+  186: inputs
+  178: renderPlot
+  176: func
+  136: drawPlot
+  122: <reactive:plotObj>
+  102: drawReactive
+   89: renderFunc
+   88: output$plot-scatterplot
+    3: runApp
+    2: print.shiny.appobj
+    1: <Anonymous>
+```
+
+The output in the **Console** is helpful (we know the error is coming from the `tools::toTitleCase()` function), but we need to narrow it down because we're using this function in multiple places. 
+
+To use the interactive debugger, we'll add `browser()` and `observe()` in the `movies_server()` function to capture the behaviors of both the variables and aesthetics modules: 
 
 ```{r}
 #| eval: false 
 #| code-fold: false
 movies_server <- function(input, output, session) {
 
-    observe({ # <1>
-      browser() # <2>
-    
-      selected_vars <- mod_var_input_server("vars")
-
-      mod_scatter_display_server("plot", var_inputs = selected_vars)
+      output$vals <- renderPrint({
+        app_vals <- reactiveValuesToList(x = input, all.names = TRUE)
+        lobstr::tree(app_vals)
+      })
+      observe({ #<1>
+        browser() #<2>
       
-    }) # <1>
+      selected_vars <- mod_var_input_server("vars")
+  
+      selected_aes <- mod_aes_input_server("aes")
 
+      mod_scatter_display_server("plot", 
+                                  var_inputs = selected_vars, 
+                                  aes_inputs = selected_aes)
+        
+    }) #<1>
+      
 }
 ```
 1. Observer scope  
 2. Activate debugger 
 
-Then we'll load the package and display the app in the **Viewer** pane (below the **Console**):
+
+
+Then we'll load, document, install and launch the app:
 
 ```{r}
-#| label: hot_key_movies_server
+#| label: hot_key_03
 #| echo: false
 #| results: asis
 #| eval: true
-hot_key(fun = "L")
+hot_key(fun = "all")
 ```
 
-```{verbatim}
-#| eval: false 
-#| code-fold: false
-ℹ Loading sap
-```
+The application launches, but `browser()` pauses the execution of the modules and activates the IDE's debugger. This allows us to view the objects that are available in `movies_server()` *before* the variables are passed to the graph rendering functions.
 
-```{r}
-#| eval: false 
-#| code-fold: false
-launch_app(options = list(test.mode = FALSE), run = 'p')
-```
-
-```{verbatim}
-#| eval: false 
-#| code-fold: false
-ℹ shinyViewerType set to pane
-```
-
-The application launches, but `browser()` pauses the execution of the modules and activates the IDE's debugger. This allows us to view the objects that are available in `movies_server()` *before* the variables are passed to the graph rendering functions:
-
-In the **Source** pane, we can see the call to `browser()` highlighted (`Browse[1]>` tells us the location in the `browser()` function).
-
-In the debugger, we want to confirm the returned values from the variable input module, `selected_vars`, which requires us to execute the next two lines of code:
+We'll proceed with the interactive debugger until both `selected_vars` and `selected_aes` are returned from the input modules:
 
 ```{r}
 #| eval: false 
 #| code-fold: false 
 Browse[1]> n
-Browse[2]> n
+Browse[1]> n
+Browse[1]> n
 ```
 
+![Reactive inputs returned from modules](images/debug_apps_browser_reactiveExpr.png){width='100%' fig-align='center'}
 
+This tells us both objects are returned from their respective module server functions. But we should pause and examine the structure of `selected_aes`:
 
-Inside `movies_server()`:
+```{verbatim}
+#| eval: false 
+#| code-fold: false 
+Browse[1]> str(selected_aes)
+function ()  
+ - attr(*, "observable")=Classes 'Observable', 'R6' reactive({
+    list(alpha = input$alpha, size = input$size, plot_title = input$x)
+}) 
+ - attr(*, "cacheHint")=List of 1
+  ..$ userExpr: language {  list(alpha = input$alpha, size = input$size, 
+      plot_title = input$x) }
+ - attr(*, "class")= chr [1:3] "reactiveExpr" "reactive" "function"
+```
+
+The output above display `selected_vars` the **method**, not the selected input values. To view these, we need to include the parentheses:
+
+```{verbatim}
+#| eval: false 
+#| code-fold: false 
+Browse[1]> str(selected_aes())
+List of 3
+ $ alpha     : num 0.5
+ $ size      : int 2
+ $ plot_title: chr ""
+```
+
+This confirms that the UI values are being collected by the aesthetic input module and stored in `selected_aes`, so the error must be coming from inside one of the modules.
 
 :::{layout="[50,50]" layout-valign="top"}
 
-`mod_var_input_server()` collects the following values and returns a reactive list (**`selected_vars`**):    
+*We've inspected the values in the exchange between `movies_ui()` and `movies_server()`*:
 
-- Three variable names 
-  - `x`, `y`, `z`      
-- Graph aesthetics  
-  -  `alpha` and `size`    
-- An optional plot title  
-  -  `plot_title`    
-
-:::
-
-When we inspect `selected_vars` in the debugger console (*without parentheses*) we see the **method** (i.e., the reactive list of inputs), and not the actual values:
-
-::: {layout="[35, 65]" layout-valign="top"}
-
-``` r
-Browse[2]> selected_vars
-```
-
-``` sh
-reactive({
-    list(y = input$y, x = input$x,
-         z = input$z, alpha = input$alpha, 
-         size = input$size, 
-         plot_title = input$plot_title)
-})
+```{r}
+#| eval: true
+#| include: true 
+#| echo: false
+lobstr::ast(
+  launch_app(
+    movies_ui(),
+    movies_server()
+    )
+  )
 ```
 
 :::
 
-If we check `selected_vars()` (*with parentheses*) in the debugger, we see this contains the **values** from the variable input module: 
-
-::: {layout="[35, 65]" layout-valign="top"}
-
-``` r 
-Browse[2]> selected_vars()
-```
-
-``` sh
-$y
-[1] "audience_score"
-
-$x
-[1] "imdb_rating"
-
-$z
-[1] "mpaa_rating"
-
-$alpha
-[1] 0.5
-
-$size
-[1] 2
-
-$plot_title
-[1] ""
-```
-
-:::
-
-These two steps confirm that the UI values are being collected by the variable input module and stored in `selected_vars`, so the error must be coming from inside the scatter plot display module.
-
-## Module communication {#sec-module-comms}
-
-
-
-We'll repeat a similar process in `mod_scatter_display_server()`, but include the call to `observe(browser())` *after* `moduleServer()`. Then we'll load the package and run the application again: 
+We'll remove (or comment out) the calls to `observe()` and `browser()` from `movies_server()` and repeat a similar process in `mod_scatter_display_server()`, but include the calls to `observe()` and `browser()` after `moduleServer()`. Then we'll load, document, and install the package and run the application again: 
 
 ```{r}
 #| eval: false 
 #| code-fold: false 
-mod_scatter_display_server <- function(id, var_inputs) {
+mod_scatter_display_server <- function(id, var_inputs, aes_inputs) {
+
   moduleServer(id, function(input, output, session) {
-    
+
     observe({ # <1>
       browser()
-    
-      # module code
-      
-      }) # <1>
 
-  })
+    inputs <- reactive({
+      plot_title <- tools::toTitleCase(aes_inputs()$x)
+        list(
+          x = var_inputs()$x,
+          y = var_inputs()$y,
+          z = var_inputs()$z,
+          alpha = aes_inputs()$alpha,
+          size = aes_inputs()$size,
+          plot_title = plot_title
+        
+        )
+    })
+    
+    output$scatterplot <- renderPlot({
+      plot <- scatter_plot(
+        # data --------------------
+        df = movies,
+        x_var = inputs()$x,
+        y_var = inputs()$y,
+        col_var = inputs()$z,
+        alpha_var = inputs()$alpha,
+        size_var = inputs()$size
+      )
+      plot +
+        ggplot2::labs(
+          title = inputs()$plot_title,
+            x = stringr::str_replace_all(tools::toTitleCase(inputs()$x), "_", " "),
+            y = stringr::str_replace_all(tools::toTitleCase(inputs()$y), "_", " ")
+        ) +
+        ggplot2::theme_minimal() +
+        ggplot2::theme(legend.position = "bottom")
+    })
+      
+    })
+
+  }) # <1>
+
 }
 ```
 1. Wrap `browser()` in `observe()` and place after the call to `moduleServer()` 
 
 ```{r}
-#| label: hot_key_module
+#| label: hot_key_04
 #| echo: false
 #| results: asis
 #| eval: true
-hot_key(fun = "L")
+hot_key(fun = "all")
 ```
+
+
+:::{layout="[40,60]" layout-valign="top"}
+
+Advance the debugger to the line *after* `inputs()` is created with `var_inputs()` and `aes_inputs()`
+
+![](images/debug_apps_browser_n_aes_inputs.png){fig-align='center'}
+
+:::
+
+:::{layout="[40,60]" layout-valign="top"}
+
+We can see the `input()$plot_title` appears to be a character, but the structure of `inputs()` returns the error we saw in the **Console**
+
+![](images/debug_apps_browser_aes_inputs.png){fig-align='center'}
+
+:::
+
+
+### Verifying inputs
+
+Now that we've isolated the error to the `tools::toTitleCase()` call in the creation of the `inputs()` reactive. We can confirm this in the interactive debugger: 
 
 ```{verbatim}
-#| eval: false 
+#| eval: false
 #| code-fold: false
-ℹ Loading sap
+Browse[1]> tools::toTitleCase(aes_inputs()$x)
+Error in tools::toTitleCase(aes_inputs()$x) : 
+  'text' must be a character vector
 ```
 
-```{r}
-#| eval: false 
-#| code-fold: false
-launch_app(options = list(test.mode = FALSE), run = 'p')
-```
+Upon further inspection, we discover the source of the error: 
 
-Inside the module, we want to confirm `var_inputs()` is being created correctly from the `var_inputs` object in `movies_server()`. 
 
 :::{layout="[50,50]" layout-valign="top"}
 
-`selected_vars` is the input for `mod_scatter_display_server()` (as **`var_inputs`**)
+**Bug**
 
-- `var_inputs` is converted to the reactive `inputs`    
-  - `inputs` is passed to `scatter_plot()` inside `renderPlot()`    
+**Fix**
 
 :::
 
-::: {layout="[35, 65]" layout-valign="top"}
 
-``` r
-Browse[2]> var_inputs()
+:::{layout="[45,55]" layout-valign="top"}
+
+```r
+tools::toTitleCase(aes_inputs()$x)
 ```
 
-``` sh 
-$y
-[1] "audience_score"
-
-$x
-[1] "imdb_rating"
-
-$z
-[1] "mpaa_rating"
-
-$alpha
-[1] 0.5
-
-$size
-[1] 2
-
-$plot_title
-[1] ""
+```r
+tools::toTitleCase(aes_inputs()$plot_title)
 ```
 
 :::
 
-### Verify variable inputs 
+The approach above have shown us 1) all modules are communicating properly, and 2) where to make changes in the scatter plot display module to render the graph.
 
-Inside the scatter plot display module, the `var_inputs` argument is used to create a reactive `input()` object for the graph created by `scatter_plot()`:
+![Module communication](images/debug_apps_module_comms.png){width='100%' fig-align='center'}
 
-```{r}
-#| eval: false 
-#| code-fold: false 
-    inputs <- reactive({ # <2>
-      plot_title <- tools::toTitleCase(var_inputs()$plot_title) # <1>
-        list(
-          x = var_inputs()$x,
-          y = var_inputs()$y,
-          z = var_inputs()$z,
-          alpha = var_inputs()$alpha,
-          size = var_inputs()$size,
-          plot_title = plot_title
-        ) # <1>
-    }) # <2>
-```
-1. Variable inputs (from `selected_vars`)   
-2. `inputs()` for `scatter_plot()`   
+I've reverted the code to display the error in this branch so it's easier to follow along. Each of the apps in the `inst/` folder have also been updated, and I encourage you to explore how the bug effects launching each app structure. 
 
-Now that we've confirmed `var_inputs()` has been created, we'll verify the values are passed correctly *from* `var_inputs()` *to* `inputs()` (which is used to create the scatter plot).
-
-To do this, we'll progress through the module function (using `n` in the debugger console or by clicking **Next**) until the `inputs()` reactive has been created,
-
-::: {layout="[35, 65]" layout-valign="top"}
-
-``` r
-Browse[2]> inputs()
-```
-
-``` sh
-$x
-[1] "imdb_rating"
-
-$y
-[1] "audience_score"
-
-$z
-[1] "mpaa_rating"
-
-$alpha
-[1] 0.5
-
-$size
-[1] 2
-
-$plot_title
-[1] ""
-```
-
-:::
-
-These two steps have shown us 1) the modules are communicating properly, and 2) the scatter plot display module contains the list of reactive values needed to render the graph.
 
 ```{r}
 #| label: co_box_browser_observe
@@ -533,13 +1000,14 @@ co_box(
 ```
 
 ```{r}
-#| label: git_box_12_debug-apps
+#| label: git_box_12.2
 #| echo: false
 #| results: asis
 #| eval: true
-git_margin_box(contents = "launch",
+git_margin_box(
+  contents = "launch",
   fig_pw = '65%', 
-  branch = "12_debug-apps", 
+  branch = "12.2_debug-mods", 
   repo = 'sap')
 ```
 
