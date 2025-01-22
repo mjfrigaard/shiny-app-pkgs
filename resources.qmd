@@ -694,7 +694,7 @@ This alternate version of `launch_app()` uses the same modules and utility funct
 
 The `inst/` folder is a versatile tool for storing various files needed in our application (logos or images, CSS styling, JavaScript functions, HTML, etc.). The example above was simple, but using `inst/` to hold resources for alternate UIs that can be displayed with a single argument is handy for demoing versions for stakeholders.
 
-## Data files {#sec-resources-inst-dev}
+## Data files {#sec-resources-inst-tidy-movies-app}
 
 It is not uncommon to develop an application that can handle data from multiple sources. In these situations, we can sometimes store the alternative data files in the `inst/` folder.[^external-data]
 
@@ -769,23 +769,17 @@ We can place the application modules, UI, and server functions in [`inst/tidy-mo
 ```{bash}
 #| eval: false
 #| code-fold: false
-inst
-├── extdata
-│   └── movies.fst
-├── tidy-movies # <1>
-│   ├── R # <2>
-│   │   ├── devServer.R
-│   │   ├── devUI.R
-│   │   ├── dev_mod_scatter.R
-│   │   └── dev_mod_vars.R # <2>
-│   ├── app.R # <3>
-│   ├── imdb.png # <4>
-│   └── tidy_movies.fst # <5>
-└── www
-    ├── bootstrap.png
-    └── shiny.png
+inst/tidy-movies/ # <1>
+            ├── R 
+            │   ├── devServer.R # <2>
+            │   ├── devUI.R # 
+            │   ├── dev_mod_scatter.R  
+            │   └── dev_mod_vars.R # <2>
+            ├── app.R # <3>
+            ├── imdb.png # <4>
+            └── tidy_movies.fst # <5>
 
-5 directories, 10 files
+2 directories, 7 files
 ```
 1. Tidy movies app folder  
 2. App ui, server, and modules   
@@ -802,6 +796,79 @@ All of the functions from `sap` are available in the `tidy-movies/` app with exp
 3. [`inst/tidy-data/app.R`](https://github.com/mjfrigaard/sap/blob/09.3_inst-dev/inst/tidy-data/app.R) contains a call to `shinyApp()` and any other packages we'll need to launch the application. The data and alternative image file can be placed in the root folder (with the `app.R` file):
 
 [^export-modules]: This requires exporting `mod_var_input_server()` with `@export` in the `R/` folder.
+
+```{=html}
+
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+
+</style>
+```
+
+```{mermaid}
+%%| fig-cap: 'Architecture of app functions in `inst/tidy-movies/` folder'
+%%| fig-align: center
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
+flowchart LR
+    subgraph R["<strong>R/ folder</strong>"]
+        subgraph launch["launch_app('ggp2')"]
+            display_type["display_type()"]
+        end
+        mod_var_input_server["mod_var_input_server()"]
+        scatter_plot["scatter_plot()"]
+    end
+    
+    subgraph tidy_movies["<strong>tidy-movies/ folder</strong>"]
+        subgraph app["app.R file"]
+          subgraph SubR["<strong>R/ folder</strong>"]
+            devServer["devServer()"]
+            dev_mod_scatter_server["dev_mod_scatter_server()"]
+            devServer -.->|"<em>Calls</em>"|dev_mod_scatter_server
+            devUI["devUI()"]
+            dev_mod_vars_ui["dev_mod_vars_ui()"]
+            dev_mod_scatter_ui["dev_mod_scatter_ui()"]
+            devUI -.->|"<em>Calls</em>"|dev_mod_vars_ui & dev_mod_scatter_ui
+            end
+        end
+        data[("tidy_movies.fst")]
+        img[/"imdb.png"\]
+    end
+        
+
+    launch ==> |"<strong><code>shinyAppDir()</code></strong>"|app
+    scatter_plot -.->|"<em>Called from</em>"|dev_mod_scatter_server
+    mod_var_input_server -.->|"<em>Called from</em>"|devServer
+
+    %% utility functions
+    style scatter_plot fill:#595959,color:#FFF,stroke:#333,stroke-width:1px,rx:25,ry:25
+    style display_type fill:#595959,color:#FFF,stroke:#333,stroke-width:1px,rx:25,ry:25
+    
+    %% tidy-movies/ 
+    style tidy_movies fill:#e8f0f5,stroke:#333,stroke-width:1px,rx:3,ry:3
+    %% tidy-movies/R
+    style SubR fill:#f7fafb,stroke:#333,stroke-width:1px,rx:3,ry:3
+    %% tidy-movies/R/ files
+    style devUI stroke:#333,stroke-width:1px,rx:6,ry:6
+    style devServer stroke:#333,stroke-width:1px,rx:6,ry:6
+    style dev_mod_scatter_server color:#000,fill:#f5f5f5,stroke:#333,stroke-width:1px,rx:12,ry:12
+    style dev_mod_scatter_ui color:#000,fill:#f5f5f5,stroke:#333,stroke-width:1px,rx:12,ry:12
+    style dev_mod_vars_ui color:#000,fill:#f5f5f5,stroke:#333,stroke-width:1px,rx:12,ry:12
+    %% files 
+    style app fill:#f8f6e7,color:#000
+    style data fill:#f8f6e7,color:#000
+    style img fill:#f8f6e7,color:#000
+
+
+```
+
 
 ### Launching [`tidy-movies`]{style="font-size: 0.95em;"} {#sec-resources-tidy-movies-launch}
 

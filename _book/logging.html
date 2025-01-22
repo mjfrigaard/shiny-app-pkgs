@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2025-01-20">
+<meta name="dcterms.date" content="2025-01-22">
 <meta name="description" content="Getting your app into an R package">
 
 <title>13&nbsp; Logging – Shiny App-Packages</title>
@@ -77,6 +77,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="site_libs/bootstrap/bootstrap-7cb4b303de7ee40d7b7b73459d742b02.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -104,6 +107,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     "search-label": "Search"
   }
 }</script>
+<meta name="mermaid-theme" content="neutral">
+<script src="site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
 
 
 </head>
@@ -488,20 +495,24 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">Contents</h2>
    
   <ul>
-  <li><a href="#why-use-logging" id="toc-why-use-logging" class="nav-link active" data-scroll-target="#why-use-logging"><span class="header-section-number">13.1</span> Why Use Logging?</a></li>
-  <li><a href="#other-logging-frameworks" id="toc-other-logging-frameworks" class="nav-link" data-scroll-target="#other-logging-frameworks"><span class="header-section-number">13.2</span> Other Logging Frameworks</a></li>
-  <li><a href="#setting-up-logging-in-an-r-package" id="toc-setting-up-logging-in-an-r-package" class="nav-link" data-scroll-target="#setting-up-logging-in-an-r-package"><span class="header-section-number">13.3</span> Setting Up Logging in an R Package</a>
+  <li><a href="#why-use-logging" id="toc-why-use-logging" class="nav-link active" data-scroll-target="#why-use-logging"><span class="header-section-number">13.1</span> Why Use Logging?</a>
   <ul>
-  <li><a href="#step-1-install-and-load-the-logger-package" id="toc-step-1-install-and-load-the-logger-package" class="nav-link" data-scroll-target="#step-1-install-and-load-the-logger-package"><span class="header-section-number">13.3.1</span> Step 1: Install and Load the <code>logger</code> Package</a></li>
-  <li><a href="#step-2-initialize-logging" id="toc-step-2-initialize-logging" class="nav-link" data-scroll-target="#step-2-initialize-logging"><span class="header-section-number">13.3.2</span> Step 2: Initialize Logging</a></li>
-  <li><a href="#step-3-logging-in-your-shiny-application" id="toc-step-3-logging-in-your-shiny-application" class="nav-link" data-scroll-target="#step-3-logging-in-your-shiny-application"><span class="header-section-number">13.3.3</span> Step 3: Logging in Your Shiny Application</a></li>
-  <li><a href="#step-4-log-error-handling" id="toc-step-4-log-error-handling" class="nav-link" data-scroll-target="#step-4-log-error-handling"><span class="header-section-number">13.3.4</span> Step 4: Log Error Handling</a></li>
-  <li><a href="#configuring-log-levels" id="toc-configuring-log-levels" class="nav-link" data-scroll-target="#configuring-log-levels"><span class="header-section-number">13.3.5</span> Configuring Log Levels</a></li>
+  <li><a href="#architecture" id="toc-architecture" class="nav-link" data-scroll-target="#architecture"><span class="header-section-number">13.1.1</span> Architecture</a></li>
   </ul></li>
-  <li><a href="#storing-log-files" id="toc-storing-log-files" class="nav-link" data-scroll-target="#storing-log-files"><span class="header-section-number">13.4</span> Storing Log files</a></li>
-  <li><a href="#logging-and-debugging" id="toc-logging-and-debugging" class="nav-link" data-scroll-target="#logging-and-debugging"><span class="header-section-number">13.5</span> Logging and Debugging</a></li>
-  <li><a href="#best-practices" id="toc-best-practices" class="nav-link" data-scroll-target="#best-practices"><span class="header-section-number">13.6</span> Best Practices</a></li>
-  <li><a href="#recap" id="toc-recap" class="nav-link" data-scroll-target="#recap"><span class="header-section-number">13.7</span> Recap</a></li>
+  <li><a href="#custom-logging-functions" id="toc-custom-logging-functions" class="nav-link" data-scroll-target="#custom-logging-functions"><span class="header-section-number">13.2</span> Custom logging functions</a>
+  <ul>
+  <li><a href="#log-error-handling" id="toc-log-error-handling" class="nav-link" data-scroll-target="#log-error-handling"><span class="header-section-number">13.2.1</span> Log error handling</a></li>
+  <li><a href="#logging-events" id="toc-logging-events" class="nav-link" data-scroll-target="#logging-events"><span class="header-section-number">13.2.2</span> Logging events</a></li>
+  </ul></li>
+  <li><a href="#logger-setup" id="toc-logger-setup" class="nav-link" data-scroll-target="#logger-setup"><span class="header-section-number">13.3</span> <span style="font-size: 1.05em;"><code>logger</code></span> setup</a>
+  <ul>
+  <li><a href="#log-levels" id="toc-log-levels" class="nav-link" data-scroll-target="#log-levels"><span class="header-section-number">13.3.1</span> Log levels</a></li>
+  <li><a href="#custom-logger-functions" id="toc-custom-logger-functions" class="nav-link" data-scroll-target="#custom-logger-functions"><span class="header-section-number">13.3.2</span> Custom <span style="font-size: 1.05em;"><code>logger</code></span> functions</a></li>
+  <li><a href="#storing-log-files" id="toc-storing-log-files" class="nav-link" data-scroll-target="#storing-log-files"><span class="header-section-number">13.3.3</span> Storing log files</a></li>
+  </ul></li>
+  <li><a href="#logging-and-debugging" id="toc-logging-and-debugging" class="nav-link" data-scroll-target="#logging-and-debugging"><span class="header-section-number">13.4</span> Logging and debugging</a></li>
+  <li><a href="#best-practices" id="toc-best-practices" class="nav-link" data-scroll-target="#best-practices"><span class="header-section-number">13.5</span> Best practices</a></li>
+  <li><a href="#recap" id="toc-recap" class="nav-link" data-scroll-target="#recap"><span class="header-section-number">13.6</span> Recap</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/mjfrigaard/shiny-app-pkgs/edit/main/logging.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/mjfrigaard/shiny-app-pkgs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -521,7 +532,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">2025-01-20</p>
+      <p class="date">2025-01-22</p>
     </div>
   </div>
   
@@ -574,6 +585,7 @@ https://debruine.github.io/shinyintro/debugging.html
 </div>
 </div>
 </div>
+<p>Another proactive approach to debugging Shiny applications is implementing logging. Logs help with debugging, auditing, and monitoring and should be considered an essential feature while developing a Shiny app, especially when building an R package. This chapter provides an introduction to integrating logging in a Shiny app-package to make debugging and issue tracking more efficient.</p>
 <div class="callout callout-style-default callout-tip no-icon callout-titled">
 <div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-3-contents" aria-controls="callout-3" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
@@ -601,147 +613,551 @@ https://debruine.github.io/shinyintro/debugging.html
 </div>
 </div>
 </div>
-<p>Building app-packages introduces powerful possibilities for creating reusable and maintainable code. However, debugging these apps can be challenging, especially when dealing with reactive programming, user interactions, and package-specific functionality. One effective approach to debugging Shiny applications is by implementing logging. This chapter provides an introduction to integrating logging in a Shiny app-package to make debugging and issue tracking more efficient.</p>
 <section id="why-use-logging" class="level2" data-number="13.1">
 <h2 data-number="13.1" class="anchored" data-anchor-id="why-use-logging"><span class="header-section-number">13.1</span> Why Use Logging?</h2>
-<p>Logging provides a way to record diagnostic messages at runtime. Unlike print statements, logging is more structured, flexible, and configurable.</p>
-<p>Logging applications app-package enables:</p>
-<ol type="1">
-<li><p>Tracking application flow and detect bottlenecks</p></li>
-<li><p>Recording user interactions and inputs</p></li>
-<li><p>Identifying runtime errors and unexpected behaviors</p></li>
-<li><p>Preserving logs for any future analysis, even after the application has stopped running.</p></li>
-</ol>
-<p>Logging is particularly useful in production environments, where direct debugging may not be possible. For this chapter, we’ll use the <a href=""><code>logger</code> package</a> because of its simplicity, extensibility, and ease of integration with Shiny.</p>
+<p>Logging applications app-package enables us to track the application flow and record user interactions and inputs. Logging can also be used to identify runtime errors and unexpected behaviors. Unlike print statements and the debugger, logging is more structured, flexible, and configurable. Logging is particularly useful in production environments, where direct debugging may not be possible. Logs can also be saved for future analysis, even after the application has stopped running.</p>
+<section id="architecture" class="level3" data-number="13.1.1">
+<h3 data-number="13.1.1" class="anchored" data-anchor-id="architecture"><span class="header-section-number">13.1.1</span> Architecture</h3>
+<p>We’re going to start logging the behaviors in the <code>inst/tidy-movies</code> application. The architecture of this application has been updated to include the two new input modules:<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a></p>
+
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+
+</style>
+<div class="cell" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
+flowchart LR
+        subgraph R["&lt;strong&gt;R/ folder&lt;/strong&gt;"]
+            subgraph launch["launch_app('ggp2')"]
+                display_type["display_type()"]
+            end
+                mod_aes_input_ui["mod_aes_input_ui()"]
+                mod_aes_input_server["mod_aes_input_server"]
+                mod_var_input_server["mod_var_input_server()"]
+                scatter_plot["scatter_plot()"]
+        end
+
+        subgraph tidy_movies["&lt;strong&gt;tidy-movies/ folder&lt;/strong&gt;"]
+            subgraph app["app.R file"]
+                subgraph SubR["&lt;strong&gt;R/ folder&lt;/strong&gt;"]
+                devUI["devUI()"]
+                dev_mod_vars_ui["dev_mod_vars_ui()"]
+                dev_mod_scatter_ui["dev_mod_scatter_ui()"]
+                devUI --&gt;|"&lt;em&gt;Calls&lt;/em&gt;"|dev_mod_vars_ui &amp; dev_mod_scatter_ui
+                devServer["devServer()"]
+                dev_mod_scatter_server["dev_mod_scatter_server()"]
+                devServer --&gt;|"&lt;em&gt;Calls&lt;/em&gt;"|dev_mod_scatter_server
+                end
+            end
+            data[("tidy_movies.fst")]
+            img[/"imdb.png"\]
+        end
+        
+
+        launch ==&gt; |"&lt;strong&gt;&lt;code&gt;shinyAppDir()&lt;/code&gt;&lt;/strong&gt;"|app
+        mod_aes_input_ui -.-&gt;|"&lt;em&gt;Called from&lt;/em&gt;"|devUI
+        mod_var_input_server &amp; mod_aes_input_server -.-&gt;|"&lt;em&gt;Called from&lt;/em&gt;"|devServer
+        scatter_plot --&gt; |"&lt;em&gt;Called from&lt;/em&gt;"|dev_mod_scatter_server
+        
+        
+    %% R/
+    style R fill:#e8f0f5,stroke:#333,stroke-width:1px,rx:3,ry:3
+    %% standalone app function
+    style launch fill:#F6F6F6,color:#000,stroke:#333,stroke-width:1px,rx:10,ry:10
+    %% modules 
+    style mod_var_input_server color:#000,fill:#f5f5f5,stroke:#333,stroke-width:1px,rx:12,ry:12
+    style mod_aes_input_ui color:#000,fill:#f5f5f5,stroke:#333,stroke-width:1px,rx:12,ry:12
+    style mod_aes_input_server color:#000,fill:#f5f5f5,stroke:#333,stroke-width:1px,rx:12,ry:12
+    %% utility functions
+    style scatter_plot fill:#595959,color:#FFF,stroke:#333,stroke-width:1px,rx:25,ry:25
+    style display_type fill:#595959,color:#FFF,stroke:#333,stroke-width:1px,rx:25,ry:25
+    
+    %% tidy-movies/ 
+    style tidy_movies fill:#e8f0f5,stroke:#333,stroke-width:1px,rx:3,ry:3
+    %% tidy-movies/R
+    style SubR fill:#f7fafb,stroke:#333,stroke-width:1px,rx:3,ry:3
+    %% tidy-movies/R/ files
+    style devUI stroke:#333,stroke-width:1px,rx:6,ry:6
+    style devServer stroke:#333,stroke-width:1px,rx:6,ry:6
+    style dev_mod_scatter_server color:#000,fill:#f5f5f5,stroke:#333,stroke-width:1px,rx:12,ry:12
+    style dev_mod_scatter_ui color:#000,fill:#f5f5f5,stroke:#333,stroke-width:1px,rx:12,ry:12
+    style dev_mod_vars_ui color:#000,fill:#f5f5f5,stroke:#333,stroke-width:1px,rx:12,ry:12
+    %% files 
+    style app fill:#f8f6e7,color:#000
+    style data fill:#f8f6e7,color:#000
+    style img fill:#f8f6e7,color:#000
+</pre>
+</div>
+<p></p><figcaption> Architecture of app functions in <code>inst/tidy-movies/</code> folder</figcaption> </figure><p></p>
+</div>
+</div>
+</div>
+<p>To launch the <code>inst/tidy-movies</code> app, load, document, and install sap and run:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">"pak"</span>)</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>pak<span class="sc">::</span><span class="fu">pak</span>(<span class="st">"daroczig/logger"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">launch_app</span>(<span class="st">"ggp2"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/log_ggp2_initial_launch.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Launching inst/tidy-movies app with launch_app()"><img src="images/log_ggp2_initial_launch.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Launching inst/tidy-movies app with launch_app()"></a></p>
+</figure>
+</div>
+<figcaption>Launching <code>inst/tidy-movies</code> app with <code>launch_app()</code></figcaption>
+</figure>
 </div>
 </section>
-<section id="other-logging-frameworks" class="level2" data-number="13.2">
-<h2 data-number="13.2" class="anchored" data-anchor-id="other-logging-frameworks"><span class="header-section-number">13.2</span> Other Logging Frameworks</h2>
-<p>The R ecosystem offers several libraries for logging. The most popular options are:</p>
+</section>
+<section id="custom-logging-functions" class="level2" data-number="13.2">
+<h2 data-number="13.2" class="anchored" data-anchor-id="custom-logging-functions"><span class="header-section-number">13.2</span> Custom logging functions</h2>
+<p>Logging can be implemented without any dependencies. The base package has many tools we can use to write a custom logging function. Below is an example logging utility function we could add to the <code>R/</code> folder and use in our app(s):</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="annotated-cell-2"><pre class="sourceCode r code-annotation-code code-with-copy code-annotated"><code class="sourceCode r"><span id="annotated-cell-2-1"><a href="#annotated-cell-2-1" aria-hidden="true" tabindex="-1"></a><span class="co">#' Log Application Behaviors</span></span>
+<span id="annotated-cell-2-2"><a href="#annotated-cell-2-2" aria-hidden="true" tabindex="-1"></a><span class="co">#'</span></span>
+<span id="annotated-cell-2-3"><a href="#annotated-cell-2-3" aria-hidden="true" tabindex="-1"></a><span class="co">#' A simple logging function for logging Shiny events and behaviors.</span></span>
+<span id="annotated-cell-2-4"><a href="#annotated-cell-2-4" aria-hidden="true" tabindex="-1"></a><span class="co">#' </span></span>
+<span id="annotated-cell-2-5"><a href="#annotated-cell-2-5" aria-hidden="true" tabindex="-1"></a><span class="co">#' @param message log message</span></span>
+<span id="annotated-cell-2-6"><a href="#annotated-cell-2-6" aria-hidden="true" tabindex="-1"></a><span class="co">#' @param log_file name of log file (defaults to "app_log.txt")</span></span>
+<span id="annotated-cell-2-7"><a href="#annotated-cell-2-7" aria-hidden="true" tabindex="-1"></a><span class="co">#' @param save print or save log file</span></span>
+<span id="annotated-cell-2-8"><a href="#annotated-cell-2-8" aria-hidden="true" tabindex="-1"></a><span class="co">#'</span></span>
+<span id="annotated-cell-2-9"><a href="#annotated-cell-2-9" aria-hidden="true" tabindex="-1"></a><span class="co">#' @return A log message to the console and the `log_file`.</span></span>
+<span id="annotated-cell-2-10"><a href="#annotated-cell-2-10" aria-hidden="true" tabindex="-1"></a><span class="co">#'</span></span>
+<span id="annotated-cell-2-11"><a href="#annotated-cell-2-11" aria-hidden="true" tabindex="-1"></a><span class="co">#' @family **Utility Functions**</span></span>
+<span id="annotated-cell-2-12"><a href="#annotated-cell-2-12" aria-hidden="true" tabindex="-1"></a><span class="co">#' </span></span>
+<span id="annotated-cell-2-13"><a href="#annotated-cell-2-13" aria-hidden="true" tabindex="-1"></a><span class="co">#'</span></span>
+<span id="annotated-cell-2-14"><a href="#annotated-cell-2-14" aria-hidden="true" tabindex="-1"></a><span class="co">#' @examples</span></span>
+<span id="annotated-cell-2-15"><a href="#annotated-cell-2-15" aria-hidden="true" tabindex="-1"></a><span class="co">#' if (interactive()) {</span></span>
+<span id="annotated-cell-2-16"><a href="#annotated-cell-2-16" aria-hidden="true" tabindex="-1"></a><span class="co">#'   log_message("message")</span></span>
+<span id="annotated-cell-2-17"><a href="#annotated-cell-2-17" aria-hidden="true" tabindex="-1"></a><span class="co">#' }</span></span>
+<span id="annotated-cell-2-18"><a href="#annotated-cell-2-18" aria-hidden="true" tabindex="-1"></a><span class="co">#' </span></span>
+<span id="annotated-cell-2-19"><a href="#annotated-cell-2-19" aria-hidden="true" tabindex="-1"></a><span class="co">#' @export</span></span>
+<span id="annotated-cell-2-20"><a href="#annotated-cell-2-20" aria-hidden="true" tabindex="-1"></a>log_message <span class="ot">&lt;-</span> <span class="cf">function</span>(message, <span class="at">log_file =</span> <span class="st">"logs/app_log.txt"</span>, <span class="at">save =</span> <span class="cn">FALSE</span>) {</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-2" data-target-annotation="1">1</button><span id="annotated-cell-2-21" class="code-annotation-target"><a href="#annotated-cell-2-21" aria-hidden="true" tabindex="-1"></a>  log_dir <span class="ot">&lt;-</span> <span class="fu">dirname</span>(log_file)</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-2" data-target-annotation="2">2</button><span id="annotated-cell-2-22" class="code-annotation-target"><a href="#annotated-cell-2-22" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">dir.exists</span>(log_dir)) {</span>
+<span id="annotated-cell-2-23"><a href="#annotated-cell-2-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">dir.create</span>(log_dir, <span class="at">recursive =</span> <span class="cn">TRUE</span>)</span>
+<span id="annotated-cell-2-24"><a href="#annotated-cell-2-24" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="annotated-cell-2-25"><a href="#annotated-cell-2-25" aria-hidden="true" tabindex="-1"></a>  timestamp <span class="ot">&lt;-</span> <span class="fu">format</span>(<span class="fu">Sys.time</span>(), <span class="st">"%Y-%m-%d %H:%M:%S"</span>)</span>
+<span id="annotated-cell-2-26"><a href="#annotated-cell-2-26" aria-hidden="true" tabindex="-1"></a>  <span class="co"># log entry</span></span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-2" data-target-annotation="3">3</button><span id="annotated-cell-2-27" class="code-annotation-target"><a href="#annotated-cell-2-27" aria-hidden="true" tabindex="-1"></a>  log_entry <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(<span class="st">"[%s] %s"</span>, timestamp, message)</span>
+<span id="annotated-cell-2-28"><a href="#annotated-cell-2-28" aria-hidden="true" tabindex="-1"></a>  <span class="co"># save </span></span>
+<span id="annotated-cell-2-29"><a href="#annotated-cell-2-29" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (save) {</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-2" data-target-annotation="4">4</button><span id="annotated-cell-2-30" class="code-annotation-target"><a href="#annotated-cell-2-30" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tryCatch</span>({</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-2" data-target-annotation="5">5</button><span id="annotated-cell-2-31" class="code-annotation-target"><a href="#annotated-cell-2-31" aria-hidden="true" tabindex="-1"></a>        <span class="fu">cat</span>(log_entry, <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>, <span class="at">file =</span> log_file, <span class="at">append =</span> <span class="cn">TRUE</span>)</span>
+<span id="annotated-cell-2-32"><a href="#annotated-cell-2-32" aria-hidden="true" tabindex="-1"></a>      },</span>
+<span id="annotated-cell-2-33"><a href="#annotated-cell-2-33" aria-hidden="true" tabindex="-1"></a>      <span class="at">error =</span> <span class="cf">function</span>(e) {</span>
+<span id="annotated-cell-2-34"><a href="#annotated-cell-2-34" aria-hidden="true" tabindex="-1"></a>        <span class="fu">warning</span>(<span class="fu">sprintf</span>(<span class="st">"Failed to write to log file '%s': %s"</span>, log_file, e<span class="sc">$</span>message)) </span>
+<span id="annotated-cell-2-35"><a href="#annotated-cell-2-35" aria-hidden="true" tabindex="-1"></a>      })</span>
+<span id="annotated-cell-2-36"><a href="#annotated-cell-2-36" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="annotated-cell-2-37"><a href="#annotated-cell-2-37" aria-hidden="true" tabindex="-1"></a>  <span class="co"># print</span></span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-2" data-target-annotation="6">6</button><span id="annotated-cell-2-38" class="code-annotation-target"><a href="#annotated-cell-2-38" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(log_entry)</span>
+<span id="annotated-cell-2-39"><a href="#annotated-cell-2-39" aria-hidden="true" tabindex="-1"></a>}</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-annotation">
+<dl class="code-annotation-container-hidden code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-2" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-2" data-code-lines="21" data-code-annotation="1">This function uses <code>dirname()</code> to dynamically extract the directory path from <code>log_file</code>.<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-2" data-target-annotation="2">2</dt>
+<dd>
+<span data-code-cell="annotated-cell-2" data-code-lines="22,24" data-code-annotation="2"><code>dir.exists()</code> and <code>dir.create()</code> ensure the folder exists (<code>recursive = TRUE</code> is for nested directories).<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-2" data-target-annotation="3">3</dt>
+<dd>
+<span data-code-cell="annotated-cell-2" data-code-lines="27" data-code-annotation="3">The <code>sprintf()</code> function is preferred over <code>cat()</code> or <code>paste0()</code> for clearer and faster string formatting.<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-2" data-target-annotation="4">4</dt>
+<dd>
+<span data-code-cell="annotated-cell-2" data-code-lines="30,35" data-code-annotation="4">The file-writing logic is wrapped in <code>tryCatch()</code> to gracefully handle errors (e.g., file permission issues), and we’ve added a <code>warning()</code> if writing to the log file fails.<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-2" data-target-annotation="5">5</dt>
+<dd>
+<span data-code-cell="annotated-cell-2" data-code-lines="31" data-code-annotation="5">We explicitly add the newline (<code>\n</code>) directly in the <code>cat()</code> function, ensuring the log entry is written properly even if message lacks a newline.<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-2" data-target-annotation="6">6</dt>
+<dd>
+<span data-code-cell="annotated-cell-2" data-code-lines="38" data-code-annotation="6">Finally, the <code>message()</code> is preferred here instead of <code>print()</code> for consistent output formatting.</span>
+</dd>
+</dl>
+</div>
+</div>
+<section id="log-error-handling" class="level3" data-number="13.2.1">
+<h3 data-number="13.2.1" class="anchored" data-anchor-id="log-error-handling"><span class="header-section-number">13.2.1</span> Log error handling</h3>
+<p>The <code>tryCatch</code> function can be used by itself to log unexpected errors gracefully. Below is an example of combining it with our <code>log_message()</code> function and <code>reactive()</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>safe_reactive <span class="ot">&lt;-</span> <span class="fu">reactive</span>({</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tryCatch</span>({</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Code that might throw an error</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>        <span class="fu">log_message</span>(<span class="st">"Running safe reactive expression"</span>, <span class="at">save =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>        <span class="co"># some code that might fail</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    }, <span class="at">error =</span> <span class="cf">function</span>(e) {</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>        <span class="fu">log_message</span>(<span class="st">"An error occurred: {e$message}"</span>, <span class="at">save =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>        <span class="cn">NULL</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    })</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Adapted to use in the <code>inst/tidy-movies/</code> app, the <code>tryCatch()</code> function might looks like:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="annotated-cell-4"><pre class="sourceCode r code-annotation-code code-with-copy code-annotated"><code class="sourceCode r"><span id="annotated-cell-4-1"><a href="#annotated-cell-4-1" aria-hidden="true" tabindex="-1"></a>all_data <span class="ot">&lt;-</span> <span class="fu">tryCatch</span>({</span>
+<span id="annotated-cell-4-2"><a href="#annotated-cell-4-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">log_message</span>(</span>
+<span id="annotated-cell-4-3"><a href="#annotated-cell-4-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">message =</span> <span class="st">"Loading fst data"</span>, </span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-4" data-target-annotation="1">1</button><span id="annotated-cell-4-4" class="code-annotation-target"><a href="#annotated-cell-4-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">log_file =</span> <span class="st">"_logs/ggp2_log.txt"</span>,</span>
+<span id="annotated-cell-4-5"><a href="#annotated-cell-4-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">save =</span> <span class="cn">TRUE</span>)</span>
+<span id="annotated-cell-4-6"><a href="#annotated-cell-4-6" aria-hidden="true" tabindex="-1"></a>  fst<span class="sc">::</span><span class="fu">read_fst</span>(<span class="st">"tidy_movies.fst"</span>)</span>
+<span id="annotated-cell-4-7"><a href="#annotated-cell-4-7" aria-hidden="true" tabindex="-1"></a>}, <span class="at">error =</span> <span class="cf">function</span>(e) {</span>
+<span id="annotated-cell-4-8"><a href="#annotated-cell-4-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">log_message</span>(</span>
+<span id="annotated-cell-4-9"><a href="#annotated-cell-4-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">message =</span> <span class="fu">sprintf</span>(<span class="st">"Error loading fst data: %s"</span>, e<span class="sc">$</span>message), </span>
+<span id="annotated-cell-4-10"><a href="#annotated-cell-4-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">log_file =</span> <span class="st">"_logs/ggp2_log.txt"</span>,</span>
+<span id="annotated-cell-4-11"><a href="#annotated-cell-4-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">save =</span> <span class="cn">TRUE</span>)</span>
+<span id="annotated-cell-4-12"><a href="#annotated-cell-4-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stop</span>(<span class="st">"Data loading failed."</span>)</span>
+<span id="annotated-cell-4-13"><a href="#annotated-cell-4-13" aria-hidden="true" tabindex="-1"></a>})</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-annotation">
+<dl class="code-annotation-container-hidden code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-4" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-4" data-code-lines="4,10" data-code-annotation="1">Saving to <code>_logs</code> because it’s easier to separate from other app folders.</span>
+</dd>
+</dl>
+</div>
+</div>
+<p>After loading and installing our package, the output from the log is saved in the log file (and printed to the <strong>Console</strong>) when our app stops running.</p>
+</section>
+<section id="logging-events" class="level3" data-number="13.2.2">
+<h3 data-number="13.2.2" class="anchored" data-anchor-id="logging-events"><span class="header-section-number">13.2.2</span> Logging events</h3>
+<p>Integrate logging into the Shiny application by inserting log messages at critical points, such creating reactive expressions. For example, the <code>inst/tidy-movies</code> app creates the <code>graph_data()</code> reactive in the <code>dev_mod_scatter_server()</code>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># build reactive data based on missing checkbox input</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>graph_data <span class="ot">&lt;-</span> <span class="fu">reactive</span>({</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (input<span class="sc">$</span>missing) {</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    graph_data <span class="ot">&lt;-</span> tidyr<span class="sc">::</span><span class="fu">drop_na</span>(<span class="at">data =</span> all_data)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    graph_data <span class="ot">&lt;-</span> all_data</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>}) <span class="sc">|&gt;</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="co"># bind to input to update when it changes</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bindEvent</span>(input<span class="sc">$</span>missing)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>We can update the <code>graph_data</code> reactive using <code>log_message()</code> and <code>tryCatch()</code> to log if the reactive is created successfully.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>graph_data <span class="ot">&lt;-</span> <span class="fu">reactive</span>({</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tryCatch</span>({</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (input<span class="sc">$</span>missing) {</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>      <span class="fu">log_message</span>(<span class="st">"Removing missing values."</span>, </span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>                  <span class="at">log_file =</span> <span class="st">"_logs/ggp2_log.txt"</span>,</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>                  <span class="at">save =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>      graph_data <span class="ot">&lt;-</span> tidyr<span class="sc">::</span><span class="fu">drop_na</span>(<span class="at">data =</span> all_data)</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>      <span class="fu">log_message</span>(<span class="st">"Using all data."</span>, </span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>                  <span class="at">log_file =</span> <span class="st">"_logs/ggp2_log.txt"</span>,</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>                  <span class="at">save =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>      graph_data <span class="ot">&lt;-</span> all_data</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>    graph_data</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>  }, <span class="at">error =</span> <span class="cf">function</span>(e) {</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">log_message</span>(</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>      <span class="fu">sprintf</span>(<span class="st">"Error processing graph data: %s"</span>, e<span class="sc">$</span>message), </span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>      <span class="at">log_file =</span> <span class="st">"_logs/ggp2_log.txt"</span></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>    <span class="cn">NULL</span></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>}) <span class="sc">|&gt;</span> <span class="fu">bindEvent</span>(input<span class="sc">$</span>missing)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>After we’ve loaded and installed the changes to sap, we can launch the <code>inst/tidy-movies</code> app with:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">launch_app</span>(<span class="st">"ggp2"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>We won’t see our logs in the <strong>Console</strong> until we stop the app:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/log_ggp2_log_reactive_base.png" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="Log messages from graph_data()"><img src="images/log_ggp2_log_reactive_base.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Log messages from graph_data()"></a></p>
+</figure>
+</div>
+<figcaption>Log messages from <code>graph_data()</code></figcaption>
+</figure>
+</div>
+<p>The log output tells us the application loaded the <code>.fst</code> data and removed the missing values, but we should also check what happens when we change something, so we’ll adapt the code used to create our <code>inputs()</code> reactive with the <code>log_message()</code> function:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="annotated-cell-8"><pre class="sourceCode r code-annotation-code code-with-copy code-annotated"><code class="sourceCode r"><span id="annotated-cell-8-1"><a href="#annotated-cell-8-1" aria-hidden="true" tabindex="-1"></a>    inputs <span class="ot">&lt;-</span> <span class="fu">reactive</span>({</span>
+<span id="annotated-cell-8-2"><a href="#annotated-cell-8-2" aria-hidden="true" tabindex="-1"></a>      <span class="fu">tryCatch</span>({</span>
+<span id="annotated-cell-8-3"><a href="#annotated-cell-8-3" aria-hidden="true" tabindex="-1"></a>        plot_title <span class="ot">&lt;-</span> tools<span class="sc">::</span><span class="fu">toTitleCase</span>(<span class="fu">aes_inputs</span>()<span class="sc">$</span>plot_title)</span>
+<span id="annotated-cell-8-4"><a href="#annotated-cell-8-4" aria-hidden="true" tabindex="-1"></a>        </span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-8" data-target-annotation="1">1</button><span id="annotated-cell-8-5" class="code-annotation-target"><a href="#annotated-cell-8-5" aria-hidden="true" tabindex="-1"></a>        <span class="fu">log_message</span>(</span>
+<span id="annotated-cell-8-6"><a href="#annotated-cell-8-6" aria-hidden="true" tabindex="-1"></a>          <span class="fu">sprintf</span>(<span class="st">"Processing plot title: '%s'"</span>, plot_title), </span>
+<span id="annotated-cell-8-7"><a href="#annotated-cell-8-7" aria-hidden="true" tabindex="-1"></a>          <span class="at">log_file =</span> <span class="st">"_logs/ggp2_log.txt"</span>)</span>
+<span id="annotated-cell-8-8"><a href="#annotated-cell-8-8" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="annotated-cell-8-9"><a href="#annotated-cell-8-9" aria-hidden="true" tabindex="-1"></a>          input_list <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="annotated-cell-8-10"><a href="#annotated-cell-8-10" aria-hidden="true" tabindex="-1"></a>            <span class="at">x =</span> <span class="fu">var_inputs</span>()<span class="sc">$</span>x,</span>
+<span id="annotated-cell-8-11"><a href="#annotated-cell-8-11" aria-hidden="true" tabindex="-1"></a>            <span class="at">y =</span> <span class="fu">var_inputs</span>()<span class="sc">$</span>y,</span>
+<span id="annotated-cell-8-12"><a href="#annotated-cell-8-12" aria-hidden="true" tabindex="-1"></a>            <span class="at">z =</span> <span class="fu">var_inputs</span>()<span class="sc">$</span>z,</span>
+<span id="annotated-cell-8-13"><a href="#annotated-cell-8-13" aria-hidden="true" tabindex="-1"></a>            <span class="at">alpha =</span> <span class="fu">aes_inputs</span>()<span class="sc">$</span>alpha,</span>
+<span id="annotated-cell-8-14"><a href="#annotated-cell-8-14" aria-hidden="true" tabindex="-1"></a>            <span class="at">size =</span> <span class="fu">aes_inputs</span>()<span class="sc">$</span>size,</span>
+<span id="annotated-cell-8-15"><a href="#annotated-cell-8-15" aria-hidden="true" tabindex="-1"></a>            <span class="at">plot_title =</span> plot_title</span>
+<span id="annotated-cell-8-16"><a href="#annotated-cell-8-16" aria-hidden="true" tabindex="-1"></a>          )</span>
+<span id="annotated-cell-8-17"><a href="#annotated-cell-8-17" aria-hidden="true" tabindex="-1"></a>        </span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-8" data-target-annotation="2">2</button><span id="annotated-cell-8-18" class="code-annotation-target"><a href="#annotated-cell-8-18" aria-hidden="true" tabindex="-1"></a>        <span class="fu">log_message</span>(</span>
+<span id="annotated-cell-8-19"><a href="#annotated-cell-8-19" aria-hidden="true" tabindex="-1"></a>          <span class="fu">sprintf</span>(<span class="st">"Inputs constructed: %s"</span>, </span>
+<span id="annotated-cell-8-20"><a href="#annotated-cell-8-20" aria-hidden="true" tabindex="-1"></a>                  <span class="fu">paste</span>(<span class="fu">names</span>(input_list), input_list, <span class="at">sep =</span> <span class="st">"="</span>, <span class="at">collapse =</span> <span class="st">", "</span>)</span>
+<span id="annotated-cell-8-21"><a href="#annotated-cell-8-21" aria-hidden="true" tabindex="-1"></a>                ),</span>
+<span id="annotated-cell-8-22"><a href="#annotated-cell-8-22" aria-hidden="true" tabindex="-1"></a>                <span class="at">log_file =</span> <span class="st">"_logs/ggp2_log.txt"</span>,</span>
+<span id="annotated-cell-8-23"><a href="#annotated-cell-8-23" aria-hidden="true" tabindex="-1"></a>                <span class="at">save =</span> <span class="cn">TRUE</span>)</span>
+<span id="annotated-cell-8-24"><a href="#annotated-cell-8-24" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="annotated-cell-8-25"><a href="#annotated-cell-8-25" aria-hidden="true" tabindex="-1"></a>        input_list</span>
+<span id="annotated-cell-8-26"><a href="#annotated-cell-8-26" aria-hidden="true" tabindex="-1"></a>      }, <span class="at">error =</span> <span class="cf">function</span>(e) {</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-8" data-target-annotation="3">3</button><span id="annotated-cell-8-27" class="code-annotation-target"><a href="#annotated-cell-8-27" aria-hidden="true" tabindex="-1"></a>        <span class="fu">log_message</span>(</span>
+<span id="annotated-cell-8-28"><a href="#annotated-cell-8-28" aria-hidden="true" tabindex="-1"></a>          <span class="fu">sprintf</span>(<span class="st">"Error in processing inputs: %s"</span>, <span class="fu">conditionMessage</span>(e)),</span>
+<span id="annotated-cell-8-29"><a href="#annotated-cell-8-29" aria-hidden="true" tabindex="-1"></a>          <span class="at">log_file =</span> <span class="st">"_logs/ggp2_log.txt"</span>,</span>
+<span id="annotated-cell-8-30"><a href="#annotated-cell-8-30" aria-hidden="true" tabindex="-1"></a>          <span class="at">save =</span> <span class="cn">TRUE</span>)</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-8" data-target-annotation="4">4</button><span id="annotated-cell-8-31" class="code-annotation-target"><a href="#annotated-cell-8-31" aria-hidden="true" tabindex="-1"></a>        <span class="cn">NULL</span></span>
+<span id="annotated-cell-8-32"><a href="#annotated-cell-8-32" aria-hidden="true" tabindex="-1"></a>      })</span>
+<span id="annotated-cell-8-33"><a href="#annotated-cell-8-33" aria-hidden="true" tabindex="-1"></a>    })</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-annotation">
+<dl class="code-annotation-container-hidden code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-8" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-8" data-code-lines="5,7" data-code-annotation="1">Log the plot title.<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-8" data-target-annotation="2">2</dt>
+<dd>
+<span data-code-cell="annotated-cell-8" data-code-lines="18,23" data-code-annotation="2">Log the final input list.</span>
+</dd>
+<dt data-target-cell="annotated-cell-8" data-target-annotation="3">3</dt>
+<dd>
+<span data-code-cell="annotated-cell-8" data-code-lines="27,30" data-code-annotation="3">Log the error if anything goes wrong.<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-8" data-target-annotation="4">4</dt>
+<dd>
+<span data-code-cell="annotated-cell-8" data-code-lines="31" data-code-annotation="4">Return <code>NULL</code> on error to prevent breaking downstream dependencies.</span>
+</dd>
+</dl>
+</div>
+</div>
+<p>After loading and installing sap, we launch the <code>inst/tidy-movies</code> app again, but this time we un-check the remove missing checkbox and add a new title before stopping the application.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">launch_app</span>(<span class="st">"ggp2"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/log_ggp2_log_reactive_inputs_base.png" class="lightbox" data-gallery="quarto-lightbox-gallery-3" title="Log messages from inputs()"><img src="images/log_ggp2_log_reactive_inputs_base.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Log messages from inputs()"></a></p>
+</figure>
+</div>
+<figcaption>Log messages from <code>inputs()</code></figcaption>
+</figure>
+</div>
+<p>To view the log file, we need to use <code>system.file()</code> (we’re launching the app from the <em>installed</em> location, not the version we’re developing in the <code>inst/tidy-movies/</code> folder). I’ve added <code>readLines()</code> and <code>writeLines()</code> so it prints nicely to the <strong>Console</strong>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">system.file</span>(<span class="st">'tidy-movies'</span>, <span class="st">'_logs'</span>, <span class="st">'ggp2_log.txt'</span>, </span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>            <span class="at">package =</span> <span class="st">'sap'</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>            <span class="fu">readLines</span>() <span class="sc">|&gt;</span> </span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>            <span class="fu">writeLines</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>[2025-01-22 09:56:07] Loading fst data </span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>[2025-01-22 09:56:07] Removing missing values. </span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>[2025-01-22 09:56:07] Processing plot title: '' </span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>[2025-01-22 09:56:07] Inputs constructed: x=year, y=budget, z=mpaa, alpha=0.5, size=2, plot_title= </span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>[2025-01-22 09:56:18] Using all data. </span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>[2025-01-22 09:56:23] Processing plot title: 'NE' </span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>[2025-01-22 09:56:23] Inputs constructed: x=year, y=budget, z=mpaa, alpha=0.5, size=2, plot_title=NE </span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>[2025-01-22 09:56:26] Processing plot title: 'NEW TITLE' </span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>[2025-01-22 09:56:26] Inputs constructed: x=year, y=budget, z=mpaa, alpha=0.5, size=2, plot_title=NEW TITLE </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>In practice, we’d continue using <code>tryCatch()</code> and <code>log_message()</code> to capture logging messages for application startup, loading data/connecting to databases, API calls, and when using Shiny’s internal validation/error handling functions.</p>
+<p>In the next section, we’re going to explore using add-on packages to implement logging in our app-package.</p>
+</section>
+</section>
+<section id="logger-setup" class="level2" data-number="13.3">
+<h2 data-number="13.3" class="anchored" data-anchor-id="logger-setup"><span class="header-section-number">13.3</span> <span style="font-size: 1.05em;"><code>logger</code></span> setup</h2>
+<div class="callout callout-style-default callout-note no-icon callout-titled">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-4-contents" aria-controls="callout-4" aria-expanded="true" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span style="font-weight: bold; font-size: 1.15em;">Logging frameworks</span>
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-4" class="callout-4-contents callout-collapse collapse show">
+<div class="callout-body-container callout-body">
+<div style="font-size: 1.10em; color: #282b2d;">
+<p>The R ecosystem offers several libraries for logging.</p>
+<p>The most popular options are:</p>
 <ul>
-<li><p><code>futile.logger</code>: A lightweight and flexible logging package.</p></li>
-<li><p><code>logger</code>: A modern, extensible, and user-friendly library.</p></li>
-<li><p><code>log4r</code>: Inspired by the Java log4j library, suitable for structured logging.</p></li>
+<li><p><a href="https://github.com/zatonovo/futile.logger"><code>futile.logger</code></a>: A lightweight and flexible logging package.</p></li>
+<li><p><a href="https://daroczig.github.io/logger/index.html"><code>logger</code></a>: A modern, extensible, and user-friendly library.</p></li>
+<li><p><a href="https://github.com/r-lib/log4r"><code>log4r</code></a>: Inspired by the <a href="https://logging.apache.org/log4j/2.x/index.html">Java <code>log4j</code> library</a>, suitable for structured logging.</p></li>
 </ul>
+</div>
+</div>
+</div>
+</div>
+<p>We’ll use the <a href="https://daroczig.github.io/logger/index.html"><code>logger</code> package</a> because it is simple, easy to integrate with Shiny, and extensible.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">"pak"</span>)</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>pak<span class="sc">::</span><span class="fu">pak</span>(<span class="st">"daroczig/logger"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>We also need to add <code>logger</code> to the package dependencies in the <code>DESCRIPTION</code> file:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_package</span>(<span class="st">'logger'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>We’ll use the <code>pkg::fun()</code> syntax to avoid adding <code>@import</code> or <code>@importFrom</code> <code>roxygen</code> tags.</p>
+<section id="log-levels" class="level3" data-number="13.3.1">
+<h3 data-number="13.3.1" class="anchored" data-anchor-id="log-levels"><span class="header-section-number">13.3.1</span> Log levels</h3>
+<p>The logger package has a few configurations to be aware of for package development. We’ll start with a basic example:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>name <span class="ot">&lt;-</span> <span class="st">"world"</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>logger<span class="sc">::</span><span class="fu">log_info</span>(<span class="st">'Hello, {name}'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>INFO [2025-01-22 11:07:52] Hello, world</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>We can see a nicely formatted log message, and by default <code>logger</code> supports <a href="https://daroczig.github.io/logger/articles/customize_logger.html#log-message-formatter-functions"><code>glue</code> syntax</a>. However, the following code doesn’t return a log message to the Console:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>logger<span class="sc">::</span><span class="fu">log_debug</span>(<span class="st">'Hello, {name}'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>If we check the <code>log_threshold()</code>, we see it’s set to <code>INFO</code>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>logger<span class="sc">::</span><span class="fu">log_threshold</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>Log level: INFO</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The <code>logger</code> package supports the following log levels:</p>
+<ol start="0" type="1">
+<li><p><code>OFF</code>: Nothing recorded</p></li>
+<li><p><code>FATAL</code>: Catastrophic error (i.e., stops application or causes crash).</p></li>
+<li><p><code>ERROR</code>: These errors need attention.</p></li>
+<li><p><code>WARN</code>: Warnings about potential issues that could become errors.</p></li>
+<li><p><code>SUCCESS</code>: Explicit wins.</p></li>
+<li><p><code>INFO</code>: General info about app operations.</p></li>
+<li><p><code>DEBUG</code>: “<em>A general debugging event.</em>”</p></li>
+<li><p><code>TRACE</code>: “<em>A fine-grained debug message, typically capturing the flow through the application.</em>”<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a></p></li>
+</ol>
+<p>We can set the log threshold dynamically to control the verbosity of logs:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>logger<span class="sc">::</span><span class="fu">log_threshold</span>(DEBUG) <span class="co"># verbose logging for development</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>logger<span class="sc">::</span><span class="fu">log_threshold</span>(WARN)  <span class="co"># only warnings and errors for production</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 </section>
-<section id="setting-up-logging-in-an-r-package" class="level2" data-number="13.3">
-<h2 data-number="13.3" class="anchored" data-anchor-id="setting-up-logging-in-an-r-package"><span class="header-section-number">13.3</span> Setting Up Logging in an R Package</h2>
-<p>To integrate logging into your Shiny application within an R package, follow these steps:</p>
-<section id="step-1-install-and-load-the-logger-package" class="level3" data-number="13.3.1">
-<h3 data-number="13.3.1" class="anchored" data-anchor-id="step-1-install-and-load-the-logger-package"><span class="header-section-number">13.3.1</span> Step 1: Install and Load the <code>logger</code> Package</h3>
-<p>Add <code>logger</code> to your package dependencies in the <code>DESCRIPTION</code> file:</p>
-<pre class="plaintext"><code>Imports:
-    logger</code></pre>
-<p>Then, include it in your package’s namespace file (<code>NAMESPACE</code>):</p>
-<pre class="plaintext"><code>import(logger)</code></pre>
-</section>
-<section id="step-2-initialize-logging" class="level3" data-number="13.3.2">
-<h3 data-number="13.3.2" class="anchored" data-anchor-id="step-2-initialize-logging"><span class="header-section-number">13.3.2</span> Step 2: Initialize Logging</h3>
-<p>In your package, set up the logging configuration in the <code>onLoad</code> function of the <code>zzz.R</code> file:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>.onLoad <span class="ot">&lt;-</span> <span class="cf">function</span>(libname, pkgname) {</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Configure logger: Log messages to the console and a file</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">log_appender</span>(appender_console)</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">log_appender</span>(<span class="fu">appender_file</span>(<span class="st">"shiny_app.log"</span>))</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">log_threshold</span>(INFO) <span class="co"># Set default log level to INFO</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<section id="custom-logger-functions" class="level3" data-number="13.3.2">
+<h3 data-number="13.3.2" class="anchored" data-anchor-id="custom-logger-functions"><span class="header-section-number">13.3.2</span> Custom <span style="font-size: 1.05em;"><code>logger</code></span> functions</h3>
+<p>Custom logging functions using the <code>logger</code> package allow you to create tailored log messages, apply specific formats, and handle log outputs in a consistent manner. We’ll write an <code>add_log()</code> utility function for inserting <code>logger</code>-style logs in our application.</p>
+<p><code>log_appender</code>:</p>
+<p><code>log_formatter</code>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>add_log <span class="ot">&lt;-</span> <span class="cf">function</span>(message, <span class="at">level =</span> <span class="st">"INFO"</span>, <span class="at">log_file =</span> <span class="cn">NULL</span>) {</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>  logger<span class="sc">::</span><span class="fu">log_appender</span>(logger<span class="sc">::</span>appender_console)</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(log_file)) {</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>    logger<span class="sc">::</span><span class="fu">log_appender</span>(logger<span class="sc">::</span><span class="fu">appender_tee</span>(log_file))</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>  logger<span class="sc">::</span><span class="fu">log_formatter</span>(logger<span class="sc">::</span>formatter_glue)</span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>  <span class="cf">switch</span>(</span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>    level,</span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a>    <span class="st">"FATAL"</span> <span class="ot">=</span> logger<span class="sc">::</span><span class="fu">log_fatal</span>(<span class="st">"{message}"</span>),</span>
+<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a>    <span class="st">"ERROR"</span> <span class="ot">=</span> logger<span class="sc">::</span><span class="fu">log_error</span>(<span class="st">"{message}"</span>),</span>
+<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a>    <span class="st">"WARN"</span> <span class="ot">=</span> logger<span class="sc">::</span><span class="fu">log_warn</span>(<span class="st">"{message}"</span>),</span>
+<span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a>    <span class="st">"SUCCESS"</span> <span class="ot">=</span> logger<span class="sc">::</span><span class="fu">log_success</span>(<span class="st">"{message}"</span>),</span>
+<span id="cb21-17"><a href="#cb21-17" aria-hidden="true" tabindex="-1"></a>    <span class="st">"INFO"</span> <span class="ot">=</span> logger<span class="sc">::</span><span class="fu">log_info</span>(<span class="st">"{message}"</span>),</span>
+<span id="cb21-18"><a href="#cb21-18" aria-hidden="true" tabindex="-1"></a>    <span class="st">"DEBUG"</span> <span class="ot">=</span> logger<span class="sc">::</span><span class="fu">log_debug</span>(<span class="st">"{message}"</span>),</span>
+<span id="cb21-19"><a href="#cb21-19" aria-hidden="true" tabindex="-1"></a>    <span class="st">"TRACE"</span> <span class="ot">=</span> logger<span class="sc">::</span><span class="fu">log_trace</span>(<span class="st">"{message}"</span>),</span>
+<span id="cb21-20"><a href="#cb21-20" aria-hidden="true" tabindex="-1"></a>    logger<span class="sc">::</span><span class="fu">log_info</span>(<span class="st">"{message}"</span>) </span>
+<span id="cb21-21"><a href="#cb21-21" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb21-22"><a href="#cb21-22" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Below are a few examples illustrating how to define and use our custom logging function in our Shiny apps. We’ll start with <code>mod_var_input_server()</code> function, which returns the variable inputs from the UI:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>mod_var_input_server <span class="ot">&lt;-</span> <span class="cf">function</span>(id) {</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">moduleServer</span>(id, <span class="cf">function</span>(input, output, session) {</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">observe</span>({</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>      message <span class="ot">&lt;-</span> <span class="fu">paste</span>(<span class="st">"User selected: X ="</span>, input<span class="sc">$</span>x, </span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>                       <span class="st">"Y ="</span>, input<span class="sc">$</span>y, </span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>                       <span class="st">"Color ="</span>, input<span class="sc">$</span>z)</span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>      <span class="fu">add_log</span>(<span class="at">message =</span> message, <span class="at">level =</span> <span class="st">"INFO"</span>, )</span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>    }) <span class="sc">|&gt;</span> </span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>      <span class="fu">bindEvent</span>(<span class="fu">c</span>(input<span class="sc">$</span>x, input<span class="sc">$</span>y, input<span class="sc">$</span>z))</span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(</span>
+<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a>      <span class="fu">reactive</span>({</span>
+<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a>        <span class="fu">list</span>(</span>
+<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a>          <span class="st">"x"</span> <span class="ot">=</span> input<span class="sc">$</span>x,</span>
+<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a>          <span class="st">"y"</span> <span class="ot">=</span> input<span class="sc">$</span>y,</span>
+<span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a>          <span class="st">"z"</span> <span class="ot">=</span> input<span class="sc">$</span>z</span>
+<span id="cb22-18"><a href="#cb22-18" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb22-19"><a href="#cb22-19" aria-hidden="true" tabindex="-1"></a>      })</span>
+<span id="cb22-20"><a href="#cb22-20" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb22-21"><a href="#cb22-21" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb22-22"><a href="#cb22-22" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="callout callout-style-default callout-tip no-icon callout-titled">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-5-contents" aria-controls="callout-5" aria-expanded="true" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span style="font-weight: bold; font-size: 1.15em;">Initialize logging</span>
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-5" class="callout-5-contents callout-collapse collapse show">
+<div class="callout-body-container callout-body">
+<div style="font-size: 1.10em; color: #282b2d;">
+<p>We can set up <code>logger</code>’s logging configuration in an <code>onLoad</code> function of the <code>zzz.R</code> file:</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>.onLoad <span class="ot">&lt;-</span> <span class="cf">function</span>(libname, pkgname) {</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>    <span class="co"># configure logger log messages to console</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>    logger<span class="sc">::</span><span class="fu">log_appender</span>(logger<span class="sc">::</span>appender_console)</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>    <span class="co"># configure logger log messages to file</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>    logger<span class="sc">::</span><span class="fu">log_appender</span>(logger<span class="sc">::</span><span class="fu">appender_file</span>(<span class="st">'sap_apps.log'</span>))</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>    <span class="co"># set default log level to DEBUG</span></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>    logger<span class="sc">::</span><span class="fu">log_threshold</span>(DEBUG) </span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>This setup ensures that logging is ready as soon as your package is loaded.</p>
+</div>
+</div>
+</div>
+</div>
 </section>
-<section id="step-3-logging-in-your-shiny-application" class="level3" data-number="13.3.3">
-<h3 data-number="13.3.3" class="anchored" data-anchor-id="step-3-logging-in-your-shiny-application"><span class="header-section-number">13.3.3</span> Step 3: Logging in Your Shiny Application</h3>
-<p>Integrate logging into the Shiny application by inserting log messages at critical points, such as:</p>
-<ul>
-<li><p>Application startup</p></li>
-<li><p>User interactions</p></li>
-<li><p>Reactive expressions</p></li>
-<li><p>Error handling</p></li>
-</ul>
-<p>Here’s an example:</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(shiny)</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(logger)</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Shiny UI</span></span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>ui <span class="ot">&lt;-</span> <span class="fu">fluidPage</span>(</span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">textInput</span>(<span class="st">"name"</span>, <span class="st">"Enter your name:"</span>),</span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">actionButton</span>(<span class="st">"submit"</span>, <span class="st">"Submit"</span>),</span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">textOutput</span>(<span class="st">"greeting"</span>)</span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Shiny Server</span></span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>server <span class="ot">&lt;-</span> <span class="cf">function</span>(input, output, session) {</span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">log_info</span>(<span class="st">"Shiny application has started."</span>) <span class="co"># Log app startup</span></span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">observeEvent</span>(input<span class="sc">$</span>submit, {</span>
-<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>        user_name <span class="ot">&lt;-</span> input<span class="sc">$</span>name</span>
-<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (<span class="fu">is.null</span>(user_name) <span class="sc">||</span> user_name <span class="sc">==</span> <span class="st">""</span>) {</span>
-<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>            <span class="fu">log_warn</span>(<span class="st">"User attempted to submit an empty name."</span>) <span class="co"># Log a warning</span></span>
-<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>            <span class="fu">showNotification</span>(<span class="st">"Please enter your name."</span>, <span class="at">type =</span> <span class="st">"error"</span>)</span>
-<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>        } <span class="cf">else</span> {</span>
-<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>            <span class="fu">log_info</span>(<span class="st">"User submitted name: {user_name}."</span>) <span class="co"># Log user input</span></span>
-<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>        }</span>
-<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>    })</span>
-<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>    output<span class="sc">$</span>greeting <span class="ot">&lt;-</span> <span class="fu">renderText</span>({</span>
-<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>        user_name <span class="ot">&lt;-</span> input<span class="sc">$</span>name</span>
-<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(user_name) <span class="sc">&amp;&amp;</span> user_name <span class="sc">!=</span> <span class="st">""</span>) {</span>
-<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>            <span class="fu">log_debug</span>(<span class="st">"Rendering greeting for: {user_name}."</span>) <span class="co"># Log debug information</span></span>
-<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>            <span class="fu">paste</span>(<span class="st">"Hello,"</span>, user_name)</span>
-<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>        } <span class="cf">else</span> {</span>
-<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>            <span class="st">""</span></span>
-<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>        }</span>
-<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a>    })</span>
-<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</section>
-<section id="step-4-log-error-handling" class="level3" data-number="13.3.4">
-<h3 data-number="13.3.4" class="anchored" data-anchor-id="step-4-log-error-handling"><span class="header-section-number">13.3.4</span> Step 4: Log Error Handling</h3>
-<p>Use <code>tryCatch</code> to log unexpected errors gracefully:</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>safe_reactive <span class="ot">&lt;-</span> <span class="fu">reactive</span>({</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tryCatch</span>({</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Code that might throw an error</span></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>        <span class="fu">log_info</span>(<span class="st">"Running safe reactive expression."</span>)</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>        <span class="fu">some_function_that_might_fail</span>()</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    }, <span class="at">error =</span> <span class="cf">function</span>(e) {</span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>        <span class="fu">log_error</span>(<span class="st">"An error occurred: {e$message}"</span>)</span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>        <span class="cn">NULL</span></span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    })</span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</section>
-<section id="configuring-log-levels" class="level3" data-number="13.3.5">
-<h3 data-number="13.3.5" class="anchored" data-anchor-id="configuring-log-levels"><span class="header-section-number">13.3.5</span> Configuring Log Levels</h3>
-<p>The <code>logger</code> package supports multiple log levels:</p>
-<ul>
-<li><p><code>DEBUG</code>: Detailed messages, mainly for development.</p></li>
-<li><p><code>INFO</code>: General information about app operations.</p></li>
-<li><p><code>WARN</code>: Warnings about potential issues.</p></li>
-<li><p><code>ERROR</code>: Errors that need attention.</p></li>
-</ul>
-<p>Adjust the log threshold dynamically to control verbosity:</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">log_threshold</span>(DEBUG) <span class="co"># Verbose logging for development</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">log_threshold</span>(WARN)  <span class="co"># Only warnings and errors for production</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</section>
-</section>
-<section id="storing-log-files" class="level2" data-number="13.4">
-<h2 data-number="13.4" class="anchored" data-anchor-id="storing-log-files"><span class="header-section-number">13.4</span> Storing Log files</h2>
+<section id="storing-log-files" class="level3" data-number="13.3.3">
+<h3 data-number="13.3.3" class="anchored" data-anchor-id="storing-log-files"><span class="header-section-number">13.3.3</span> Storing log files</h3>
 <p>By default, logs are written to the console, but you can also direct them to files, databases, or external logging systems.</p>
 <ul>
 <li>File-Based Logging: Logs are saved to a file specified by <code>appender_file()</code>:</li>
 </ul>
-<div class="sourceCode" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">log_appender</span>(<span class="fu">appender_file</span>(<span class="st">"app_logs.txt"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">log_appender</span>(<span class="fu">appender_file</span>(<span class="st">"app_logs.txt"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <ul>
 <li>Remote Logging: Integrate with external logging systems (e.g., ELK stack or Datadog) using custom appenders.</li>
 </ul>
 </section>
-<section id="logging-and-debugging" class="level2" data-number="13.5">
-<h2 data-number="13.5" class="anchored" data-anchor-id="logging-and-debugging"><span class="header-section-number">13.5</span> Logging and Debugging</h2>
-<p>Use logs during development to trace the flow of your application: 1. Run the app interactively and monitor console logs. 2. Use the logs to identify bottlenecks or unexpected behavior. 3. Write unit tests to check for logged messages using the <code>testthat</code> package:</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">test_that</span>(<span class="st">"Logging works"</span>, {</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">expect_message</span>(<span class="fu">log_info</span>(<span class="st">"Test log message"</span>), <span class="st">"Test log message"</span>)</span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
-<section id="best-practices" class="level2" data-number="13.6">
-<h2 data-number="13.6" class="anchored" data-anchor-id="best-practices"><span class="header-section-number">13.6</span> Best Practices</h2>
+<section id="logging-and-debugging" class="level2" data-number="13.4">
+<h2 data-number="13.4" class="anchored" data-anchor-id="logging-and-debugging"><span class="header-section-number">13.4</span> Logging and debugging</h2>
+<p>Use logs during development to trace the flow of your application: 1. Run the app interactively and monitor console logs. 2. Use the logs to identify bottlenecks or unexpected behavior. 3. Write unit tests to check for logged messages using the <code>testthat</code> package:</p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">test_that</span>(<span class="st">"Logging works"</span>, {</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">expect_message</span>(<span class="fu">log_info</span>(<span class="st">"Test log message"</span>), <span class="st">"Test log message"</span>)</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="best-practices" class="level2" data-number="13.5">
+<h2 data-number="13.5" class="anchored" data-anchor-id="best-practices"><span class="header-section-number">13.5</span> Best practices</h2>
 <ul>
 <li><p>Be Selective: Avoid logging sensitive user data.</p></li>
 <li><p>Be Clear: Use descriptive messages for easier debugging.</p></li>
@@ -749,11 +1165,18 @@ https://debruine.github.io/shinyintro/debugging.html
 <li><p>Archive Logs: Periodically archive old logs to prevent storage issues.</p></li>
 </ul>
 </section>
-<section id="recap" class="level2" data-number="13.7">
-<h2 data-number="13.7" class="anchored" data-anchor-id="recap"><span class="header-section-number">13.7</span> Recap</h2>
+<section id="recap" class="level2" data-number="13.6">
+<h2 data-number="13.6" class="anchored" data-anchor-id="recap"><span class="header-section-number">13.6</span> Recap</h2>
 <p>Logging is an invaluable tool for debugging Shiny applications in an R package. By strategically placing log messages and configuring log levels, you can gain deep insights into your application’s behavior. The techniques discussed in this chapter will help you efficiently diagnose and resolve issues, making your Shiny applications more robust and reliable.</p>
 
 
+</section>
+<section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn1"><p>See <a href="resources.html#sec-resources-inst-tidy-movies-app" class="quarto-xref"><span>Section 9.2</span></a> for more information on the previous architecture for this application.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p>The definitins for DEBUG and TRACE are directly from the <a href="https://daroczig.github.io/logger/reference/log_levels.html#details"><code>logger</code> documentation</a> because they’re reserved for detailed messages, and mainly for development.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
 </section>
 
 </main> <!-- /main -->
@@ -1226,8 +1649,40 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
   </div>
 </nav>
 </div> <!-- /content -->
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/mjfrigaard/shiny-app-pkgs/edit/main/logging.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/mjfrigaard/shiny-app-pkgs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer><script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
 
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/mjfrigaard/shiny-app-pkgs/edit/main/logging.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/mjfrigaard/shiny-app-pkgs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
+</body></html>
