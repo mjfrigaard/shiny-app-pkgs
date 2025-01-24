@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2025-01-22">
+<meta name="dcterms.date" content="2025-01-23">
 <meta name="description" content="Getting your app into an R package">
 
 <title>13&nbsp; Logging – Shiny App-Packages</title>
@@ -501,7 +501,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </ul></li>
   <li><a href="#custom-logging-functions" id="toc-custom-logging-functions" class="nav-link" data-scroll-target="#custom-logging-functions"><span class="header-section-number">13.2</span> Custom logging functions</a>
   <ul>
-  <li><a href="#log-error-handling" id="toc-log-error-handling" class="nav-link" data-scroll-target="#log-error-handling"><span class="header-section-number">13.2.1</span> Log error handling</a></li>
+  <li><a href="#error-handling" id="toc-error-handling" class="nav-link" data-scroll-target="#error-handling"><span class="header-section-number">13.2.1</span> Error handling</a></li>
   <li><a href="#logging-events" id="toc-logging-events" class="nav-link" data-scroll-target="#logging-events"><span class="header-section-number">13.2.2</span> Logging events</a></li>
   </ul></li>
   <li><a href="#logger-setup" id="toc-logger-setup" class="nav-link" data-scroll-target="#logger-setup"><span class="header-section-number">13.3</span> <span style="font-size: 1.05em;"><code>logger</code></span> setup</a>
@@ -532,7 +532,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">2025-01-22</p>
+      <p class="date">2025-01-23</p>
     </div>
   </div>
   
@@ -797,8 +797,8 @@ flowchart LR
 </dl>
 </div>
 </div>
-<section id="log-error-handling" class="level3" data-number="13.2.1">
-<h3 data-number="13.2.1" class="anchored" data-anchor-id="log-error-handling"><span class="header-section-number">13.2.1</span> Log error handling</h3>
+<section id="error-handling" class="level3" data-number="13.2.1">
+<h3 data-number="13.2.1" class="anchored" data-anchor-id="error-handling"><span class="header-section-number">13.2.1</span> Error handling</h3>
 <p>The <code>tryCatch</code> function can be used by itself to log unexpected errors gracefully. Below is an example of combining it with our <code>log_message()</code> function and <code>reactive()</code>.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>safe_reactive <span class="ot">&lt;-</span> <span class="fu">reactive</span>({</span>
@@ -812,7 +812,7 @@ flowchart LR
 <span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    })</span>
 <span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>Adapted to use in the <code>inst/tidy-movies/</code> app, the <code>tryCatch()</code> function might looks like:</p>
+<p>Adapted to use in the <code>inst/tidy-movies/</code> app, the <code>tryCatch()</code> function might look like:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="annotated-cell-4"><pre class="sourceCode r code-annotation-code code-with-copy code-annotated"><code class="sourceCode r"><span id="annotated-cell-4-1"><a href="#annotated-cell-4-1" aria-hidden="true" tabindex="-1"></a>all_data <span class="ot">&lt;-</span> <span class="fu">tryCatch</span>({</span>
 <span id="annotated-cell-4-2"><a href="#annotated-cell-4-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">log_message</span>(</span>
@@ -836,11 +836,21 @@ flowchart LR
 </dl>
 </div>
 </div>
-<p>After loading and installing our package, the output from the log is saved in the log file (and printed to the <strong>Console</strong>) when our app stops running.</p>
+<p>After loading and installing our package, the output from the log is saved in the log file (and printed to the <strong>Console</strong>) when our app stops running:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/log_ggp2_log_fst_data_base.png" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="Logging data upload with log_message()"><img src="images/log_ggp2_log_fst_data_base.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Logging data upload with log_message()"></a></p>
+</figure>
+</div>
+<figcaption>Logging data upload with <code>log_message()</code></figcaption>
+</figure>
+</div>
 </section>
 <section id="logging-events" class="level3" data-number="13.2.2">
 <h3 data-number="13.2.2" class="anchored" data-anchor-id="logging-events"><span class="header-section-number">13.2.2</span> Logging events</h3>
-<p>Integrate logging into the Shiny application by inserting log messages at critical points, such creating reactive expressions. For example, the <code>inst/tidy-movies</code> app creates the <code>graph_data()</code> reactive in the <code>dev_mod_scatter_server()</code>:</p>
+<p>We’ll continue to integrate log messages into the <code>inst/tidy-movies</code> app by inserting <code>log_message()</code> at critical points, such creating reactive expressions. For example, <code>dev_mod_scatter_server()</code> creates the <code>graph_data()</code> reactive based on the missing data checkbox user input:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># build reactive data based on missing checkbox input</span></span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>graph_data <span class="ot">&lt;-</span> <span class="fu">reactive</span>({</span>
@@ -853,7 +863,7 @@ flowchart LR
 <span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="co"># bind to input to update when it changes</span></span>
 <span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bindEvent</span>(input<span class="sc">$</span>missing)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>We can update the <code>graph_data</code> reactive using <code>log_message()</code> and <code>tryCatch()</code> to log if the reactive is created successfully.</p>
+<p>We’ll add <code>log_message()</code> and <code>tryCatch()</code> to log if 1) <code>graph_data()</code> contains all of the observations or the missing values have been removed, and 2) if the reactive was created successfully.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>graph_data <span class="ot">&lt;-</span> <span class="fu">reactive</span>({</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tryCatch</span>({</span>
@@ -887,7 +897,7 @@ flowchart LR
 <figure class="figure">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><a href="images/log_ggp2_log_reactive_base.png" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="Log messages from graph_data()"><img src="images/log_ggp2_log_reactive_base.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Log messages from graph_data()"></a></p>
+<p><a href="images/log_ggp2_log_reactive_base.png" class="lightbox" data-gallery="quarto-lightbox-gallery-3" title="Log messages from graph_data()"><img src="images/log_ggp2_log_reactive_base.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Log messages from graph_data()"></a></p>
 </figure>
 </div>
 <figcaption>Log messages from <code>graph_data()</code></figcaption>
@@ -959,7 +969,7 @@ flowchart LR
 <figure class="figure">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><a href="images/log_ggp2_log_reactive_inputs_base.png" class="lightbox" data-gallery="quarto-lightbox-gallery-3" title="Log messages from inputs()"><img src="images/log_ggp2_log_reactive_inputs_base.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Log messages from inputs()"></a></p>
+<p><a href="images/log_ggp2_log_reactive_inputs_base.png" class="lightbox" data-gallery="quarto-lightbox-gallery-4" title="Log messages from inputs()"><img src="images/log_ggp2_log_reactive_inputs_base.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Log messages from inputs()"></a></p>
 </figure>
 </div>
 <figcaption>Log messages from <code>inputs()</code></figcaption>
@@ -972,17 +982,13 @@ flowchart LR
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>            <span class="fu">readLines</span>() <span class="sc">|&gt;</span> </span>
 <span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>            <span class="fu">writeLines</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="sourceCode" id="cb12"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>[2025-01-22 09:56:07] Loading fst data </span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>[2025-01-22 09:56:07] Removing missing values. </span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>[2025-01-22 09:56:07] Processing plot title: '' </span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>[2025-01-22 09:56:07] Inputs constructed: x=year, y=budget, z=mpaa, alpha=0.5, size=2, plot_title= </span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>[2025-01-22 09:56:18] Using all data. </span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>[2025-01-22 09:56:23] Processing plot title: 'NE' </span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>[2025-01-22 09:56:23] Inputs constructed: x=year, y=budget, z=mpaa, alpha=0.5, size=2, plot_title=NE </span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>[2025-01-22 09:56:26] Processing plot title: 'NEW TITLE' </span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>[2025-01-22 09:56:26] Inputs constructed: x=year, y=budget, z=mpaa, alpha=0.5, size=2, plot_title=NEW TITLE </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>In practice, we’d continue using <code>tryCatch()</code> and <code>log_message()</code> to capture logging messages for application startup, loading data/connecting to databases, API calls, and when using Shiny’s internal validation/error handling functions.</p>
-<p>In the next section, we’re going to explore using add-on packages to implement logging in our app-package.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>[2025-01-22 22:53:01] Loading fst data </span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>[2025-01-22 22:53:01] Removing missing values. </span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>[2025-01-22 22:53:01] Inputs constructed: x=year, y=budget, z=mpaa, alpha=0.5, size=2, plot_title= </span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>[2025-01-22 22:53:07] Inputs constructed: x=year, y=length, z=mpaa, alpha=0.5, size=2, plot_title= </span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>[2025-01-22 22:53:09] Inputs constructed: x=year, y=length, z=genre, alpha=0.5, size=2, plot_title= </span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>[2025-01-22 22:53:19] Inputs constructed: x=year, y=length, z=genre, alpha=0.5, size=2, plot_title=NEW TITLE</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>In practice, we’d insert logging messages with <code>log_message()</code> and <code>tryCatch()</code> for application startup, loading data/connecting to databases, API calls, and when using Shiny’s internal validation/error handling functions. In the next section, we’re going to explore using add-on packages to implement logging in our app-package.</p>
 </section>
 </section>
 <section id="logger-setup" class="level2" data-number="13.3">
@@ -1011,16 +1017,15 @@ flowchart LR
 </div>
 </div>
 </div>
-<p>We’ll use the <a href="https://daroczig.github.io/logger/index.html"><code>logger</code> package</a> because it is simple, easy to integrate with Shiny, and extensible.</p>
+<p>This section will focus on the <a href="https://daroczig.github.io/logger/index.html"><code>logger</code> package</a> because it is simple, easy to integrate with Shiny, and extensible.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">"pak"</span>)</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>pak<span class="sc">::</span><span class="fu">pak</span>(<span class="st">"daroczig/logger"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>We also need to add <code>logger</code> to the package dependencies in the <code>DESCRIPTION</code> file:</p>
+<p>Add <code>logger</code> to the package dependencies in the <code>DESCRIPTION</code> file and use the <code>logger::fun()</code> syntax to avoid adding <code>@import</code> or <code>@importFrom</code> <code>roxygen</code> tags.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_package</span>(<span class="st">'logger'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>We’ll use the <code>pkg::fun()</code> syntax to avoid adding <code>@import</code> or <code>@importFrom</code> <code>roxygen</code> tags.</p>
 <section id="log-levels" class="level3" data-number="13.3.1">
 <h3 data-number="13.3.1" class="anchored" data-anchor-id="log-levels"><span class="header-section-number">13.3.1</span> Log levels</h3>
 <p>The logger package has a few configurations to be aware of for package development. We’ll start with a basic example:</p>
@@ -1057,11 +1062,9 @@ flowchart LR
 </section>
 <section id="custom-logger-functions" class="level3" data-number="13.3.2">
 <h3 data-number="13.3.2" class="anchored" data-anchor-id="custom-logger-functions"><span class="header-section-number">13.3.2</span> Custom <span style="font-size: 1.05em;"><code>logger</code></span> functions</h3>
-<p>Custom logging functions using the <code>logger</code> package allow you to create tailored log messages, apply specific formats, and handle log outputs in a consistent manner. We’ll write an <code>add_log()</code> utility function for inserting <code>logger</code>-style logs in our application.</p>
-<p><code>log_appender</code>:</p>
-<p><code>log_formatter</code>:</p>
+<p>Custom logging functions using the <code>logger</code> package allow you to create tailored log messages, apply specific formats, and handle log outputs in a consistent manner. We’ll write an <code>logr_msg()</code> utility function for inserting <code>logger</code>-style logs in our application.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>add_log <span class="ot">&lt;-</span> <span class="cf">function</span>(message, <span class="at">level =</span> <span class="st">"INFO"</span>, <span class="at">log_file =</span> <span class="cn">NULL</span>) {</span>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>logr_msg <span class="ot">&lt;-</span> <span class="cf">function</span>(message, <span class="at">level =</span> <span class="st">"INFO"</span>, <span class="at">log_file =</span> <span class="cn">NULL</span>) {</span>
 <span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  </span>
 <span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>  logger<span class="sc">::</span><span class="fu">log_appender</span>(logger<span class="sc">::</span>appender_console)</span>
 <span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>  </span>
@@ -1084,31 +1087,69 @@ flowchart LR
 <span id="cb21-21"><a href="#cb21-21" aria-hidden="true" tabindex="-1"></a>  )</span>
 <span id="cb21-22"><a href="#cb21-22" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>Below are a few examples illustrating how to define and use our custom logging function in our Shiny apps. We’ll start with <code>mod_var_input_server()</code> function, which returns the variable inputs from the UI:</p>
+<p><code>log_appender</code>:</p>
+<p><code>log_formatter</code>:</p>
+<p>Below are a few examples illustrating how to use <code>logr_msg()</code> in our Shiny app. We’ll start with <code>mod_var_input_server()</code> function, which returns the variable inputs from the UI:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>mod_var_input_server <span class="ot">&lt;-</span> <span class="cf">function</span>(id) {</span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">moduleServer</span>(id, <span class="cf">function</span>(input, output, session) {</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">moduleServer</span>(id, <span class="cf">function</span>(input, output, session) {</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>    </span>
 <span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">observe</span>({</span>
-<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>      message <span class="ot">&lt;-</span> <span class="fu">paste</span>(<span class="st">"User selected: X ="</span>, input<span class="sc">$</span>x, </span>
-<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>                       <span class="st">"Y ="</span>, input<span class="sc">$</span>y, </span>
-<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>                       <span class="st">"Color ="</span>, input<span class="sc">$</span>z)</span>
-<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>      <span class="fu">add_log</span>(<span class="at">message =</span> message, <span class="at">level =</span> <span class="st">"INFO"</span>, )</span>
-<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>    }) <span class="sc">|&gt;</span> </span>
-<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>      <span class="fu">bindEvent</span>(<span class="fu">c</span>(input<span class="sc">$</span>x, input<span class="sc">$</span>y, input<span class="sc">$</span>z))</span>
-<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(</span>
-<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a>      <span class="fu">reactive</span>({</span>
-<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a>        <span class="fu">list</span>(</span>
-<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a>          <span class="st">"x"</span> <span class="ot">=</span> input<span class="sc">$</span>x,</span>
-<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a>          <span class="st">"y"</span> <span class="ot">=</span> input<span class="sc">$</span>y,</span>
-<span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a>          <span class="st">"z"</span> <span class="ot">=</span> input<span class="sc">$</span>z</span>
-<span id="cb22-18"><a href="#cb22-18" aria-hidden="true" tabindex="-1"></a>        )</span>
-<span id="cb22-19"><a href="#cb22-19" aria-hidden="true" tabindex="-1"></a>      })</span>
-<span id="cb22-20"><a href="#cb22-20" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb22-21"><a href="#cb22-21" aria-hidden="true" tabindex="-1"></a>  })</span>
-<span id="cb22-22"><a href="#cb22-22" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>      <span class="fu">logr_msg</span>(<span class="at">message =</span> glue<span class="sc">::</span><span class="fu">glue</span>(<span class="st">"User Inputs:</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a><span class="st">                                     X variable = {input$x}</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a><span class="st">                                     Y variable = {input$y}</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a><span class="st">                                     Color variable = {input$z}"</span>), </span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">level =</span> <span class="st">"INFO"</span>, </span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">log_file =</span> <span class="st">"_logs/ggp2_log.txt"</span>)</span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a>    }) <span class="sc">|&gt;</span> </span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a>      <span class="fu">bindEvent</span>(<span class="fu">c</span>(input<span class="sc">$</span>x, input<span class="sc">$</span>y, input<span class="sc">$</span>z))</span>
+<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(</span>
+<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a>      <span class="fu">reactive</span>({</span>
+<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a>        <span class="fu">list</span>(</span>
+<span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a>          <span class="st">"x"</span> <span class="ot">=</span> input<span class="sc">$</span>x,</span>
+<span id="cb22-18"><a href="#cb22-18" aria-hidden="true" tabindex="-1"></a>          <span class="st">"y"</span> <span class="ot">=</span> input<span class="sc">$</span>y,</span>
+<span id="cb22-19"><a href="#cb22-19" aria-hidden="true" tabindex="-1"></a>          <span class="st">"z"</span> <span class="ot">=</span> input<span class="sc">$</span>z</span>
+<span id="cb22-20"><a href="#cb22-20" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb22-21"><a href="#cb22-21" aria-hidden="true" tabindex="-1"></a>      })</span>
+<span id="cb22-22"><a href="#cb22-22" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb22-23"><a href="#cb22-23" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb22-24"><a href="#cb22-24" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>The <code>message</code> in <code>logr_msg()</code> is built with <code>glue::glue()</code> and includes the three reactive inputs from this module. We’re also appending the log output to our log file (<code>_logs/ggp2_log.txt</code>).</p>
+<p>An advantage to using the <code>logr_msg()</code> function is that our log messages are printed to the Console while the application is running:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/log_ggp2_logr_message_var_input.png" class="lightbox" data-gallery="quarto-lightbox-gallery-5" title="Log messages from logr_msg()"><img src="images/log_ggp2_logr_message_var_input.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Log messages from logr_msg()"></a></p>
+</figure>
+</div>
+<figcaption>Log messages from <code>logr_msg()</code></figcaption>
+</figure>
+</div>
+<p>The logs are also updated whenever the user inputs change:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/log_ggp2_logr_message_var_input_update.png" class="lightbox" data-gallery="quarto-lightbox-gallery-6" title="Updates from logr_msg()"><img src="images/log_ggp2_logr_message_var_input_update.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Updates from logr_msg()"></a></p>
+</figure>
+</div>
+<figcaption>Updates from <code>logr_msg()</code></figcaption>
+</figure>
+</div>
+</section>
+<section id="storing-log-files" class="level3" data-number="13.3.3">
+<h3 data-number="13.3.3" class="anchored" data-anchor-id="storing-log-files"><span class="header-section-number">13.3.3</span> Storing log files</h3>
+<p>By default, logs are written to the console, but you can also direct them to files, databases, or external logging systems.</p>
+<ul>
+<li>File-Based Logging: Logs are saved to a file specified by <code>appender_file()</code>:</li>
+</ul>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">log_appender</span>(<span class="fu">appender_file</span>(<span class="st">"app_logs.txt"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<ul>
+<li>Remote Logging: Integrate with external logging systems (e.g., ELK stack or Datadog) using custom appenders.</li>
+</ul>
 <div class="callout callout-style-default callout-tip no-icon callout-titled">
 <div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-5-contents" aria-controls="callout-5" aria-expanded="true" aria-label="Toggle callout">
 <div class="callout-icon-container">
@@ -1123,30 +1164,19 @@ flowchart LR
 <div class="callout-body-container callout-body">
 <div style="font-size: 1.10em; color: #282b2d;">
 <p>We can set up <code>logger</code>’s logging configuration in an <code>onLoad</code> function of the <code>zzz.R</code> file:</p>
-<div class="sourceCode" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>.onLoad <span class="ot">&lt;-</span> <span class="cf">function</span>(libname, pkgname) {</span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>    <span class="co"># configure logger log messages to console</span></span>
-<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>    logger<span class="sc">::</span><span class="fu">log_appender</span>(logger<span class="sc">::</span>appender_console)</span>
-<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>    <span class="co"># configure logger log messages to file</span></span>
-<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>    logger<span class="sc">::</span><span class="fu">log_appender</span>(logger<span class="sc">::</span><span class="fu">appender_file</span>(<span class="st">'sap_apps.log'</span>))</span>
-<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>    <span class="co"># set default log level to DEBUG</span></span>
-<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>    logger<span class="sc">::</span><span class="fu">log_threshold</span>(DEBUG) </span>
-<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>.onLoad <span class="ot">&lt;-</span> <span class="cf">function</span>(libname, pkgname) {</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>    <span class="co"># configure logger log messages to console</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>    logger<span class="sc">::</span><span class="fu">log_appender</span>(logger<span class="sc">::</span>appender_console)</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>    <span class="co"># configure logger log messages to file</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>    logger<span class="sc">::</span><span class="fu">log_appender</span>(logger<span class="sc">::</span><span class="fu">appender_file</span>(<span class="st">'sap_apps.log'</span>))</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>    <span class="co"># set default log level to DEBUG</span></span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>    logger<span class="sc">::</span><span class="fu">log_threshold</span>(DEBUG) </span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>This setup ensures that logging is ready as soon as your package is loaded.</p>
 </div>
 </div>
 </div>
 </div>
-</section>
-<section id="storing-log-files" class="level3" data-number="13.3.3">
-<h3 data-number="13.3.3" class="anchored" data-anchor-id="storing-log-files"><span class="header-section-number">13.3.3</span> Storing log files</h3>
-<p>By default, logs are written to the console, but you can also direct them to files, databases, or external logging systems.</p>
-<ul>
-<li>File-Based Logging: Logs are saved to a file specified by <code>appender_file()</code>:</li>
-</ul>
-<div class="sourceCode" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">log_appender</span>(<span class="fu">appender_file</span>(<span class="st">"app_logs.txt"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<ul>
-<li>Remote Logging: Integrate with external logging systems (e.g., ELK stack or Datadog) using custom appenders.</li>
-</ul>
 </section>
 </section>
 <section id="logging-and-debugging" class="level2" data-number="13.4">

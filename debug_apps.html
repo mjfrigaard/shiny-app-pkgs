@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2025-01-20">
+<meta name="dcterms.date" content="2025-01-24">
 <meta name="description" content="Getting your app into an R package">
 
 <title>12&nbsp; Debugging apps – Shiny App-Packages</title>
@@ -107,6 +107,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     "search-label": "Search"
   }
 }</script>
+<meta name="mermaid-theme" content="neutral">
+<script src="site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
 
 
 </head>
@@ -494,10 +498,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#sec-debug-apps-abstract-syntax-trees" id="toc-sec-debug-apps-abstract-syntax-trees" class="nav-link active" data-scroll-target="#sec-debug-apps-abstract-syntax-trees">Abstract syntax trees</a></li>
   <li><a href="#sec-debug-apps-modules" id="toc-sec-debug-apps-modules" class="nav-link" data-scroll-target="#sec-debug-apps-modules"><span class="header-section-number">12.1</span> Debugging modules</a>
   <ul>
-  <li><a href="#variable-inputs-module" id="toc-variable-inputs-module" class="nav-link" data-scroll-target="#variable-inputs-module"><span class="header-section-number">12.1.1</span> Variable inputs module</a></li>
-  <li><a href="#aesthetic-inputs-module" id="toc-aesthetic-inputs-module" class="nav-link" data-scroll-target="#aesthetic-inputs-module"><span class="header-section-number">12.1.2</span> Aesthetic inputs module</a></li>
-  <li><a href="#ui-function-debugging" id="toc-ui-function-debugging" class="nav-link" data-scroll-target="#ui-function-debugging"><span class="header-section-number">12.1.3</span> UI function debugging</a></li>
-  <li><a href="#server-function-debugging" id="toc-server-function-debugging" class="nav-link" data-scroll-target="#server-function-debugging"><span class="header-section-number">12.1.4</span> Server function debugging</a></li>
+  <li><a href="#input-modules" id="toc-input-modules" class="nav-link" data-scroll-target="#input-modules"><span class="header-section-number">12.1.1</span> Input modules</a></li>
+  <li><a href="#ui-function-debugging" id="toc-ui-function-debugging" class="nav-link" data-scroll-target="#ui-function-debugging"><span class="header-section-number">12.1.2</span> UI function debugging</a></li>
+  <li><a href="#server-function-debugging" id="toc-server-function-debugging" class="nav-link" data-scroll-target="#server-function-debugging"><span class="header-section-number">12.1.3</span> Server function debugging</a></li>
   </ul></li>
   <li><a href="#sec-debug-apps-module-comms" id="toc-sec-debug-apps-module-comms" class="nav-link" data-scroll-target="#sec-debug-apps-module-comms"><span class="header-section-number">12.2</span> Module communication</a>
   <ul>
@@ -522,7 +525,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">2025-01-20</p>
+      <p class="date">2025-01-24</p>
     </div>
   </div>
   
@@ -655,9 +658,80 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="sec-debug-apps-modules" class="level2 page-columns page-full" data-number="12.1">
 <h2 data-number="12.1" class="anchored" data-anchor-id="sec-debug-apps-modules"><span class="header-section-number">12.1</span> Debugging modules</h2>
-<p>In this branch of <code>sap</code>, the inputs has been split into two separate modules: variable inputs and aesthetic inputs.</p>
-<section id="variable-inputs-module" class="level3" data-number="12.1.1">
-<h3 data-number="12.1.1" class="anchored" data-anchor-id="variable-inputs-module"><span class="header-section-number">12.1.1</span> Variable inputs module</h3>
+<p>In this branch of <code>sap</code>, the inputs has been split into two separate modules: variable inputs and aesthetic inputs. The variable input module collects and returns the selected columns from the <code>movies</code> data, and the aesthetics input module collects and returns the alpha, point size, and (optional) graph title.</p>
+<p>This updates our abstract syntax tree to the following:</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>█─launch_app 
+├─█─display_type 
+├─█─movies_ui 
+│ ├─█─mod_var_input_ui 
+│ ├─█─mod_aes_input_ui 
+│ └─█─mod_scatter_display_ui 
+└─█─movies_server 
+  ├─█─mod_var_input_server 
+  ├─█─mod_aes_input_server 
+  └─█─mod_scatter_display_server 
+    └─█─scatter_plot </code></pre>
+</div>
+</div>
+<section id="input-modules" class="level3" data-number="12.1.1">
+<h3 data-number="12.1.1" class="anchored" data-anchor-id="input-modules"><span class="header-section-number">12.1.1</span> Input modules</h3>
+<p>The diagram below illustrates the changes to the variable input module.</p>
+
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+
+</style>
+<div class="cell" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
+flowchart TD
+    User(["User"])
+    mod_var_input_ui["&lt;strong&gt;mod_var_input_ui()&lt;/strong&gt;"]
+    mod_aes_input_ui["&lt;strong&gt;mod_aes_input_ui()&lt;/strong&gt;"]
+    
+    subgraph mod_var_input_server["&lt;strong&gt;mod_var_input_server()&lt;/strong&gt;"]
+        VarReactives[/"input$x&lt;br&gt;input$y&lt;br&gt;input$z"/]
+    end
+    subgraph mod_aes_input_server["&lt;strong&gt;mod_aes_input_server()&lt;/strong&gt;"]
+        AesReactives[/"input$alpha&lt;br&gt;input$size&lt;br&gt;input$plot_title"/]
+    end
+
+    selected_vars[/"selected variables"/]
+    selected_aes[/"selected aesthetics"/]
+    
+    User --&gt; |"&lt;em&gt;Selects X, Y, and Color...&lt;/em&gt;"|mod_var_input_ui
+    User --&gt; |"&lt;em&gt;Selects Size, Alpha and optional Title...&lt;/em&gt;"|mod_aes_input_ui
+    mod_var_input_ui --&gt; |"&lt;em&gt;Collects&lt;br&gt;variables...&lt;/em&gt;"|mod_var_input_server
+    mod_aes_input_ui --&gt; |"&lt;em&gt;Collects aesthetics...&lt;/em&gt;"|mod_aes_input_server
+    VarReactives --&gt; selected_vars
+    AesReactives --&gt; selected_aes
+    
+    style mod_var_input_ui stroke-width:2px,rx:3,ry:3
+    style mod_aes_input_ui stroke-width:2px,rx:3,ry:3
+    style mod_var_input_server stroke-width:2px,rx:3,ry:3
+    style mod_aes_input_server stroke-width:2px,rx:3,ry:3
+    style VarReactives font-size: 14px
+    style AesReactives font-size: 14px
+</pre>
+</div>
+<p></p><figcaption> Variable Inputs modules</figcaption> </figure><p></p>
+</div>
+</div>
+</div>
+<p><strong><code>mod_var_input_ui()</code></strong>: Our variable input module will now only collect the x, y, and color variables from the <code>movies</code> data.</p>
 <div class="cell">
 <details open="" class="code-fold">
 <summary>show/hide R/mod_var_input.R</summary>
@@ -739,9 +813,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </dl>
 </div>
 </div>
-</section>
-<section id="aesthetic-inputs-module" class="level3" data-number="12.1.2">
-<h3 data-number="12.1.2" class="anchored" data-anchor-id="aesthetic-inputs-module"><span class="header-section-number">12.1.2</span> Aesthetic inputs module</h3>
+<p><strong><code>mod_aes_input_ui()</code></strong>: The new aesthetic input module will collect the alpha, size, and optional plot title values.</p>
 <div class="cell">
 <details open="" class="code-fold">
 <summary>show/hide R/mod_aes_input.R</summary>
@@ -789,7 +861,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dl class="code-annotation-container-hidden code-annotation-container-grid">
 <dt data-target-cell="annotated-cell-2" data-target-annotation="1">1</dt>
 <dd>
-<span data-code-cell="annotated-cell-2" data-code-lines="31" data-code-annotation="1">Returned alphs aesthetic<br>
+<span data-code-cell="annotated-cell-2" data-code-lines="31" data-code-annotation="1">Returned alpha aesthetic<br>
 </span>
 </dd>
 <dt data-target-cell="annotated-cell-2" data-target-annotation="2">2</dt>
@@ -804,21 +876,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </dl>
 </div>
 </div>
-<p>This also requires a minor adjustment to the <code>mod_scatter_display_server()</code> and <code>movies_server()</code> functions:</p>
+<p>Each module will have a dedicated namespace inside the <code>movies_ui()</code> and <code>movies_server()</code> functions, but this requires a minor adjustment to the <code>mod_scatter_display_server()</code> and <code>movies_server()</code> functions:</p>
+<p><strong><code>mod_scatter_display_server()</code></strong>: We need to adjust the function arguments and the creation of the <code>inputs()</code> reactive:</p>
 <div class="cell">
 <details open="" class="code-fold">
 <summary>show/hide mod_scatter_display_server()</summary>
-<div class="sourceCode cell-code" id="annotated-cell-3"><pre class="sourceCode r code-annotation-code code-with-copy code-annotated"><code class="sourceCode r"><span id="annotated-cell-3-1"><a href="#annotated-cell-3-1" aria-hidden="true" tabindex="-1"></a>mod_scatter_display_server <span class="ot">&lt;-</span> <span class="cf">function</span>(id, var_inputs, aes_inputs) {</span>
+<div class="sourceCode cell-code" id="annotated-cell-3"><pre class="sourceCode r code-annotation-code code-with-copy code-annotated"><code class="sourceCode r"><button class="code-annotation-anchor" data-target-cell="annotated-cell-3" data-target-annotation="1">1</button><span id="annotated-cell-3-1" class="code-annotation-target"><a href="#annotated-cell-3-1" aria-hidden="true" tabindex="-1"></a>mod_scatter_display_server <span class="ot">&lt;-</span> <span class="cf">function</span>(id, var_inputs, aes_inputs) {</span>
 <span id="annotated-cell-3-2"><a href="#annotated-cell-3-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="annotated-cell-3-3"><a href="#annotated-cell-3-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">moduleServer</span>(id, <span class="cf">function</span>(input, output, session) {</span>
 <span id="annotated-cell-3-4"><a href="#annotated-cell-3-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="annotated-cell-3-5"><a href="#annotated-cell-3-5" aria-hidden="true" tabindex="-1"></a>    inputs <span class="ot">&lt;-</span> <span class="fu">reactive</span>({</span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-3" data-target-annotation="1">1</button><span id="annotated-cell-3-6" class="code-annotation-target"><a href="#annotated-cell-3-6" aria-hidden="true" tabindex="-1"></a>      plot_title <span class="ot">&lt;-</span> tools<span class="sc">::</span><span class="fu">toTitleCase</span>(<span class="fu">aes_inputs</span>()<span class="sc">$</span>plot_title)</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-3" data-target-annotation="2">2</button><span id="annotated-cell-3-6" class="code-annotation-target"><a href="#annotated-cell-3-6" aria-hidden="true" tabindex="-1"></a>      plot_title <span class="ot">&lt;-</span> tools<span class="sc">::</span><span class="fu">toTitleCase</span>(<span class="fu">aes_inputs</span>()<span class="sc">$</span>plot_title)</span>
 <span id="annotated-cell-3-7"><a href="#annotated-cell-3-7" aria-hidden="true" tabindex="-1"></a>        <span class="fu">list</span>(</span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-3" data-target-annotation="2">2</button><span id="annotated-cell-3-8" class="code-annotation-target"><a href="#annotated-cell-3-8" aria-hidden="true" tabindex="-1"></a>          <span class="at">x =</span> <span class="fu">var_inputs</span>()<span class="sc">$</span>x,</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-3" data-target-annotation="3">3</button><span id="annotated-cell-3-8" class="code-annotation-target"><a href="#annotated-cell-3-8" aria-hidden="true" tabindex="-1"></a>          <span class="at">x =</span> <span class="fu">var_inputs</span>()<span class="sc">$</span>x,</span>
 <span id="annotated-cell-3-9"><a href="#annotated-cell-3-9" aria-hidden="true" tabindex="-1"></a>          <span class="at">y =</span> <span class="fu">var_inputs</span>()<span class="sc">$</span>y,</span>
 <span id="annotated-cell-3-10"><a href="#annotated-cell-3-10" aria-hidden="true" tabindex="-1"></a>          <span class="at">z =</span> <span class="fu">var_inputs</span>()<span class="sc">$</span>z,</span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-3" data-target-annotation="3">3</button><span id="annotated-cell-3-11" class="code-annotation-target"><a href="#annotated-cell-3-11" aria-hidden="true" tabindex="-1"></a>          <span class="at">alpha =</span> <span class="fu">aes_inputs</span>()<span class="sc">$</span>alpha,</span>
+<span id="annotated-cell-3-11"><a href="#annotated-cell-3-11" aria-hidden="true" tabindex="-1"></a>          <span class="at">alpha =</span> <span class="fu">aes_inputs</span>()<span class="sc">$</span>alpha,</span>
 <span id="annotated-cell-3-12"><a href="#annotated-cell-3-12" aria-hidden="true" tabindex="-1"></a>          <span class="at">size =</span> <span class="fu">aes_inputs</span>()<span class="sc">$</span>size,</span>
 <span id="annotated-cell-3-13"><a href="#annotated-cell-3-13" aria-hidden="true" tabindex="-1"></a>          <span class="at">plot_title =</span> plot_title</span>
 <span id="annotated-cell-3-14"><a href="#annotated-cell-3-14" aria-hidden="true" tabindex="-1"></a>        </span>
@@ -851,21 +924,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dl class="code-annotation-container-hidden code-annotation-container-grid">
 <dt data-target-cell="annotated-cell-3" data-target-annotation="1">1</dt>
 <dd>
-<span data-code-cell="annotated-cell-3" data-code-lines="6" data-code-annotation="1">Convert title to character<br>
+<span data-code-cell="annotated-cell-3" data-code-lines="1" data-code-annotation="1">Add function argument for aesthetics<br>
 </span>
 </dd>
 <dt data-target-cell="annotated-cell-3" data-target-annotation="2">2</dt>
 <dd>
-<span data-code-cell="annotated-cell-3" data-code-lines="8,10" data-code-annotation="2">Variable reactive inputs<br>
+<span data-code-cell="annotated-cell-3" data-code-lines="6,11,13" data-code-annotation="2">Aesthetic reactive inputs<br>
 </span>
 </dd>
 <dt data-target-cell="annotated-cell-3" data-target-annotation="3">3</dt>
 <dd>
-<span data-code-cell="annotated-cell-3" data-code-lines="11,13" data-code-annotation="3">Aesthitic reactive inputs</span>
+<span data-code-cell="annotated-cell-3" data-code-lines="8,10" data-code-annotation="3">Variable reactive inputs</span>
 </dd>
 </dl>
 </div>
 </div>
+<p><strong><code>movies_server()</code></strong>: We now have two reactive variables: the <code>selected_vars</code> and <code>selected_aes</code>:</p>
 <div class="cell">
 <details open="" class="code-fold">
 <summary>show/hide</summary>
@@ -905,26 +979,77 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </dl>
 </div>
 </div>
-<p>This updates our abstract syntax tree to the following:</p>
-<div class="cell">
-<div class="cell-output cell-output-stdout">
-<pre><code>█─launch_app 
-├─█─display_type 
-├─█─movies_ui 
-│ ├─█─mod_var_input_ui 
-│ ├─█─mod_aes_input_ui 
-│ └─█─mod_scatter_display_ui 
-└─█─movies_server 
-  ├─█─mod_var_input_server 
-  ├─█─mod_aes_input_server 
-  └─█─mod_scatter_display_server 
-    └─█─scatter_plot </code></pre>
+<p>The diagram below illustrates the changes to the functions above:</p>
+
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+
+</style>
+<div class="cell" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
+flowchart TD
+    User(["User"])
+    mod_var_input_ui["&lt;strong&gt;mod_var_input_ui()&lt;/strong&gt;"]
+    mod_aes_input_ui["&lt;strong&gt;mod_aes_input_ui()&lt;/strong&gt;"]
+    mod_scatter_display_ui["&lt;strong&gt;mod_scatter_display_ui&lt;/strong&gt;"] 
+    
+    subgraph mod_scatter_display_server["&lt;strong&gt;mod_scatter_display_server()&lt;/strong&gt;"]
+        var_inputs[\"var_inputs()"\]
+        inputs[\"inputs()"\]
+        scatter_plot("scatter_plot()")
+    end
+    
+    subgraph mod_var_input_server["&lt;strong&gt;mod_var_input_server()&lt;/strong&gt;"]
+        VarReactives[/"input$x&lt;br&gt;input$y&lt;br&gt;input$z"/]
+    end
+    subgraph mod_aes_input_server["&lt;strong&gt;mod_aes_input_server()&lt;/strong&gt;"]
+        AesReactives[/"input$alpha&lt;br&gt;input$size&lt;br&gt;input$plot_title"/]
+    end
+
+    selected_vars[/"selected variables"/]
+    selected_aes[/"selected aesthetics"/]
+    
+    User --&gt; |"&lt;em&gt;Selects X, Y, and Color...&lt;/em&gt;"|mod_var_input_ui
+    User --&gt; |"&lt;em&gt;Selects Size, Alpha and optional Title...&lt;/em&gt;"|mod_aes_input_ui
+    mod_var_input_ui --&gt; |"&lt;em&gt;Collects&lt;br&gt;variables...&lt;/em&gt;"|mod_var_input_server
+    mod_aes_input_ui --&gt; |"&lt;em&gt;Collects aesthetics...&lt;/em&gt;"|mod_aes_input_server
+    VarReactives --&gt; selected_vars
+    AesReactives --&gt; selected_aes
+    selected_vars &amp; selected_aes --&gt;|"&lt;em&gt;Input argument for...&lt;/em&gt;"|mod_scatter_display_server
+    var_inputs --&gt; inputs --&gt; scatter_plot
+    scatter_plot --&gt;|"&lt;em&gt;Renders plot...&lt;/em&gt;"|mod_scatter_display_ui
+    mod_scatter_display_ui --&gt;|"&lt;em&gt;Displays output...&lt;/em&gt;"|Display(["Graph"])
+    
+    style mod_scatter_display_ui stroke-width:2px,rx:3,ry:3
+    style mod_scatter_display_server stroke-width:2px,rx:3,ry:3
+    style mod_var_input_ui stroke-width:2px,rx:3,ry:3
+    style mod_var_input_server stroke-width:2px,rx:3,ry:3
+    style scatter_plot stroke-width:2px,rx:10,ry:10
+    style VarReactives font-size: 14px
+    style AesReactives font-size: 14px
+    
+</pre>
+</div>
+<p></p><figcaption> Variable and aesthetic input modules</figcaption> </figure><p></p>
 </div>
 </div>
-<p>Uncoupling these two modules will make it easier to independently modify (and debug) the corresponding graph elements.</p>
+</div>
+<p>Uncoupling the input modules will make it easier to independently modify and debug their corresponding graph elements.</p>
 </section>
-<section id="ui-function-debugging" class="level3" data-number="12.1.3">
-<h3 data-number="12.1.3" class="anchored" data-anchor-id="ui-function-debugging"><span class="header-section-number">12.1.3</span> UI function debugging</h3>
+<section id="ui-function-debugging" class="level3" data-number="12.1.2">
+<h3 data-number="12.1.2" class="anchored" data-anchor-id="ui-function-debugging"><span class="header-section-number">12.1.2</span> UI function debugging</h3>
 <p>In <a href="https://github.com/mjfrigaard/sap/blob/12.1_debug-mods/R/mod_var_input.R"><code>mod_var_input_ui()</code></a> and <a href="https://github.com/mjfrigaard/sap/blob/12.1_debug-mods/R/mod_aes_input.R"><code>mod_aes_input_ui()</code></a>, the <code>NS()</code> function is used to encapsulate input IDs within a namespace.</p>
 <p>We will place a <code>verbatimTextOutput()</code> in both UI module functions:<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a></p>
 <div class="cell">
@@ -1033,8 +1158,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </section>
-<section id="server-function-debugging" class="level3 page-columns page-full" data-number="12.1.4">
-<h3 data-number="12.1.4" class="anchored" data-anchor-id="server-function-debugging"><span class="header-section-number">12.1.4</span> Server function debugging</h3>
+<section id="server-function-debugging" class="level3 page-columns page-full" data-number="12.1.3">
+<h3 data-number="12.1.3" class="anchored" data-anchor-id="server-function-debugging"><span class="header-section-number">12.1.3</span> Server function debugging</h3>
 <p>In the corresponding server functions, we’ll capture the reactive values and print the list using <code>lobstr::tree()</code>:<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a></p>
 <div class="cell">
 <div class="sourceCode cell-code" id="annotated-cell-7"><pre class="sourceCode r code-annotation-code code-with-copy code-annotated"><code class="sourceCode r"><span id="annotated-cell-7-1"><a href="#annotated-cell-7-1" aria-hidden="true" tabindex="-1"></a>mod_var_input_server <span class="ot">&lt;-</span> <span class="cf">function</span>(id) {</span>
@@ -1158,7 +1283,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div id="second-column" class="quarto-layout-cell" style="flex-basis: 51.6%;justify-content: flex-start;">
 <div style="font-color: #000000; font-weight: bold; font-size: 1.15em" data-layout-valign="bottom">
 <p><br><br></p>
-<p><kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd> / <kbd>D</kbd> / <kbd>B</kbd></p>
+<p><kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd><br>
+<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd><br>
+<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>B</kbd></p>
 </div>
 </div>
 <div id="third-column" class="quarto-layout-cell" style="flex-basis: 25.0%;justify-content: flex-start;">
@@ -1387,7 +1514,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div id="second-column" class="quarto-layout-cell" style="flex-basis: 51.6%;justify-content: flex-start;">
 <div style="font-color: #000000; font-weight: bold; font-size: 1.15em" data-layout-valign="bottom">
 <p><br><br></p>
-<p><kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd> / <kbd>D</kbd> / <kbd>B</kbd></p>
+<p><kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd><br>
+<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd><br>
+<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>B</kbd></p>
 </div>
 </div>
 <div id="third-column" class="quarto-layout-cell" style="flex-basis: 25.0%;justify-content: flex-start;">
@@ -1510,7 +1639,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div id="second-column" class="quarto-layout-cell" style="flex-basis: 51.6%;justify-content: flex-start;">
 <div style="font-color: #000000; font-weight: bold; font-size: 1.15em" data-layout-valign="bottom">
 <p><br><br></p>
-<p><kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd> / <kbd>D</kbd> / <kbd>B</kbd></p>
+<p><kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd><br>
+<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd><br>
+<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>B</kbd></p>
 </div>
 </div>
 <div id="third-column" class="quarto-layout-cell" style="flex-basis: 25.0%;justify-content: flex-start;">
@@ -1636,7 +1767,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div id="second-column" class="quarto-layout-cell" style="flex-basis: 51.6%;justify-content: flex-start;">
 <div style="font-color: #000000; font-weight: bold; font-size: 1.15em" data-layout-valign="bottom">
 <p><br><br></p>
-<p><kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd> / <kbd>D</kbd> / <kbd>B</kbd></p>
+<p><kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd><br>
+<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd><br>
+<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>B</kbd></p>
 </div>
 </div>
 <div id="third-column" class="quarto-layout-cell" style="flex-basis: 25.0%;justify-content: flex-start;">
