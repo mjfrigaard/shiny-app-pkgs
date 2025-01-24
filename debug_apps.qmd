@@ -117,9 +117,88 @@ Abstract folder trees can be used to help construct a simplified call stack for 
 
 ## Debugging modules {#sec-debug-apps-modules}
 
-In this branch of `sap`, the inputs has been split into two separate modules: variable inputs and aesthetic inputs. 
+In this branch of `sap`, the inputs has been split into two separate modules: variable inputs and aesthetic inputs. The variable input module collects and returns the selected columns from the `movies` data, and the aesthetics input module collects and returns the alpha, point size, and (optional) graph title.
 
-### Variable inputs module
+This updates our abstract syntax tree to the following: 
+
+```{r}
+#| eval: true
+#| include: true 
+#| echo: false
+lobstr::ast(
+  launch_app(
+    display_type(),
+    movies_ui(
+      mod_var_input_ui(),
+      mod_aes_input_ui(),
+      mod_scatter_display_ui()
+    ),
+    movies_server(
+      mod_var_input_server(),
+      mod_aes_input_server(),
+      mod_scatter_display_server(
+        scatter_plot()
+        )
+      )
+    )
+  )
+```
+
+### Input modules
+
+The diagram below illustrates the changes to the variable input module. 
+
+```{=html}
+
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+
+</style>
+```
+
+```{mermaid}
+%%| fig-align: center
+%%| fig-cap: 'Variable Inputs modules'
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
+flowchart TD
+    User(["User"])
+    mod_var_input_ui["<strong>mod_var_input_ui()</strong>"]
+    mod_aes_input_ui["<strong>mod_aes_input_ui()</strong>"]
+    
+    subgraph mod_var_input_server["<strong>mod_var_input_server()</strong>"]
+        VarReactives[/"input$x<br>input$y<br>input$z"/]
+    end
+    subgraph mod_aes_input_server["<strong>mod_aes_input_server()</strong>"]
+        AesReactives[/"input$alpha<br>input$size<br>input$plot_title"/]
+    end
+
+    selected_vars[/"selected variables"/]
+    selected_aes[/"selected aesthetics"/]
+    
+    User --> |"<em>Selects X, Y, and Color...</em>"|mod_var_input_ui
+    User --> |"<em>Selects Size, Alpha and optional Title...</em>"|mod_aes_input_ui
+    mod_var_input_ui --> |"<em>Collects<br>variables...</em>"|mod_var_input_server
+    mod_aes_input_ui --> |"<em>Collects aesthetics...</em>"|mod_aes_input_server
+    VarReactives --> selected_vars
+    AesReactives --> selected_aes
+    
+    style mod_var_input_ui stroke-width:2px,rx:3,ry:3
+    style mod_aes_input_ui stroke-width:2px,rx:3,ry:3
+    style mod_var_input_server stroke-width:2px,rx:3,ry:3
+    style mod_aes_input_server stroke-width:2px,rx:3,ry:3
+    style VarReactives font-size: 14px
+    style AesReactives font-size: 14px
+```
+
+**`mod_var_input_ui()`**: Our variable input module will now only collect the x, y, and color variables from the `movies` data.
 
 ```{r}
 #| eval: false 
@@ -188,7 +267,8 @@ mod_var_input_server <- function(id) {
 2. Returned y axis variable   
 3. Returned color variable   
 
-### Aesthetic inputs module
+
+**`mod_aes_input_ui()`**: The new aesthetic input module will collect the alpha, size, and optional plot title values.
 
 ```{r}
 #| eval: false 
@@ -234,29 +314,31 @@ mod_aes_input_server <- function(id) {
   })
 }
 ```
-1. Returned alphs aesthetic   
+1. Returned alpha aesthetic   
 2. Returned size aesthetic   
 3. Returned plot title  
 
-This also requires a minor adjustment to the `mod_scatter_display_server()` and `movies_server()` functions: 
+Each module will have a dedicated namespace inside the `movies_ui()` and `movies_server()` functions, but this requires a minor adjustment to the `mod_scatter_display_server()` and `movies_server()` functions:
+
+**`mod_scatter_display_server()`**: We need to adjust the function arguments and the creation of the `inputs()` reactive:
 
 ```{r}
 #| eval: false 
 #| code-fold: show 
 #| code-summary: 'show/hide mod_scatter_display_server()' 
-mod_scatter_display_server <- function(id, var_inputs, aes_inputs) {
+mod_scatter_display_server <- function(id, var_inputs, aes_inputs) { # <1>
 
   moduleServer(id, function(input, output, session) {
 
     inputs <- reactive({
-      plot_title <- tools::toTitleCase(aes_inputs()$plot_title) # <1>
+      plot_title <- tools::toTitleCase(aes_inputs()$plot_title) # <2>
         list(
-          x = var_inputs()$x, # <2>
+          x = var_inputs()$x, # <3>
           y = var_inputs()$y,
-          z = var_inputs()$z, # <2>
-          alpha = aes_inputs()$alpha, # <3>
+          z = var_inputs()$z, # <3>
+          alpha = aes_inputs()$alpha, # <2>
           size = aes_inputs()$size,
-          plot_title = plot_title # <3>
+          plot_title = plot_title # <2>
         
         )
     })
@@ -283,9 +365,11 @@ mod_scatter_display_server <- function(id, var_inputs, aes_inputs) {
   })
 }
 ```
-1. Convert title to character  
-2. Variable reactive inputs  
-3. Aesthitic reactive inputs 
+1. Add function argument for aesthetics  
+2. Aesthetic reactive inputs  
+3. Variable reactive inputs 
+
+**`movies_server()`**: We now have two reactive variables: the `selected_vars` and `selected_aes`:
 
 ```{r}
 movies_server <- function(input, output, session) {
@@ -305,32 +389,72 @@ movies_server <- function(input, output, session) {
 3. Variable input argument for graph display   
 4. Aesthetic input argument for graph display   
 
-This updates our abstract syntax tree to the following: 
+The diagram below illustrates the changes to the functions above:
 
-```{r}
-#| eval: true
-#| include: true 
-#| echo: false
-lobstr::ast(
-  launch_app(
-    display_type(),
-    movies_ui(
-      mod_var_input_ui(),
-      mod_aes_input_ui(),
-      mod_scatter_display_ui()
-    ),
-    movies_server(
-      mod_var_input_server(),
-      mod_aes_input_server(),
-      mod_scatter_display_server(
-        scatter_plot()
-        )
-      )
-    )
-  )
+```{=html}
+
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+
+</style>
 ```
 
-Uncoupling these two modules will make it easier to independently modify (and debug) the corresponding graph elements. 
+```{mermaid}
+%%| fig-align: center
+%%| fig-cap: 'Variable and aesthetic input modules'
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
+flowchart TD
+    User(["User"])
+    mod_var_input_ui["<strong>mod_var_input_ui()</strong>"]
+    mod_aes_input_ui["<strong>mod_aes_input_ui()</strong>"]
+    mod_scatter_display_ui["<strong>mod_scatter_display_ui</strong>"] 
+    
+    subgraph mod_scatter_display_server["<strong>mod_scatter_display_server()</strong>"]
+        var_inputs[\"var_inputs()"\]
+        inputs[\"inputs()"\]
+        scatter_plot("scatter_plot()")
+    end
+    
+    subgraph mod_var_input_server["<strong>mod_var_input_server()</strong>"]
+        VarReactives[/"input$x<br>input$y<br>input$z"/]
+    end
+    subgraph mod_aes_input_server["<strong>mod_aes_input_server()</strong>"]
+        AesReactives[/"input$alpha<br>input$size<br>input$plot_title"/]
+    end
+
+    selected_vars[/"selected variables"/]
+    selected_aes[/"selected aesthetics"/]
+    
+    User --> |"<em>Selects X, Y, and Color...</em>"|mod_var_input_ui
+    User --> |"<em>Selects Size, Alpha and optional Title...</em>"|mod_aes_input_ui
+    mod_var_input_ui --> |"<em>Collects<br>variables...</em>"|mod_var_input_server
+    mod_aes_input_ui --> |"<em>Collects aesthetics...</em>"|mod_aes_input_server
+    VarReactives --> selected_vars
+    AesReactives --> selected_aes
+    selected_vars & selected_aes -->|"<em>Input argument for...</em>"|mod_scatter_display_server
+    var_inputs --> inputs --> scatter_plot
+    scatter_plot -->|"<em>Renders plot...</em>"|mod_scatter_display_ui
+    mod_scatter_display_ui -->|"<em>Displays output...</em>"|Display(["Graph"])
+    
+    style mod_scatter_display_ui stroke-width:2px,rx:3,ry:3
+    style mod_scatter_display_server stroke-width:2px,rx:3,ry:3
+    style mod_var_input_ui stroke-width:2px,rx:3,ry:3
+    style mod_var_input_server stroke-width:2px,rx:3,ry:3
+    style scatter_plot stroke-width:2px,rx:10,ry:10
+    style VarReactives font-size: 14px
+    style AesReactives font-size: 14px
+    
+```
+
+Uncoupling the input modules will make it easier to independently modify and debug their corresponding graph elements. 
 
 ### UI function debugging
 

@@ -217,7 +217,7 @@ log_message <- function(message, log_file = "logs/app_log.txt", save = FALSE) {
 6. Finally, the `message()` is preferred here instead of `print()` for consistent output formatting.    
 
 
-### Log error handling
+### Error handling
 
 The `tryCatch` function can be used by itself to log unexpected errors gracefully. Below is an example of combining it with our `log_message()` function and `reactive()`.  
 
@@ -236,7 +236,7 @@ safe_reactive <- reactive({
 })
 ```
 
-Adapted to use in the `inst/tidy-movies/` app, the `tryCatch()` function might looks like:
+Adapted to use in the `inst/tidy-movies/` app, the `tryCatch()` function might look like:
 
 ```{r}
 #| eval: false 
@@ -257,11 +257,13 @@ all_data <- tryCatch({
 ```
 1. Saving to `_logs` because it's easier to separate from other app folders.  
 
-After loading and installing our package, the output from the log is saved in the log file (and printed to the **Console**) when our app stops running. 
+After loading and installing our package, the output from the log is saved in the log file (and printed to the **Console**) when our app stops running:
+
+![Logging data upload with `log_message()`](images/log_ggp2_log_fst_data_base.png){width='100%' fig-align='center'}
 
 ### Logging events
 
-Integrate logging into the Shiny application by inserting log messages at critical points, such creating reactive expressions. For example, the `inst/tidy-movies` app creates the `graph_data()` reactive in the `dev_mod_scatter_server()`:
+We'll continue to integrate log messages into the `inst/tidy-movies` app by inserting `log_message()` at critical points, such creating reactive expressions. For example, `dev_mod_scatter_server()` creates the `graph_data()` reactive based on the missing data checkbox user input:
 
 ```{r}
 #| eval: false 
@@ -278,7 +280,7 @@ graph_data <- reactive({
   bindEvent(input$missing)
 ```
 
-We can update the `graph_data` reactive using `log_message()` and `tryCatch()` to log if the reactive is created successfully. 
+We'll add `log_message()` and `tryCatch()` to log if 1) `graph_data()` contains all of the observations or the missing values have been removed, and 2) if the reactive was created successfully.
 
 ```{r}
 #| eval: false 
@@ -386,20 +388,15 @@ system.file('tidy-movies', '_logs', 'ggp2_log.txt',
 ```
 
 ```{verbatim}
-[2025-01-22 09:56:07] Loading fst data 
-[2025-01-22 09:56:07] Removing missing values. 
-[2025-01-22 09:56:07] Processing plot title: '' 
-[2025-01-22 09:56:07] Inputs constructed: x=year, y=budget, z=mpaa, alpha=0.5, size=2, plot_title= 
-[2025-01-22 09:56:18] Using all data. 
-[2025-01-22 09:56:23] Processing plot title: 'NE' 
-[2025-01-22 09:56:23] Inputs constructed: x=year, y=budget, z=mpaa, alpha=0.5, size=2, plot_title=NE 
-[2025-01-22 09:56:26] Processing plot title: 'NEW TITLE' 
-[2025-01-22 09:56:26] Inputs constructed: x=year, y=budget, z=mpaa, alpha=0.5, size=2, plot_title=NEW TITLE 
+[2025-01-22 22:53:01] Loading fst data 
+[2025-01-22 22:53:01] Removing missing values. 
+[2025-01-22 22:53:01] Inputs constructed: x=year, y=budget, z=mpaa, alpha=0.5, size=2, plot_title= 
+[2025-01-22 22:53:07] Inputs constructed: x=year, y=length, z=mpaa, alpha=0.5, size=2, plot_title= 
+[2025-01-22 22:53:09] Inputs constructed: x=year, y=length, z=genre, alpha=0.5, size=2, plot_title= 
+[2025-01-22 22:53:19] Inputs constructed: x=year, y=length, z=genre, alpha=0.5, size=2, plot_title=NEW TITLE
 ```
 
-In practice, we'd continue using `tryCatch()` and `log_message()` to capture logging messages for application startup, loading data/connecting to databases, API calls, and when using Shiny's internal validation/error handling functions. 
-
-In the next section, we're going to explore using add-on packages to implement logging in our app-package. 
+In practice, we'd insert logging messages with `log_message()` and `tryCatch()` for application startup, loading data/connecting to databases, API calls, and when using Shiny's internal validation/error handling functions. In the next section, we're going to explore using add-on packages to implement logging in our app-package. 
 
 ## [`logger`]{style="font-size: 1.05em;"} setup
 
@@ -427,7 +424,7 @@ The most popular options are:
 
 ```
 
-We’ll use the [`logger` package](https://daroczig.github.io/logger/index.html) because it is simple, easy to integrate with Shiny, and extensible.
+This section will focus on the [`logger` package](https://daroczig.github.io/logger/index.html) because it is simple, easy to integrate with Shiny, and extensible.
 
 ```{r}
 #| eval: false 
@@ -436,15 +433,13 @@ install.packages("pak")
 pak::pak("daroczig/logger")
 ```
 
-We also need to add `logger` to the package dependencies in the `DESCRIPTION` file:
+Add `logger` to the package dependencies in the `DESCRIPTION` file and use the `logger::fun()` syntax to avoid adding `@import` or `@importFrom` `roxygen` tags.
 
 ```{r}
 #| eval: false 
 #| code-fold: false
 usethis::use_package('logger')
 ```
-
-We'll use the `pkg::fun()` syntax to avoid adding `@import` or `@importFrom` `roxygen` tags.
 
 ### Log levels
 
@@ -512,17 +507,12 @@ logger::log_threshold(WARN)  # only warnings and errors for production
 
 ### Custom [`logger`]{style="font-size: 1.05em;"} functions
 
-Custom logging functions using the `logger` package allow you to create tailored log messages, apply specific formats, and handle log outputs in a consistent manner. We'll write an `add_log()` utility function for inserting `logger`-style logs in our application.
-
-`log_appender`: 
-
-`log_formatter`: 
-
+Custom logging functions using the `logger` package allow you to create tailored log messages, apply specific formats, and handle log outputs in a consistent manner. We'll write an `logr_msg()` utility function for inserting `logger`-style logs in our application.
 
 ```{r}
 #| eval: false 
 #| code-fold: false
-add_log <- function(message, level = "INFO", log_file = NULL) {
+logr_msg <- function(message, level = "INFO", log_file = NULL) {
   
   logger::log_appender(logger::appender_console)
   
@@ -546,19 +536,25 @@ add_log <- function(message, level = "INFO", log_file = NULL) {
 }
 ```
 
-Below are a few examples illustrating how to define and use our custom logging function in our Shiny apps. We'll start with `mod_var_input_server()` function, which returns the variable inputs from the UI:
+`log_appender`: 
+
+`log_formatter`: 
+
+Below are a few examples illustrating how to use `logr_msg()` in our Shiny app. We'll start with `mod_var_input_server()` function, which returns the variable inputs from the UI:
 
 ```{r}
 #| eval: false 
 #| code-fold: false
 mod_var_input_server <- function(id) {
-  
   moduleServer(id, function(input, output, session) {
+    
     observe({
-      message <- paste("User selected: X =", input$x, 
-                       "Y =", input$y, 
-                       "Color =", input$z)
-      add_log(message = message, level = "INFO", )
+      logr_msg(message = glue::glue("User Inputs:
+                                     X variable = {input$x}
+                                     Y variable = {input$y}
+                                     Color variable = {input$z}"), 
+                                     level = "INFO", 
+                                     log_file = "_logs/ggp2_log.txt")
     }) |> 
       bindEvent(c(input$x, input$y, input$z))
 
@@ -575,6 +571,29 @@ mod_var_input_server <- function(id) {
 }
 ```
 
+The `message` in `logr_msg()` is built with `glue::glue()` and includes the three reactive inputs from this module. We're also appending the log output to our log file (`_logs/ggp2_log.txt`). 
+
+An advantage to using the `logr_msg()` function is that our log messages are printed to the Console while the application is running:
+
+![Log messages from `logr_msg()`](images/log_ggp2_logr_message_var_input.png){width='100%' fig-align='center'}
+
+The logs are also updated whenever the user inputs change: 
+
+![Updates from `logr_msg()`](images/log_ggp2_logr_message_var_input_update.png){width='100%' fig-align='center'}
+
+
+
+### Storing log files
+
+By default, logs are written to the console, but you can also direct them to files, databases, or external logging systems.
+
+- File-Based Logging: Logs are saved to a file specified by `appender_file()`:
+
+```r
+log_appender(appender_file("app_logs.txt"))
+```
+
+- Remote Logging: Integrate with external logging systems (e.g., ELK stack or Datadog) using custom appenders.
 
 ```{r}
 #| label: co_box_log_init
@@ -605,17 +624,7 @@ This setup ensures that logging is ready as soon as your package is loaded.
 ")
 ```
 
-### Storing log files
 
-By default, logs are written to the console, but you can also direct them to files, databases, or external logging systems.
-
-- File-Based Logging: Logs are saved to a file specified by `appender_file()`:
-
-```r
-log_appender(appender_file("app_logs.txt"))
-```
-
-- Remote Logging: Integrate with external logging systems (e.g., ELK stack or Datadog) using custom appenders.
 
 
 ## Logging and debugging
