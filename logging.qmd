@@ -1,9 +1,11 @@
 # Logging {#sec-logging}
 
+```{=html}
 <!--
 https://shiny.posit.co/r/articles/improve/debugging/
 https://debruine.github.io/shinyintro/debugging.html
 -->
+```
 
 ```{r}
 #| label: _common
@@ -56,13 +58,11 @@ Another proactive approach to debugging Shiny applications is implementing loggi
 shinypak_apps(regex = "13", branch = "13_logging")
 ```
 
-
-
-## Why Use Logging? 
+## Why Use Logging?
 
 Logging applications app-package lets us track the application flow and record user interactions and inputs, and can also be used to identify runtime errors and unexpected behaviors. Log messages are more structured, flexible, and configurable than print statements or the interactive debugger. Logging is particularly useful in production environments, where direct debugging may not be possible. Logs can also be saved for future analysis, even after the application has stopped running.
 
-### Architecture  
+### Architecture
 
 We're going to start logging the behaviors in the `inst/tidy-movies` application. The architecture of this application has been updated to include the two new input modules (see @sec-resources-inst-tidy-movies-app):
 
@@ -150,7 +150,6 @@ flowchart LR
 
 To launch the `inst/tidy-movies` app, load, document, and install `sap` and run:
 
-
 ```{r}
 #| label: hot_key_01
 #| echo: false
@@ -165,9 +164,74 @@ hot_key(fun = "all")
 launch_app("ggp2")
 ```
 
-![Launching `inst/tidy-movies` app with `launch_app()`](images/log_ggp2_initial_launch.png){width='100%' fig-align='center'}
+![Launching `inst/tidy-movies` app with `launch_app()`](images/log_ggp2_initial_launch.png){width="100%" fig-align="center"}
 
 The reactive values from the `R/mod_var_input.R` are printed to the **Console** from the previous chapter (See @sec-debug-ui).
+
+### Validating inputs {#sec-logging-validate}
+
+`shiny::validate()` can be used to prevent unexpected errors by preventing execution of subsequent code if the provided validation conditions fail. 
+
+- `need()` is used inside `validate()` to check if a condition is met, and `try()` catches errors that might occur if inputs are `NULL` or missing. 
+
+- If an error occurs, `try()` prevents the application from crashing and instead returns an error object.
+
+For example, the `alpha` and `size` inputs can validated with `try()` and `need()`:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+validate(
+  need(
+    try(input$alpha >= 0 & input$alpha <= 1),
+    "Alpha must be between 0 and 1"
+  )
+)
+```
+
+| `input$alpha`     | Behavior                                    |
+|:------------------|:--------------------------------------------|
+| `0.5` (valid)     | ✅ Passes validation                        |
+| `1.5` (invalid)   | ❌ Error: `"Alpha must be between 0 and 1"` |
+| `NULL`            | ❌ Error: `"Alpha must be between 0 and 1"` |
+| `NA`              | ❌ Error: `"Alpha must be between 0 and 1"` |
+| `"high"` (string) | ❌ Error: `"Alpha must be between 0 and 1"` |
+
+```{r}
+#| eval: false 
+#| code-fold: false
+validate(
+  need(
+    try(input$size > 0),
+    "Size must be positive"
+  )
+)
+```
+
+| `input$size`       | Behavior                            |
+|:-------------------|:------------------------------------|
+| `3` (valid)        | ✅ Passes validation                |
+| `-2` (invalid)     | ❌ Error: `"Size must be positive"` |
+| `NULL`             | ❌ Error: `"Size must be positive"` |
+| `NA`               | ❌ Error: `"Size must be positive"` |
+| `"large"` (string) | ❌ Error: `"Size must be positive"` |
+
+### Handling errors {#sec-logging-trycatch}
+
+The `tryCatch` function can be used by itself to log unexpected errors gracefully. Below is an example of using it with `reactive()` and combining it `message()`:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+safe_reactive <- reactive({
+    tryCatch({
+        # Code that might throw an error
+        
+    }, error = function(e) {
+        message(paste0("An error occurred:", e$message))
+    })
+})
+```
 
 ## Custom logging functions
 
@@ -195,14 +259,16 @@ Logging can be implemented without any dependencies. The `base` package has many
 #' 
 #' @export
 log_message <- function(message, log_file = "logs/app_log.txt", save = FALSE) {
+  
   log_dir <- dirname(log_file) # <1>
+  
   if (!dir.exists(log_dir)) { # <2>
     dir.create(log_dir, recursive = TRUE)
   } # <2>
+  
   timestamp <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
-  # log entry
   log_entry <- sprintf("[%s] %s", timestamp, message) # <3>
-  # save 
+  
   if (save) {
     tryCatch({ # <4>
         cat(log_entry, "\n", file = log_file, append = TRUE) # <5>
@@ -211,61 +277,47 @@ log_message <- function(message, log_file = "logs/app_log.txt", save = FALSE) {
         warning(sprintf("Failed to write to log file '%s': %s", log_file, e$message)) 
       }) # <4>
   }
-  # print
+  
   message(log_entry) # <6>
 }
 ```
-1. This function uses `dirname()` to dynamically extract the directory path from `log_file`.  
-2. `dir.exists()` and `dir.create()` ensure the folder exists (`recursive = TRUE` is for nested directories).  
-3. The `sprintf()` function is preferred over `cat()` or `paste0()` for clearer and faster string formatting.  
-4. The file-writing logic is wrapped in `tryCatch()` to gracefully handle errors (e.g., file permission issues), and we've added a `warning()` if writing to the log file fails.  
-5. We explicitly add the newline (`\n`) directly in the `cat()` function, ensuring the log entry is written properly even if message lacks a newline.  
-6. Finally, the `message()` is preferred here instead of `print()` for consistent output formatting.    
 
-
-### Error handling
-
-The `tryCatch` function can be used by itself to log unexpected errors gracefully. Below is an example of combining it with our `log_message()` function and `reactive()`.  
-
-```{r}
-#| eval: false 
-#| code-fold: false
-safe_reactive <- reactive({
-    tryCatch({
-        # Code that might throw an error
-        log_message("Running safe reactive expression", save = TRUE)
-        # some code that might fail
-    }, error = function(e) {
-        log_message("An error occurred: {e$message}", save = TRUE)
-        NULL
-    })
-})
-```
+1.  This function uses `dirname()` to dynamically extract the directory path from `log_file`.\
+2.  `dir.exists()` and `dir.create()` ensure the folder exists (`recursive = TRUE` is for nested directories).\
+3.  The `sprintf()` function is preferred over `cat()` or `paste0()` for clearer and faster string formatting.\
+4.  The file-writing logic is wrapped in `tryCatch()` to gracefully handle errors (e.g., file permission issues), and we've added a `warning()` if writing to the log file fails.\
+5.  We explicitly add the newline (`\n`) directly in the `cat()` function, ensuring the log entry is written properly even if message lacks a newline.\
+6.  Finally, the `message()` is preferred here instead of `print()` for consistent output formatting.
 
 Adapted to use in the `inst/tidy-movies/` app, the `tryCatch()` function might look like:
 
 ```{r}
 #| eval: false 
 #| code-fold: false
-all_data <- tryCatch({
-  log_message(
-    message = "Loading fst data", 
-    log_file = "_logs/ggp2_log.txt", # <1>
-    save = TRUE)
-  fst::read_fst("tidy_movies.fst")
-}, error = function(e) {
-  log_message(
-    message = sprintf("Error loading fst data: %s", e$message), 
-    log_file = "_logs/ggp2_log.txt",  # <1>
-    save = TRUE)
-  stop("Data loading failed.")
-})
+    all_data <- tryCatch({
+      
+      log_message(message = "Loading fst data", # <1>
+        log_file = "_logs/ggp2_log.txt", save = TRUE) # <1>
+      
+      fst::read_fst("tidy_movies.fst")
+      
+    }, error = function(e) {
+      
+      log_message(message = sprintf("Error loading fst data: %s", e$message), # <2>
+        log_file = "_logs/ggp2_log.txt", save = TRUE) # <2>
+      
+      stop("Data loading failed.") # <3>
+
+    })
 ```
-1. Saving to `_logs` because it's easier to separate from other app folders.  
+
+1.  Saving to `_logs` because it's easier to separate from other app folders.  
+2.  Print error message from `tryCatch()`   
+3.  Stop creation of reactive.  
 
 After loading and installing our package, the output from the log is saved in the log file (and printed to the **Console**) when our app stops running:
 
-![Logging data upload with `log_message()`](images/log_ggp2_logr_message_all_data.png){width='100%' fig-align='center'}
+![Logging data upload with `log_message()`](images/log_ggp2_logr_message_all_data.png){width="100%" fig-align="center"}
 
 ### Logging events
 
@@ -274,7 +326,6 @@ We'll continue to integrate log messages into the `inst/tidy-movies` app by inse
 ```{r}
 #| eval: false 
 #| code-fold: false
-# build reactive data based on missing checkbox input
 graph_data <- reactive({
   if (input$missing) {
     graph_data <- tidyr::drop_na(data = all_data)
@@ -282,97 +333,106 @@ graph_data <- reactive({
     graph_data <- all_data
   }
 }) |>
-  # bind to input to update when it changes
   bindEvent(input$missing)
 ```
 
-We'll add `log_message()` and `tryCatch()` to log if 1) `graph_data()` contains all of the observations or the missing values have been removed, and 2) if the reactive was created successfully.
+
+
+We'll add `validate()` and `tryCatch()` with a `log_message()` to log if 1) `graph_data()` contains all of the observations or the missing values have been removed, and 2) if the reactive was created successfully.
 
 ```{r}
 #| eval: false 
 #| code-fold: false
 graph_data <- reactive({
-  tryCatch({
-    if (input$missing) {
-      log_message("Removing missing values.", 
-                  log_file = "_logs/ggp2_log.txt",
-                  save = TRUE)
-      graph_data <- tidyr::drop_na(data = all_data)
-    } else {
-      log_message("Using all data.", 
-                  log_file = "_logs/ggp2_log.txt",
-                  save = TRUE)
-      graph_data <- all_data
-    }
-    graph_data
-  }, error = function(e) {
-    log_message(
-      sprintf("Error processing graph data: %s", e$message), 
-      log_file = "_logs/ggp2_log.txt"
-    )
-    NULL
-  })
-}) |> bindEvent(input$missing)
-
-```
-
-After we've loaded and installed the changes to sap, we can launch the `inst/tidy-movies` app with: 
-
-```{r}
-#| eval: false 
-#| code-fold: false
-launch_app("ggp2")
-```
-
-We won't see our logs in the **Console** until we stop the app:
-
-![Log messages from `graph_data()`](images/log_ggp2_log_reactive_base.png){width='100%' fig-align='center'}
-
-The log output tells us the application loaded the `.fst` data and removed the missing values, but we should also check what happens when we change something, so we'll adapt the code used to create our `inputs()` reactive with the `log_message()` function: 
-
-```{r}
-#| eval: false 
-#| code-fold: false
-    inputs <- reactive({
-      tryCatch({
-        plot_title <- tools::toTitleCase(aes_inputs()$plot_title)
+  
+  validate( # <1>
+    need(try(is.logical(input$missing)), 
+          "Missing must be logical")
+  ) # <1>
+  
+    tryCatch({
+      if (input$missing) {
         
-        log_message( #<1>
-          sprintf("Processing plot title: '%s'", plot_title), 
-          log_file = "_logs/ggp2_log.txt") #<1>
+        log_message(message = "Removing missing values.", # <2>
+                    log_file = "_logs/ggp2_log.txt", save = TRUE)
+        graph_data <- tidyr::drop_na(data = all_data) # <2>
         
-          input_list <- list(
-            x = var_inputs()$x,
-            y = var_inputs()$y,
-            z = var_inputs()$z,
-            alpha = aes_inputs()$alpha,
-            size = aes_inputs()$size,
-            plot_title = plot_title
-          )
+      } else {
         
-        log_message( #<2>
-          sprintf("Inputs constructed: %s", 
-                  paste(names(input_list), input_list, sep = "=", collapse = ", ")
-                ),
-                log_file = "_logs/ggp2_log.txt",
-                save = TRUE) #<2>
-    
-        input_list
-      }, error = function(e) {
-        log_message( #<3>
-          sprintf("Error in processing inputs: %s", conditionMessage(e)),
-          log_file = "_logs/ggp2_log.txt",
-          save = TRUE) #<3>
-        NULL  #<4>
-      })
+        log_message(message = "Using all data.", # <3>
+                    log_file = "_logs/ggp2_log.txt", save = TRUE)
+        graph_data <- all_data # <3>
+        
+      }
+      
+      graph_data
+      
+    }, error = function(e) {
+      
+      log_message(message = sprintf("Error processing graph data: %s", e$message), #<4>
+        log_file = "_logs/ggp2_log.txt", save = TRUE) #<4>
+      NULL #<5>
+      
     })
-```
-1. Log the plot title.  
-2. Log the final input list. 
-3. Log the error if anything goes wrong.  
-4. Return `NULL` on error to prevent breaking downstream dependencies. 
+}) |> 
+  bindEvent(input$missing)
 
-After loading and installing sap, we launch the `inst/tidy-movies` app again, but this time we un-check the remove missing checkbox and add a new title before stopping the application. 
+```
+1. Validation for missing checkbox input  
+2. Confirm missing values and create `graph_data`  
+3. Use all data and create `graph_data`  
+4. Print and log message is error occurs 
+5. Return null value for error
+
+These logs will tell us the application loaded the `.fst` data and removed the missing values, but we should also check what happens when we change something, so we'll adapt the code used to create our `inputs()` reactive with the `log_message()` function:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+inputs <- reactive({
+
+  tryCatch({
+    plot_title <- tools::toTitleCase(aes_inputs()$plot_title)
+    
+    if (nchar(plot_title) > 0) { # <1>
+      log_message(
+        sprintf("Processing plot title: '%s'", plot_title), 
+        log_file = "_logs/ggp2_log.txt")
+    } # <1>
+    
+      input_list <- list(
+        x = var_inputs()$x,
+        y = var_inputs()$y,
+        z = var_inputs()$z,
+        alpha = aes_inputs()$alpha,
+        size = aes_inputs()$size,
+        plot_title = plot_title
+      )
+    
+    log_message( # <2>
+      sprintf("Inputs: %s", 
+              paste(
+                names(input_list), input_list, sep = " = ", collapse = ", ")
+              ),
+            log_file = "_logs/ggp2_log.txt", save = TRUE) # <2>
+    
+    input_list
+  }, error = function(e) {
+    
+    log_message( # <3>
+      sprintf("Error in processing inputs: %s", conditionMessage(e)),
+      log_file = "_logs/ggp2_log.txt", save = TRUE)  # <3>
+    
+    NULL  # <4>
+  })
+})
+```
+1.  Log the plot title.\
+2.  Log the final input list.\
+3.  Log the error if anything goes wrong.\
+4.  Return `NULL` on error to prevent breaking downstream dependencies.
+
+After loading and installing sap, we launch the `inst/tidy-movies` app again, but this time we un-check the remove missing checkbox and add a new title before stopping the application.
 
 ```{r}
 #| eval: false 
@@ -380,7 +440,7 @@ After loading and installing sap, we launch the `inst/tidy-movies` app again, bu
 launch_app("ggp2")
 ```
 
-![Log messages from `inputs()`](images/log_ggp2_log_reactive_inputs_base.png){width='100%' fig-align='center'}
+![Log messages from `inputs()`](images/log_ggp2_log_reactive_inputs_base.png){width="100%" fig-align="center"}
 
 To view the log file, we need to use `system.file()` (we're launching the app from the *installed* location, not the version we're developing in the `inst/tidy-movies/` folder). I've added `readLines()` and `writeLines()` so it prints nicely to the **Console**:
 
@@ -394,17 +454,19 @@ system.file('tidy-movies', '_logs', 'ggp2_log.txt',
 ```
 
 ```{verbatim}
-[2025-01-26 21:39:01] Loading fst data 
-[2025-01-26 21:39:01] Removing missing values. 
-[2025-01-26 21:39:01] Inputs constructed: x=year, y=budget, z=mpaa, alpha=0.5, size=2, plot_title= 
-[2025-01-26 21:39:56] Inputs constructed: x=year, y=length, z=mpaa, alpha=0.5, size=2, plot_title= 
-[2025-01-26 21:40:01] Inputs constructed: x=rating, y=length, z=mpaa, alpha=0.5, size=2, plot_title= 
-[2025-01-26 21:40:03] Inputs constructed: x=rating, y=length, z=genre, alpha=0.5, size=2, plot_title= 
-[2025-01-26 21:40:10] Inputs constructed: x=rating, y=length, z=genre, alpha=0.5, size=2, plot_title=NEW TITLE 
-[2025-01-26 21:40:13] Using all data. 
+[2025-01-29 11:34:40] Loading fst data 
+[2025-01-29 11:34:40] Removing missing values. 
+[2025-01-29 11:34:40] Inputs: x = year, y = budget, z = mpaa, alpha = 0.5, size = 2, plot_title =  
+[2025-01-29 11:35:46] Loading fst data 
+[2025-01-29 11:35:46] Removing missing values. 
+[2025-01-29 11:35:46] Inputs: x = year, y = budget, z = mpaa, alpha = 0.5, size = 2, plot_title =  
+[2025-01-29 11:35:52] Loading fst data 
+[2025-01-29 11:35:52] Removing missing values. 
+[2025-01-29 11:35:52] Inputs: x = year, y = budget, z = mpaa, alpha = 0.5, size = 2, plot_title =  
+[2025-01-29 11:35:57] Inputs: x = year, y = budget, z = mpaa, alpha = 0.5, size = 2, plot_title = Title 
 ```
 
-In practice, we'd insert logging messages with `log_message()` and `tryCatch()` for application startup, loading data/connecting to databases, API calls, and when using Shiny's internal validation/error handling functions. In the next section, we're going to explore using add-on packages to implement logging in our app-package. 
+In practice, we'd insert logging messages with `log_message()` and `tryCatch()` for application startup, loading data/connecting to databases, API calls, and when using Shiny's internal validation/error handling functions. In the next section, we're going to explore using add-on packages to implement logging in our app-package.
 
 ## App logs with [`logger`]{style="font-size: 1.05em;"}
 
@@ -451,7 +513,7 @@ usethis::use_package('logger')
 
 ### Log levels
 
-The `logger` package has a few configurations that can be very helpful for app-package development. We'll start with a basic example using `logger::log_info()`: 
+The `logger` package has a few configurations that can be very helpful for app-package development. We'll start with a basic example using `logger::log_info()`:
 
 ```{r}
 #| eval: false 
@@ -464,7 +526,7 @@ logger::log_info('Hello, {name}')
 INFO [2025-01-22 11:07:52] Hello, world
 ```
 
-The output is a nicely formatted log message, and by default `logger` supports [`glue` syntax](https://daroczig.github.io/logger/articles/customize_logger.html#log-message-formatter-functions). However, the following function (`logger::log_debug()`) doesn't return a log message to the Console: 
+The output is a nicely formatted log message, and by default `logger` supports [`glue` syntax](https://daroczig.github.io/logger/articles/customize_logger.html#log-message-formatter-functions). However, the following function (`logger::log_debug()`) doesn't return a log message to the Console:
 
 ```{r}
 #| eval: false 
@@ -472,7 +534,7 @@ The output is a nicely formatted log message, and by default `logger` supports [
 logger::log_debug('Hello, {name}')
 ```
 
-This is because the logger package has a threshold configuration that controls the 'verbosity' of the logs printed to the **Console**. If we check the `log_threshold()`, we see it's set to `INFO`: 
+This is because the logger package has a threshold configuration that controls the 'verbosity' of the logs printed to the **Console**. If we check the `log_threshold()`, we see it's set to `INFO`:
 
 ```{r}
 #| eval: false 
@@ -509,39 +571,42 @@ logger::log_threshold('WARN')  # only warnings and errors for production
 
 While developing app-packages, I recommend broadly characterizing the `logger` log levels into the following categories:
 
-:::{layout="[50,50]" layout-valign="top"}
+::: {layout="[30,70]" layout-valign="top"}
 
 ### Development {.unnumbered}
 
-Use descriptive messages for easier debugging in development.
+*Descriptive messages for easier debugging*
 
-- `DEBUG`: Diagnostic information for inputs, intermediate states, and outputs.
-
-- `TRACE`: Fine-grained tracking for debugging flows (e.g., reactive updates, function calls).
-
-
-### Production {.unnumbered}
-
-Use lower verbosity levels in production:
-
-- `INFO`: Session-level events and significant actions (e.g., app startup, data loading).
-
-- `WARN`: Suspicious but non-fatal conditions (e.g., unusual input values or data sizes).
-
-- `ERROR`: Handled errors with appropriate messaging and graceful recovery.
-
-- `FATAL`: Critical failures leading to app crashes or irrecoverable states.
-
+| Level   | Details                                                                             |
+|:--------|:------------------------------------------------------------------------------------|
+| `TRACE` | Fine-grained tracking for debugging flows (e.g., reactive updates, function calls). |
+| `DEBUG` | Diagnostic information for inputs, intermediate states, and outputs.                |
 
 :::
 
+::: {layout="[30,70]" layout-valign="top"}
+
+### Production {.unnumbered}
+
+*Lower verbosity levels*
+
+| Level   | Details                                                                         |
+|:--------|:--------------------------------------------------------------------------------|
+| `INFO`  | Session-level events and significant actions (e.g., app startup, data loading). |
+| `WARN`  | Suspicious but non-fatal conditions (e.g., unusual input values or data sizes). |
+| `ERROR` | Handled errors with appropriate messaging and graceful recovery.                |
+| `FATAL` | Critical failures leading to app crashes or irrecoverable states.               |
+
+:::
+
+
 ### Storing log files
 
-By default, `logger` logs are written to the console, but the `logger::appender_file()` function can direct log messages to a file (or to a database or external logging system).[^external-logging] 
+By default, `logger` logs are written to the console, but the `logger::appender_file()` function can direct log messages to a file (or to a database or external logging system).[^logging-1]
 
-We also want to periodically archive old logs to prevent storage issues. Storing log messages as JSON objects is sometimes preferred because JSON files are structured, machine-readable, and can easily integrate with logging tools like [Logstash](https://www.elastic.co/logstash), [Kibana (ELK Stack)](https://www.elastic.co/elastic-stack) or other log management solutions. 
+[^logging-1]: Integrate with external logging systems (e.g., [Syslog](https://daroczig.github.io/logger/reference/appender_syslog.html) or [Telegram](https://daroczig.github.io/logger/reference/appender_telegram.html)) using custom appenders.
 
-[^external-logging]: Integrate with external logging systems (e.g., [Syslog](https://daroczig.github.io/logger/reference/appender_syslog.html) or [Telegram](https://daroczig.github.io/logger/reference/appender_telegram.html)) using custom appenders.
+We also want to periodically archive old logs to prevent storage issues. Storing log messages as JSON objects is sometimes preferred because JSON files are structured, machine-readable, and can easily integrate with logging tools like [Logstash](https://www.elastic.co/logstash), [Kibana (ELK Stack)](https://www.elastic.co/elastic-stack) or other log management solutions.
 
 ### Custom [`logger`]{style="font-size: 1.05em;"} functions
 
@@ -577,18 +642,19 @@ logr_msg <- function(message, level = "INFO", log_file = NULL, json = FALSE) {
   )
 }
 ```
-1. All logs print to console
-2. Write logs to JSON if the `json = TRUE`  
-3. Default `appender_tee` for plain text logs  
-4. Set the default formatter  
-5. Handle all log levels  
-6. Default to `INFO`  
+
+1.  All logs print to console
+2.  Write logs to JSON if the `json = TRUE`\
+3.  Default `appender_tee` for plain text logs\
+4.  Set the default formatter\
+5.  Handle all log levels\
+6.  Default to `INFO`
 
 [`log_appender`](https://daroczig.github.io/logger/reference/log_appender.html) controls where the log messages go. It specifies the "destination" for each log message, whether that's the **Console**, a file, or both.
 
 [`log_formatter`](https://daroczig.github.io/logger/reference/log_formatter.html) is like a template for log messages--it determines how log each message is structured and displayed. We can control what information is included in each message (like the timestamp, log level, and the actual message), and how this information is formatted. Predefined formatters (like `formatter_glue`) uses `glue` syntax to create flexible and readable formats.
 
-We'll demonstrate `logr_msg()` with the `mod_var_input_server()` function, which returns the variable inputs from the UI. The `message` in `logr_msg()` is built with `glue::glue()` and includes the three reactive inputs from this module. We're also appending the log output to a new log file (`_logs/app_log.txt`). 
+We'll demonstrate `logr_msg()` with the `mod_var_input_server()` function, which returns the variable inputs from the UI. The `message` in `logr_msg()` is built with `glue::glue()` and includes the three reactive inputs from this module. We're also appending the log output to a new log file (`_logs/app_log.txt`).
 
 ```{r}
 #| eval: false 
@@ -601,7 +667,7 @@ mod_var_input_server <- function(id) {
     
     observe({
         logr_msg( #<2>
-          glue::glue("Reactive inputs collected: 
+          glue::glue("Reactive inputs: 
                       x = {input$x}, y = {input$y}, z = {input$z}"),
           level = "DEBUG", log_file = "_logs/app_log.txt") #<2>
     }) |> 
@@ -623,9 +689,10 @@ mod_var_input_server <- function(id) {
   })
 }
 ```
-1. `TRACE` log for starting the module  
-2. `DEBUG` log for collecting inputs 
-3. `DEBUG` log for returning inputs
+
+1.  `TRACE` log for starting the module\
+2.  `DEBUG` log for collecting inputs
+3.  `DEBUG` log for returning inputs
 
 An advantage to using the `logger` package is that our log messages are automatically printed to the Console while the application is launched, although when we load and install `sap` and launch the `inst/tidy-movies` app, we don't see any logs:
 
@@ -643,9 +710,9 @@ hot_key(fun = "all")
 launch_app("ggp2")
 ```
 
-![Initial messages from `logr_msg()`](images/log_ggp2_logr_message_var_input.png){width='100%' fig-align='center'}
+![Initial messages from `logr_msg()`](images/log_ggp2_logr_message_var_input.png){width="100%" fig-align="center"}
 
-To view the log in our app, we need to set the log threshold: 
+To view the log in our app, we need to set the log threshold:
 
 ```{r}
 #| eval: false 
@@ -656,17 +723,15 @@ launch_app("ggp2")
 
 The logs are now printed to the console and we can see the level, timestamp, and message:
 
-![Updates from `logr_msg()`](images/log_ggp2_logr_message_var_input_update.png){width='100%' fig-align='center'}
-
+![Updates from `logr_msg()`](images/log_ggp2_logr_message_var_input_update.png){width="100%" fig-align="center"}
 
 ## Logging and debugging
 
 Our primary application (i.e. the app launched with `launch_app()`) is currently displaying and error message:
 
-![Error message in `launch_app()`](images/log_error_in_launch_app.png){width='100%' fig-align='center'}
+![Error message in `launch_app()`](images/log_error_in_launch_app.png){width="100%" fig-align="center"}
 
 Let's try to visualize the call stack and namespaces in this app. The diagram below shows how the variable and aesthetic input modules communicate the user selections across the namespaces in UI and server functions.
-
 
 ```{=html}
 
@@ -683,7 +748,6 @@ Let's try to visualize the call stack and namespaces in this app. The diagram be
 
 </style>
 ```
-
 
 ```{mermaid}
 %%| fig-align: center
@@ -745,11 +809,21 @@ flowchart TD
     style UI fill:#e8f0f5,stroke-width:1px,rx:12,ry:12
 ```
 
-Below are examples of various log levels using `logr_msg()` to debug the error in the primary application. 
+Below are examples of various log levels using `logr_msg()` to help us debug the error in the primary application.
 
 ### [`TRACE`]{style="font-size: 1.05em;"} logs
 
-1. In `mod_scatter_display_server()`, add a `TRACE` log messages for initiating the scatterplot graph 
+1. In `movies_server()`, add a `TRACE` log message for signaling the server function has executed.
+
+```{r}
+#| eval: false 
+#| code-fold: false
+  logr_msg(message = "Server function execution completed", 
+           level = "TRACE", log_file = "_logs/app_log.txt")
+```
+
+
+2.  In `mod_scatter_display_server()`, add a `TRACE` log messages for initiating the scatterplot graph
 
 ```{r}
 #| eval: false 
@@ -758,10 +832,9 @@ logr_msg("Preparing scatterplot in mod_scatter_display_server",
           level = "TRACE", log_file = "_logs/app_log.txt")
 ```
 
+### [`INFO`]{style="font-size: 1.05em;"} logs
 
-### [`INFO`]{style="font-size: 1.05em;"} logs 
-
-1. In `launch_app()`, add an `INFO` log message to print the application being launched with the `app` argument  
+1.  In `launch_app()`, add an `INFO` log message to print the application being launched with the `app` argument
 
 ```{r}
 #| eval: false 
@@ -770,7 +843,7 @@ logr_msg("Preparing scatterplot in mod_scatter_display_server",
     log_file = "_logs/app_log.txt")
 ```
 
-2. In `movies_ui()`, add an `INFO` log message with the value of the `bslib` argument 
+2.  In `movies_ui()`, add an `INFO` log message with the value of the `bslib` argument
 
 ```{r}
 #| eval: false 
@@ -780,10 +853,27 @@ logr_msg("Preparing scatterplot in mod_scatter_display_server",
     level = "INFO", log_file = "_logs/app_log.txt")
 ```
 
+### [`WARN`]{style="font-size: 1.05em;"} logs
 
-### [`ERROR`]{style="font-size: 1.05em;"} logs 
+1. In `mod_aes_input_server()`, add a `WARN` log message (with validate) for input warnings. 
 
-1. In `movies_ui()`, Add logic and an `ERROR` log message to monitor the format of the `bslib` argument
+```{r}
+#| eval: false 
+#| code-fold: false
+      validate(
+        need(try(input$alpha >= 0 & input$alpha <= 1), 
+              "Alpha must be between 0 and 1")
+      )
+      if (input$alpha < 0 || input$alpha > 1) {
+        logr_msg(message = "Alpha value out of range: {alpha}", 
+        level = "WARN", log_file = "_logs/app_log.txt")
+      }
+```
+
+
+### [`ERROR`]{style="font-size: 1.05em;"} logs
+
+1.  In `movies_ui()`, Add logic and an `ERROR` log message to monitor the format of the `bslib` argument
 
 ```{r}
 #| eval: false 
@@ -795,7 +885,7 @@ if (!is.logical(bslib)) {
   }
 ```
 
-2. In `mod_scatter_display_server()`, add an `ERROR` log messages (with `tryCatch()`) to monitor the rendered output
+2.  In `mod_scatter_display_server()`, add an `ERROR` log messages (with `tryCatch()`) to monitor the rendered output
 
 ```{r}
 #| eval: false 
@@ -826,10 +916,9 @@ if (!is.logical(bslib)) {
   })
 ```
 
-
 ### [`FATAL`]{style="font-size: 1.05em;"} logs
 
-1. Add a `FATAL` log message (along with `tryCatch()` and `stop()`) in `launch_app()` to monitor the application being launched  
+1. In `launch_app()`, add a `FATAL` log message (along with `tryCatch()` and `stop()`) to monitor the application being launched
 
 ```{r}
 #| eval: false 
@@ -889,12 +978,11 @@ logger::log_threshold('TRACE')
 launch_app()
 ```
 
-![Log error message in `launch_app()`](images/log_error_info_threshold.png){width='100%' fig-align='center'}
+![Log error message in `launch_app()`](images/log_error_info_threshold.png){width="100%" fig-align="center"}
 
+While developing our application, we can run the app interactively and monitor the logs in the console. If the application has been deployed, we can search the log files using R (or the command line):
 
-While developing our application, we can run the app interactively and monitor the logs in the console. If the application has been deployed, we can search the log files using R (or the command line): 
-
-In R: 
+In R:
 
 ```{r}
 #| eval: false 
@@ -904,18 +992,18 @@ readLines("_logs/app_log.txt") |>
 ```
 
 ```{verbatim}
-<ERROR> [2025-01-29 08:04:30] Failed to render scatterplot. 
+│ <ERROR> [2025-01-29 13:55:36] Failed to render scatterplot. 
   Reason: 'text' must be a character vector
 ```
 
 Command line:
 
-```sh
+``` sh
 cat _logs/app_log.txt | grep "ERROR"
 ```
 
 ```{verbatim}
-ERROR [2025-01-29 08:04:30] Failed to render scatterplot.
+ERROR [2025-01-29 13:55:36] Failed to render scatterplot. 
   Reason: 'text' must be a character vector
 ```
 
@@ -950,15 +1038,15 @@ This setup ensures that logging is ready as soon as your package is loaded.
 ")
 ```
 
-## Package startup messages 
+## Package startup messages
 
-Package startup messages help create a welcoming and professional impression when users load your app-package. These messages can also inform users of any specific requirements, dependencies, or potential conflicts. Package startup messages can also include the logging system (i.e., `logger`) being used, which can be helpful for debugging or monitoring during development or runtime. 
+Package startup messages help create a welcoming and professional impression when users load your app-package. These messages can also inform users of any specific requirements, dependencies, or potential conflicts. Package startup messages can also include the logging system (i.e., `logger`) being used, which can be helpful for debugging or monitoring during development or runtime.
 
 ### [`.onAttach()`]{style="font-size: 1.05em;"}
 
-Write package startup messages in the `.onAttach()` function (stored in `R/zzz.R`).[^on-attach] The example below includes a welcome message, the current Git branch, dependencies (imports, depends, and suggests), and the path where this package is loaded *from*.
+Write package startup messages in the `.onAttach()` function (stored in `R/zzz.R`).[^logging-2] The example below includes a welcome message, the current Git branch, dependencies (imports, depends, and suggests), and the path where this package is loaded *from*.
 
-[^on-attach]: Read more in the ['Hooks for Namespace Events' documentation](https://stat.ethz.ch/R-manual/R-devel/library/base/html/ns-hooks.html).
+[^logging-2]: Read more in the ['Hooks for Namespace Events' documentation](https://stat.ethz.ch/R-manual/R-devel/library/base/html/ns-hooks.html).
 
 ```{r}
 .onAttach <- function(libname, pkgname) {
@@ -1000,50 +1088,27 @@ Write package startup messages in the `.onAttach()` function (stored in `R/zzz.R
   cli::cli_inform(c(), class = "packageStartupMessage") # <15>
 }
 ```
-1. Check if the current folder is a Git repo.     
-2. Capture the current branch if it's a Git repo.     
-3. Package version.    
-4. Dependencies from `DESCRIPTION`.     
-5. Parse and format dependencies function.    
-6. Cleaned dependencies.    
-7. Welcome message.   
-8. Git branch.    
-9. Dependencies (header).    
-10. Dependencies (`Imports` from `DESCRIPTION`).     
-11. Dependencies (`Suggests` from `DESCRIPTION`).     
-12. Dependencies (`Depends` from `DESCRIPTION`).     
-13. Source of installed packages.   
-14. `libname` (*a character string giving the library directory where the package defining the namespace was found.*)   
-15. Output with appropriate class.  
+1.  Check if the current folder is a Git repo.\
+2.  Capture the current branch if it's a Git repo.\
+3.  Package version.\
+4.  Dependencies from `DESCRIPTION`.\
+5.  Parse and format dependencies function.\
+6.  Cleaned dependencies.\
+7.  Welcome message.\
+8.  Git branch.\
+9.  Dependencies (header).\
+10. Dependencies (`Imports` from `DESCRIPTION`).\
+11. Dependencies (`Suggests` from `DESCRIPTION`).\
+12. Dependencies (`Depends` from `DESCRIPTION`).\
+13. Source of installed packages.\
+14. `libname` (*a character string giving the library directory where the package defining the namespace was found.*)\
+15. Output with appropriate class.
 
-When we loading `sap`, we see the output from our startup message: 
+When we loading `sap`, we see the output from our startup message:
 
-```{r}
-#| eval: false 
-#| code-fold: false
-devtools::load_all()
-```
+![Package startup message in sap`](images/log_pkg_startup_load_all.png){width="100%" fig-align="center"}
 
-```{bash}
-#| eval: false 
-#| code-fold: false
-ℹ Loading sap
-── Welcome to the sap package (version 0.0.0.9130) ☺! ──
-
-── Current branch: 
-❯ 13_logging
-
-── Dependencies: 
-❯ Imports: bslib, cli, ggplot2, logger, pkgload, rlang, sass, shiny, shinythemes,
-stringr, tools, withr
-❯ Suggests: None
-❯ Depends: R (>= 2.10)
-
-── Loaded from: 
-❯ /Users/mjfrigaard/projects/apps/R
-```
-
-Including a startup message is a helpful tool, but it should be thoughtfully crafted to enhance the user experience without being intrusive. Avoid including a startup message if the app-package if the message doesn’t add meaningful value and becomes unnecessary "noise" for users. 
+Including a startup message is a helpful tool, but it should be thoughtfully crafted to enhance the user experience without being intrusive. Avoid including a startup message if the app-package if the message doesn’t add meaningful value and becomes unnecessary "noise" for users.
 
 Also, be sure to allow users to disable the message if possible (e.g., using `suppressPackageStartupMessages()`):
 
@@ -1055,19 +1120,8 @@ pak::pak('mjfrigaard/sap')
 suppressPackageStartupMessages(library(sap))
 ```
 
+## Recap {.unnumbered}
 
-## Recap
+Logging is an invaluable tool for debugging Shiny applications in an R package. By strategically placing log messages and configuring log levels, you can gain deep insights into your application’s behavior. However, we also want to be selective with logging and avoid exposing or storing sensitive data.
 
-Logging is an invaluable tool for debugging Shiny applications in an R package. By strategically placing log messages and configuring log levels, you can gain deep insights into your application’s behavior. However, we also want to be selective with logging and avoid exposing or storing sensitive data. 
-
-The techniques discussed in this chapter will help you efficiently diagnose and resolve issues, making your Shiny applications more robust and reliable. 
-
-
-
-
-
-
-
-
-
-
+The techniques discussed in this chapter will help you efficiently diagnose and resolve issues, making your Shiny applications more robust and reliable.
