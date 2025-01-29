@@ -1,0 +1,2253 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.37">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2025-01-29">
+<meta name="description" content="Getting your app into an R package">
+
+<title>13&nbsp; Logging – Shiny App-Packages</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./tests.html" rel="next">
+<link href="./debug_apps.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-29e2c20b02301cfff04dc8050bf30c7e.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-7cb4b303de7ee40d7b7b73459d742b02.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<meta name="mermaid-theme" content="neutral">
+<script src="site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+
+</head>
+
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./debug.html">Debug</a></li><li class="breadcrumb-item"><a href="./logging.html"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Logging</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Shiny App-Packages</a> 
+        <div class="sidebar-tools-main">
+    <a href="https://github.com/mjfrigaard/shiny-app-pkgs" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Welcome!</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="./intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Introduction</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./whole_game.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Whole app game</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./shiny.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Shiny</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./packages.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Packages</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./development.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Development</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="./app_packages.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">App-packages</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./document.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Documentation</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./dependencies.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Dependencies</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./launch.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Launch</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./resources.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Resources</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="./debug.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Debug</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./debugger.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Debuggers</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./debug_print.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Print debugging</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./debug_apps.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Debugging apps</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./logging.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Logging</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="./tests.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Tests</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./test_suite.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Test suite</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./test_specs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Specifications</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./test_tools.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Test tools</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./test_modules.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Testing modules</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./test_system.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">System tests</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="./deploy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Deploy</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./shinyappsio.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">shinyapps.io</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./docker.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Docker</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./gha.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">GitHub Actions</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./pkgdown.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">pkgdown</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="./frameworks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Frameworks</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./golem.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">golem</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./leprechaun.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">leprechaun</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./charpente.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">charpente</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./rhino.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">rhino</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="./special_topics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Special topics</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./code.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Code Style</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./non_r_code.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">Non-R Code</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./app_data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">App data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./stack_traces.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Stack traces</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./entanglement.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Dependency hell</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./glossary.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">Glossary of terms</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./github.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">GitHub</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./create.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Packages FAQ</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./bdd.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">D</span>&nbsp; <span class="chapter-title">BDD</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./test_snapshots_mocks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">E</span>&nbsp; <span class="chapter-title">Mocks and snapshots</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./comparisons.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">F</span>&nbsp; <span class="chapter-title">Comparisons</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./rhino_cicd.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">G</span>&nbsp; <span class="chapter-title">Rhino CI/CD</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active" data-toc-expanded="99">
+    <h2 id="toc-title">Contents</h2>
+   
+  <ul>
+  <li><a href="#why-use-logging" id="toc-why-use-logging" class="nav-link active" data-scroll-target="#why-use-logging"><span class="header-section-number">13.1</span> Why Use Logging?</a>
+  <ul>
+  <li><a href="#architecture" id="toc-architecture" class="nav-link" data-scroll-target="#architecture"><span class="header-section-number">13.1.1</span> Architecture</a></li>
+  </ul></li>
+  <li><a href="#custom-logging-functions" id="toc-custom-logging-functions" class="nav-link" data-scroll-target="#custom-logging-functions"><span class="header-section-number">13.2</span> Custom logging functions</a>
+  <ul>
+  <li><a href="#error-handling" id="toc-error-handling" class="nav-link" data-scroll-target="#error-handling"><span class="header-section-number">13.2.1</span> Error handling</a></li>
+  <li><a href="#logging-events" id="toc-logging-events" class="nav-link" data-scroll-target="#logging-events"><span class="header-section-number">13.2.2</span> Logging events</a></li>
+  </ul></li>
+  <li><a href="#app-logs-with-logger" id="toc-app-logs-with-logger" class="nav-link" data-scroll-target="#app-logs-with-logger"><span class="header-section-number">13.3</span> App logs with <span style="font-size: 1.05em;"><code>logger</code></span></a>
+  <ul>
+  <li><a href="#log-levels" id="toc-log-levels" class="nav-link" data-scroll-target="#log-levels"><span class="header-section-number">13.3.1</span> Log levels</a></li>
+  <li><a href="#storing-log-files" id="toc-storing-log-files" class="nav-link" data-scroll-target="#storing-log-files"><span class="header-section-number">13.3.2</span> Storing log files</a></li>
+  <li><a href="#custom-logger-functions" id="toc-custom-logger-functions" class="nav-link" data-scroll-target="#custom-logger-functions"><span class="header-section-number">13.3.3</span> Custom <span style="font-size: 1.05em;"><code>logger</code></span> functions</a></li>
+  </ul></li>
+  <li><a href="#logging-and-debugging" id="toc-logging-and-debugging" class="nav-link" data-scroll-target="#logging-and-debugging"><span class="header-section-number">13.4</span> Logging and debugging</a>
+  <ul>
+  <li><a href="#trace-logs" id="toc-trace-logs" class="nav-link" data-scroll-target="#trace-logs"><span class="header-section-number">13.4.1</span> <span style="font-size: 1.05em;"><code>TRACE</code></span> logs</a></li>
+  <li><a href="#info-logs" id="toc-info-logs" class="nav-link" data-scroll-target="#info-logs"><span class="header-section-number">13.4.2</span> <span style="font-size: 1.05em;"><code>INFO</code></span> logs</a></li>
+  <li><a href="#error-logs" id="toc-error-logs" class="nav-link" data-scroll-target="#error-logs"><span class="header-section-number">13.4.3</span> <span style="font-size: 1.05em;"><code>ERROR</code></span> logs</a></li>
+  <li><a href="#fatal-logs" id="toc-fatal-logs" class="nav-link" data-scroll-target="#fatal-logs"><span class="header-section-number">13.4.4</span> <span style="font-size: 1.05em;"><code>FATAL</code></span> logs</a></li>
+  </ul></li>
+  <li><a href="#package-startup-messages" id="toc-package-startup-messages" class="nav-link" data-scroll-target="#package-startup-messages"><span class="header-section-number">13.5</span> Package startup messages</a>
+  <ul>
+  <li><a href="#onattach" id="toc-onattach" class="nav-link" data-scroll-target="#onattach"><span class="header-section-number">13.5.1</span> <span style="font-size: 1.05em;"><code>.onAttach()</code></span></a></li>
+  </ul></li>
+  <li><a href="#recap" id="toc-recap" class="nav-link" data-scroll-target="#recap"><span class="header-section-number">13.6</span> Recap</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/mjfrigaard/shiny-app-pkgs/edit/main/logging.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/mjfrigaard/shiny-app-pkgs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./debug.html">Debug</a></li><li class="breadcrumb-item"><a href="./logging.html"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Logging</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-logging" class="quarto-section-identifier"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Logging</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">2025-01-29</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<!--
+https://shiny.posit.co/r/articles/improve/debugging/
+https://debruine.github.io/shinyintro/debugging.html
+-->
+<div class="callout callout-style-default callout-important no-icon callout-titled">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-1-contents" aria-controls="callout-1" aria-expanded="true" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span style="font-weight: bold; font-size: 1.05em;">Warning</span>
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-1" class="callout-1-contents callout-collapse collapse show">
+<div class="callout-body-container callout-body">
+<div style="font-size: 1.05em; color: #282b2d;">
+<p>The contents for this section are under development. Thank you for your patience.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-note no-icon callout-titled">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span style="font-weight: bold; font-size: 1.10em;">TLDR   Logging your Shiny app</span>
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-2" class="callout-2-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<div style="font-size: 1.05em; color: #282b2d;">
+<p><br></p>
+<p>Logging plays a crucial role in…</p>
+</div>
+</div>
+</div>
+</div>
+<p>Another proactive approach to debugging Shiny applications is implementing logging. Logs help with debugging, auditing, and monitoring and should be considered an essential feature while developing a Shiny app, especially when building an R package. This chapter introduces integrating logging in a Shiny app-package to make debugging and issue tracking more efficient.</p>
+<div class="callout callout-style-default callout-tip no-icon callout-titled">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-3-contents" aria-controls="callout-3" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span style="font-weight: bold; font-size: 1.15em;">Access the applications in this chapter</span>
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-3" class="callout-3-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<div style="font-size: 0.95em; color: #282b2d;">
+<p>I’ve created the <a href="https://mjfrigaard.github.io/shinypak/"><code>shinypak</code> R package</a> in an effort to make each section accessible and easy to follow. Install <code>shinypak</code> using <code>pak</code> (or <code>remotes</code>):</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">'pak'</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>pak<span class="sc">::</span><span class="fu">pak</span>(<span class="st">'mjfrigaard/shinypak'</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(shinypak)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>List the apps in this chapter:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">list_apps</span>(<span class="at">regex =</span> <span class="st">'13'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Launch apps with <code>launch()</code></p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">launch</span>(<span class="at">app =</span> <span class="st">'13_logging'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Download apps with <code>get_app()</code></p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">get_app</span>(<span class="at">app =</span> <span class="st">'13_logging'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</div>
+</div>
+</div>
+<section id="why-use-logging" class="level2" data-number="13.1">
+<h2 data-number="13.1" class="anchored" data-anchor-id="why-use-logging"><span class="header-section-number">13.1</span> Why Use Logging?</h2>
+<p>Logging applications app-package lets us track the application flow and record user interactions and inputs, and can also be used to identify runtime errors and unexpected behaviors. Log messages are more structured, flexible, and configurable than print statements or the interactive debugger. Logging is particularly useful in production environments, where direct debugging may not be possible. Logs can also be saved for future analysis, even after the application has stopped running.</p>
+<section id="architecture" class="level3" data-number="13.1.1">
+<h3 data-number="13.1.1" class="anchored" data-anchor-id="architecture"><span class="header-section-number">13.1.1</span> Architecture</h3>
+<p>We’re going to start logging the behaviors in the <code>inst/tidy-movies</code> application. The architecture of this application has been updated to include the two new input modules (see <a href="#sec-resources-inst-tidy-movies-app" class="quarto-xref"><span class="quarto-unresolved-ref">sec-resources-inst-tidy-movies-app</span></a>):</p>
+
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+
+</style>
+<div class="cell" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
+flowchart LR
+        subgraph R["&lt;strong&gt;R/ folder&lt;/strong&gt;"]
+            subgraph launch["launch_app('ggp2')"]
+                display_type["display_type()"]
+            end
+                mod_aes_input_ui["mod_aes_input_ui()"]
+                mod_aes_input_server["mod_aes_input_server"]
+                mod_var_input_server["mod_var_input_server()"]
+                scatter_plot["scatter_plot()"]
+        end
+
+        subgraph tidy_movies["&lt;strong&gt;tidy-movies/ folder&lt;/strong&gt;"]
+            subgraph app["app.R file"]
+                subgraph SubR["&lt;strong&gt;R/ folder&lt;/strong&gt;"]
+                devUI["devUI()"]
+                dev_mod_vars_ui["dev_mod_vars_ui()"]
+                dev_mod_scatter_ui["dev_mod_scatter_ui()"]
+                devUI --&gt;|"&lt;em&gt;Calls&lt;/em&gt;"|dev_mod_vars_ui &amp; dev_mod_scatter_ui
+                devServer["devServer()"]
+                dev_mod_scatter_server["dev_mod_scatter_server()"]
+                devServer --&gt;|"&lt;em&gt;Calls&lt;/em&gt;"|dev_mod_scatter_server
+                end
+            end
+            data[("tidy_movies.fst")]
+            img[/"imdb.png"\]
+        end
+        
+
+        launch ==&gt; |"&lt;strong&gt;&lt;code&gt;shinyAppDir()&lt;/code&gt;&lt;/strong&gt;"|app
+        mod_aes_input_ui -.-&gt;|"&lt;em&gt;Called from&lt;/em&gt;"|devUI
+        mod_var_input_server &amp; mod_aes_input_server -.-&gt;|"&lt;em&gt;Called from&lt;/em&gt;"|devServer
+        scatter_plot --&gt; |"&lt;em&gt;Called from&lt;/em&gt;"|dev_mod_scatter_server
+        
+        
+    %% R/
+    style R fill:#e8f0f5,stroke:#333,stroke-width:1px,rx:3,ry:3
+    %% standalone app function
+    style launch fill:#F6F6F6,color:#000,stroke:#333,stroke-width:1px,rx:10,ry:10
+    %% modules 
+    style mod_var_input_server color:#000,fill:#f5f5f5,stroke:#333,stroke-width:1px,rx:12,ry:12
+    style mod_aes_input_ui color:#000,fill:#f5f5f5,stroke:#333,stroke-width:1px,rx:12,ry:12
+    style mod_aes_input_server color:#000,fill:#f5f5f5,stroke:#333,stroke-width:1px,rx:12,ry:12
+    %% utility functions
+    style scatter_plot fill:#595959,color:#FFF,stroke:#333,stroke-width:1px,rx:25,ry:25
+    style display_type fill:#595959,color:#FFF,stroke:#333,stroke-width:1px,rx:25,ry:25
+    
+    %% tidy-movies/ 
+    style tidy_movies fill:#e8f0f5,stroke:#333,stroke-width:1px,rx:3,ry:3
+    %% tidy-movies/R
+    style SubR fill:#f7fafb,stroke:#333,stroke-width:1px,rx:3,ry:3
+    %% tidy-movies/R/ files
+    style devUI stroke:#333,stroke-width:1px,rx:6,ry:6
+    style devServer stroke:#333,stroke-width:1px,rx:6,ry:6
+    style dev_mod_scatter_server color:#000,fill:#f5f5f5,stroke:#333,stroke-width:1px,rx:12,ry:12
+    style dev_mod_scatter_ui color:#000,fill:#f5f5f5,stroke:#333,stroke-width:1px,rx:12,ry:12
+    style dev_mod_vars_ui color:#000,fill:#f5f5f5,stroke:#333,stroke-width:1px,rx:12,ry:12
+    %% files 
+    style app fill:#f8f6e7,color:#000
+    style data fill:#f8f6e7,color:#000
+    style img fill:#f8f6e7,color:#000
+</pre>
+</div>
+<p></p><figcaption> Architecture of app functions in <code>inst/tidy-movies/</code> folder</figcaption> </figure><p></p>
+</div>
+</div>
+</div>
+<p>To launch the <code>inst/tidy-movies</code> app, load, document, and install <code>sap</code> and run:</p>
+<div>
+
+</div>
+<div class="quarto-layout-panel" data-layout="[ 15, 33, 16 ]">
+<div class="quarto-layout-row">
+<div id="first-column" class="quarto-layout-cell" style="flex-basis: 23.4%;justify-content: flex-start;">
+
+</div>
+<div id="second-column" class="quarto-layout-cell" style="flex-basis: 51.6%;justify-content: flex-start;">
+<div style="font-color: #000000; font-weight: bold; font-size: 1.15em" data-layout-valign="bottom">
+<p><kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd><br>
+<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd><br>
+<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>B</kbd></p>
+</div>
+</div>
+<div id="third-column" class="quarto-layout-cell" style="flex-basis: 25.0%;justify-content: flex-start;">
+
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">launch_app</span>(<span class="st">"ggp2"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/log_ggp2_initial_launch.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Launching inst/tidy-movies app with launch_app()"><img src="images/log_ggp2_initial_launch.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Launching inst/tidy-movies app with launch_app()"></a></p>
+</figure>
+</div>
+<figcaption>Launching <code>inst/tidy-movies</code> app with <code>launch_app()</code></figcaption>
+</figure>
+</div>
+<p>The reactive values from the <code>R/mod_var_input.R</code> are printed to the <strong>Console</strong> from the previous chapter (See <a href="#sec-debug-ui" class="quarto-xref"><span class="quarto-unresolved-ref">sec-debug-ui</span></a>).</p>
+</section>
+</section>
+<section id="custom-logging-functions" class="level2" data-number="13.2">
+<h2 data-number="13.2" class="anchored" data-anchor-id="custom-logging-functions"><span class="header-section-number">13.2</span> Custom logging functions</h2>
+<p>Logging can be implemented without any dependencies. The <code>base</code> package has many tools we can use to write a custom logging function. Below is an example logging utility function we could add to the <code>R/</code> folder and use in our app(s):</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="annotated-cell-2"><pre class="sourceCode r code-annotation-code code-with-copy code-annotated"><code class="sourceCode r"><span id="annotated-cell-2-1"><a href="#annotated-cell-2-1" aria-hidden="true" tabindex="-1"></a><span class="co">#' Log Application Behaviors</span></span>
+<span id="annotated-cell-2-2"><a href="#annotated-cell-2-2" aria-hidden="true" tabindex="-1"></a><span class="co">#'</span></span>
+<span id="annotated-cell-2-3"><a href="#annotated-cell-2-3" aria-hidden="true" tabindex="-1"></a><span class="co">#' A simple logging function for logging Shiny events and behaviors.</span></span>
+<span id="annotated-cell-2-4"><a href="#annotated-cell-2-4" aria-hidden="true" tabindex="-1"></a><span class="co">#' </span></span>
+<span id="annotated-cell-2-5"><a href="#annotated-cell-2-5" aria-hidden="true" tabindex="-1"></a><span class="co">#' @param message log message</span></span>
+<span id="annotated-cell-2-6"><a href="#annotated-cell-2-6" aria-hidden="true" tabindex="-1"></a><span class="co">#' @param log_file name of log file (defaults to "app_log.txt")</span></span>
+<span id="annotated-cell-2-7"><a href="#annotated-cell-2-7" aria-hidden="true" tabindex="-1"></a><span class="co">#' @param save print or save log file</span></span>
+<span id="annotated-cell-2-8"><a href="#annotated-cell-2-8" aria-hidden="true" tabindex="-1"></a><span class="co">#'</span></span>
+<span id="annotated-cell-2-9"><a href="#annotated-cell-2-9" aria-hidden="true" tabindex="-1"></a><span class="co">#' @return A log message to the console and the `log_file`.</span></span>
+<span id="annotated-cell-2-10"><a href="#annotated-cell-2-10" aria-hidden="true" tabindex="-1"></a><span class="co">#'</span></span>
+<span id="annotated-cell-2-11"><a href="#annotated-cell-2-11" aria-hidden="true" tabindex="-1"></a><span class="co">#' @family **Utility Functions**</span></span>
+<span id="annotated-cell-2-12"><a href="#annotated-cell-2-12" aria-hidden="true" tabindex="-1"></a><span class="co">#' </span></span>
+<span id="annotated-cell-2-13"><a href="#annotated-cell-2-13" aria-hidden="true" tabindex="-1"></a><span class="co">#' @examples</span></span>
+<span id="annotated-cell-2-14"><a href="#annotated-cell-2-14" aria-hidden="true" tabindex="-1"></a><span class="co">#' if (interactive()) {</span></span>
+<span id="annotated-cell-2-15"><a href="#annotated-cell-2-15" aria-hidden="true" tabindex="-1"></a><span class="co">#'   log_message("message")</span></span>
+<span id="annotated-cell-2-16"><a href="#annotated-cell-2-16" aria-hidden="true" tabindex="-1"></a><span class="co">#' }</span></span>
+<span id="annotated-cell-2-17"><a href="#annotated-cell-2-17" aria-hidden="true" tabindex="-1"></a><span class="co">#' </span></span>
+<span id="annotated-cell-2-18"><a href="#annotated-cell-2-18" aria-hidden="true" tabindex="-1"></a><span class="co">#' @export</span></span>
+<span id="annotated-cell-2-19"><a href="#annotated-cell-2-19" aria-hidden="true" tabindex="-1"></a>log_message <span class="ot">&lt;-</span> <span class="cf">function</span>(message, <span class="at">log_file =</span> <span class="st">"logs/app_log.txt"</span>, <span class="at">save =</span> <span class="cn">FALSE</span>) {</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-2" data-target-annotation="1">1</button><span id="annotated-cell-2-20" class="code-annotation-target"><a href="#annotated-cell-2-20" aria-hidden="true" tabindex="-1"></a>  log_dir <span class="ot">&lt;-</span> <span class="fu">dirname</span>(log_file)</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-2" data-target-annotation="2">2</button><span id="annotated-cell-2-21" class="code-annotation-target"><a href="#annotated-cell-2-21" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">dir.exists</span>(log_dir)) {</span>
+<span id="annotated-cell-2-22"><a href="#annotated-cell-2-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">dir.create</span>(log_dir, <span class="at">recursive =</span> <span class="cn">TRUE</span>)</span>
+<span id="annotated-cell-2-23"><a href="#annotated-cell-2-23" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="annotated-cell-2-24"><a href="#annotated-cell-2-24" aria-hidden="true" tabindex="-1"></a>  timestamp <span class="ot">&lt;-</span> <span class="fu">format</span>(<span class="fu">Sys.time</span>(), <span class="st">"%Y-%m-%d %H:%M:%S"</span>)</span>
+<span id="annotated-cell-2-25"><a href="#annotated-cell-2-25" aria-hidden="true" tabindex="-1"></a>  <span class="co"># log entry</span></span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-2" data-target-annotation="3">3</button><span id="annotated-cell-2-26" class="code-annotation-target"><a href="#annotated-cell-2-26" aria-hidden="true" tabindex="-1"></a>  log_entry <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(<span class="st">"[%s] %s"</span>, timestamp, message)</span>
+<span id="annotated-cell-2-27"><a href="#annotated-cell-2-27" aria-hidden="true" tabindex="-1"></a>  <span class="co"># save </span></span>
+<span id="annotated-cell-2-28"><a href="#annotated-cell-2-28" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (save) {</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-2" data-target-annotation="4">4</button><span id="annotated-cell-2-29" class="code-annotation-target"><a href="#annotated-cell-2-29" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tryCatch</span>({</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-2" data-target-annotation="5">5</button><span id="annotated-cell-2-30" class="code-annotation-target"><a href="#annotated-cell-2-30" aria-hidden="true" tabindex="-1"></a>        <span class="fu">cat</span>(log_entry, <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>, <span class="at">file =</span> log_file, <span class="at">append =</span> <span class="cn">TRUE</span>)</span>
+<span id="annotated-cell-2-31"><a href="#annotated-cell-2-31" aria-hidden="true" tabindex="-1"></a>      },</span>
+<span id="annotated-cell-2-32"><a href="#annotated-cell-2-32" aria-hidden="true" tabindex="-1"></a>      <span class="at">error =</span> <span class="cf">function</span>(e) {</span>
+<span id="annotated-cell-2-33"><a href="#annotated-cell-2-33" aria-hidden="true" tabindex="-1"></a>        <span class="fu">warning</span>(<span class="fu">sprintf</span>(<span class="st">"Failed to write to log file '%s': %s"</span>, log_file, e<span class="sc">$</span>message)) </span>
+<span id="annotated-cell-2-34"><a href="#annotated-cell-2-34" aria-hidden="true" tabindex="-1"></a>      })</span>
+<span id="annotated-cell-2-35"><a href="#annotated-cell-2-35" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="annotated-cell-2-36"><a href="#annotated-cell-2-36" aria-hidden="true" tabindex="-1"></a>  <span class="co"># print</span></span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-2" data-target-annotation="6">6</button><span id="annotated-cell-2-37" class="code-annotation-target"><a href="#annotated-cell-2-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(log_entry)</span>
+<span id="annotated-cell-2-38"><a href="#annotated-cell-2-38" aria-hidden="true" tabindex="-1"></a>}</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-annotation">
+<dl class="code-annotation-container-hidden code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-2" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-2" data-code-lines="20" data-code-annotation="1">This function uses <code>dirname()</code> to dynamically extract the directory path from <code>log_file</code>.<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-2" data-target-annotation="2">2</dt>
+<dd>
+<span data-code-cell="annotated-cell-2" data-code-lines="21,23" data-code-annotation="2"><code>dir.exists()</code> and <code>dir.create()</code> ensure the folder exists (<code>recursive = TRUE</code> is for nested directories).<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-2" data-target-annotation="3">3</dt>
+<dd>
+<span data-code-cell="annotated-cell-2" data-code-lines="26" data-code-annotation="3">The <code>sprintf()</code> function is preferred over <code>cat()</code> or <code>paste0()</code> for clearer and faster string formatting.<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-2" data-target-annotation="4">4</dt>
+<dd>
+<span data-code-cell="annotated-cell-2" data-code-lines="29,34" data-code-annotation="4">The file-writing logic is wrapped in <code>tryCatch()</code> to gracefully handle errors (e.g., file permission issues), and we’ve added a <code>warning()</code> if writing to the log file fails.<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-2" data-target-annotation="5">5</dt>
+<dd>
+<span data-code-cell="annotated-cell-2" data-code-lines="30" data-code-annotation="5">We explicitly add the newline (<code>\n</code>) directly in the <code>cat()</code> function, ensuring the log entry is written properly even if message lacks a newline.<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-2" data-target-annotation="6">6</dt>
+<dd>
+<span data-code-cell="annotated-cell-2" data-code-lines="37" data-code-annotation="6">Finally, the <code>message()</code> is preferred here instead of <code>print()</code> for consistent output formatting.</span>
+</dd>
+</dl>
+</div>
+</div>
+<section id="error-handling" class="level3" data-number="13.2.1">
+<h3 data-number="13.2.1" class="anchored" data-anchor-id="error-handling"><span class="header-section-number">13.2.1</span> Error handling</h3>
+<p>The <code>tryCatch</code> function can be used by itself to log unexpected errors gracefully. Below is an example of combining it with our <code>log_message()</code> function and <code>reactive()</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>safe_reactive <span class="ot">&lt;-</span> <span class="fu">reactive</span>({</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tryCatch</span>({</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Code that might throw an error</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>        <span class="fu">log_message</span>(<span class="st">"Running safe reactive expression"</span>, <span class="at">save =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>        <span class="co"># some code that might fail</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    }, <span class="at">error =</span> <span class="cf">function</span>(e) {</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>        <span class="fu">log_message</span>(<span class="st">"An error occurred: {e$message}"</span>, <span class="at">save =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>        <span class="cn">NULL</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    })</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Adapted to use in the <code>inst/tidy-movies/</code> app, the <code>tryCatch()</code> function might look like:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="annotated-cell-4"><pre class="sourceCode r code-annotation-code code-with-copy code-annotated"><code class="sourceCode r"><span id="annotated-cell-4-1"><a href="#annotated-cell-4-1" aria-hidden="true" tabindex="-1"></a>all_data <span class="ot">&lt;-</span> <span class="fu">tryCatch</span>({</span>
+<span id="annotated-cell-4-2"><a href="#annotated-cell-4-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">log_message</span>(</span>
+<span id="annotated-cell-4-3"><a href="#annotated-cell-4-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">message =</span> <span class="st">"Loading fst data"</span>, </span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-4" data-target-annotation="1">1</button><span id="annotated-cell-4-4" class="code-annotation-target"><a href="#annotated-cell-4-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">log_file =</span> <span class="st">"_logs/ggp2_log.txt"</span>,</span>
+<span id="annotated-cell-4-5"><a href="#annotated-cell-4-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">save =</span> <span class="cn">TRUE</span>)</span>
+<span id="annotated-cell-4-6"><a href="#annotated-cell-4-6" aria-hidden="true" tabindex="-1"></a>  fst<span class="sc">::</span><span class="fu">read_fst</span>(<span class="st">"tidy_movies.fst"</span>)</span>
+<span id="annotated-cell-4-7"><a href="#annotated-cell-4-7" aria-hidden="true" tabindex="-1"></a>}, <span class="at">error =</span> <span class="cf">function</span>(e) {</span>
+<span id="annotated-cell-4-8"><a href="#annotated-cell-4-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">log_message</span>(</span>
+<span id="annotated-cell-4-9"><a href="#annotated-cell-4-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">message =</span> <span class="fu">sprintf</span>(<span class="st">"Error loading fst data: %s"</span>, e<span class="sc">$</span>message), </span>
+<span id="annotated-cell-4-10"><a href="#annotated-cell-4-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">log_file =</span> <span class="st">"_logs/ggp2_log.txt"</span>,</span>
+<span id="annotated-cell-4-11"><a href="#annotated-cell-4-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">save =</span> <span class="cn">TRUE</span>)</span>
+<span id="annotated-cell-4-12"><a href="#annotated-cell-4-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stop</span>(<span class="st">"Data loading failed."</span>)</span>
+<span id="annotated-cell-4-13"><a href="#annotated-cell-4-13" aria-hidden="true" tabindex="-1"></a>})</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-annotation">
+<dl class="code-annotation-container-hidden code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-4" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-4" data-code-lines="4,10" data-code-annotation="1">Saving to <code>_logs</code> because it’s easier to separate from other app folders.</span>
+</dd>
+</dl>
+</div>
+</div>
+<p>After loading and installing our package, the output from the log is saved in the log file (and printed to the <strong>Console</strong>) when our app stops running:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/log_ggp2_logr_message_all_data.png" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="Logging data upload with log_message()"><img src="images/log_ggp2_logr_message_all_data.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Logging data upload with log_message()"></a></p>
+</figure>
+</div>
+<figcaption>Logging data upload with <code>log_message()</code></figcaption>
+</figure>
+</div>
+</section>
+<section id="logging-events" class="level3" data-number="13.2.2">
+<h3 data-number="13.2.2" class="anchored" data-anchor-id="logging-events"><span class="header-section-number">13.2.2</span> Logging events</h3>
+<p>We’ll continue to integrate log messages into the <code>inst/tidy-movies</code> app by inserting <code>log_message()</code> at critical points, such creating reactive expressions. For example, <code>dev_mod_scatter_server()</code> creates the <code>graph_data()</code> reactive based on the missing data checkbox user input:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># build reactive data based on missing checkbox input</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>graph_data <span class="ot">&lt;-</span> <span class="fu">reactive</span>({</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (input<span class="sc">$</span>missing) {</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    graph_data <span class="ot">&lt;-</span> tidyr<span class="sc">::</span><span class="fu">drop_na</span>(<span class="at">data =</span> all_data)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    graph_data <span class="ot">&lt;-</span> all_data</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>}) <span class="sc">|&gt;</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="co"># bind to input to update when it changes</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bindEvent</span>(input<span class="sc">$</span>missing)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>We’ll add <code>log_message()</code> and <code>tryCatch()</code> to log if 1) <code>graph_data()</code> contains all of the observations or the missing values have been removed, and 2) if the reactive was created successfully.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>graph_data <span class="ot">&lt;-</span> <span class="fu">reactive</span>({</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tryCatch</span>({</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (input<span class="sc">$</span>missing) {</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>      <span class="fu">log_message</span>(<span class="st">"Removing missing values."</span>, </span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>                  <span class="at">log_file =</span> <span class="st">"_logs/ggp2_log.txt"</span>,</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>                  <span class="at">save =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>      graph_data <span class="ot">&lt;-</span> tidyr<span class="sc">::</span><span class="fu">drop_na</span>(<span class="at">data =</span> all_data)</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>      <span class="fu">log_message</span>(<span class="st">"Using all data."</span>, </span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>                  <span class="at">log_file =</span> <span class="st">"_logs/ggp2_log.txt"</span>,</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>                  <span class="at">save =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>      graph_data <span class="ot">&lt;-</span> all_data</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>    graph_data</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>  }, <span class="at">error =</span> <span class="cf">function</span>(e) {</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">log_message</span>(</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>      <span class="fu">sprintf</span>(<span class="st">"Error processing graph data: %s"</span>, e<span class="sc">$</span>message), </span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>      <span class="at">log_file =</span> <span class="st">"_logs/ggp2_log.txt"</span></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>    <span class="cn">NULL</span></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>}) <span class="sc">|&gt;</span> <span class="fu">bindEvent</span>(input<span class="sc">$</span>missing)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>After we’ve loaded and installed the changes to sap, we can launch the <code>inst/tidy-movies</code> app with:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">launch_app</span>(<span class="st">"ggp2"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>We won’t see our logs in the <strong>Console</strong> until we stop the app:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/log_ggp2_log_reactive_base.png" class="lightbox" data-gallery="quarto-lightbox-gallery-3" title="Log messages from graph_data()"><img src="images/log_ggp2_log_reactive_base.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Log messages from graph_data()"></a></p>
+</figure>
+</div>
+<figcaption>Log messages from <code>graph_data()</code></figcaption>
+</figure>
+</div>
+<p>The log output tells us the application loaded the <code>.fst</code> data and removed the missing values, but we should also check what happens when we change something, so we’ll adapt the code used to create our <code>inputs()</code> reactive with the <code>log_message()</code> function:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="annotated-cell-8"><pre class="sourceCode r code-annotation-code code-with-copy code-annotated"><code class="sourceCode r"><span id="annotated-cell-8-1"><a href="#annotated-cell-8-1" aria-hidden="true" tabindex="-1"></a>    inputs <span class="ot">&lt;-</span> <span class="fu">reactive</span>({</span>
+<span id="annotated-cell-8-2"><a href="#annotated-cell-8-2" aria-hidden="true" tabindex="-1"></a>      <span class="fu">tryCatch</span>({</span>
+<span id="annotated-cell-8-3"><a href="#annotated-cell-8-3" aria-hidden="true" tabindex="-1"></a>        plot_title <span class="ot">&lt;-</span> tools<span class="sc">::</span><span class="fu">toTitleCase</span>(<span class="fu">aes_inputs</span>()<span class="sc">$</span>plot_title)</span>
+<span id="annotated-cell-8-4"><a href="#annotated-cell-8-4" aria-hidden="true" tabindex="-1"></a>        </span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-8" data-target-annotation="1">1</button><span id="annotated-cell-8-5" class="code-annotation-target"><a href="#annotated-cell-8-5" aria-hidden="true" tabindex="-1"></a>        <span class="fu">log_message</span>(</span>
+<span id="annotated-cell-8-6"><a href="#annotated-cell-8-6" aria-hidden="true" tabindex="-1"></a>          <span class="fu">sprintf</span>(<span class="st">"Processing plot title: '%s'"</span>, plot_title), </span>
+<span id="annotated-cell-8-7"><a href="#annotated-cell-8-7" aria-hidden="true" tabindex="-1"></a>          <span class="at">log_file =</span> <span class="st">"_logs/ggp2_log.txt"</span>)</span>
+<span id="annotated-cell-8-8"><a href="#annotated-cell-8-8" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="annotated-cell-8-9"><a href="#annotated-cell-8-9" aria-hidden="true" tabindex="-1"></a>          input_list <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="annotated-cell-8-10"><a href="#annotated-cell-8-10" aria-hidden="true" tabindex="-1"></a>            <span class="at">x =</span> <span class="fu">var_inputs</span>()<span class="sc">$</span>x,</span>
+<span id="annotated-cell-8-11"><a href="#annotated-cell-8-11" aria-hidden="true" tabindex="-1"></a>            <span class="at">y =</span> <span class="fu">var_inputs</span>()<span class="sc">$</span>y,</span>
+<span id="annotated-cell-8-12"><a href="#annotated-cell-8-12" aria-hidden="true" tabindex="-1"></a>            <span class="at">z =</span> <span class="fu">var_inputs</span>()<span class="sc">$</span>z,</span>
+<span id="annotated-cell-8-13"><a href="#annotated-cell-8-13" aria-hidden="true" tabindex="-1"></a>            <span class="at">alpha =</span> <span class="fu">aes_inputs</span>()<span class="sc">$</span>alpha,</span>
+<span id="annotated-cell-8-14"><a href="#annotated-cell-8-14" aria-hidden="true" tabindex="-1"></a>            <span class="at">size =</span> <span class="fu">aes_inputs</span>()<span class="sc">$</span>size,</span>
+<span id="annotated-cell-8-15"><a href="#annotated-cell-8-15" aria-hidden="true" tabindex="-1"></a>            <span class="at">plot_title =</span> plot_title</span>
+<span id="annotated-cell-8-16"><a href="#annotated-cell-8-16" aria-hidden="true" tabindex="-1"></a>          )</span>
+<span id="annotated-cell-8-17"><a href="#annotated-cell-8-17" aria-hidden="true" tabindex="-1"></a>        </span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-8" data-target-annotation="2">2</button><span id="annotated-cell-8-18" class="code-annotation-target"><a href="#annotated-cell-8-18" aria-hidden="true" tabindex="-1"></a>        <span class="fu">log_message</span>(</span>
+<span id="annotated-cell-8-19"><a href="#annotated-cell-8-19" aria-hidden="true" tabindex="-1"></a>          <span class="fu">sprintf</span>(<span class="st">"Inputs constructed: %s"</span>, </span>
+<span id="annotated-cell-8-20"><a href="#annotated-cell-8-20" aria-hidden="true" tabindex="-1"></a>                  <span class="fu">paste</span>(<span class="fu">names</span>(input_list), input_list, <span class="at">sep =</span> <span class="st">"="</span>, <span class="at">collapse =</span> <span class="st">", "</span>)</span>
+<span id="annotated-cell-8-21"><a href="#annotated-cell-8-21" aria-hidden="true" tabindex="-1"></a>                ),</span>
+<span id="annotated-cell-8-22"><a href="#annotated-cell-8-22" aria-hidden="true" tabindex="-1"></a>                <span class="at">log_file =</span> <span class="st">"_logs/ggp2_log.txt"</span>,</span>
+<span id="annotated-cell-8-23"><a href="#annotated-cell-8-23" aria-hidden="true" tabindex="-1"></a>                <span class="at">save =</span> <span class="cn">TRUE</span>)</span>
+<span id="annotated-cell-8-24"><a href="#annotated-cell-8-24" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="annotated-cell-8-25"><a href="#annotated-cell-8-25" aria-hidden="true" tabindex="-1"></a>        input_list</span>
+<span id="annotated-cell-8-26"><a href="#annotated-cell-8-26" aria-hidden="true" tabindex="-1"></a>      }, <span class="at">error =</span> <span class="cf">function</span>(e) {</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-8" data-target-annotation="3">3</button><span id="annotated-cell-8-27" class="code-annotation-target"><a href="#annotated-cell-8-27" aria-hidden="true" tabindex="-1"></a>        <span class="fu">log_message</span>(</span>
+<span id="annotated-cell-8-28"><a href="#annotated-cell-8-28" aria-hidden="true" tabindex="-1"></a>          <span class="fu">sprintf</span>(<span class="st">"Error in processing inputs: %s"</span>, <span class="fu">conditionMessage</span>(e)),</span>
+<span id="annotated-cell-8-29"><a href="#annotated-cell-8-29" aria-hidden="true" tabindex="-1"></a>          <span class="at">log_file =</span> <span class="st">"_logs/ggp2_log.txt"</span>,</span>
+<span id="annotated-cell-8-30"><a href="#annotated-cell-8-30" aria-hidden="true" tabindex="-1"></a>          <span class="at">save =</span> <span class="cn">TRUE</span>)</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-8" data-target-annotation="4">4</button><span id="annotated-cell-8-31" class="code-annotation-target"><a href="#annotated-cell-8-31" aria-hidden="true" tabindex="-1"></a>        <span class="cn">NULL</span></span>
+<span id="annotated-cell-8-32"><a href="#annotated-cell-8-32" aria-hidden="true" tabindex="-1"></a>      })</span>
+<span id="annotated-cell-8-33"><a href="#annotated-cell-8-33" aria-hidden="true" tabindex="-1"></a>    })</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-annotation">
+<dl class="code-annotation-container-hidden code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-8" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-8" data-code-lines="5,7" data-code-annotation="1">Log the plot title.<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-8" data-target-annotation="2">2</dt>
+<dd>
+<span data-code-cell="annotated-cell-8" data-code-lines="18,23" data-code-annotation="2">Log the final input list.</span>
+</dd>
+<dt data-target-cell="annotated-cell-8" data-target-annotation="3">3</dt>
+<dd>
+<span data-code-cell="annotated-cell-8" data-code-lines="27,30" data-code-annotation="3">Log the error if anything goes wrong.<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-8" data-target-annotation="4">4</dt>
+<dd>
+<span data-code-cell="annotated-cell-8" data-code-lines="31" data-code-annotation="4">Return <code>NULL</code> on error to prevent breaking downstream dependencies.</span>
+</dd>
+</dl>
+</div>
+</div>
+<p>After loading and installing sap, we launch the <code>inst/tidy-movies</code> app again, but this time we un-check the remove missing checkbox and add a new title before stopping the application.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">launch_app</span>(<span class="st">"ggp2"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/log_ggp2_log_reactive_inputs_base.png" class="lightbox" data-gallery="quarto-lightbox-gallery-4" title="Log messages from inputs()"><img src="images/log_ggp2_log_reactive_inputs_base.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Log messages from inputs()"></a></p>
+</figure>
+</div>
+<figcaption>Log messages from <code>inputs()</code></figcaption>
+</figure>
+</div>
+<p>To view the log file, we need to use <code>system.file()</code> (we’re launching the app from the <em>installed</em> location, not the version we’re developing in the <code>inst/tidy-movies/</code> folder). I’ve added <code>readLines()</code> and <code>writeLines()</code> so it prints nicely to the <strong>Console</strong>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">system.file</span>(<span class="st">'tidy-movies'</span>, <span class="st">'_logs'</span>, <span class="st">'ggp2_log.txt'</span>, </span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>            <span class="at">package =</span> <span class="st">'sap'</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>            <span class="fu">readLines</span>() <span class="sc">|&gt;</span> </span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>            <span class="fu">writeLines</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>[2025-01-26 21:39:01] Loading fst data </span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>[2025-01-26 21:39:01] Removing missing values. </span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>[2025-01-26 21:39:01] Inputs constructed: x=year, y=budget, z=mpaa, alpha=0.5, size=2, plot_title= </span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>[2025-01-26 21:39:56] Inputs constructed: x=year, y=length, z=mpaa, alpha=0.5, size=2, plot_title= </span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>[2025-01-26 21:40:01] Inputs constructed: x=rating, y=length, z=mpaa, alpha=0.5, size=2, plot_title= </span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>[2025-01-26 21:40:03] Inputs constructed: x=rating, y=length, z=genre, alpha=0.5, size=2, plot_title= </span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>[2025-01-26 21:40:10] Inputs constructed: x=rating, y=length, z=genre, alpha=0.5, size=2, plot_title=NEW TITLE </span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>[2025-01-26 21:40:13] Using all data. </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>In practice, we’d insert logging messages with <code>log_message()</code> and <code>tryCatch()</code> for application startup, loading data/connecting to databases, API calls, and when using Shiny’s internal validation/error handling functions. In the next section, we’re going to explore using add-on packages to implement logging in our app-package.</p>
+</section>
+</section>
+<section id="app-logs-with-logger" class="level2" data-number="13.3">
+<h2 data-number="13.3" class="anchored" data-anchor-id="app-logs-with-logger"><span class="header-section-number">13.3</span> App logs with <span style="font-size: 1.05em;"><code>logger</code></span></h2>
+<div class="callout callout-style-default callout-note no-icon callout-titled">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-4-contents" aria-controls="callout-4" aria-expanded="true" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span style="font-weight: bold; font-size: 1.15em;">Logging frameworks</span>
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-4" class="callout-4-contents callout-collapse collapse show">
+<div class="callout-body-container callout-body">
+<div style="font-size: 1.10em; color: #282b2d;">
+<p>The R ecosystem offers several libraries for logging.</p>
+<p>The most popular options are:</p>
+<ul>
+<li><p><a href="https://github.com/zatonovo/futile.logger"><code>futile.logger</code></a>: A lightweight and flexible logging package.</p></li>
+<li><p><a href="https://daroczig.github.io/logger/index.html"><code>logger</code></a>: A modern, extensible, and user-friendly library.</p></li>
+<li><p><a href="https://github.com/r-lib/log4r"><code>log4r</code></a>: Inspired by the <a href="https://logging.apache.org/log4j/2.x/index.html">Java <code>log4j</code> library</a>, suitable for structured logging.</p></li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<p>This section will focus on the <a href="https://daroczig.github.io/logger/index.html"><code>logger</code> package</a> because it is simple, easy to integrate with Shiny, and extensible.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">"pak"</span>)</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>pak<span class="sc">::</span><span class="fu">pak</span>(<span class="st">"daroczig/logger"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Add <code>logger</code> to the package dependencies in the <code>DESCRIPTION</code> file and use the <code>logger::fun()</code> syntax to avoid adding <code>@import</code> or <code>@importFrom</code> <code>roxygen</code> tags.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_package</span>(<span class="st">'logger'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="log-levels" class="level3" data-number="13.3.1">
+<h3 data-number="13.3.1" class="anchored" data-anchor-id="log-levels"><span class="header-section-number">13.3.1</span> Log levels</h3>
+<p>The <code>logger</code> package has a few configurations that can be very helpful for app-package development. We’ll start with a basic example using <code>logger::log_info()</code>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>name <span class="ot">&lt;-</span> <span class="st">"world"</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>logger<span class="sc">::</span><span class="fu">log_info</span>(<span class="st">'Hello, {name}'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>INFO [2025-01-22 11:07:52] Hello, world</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The output is a nicely formatted log message, and by default <code>logger</code> supports <a href="https://daroczig.github.io/logger/articles/customize_logger.html#log-message-formatter-functions"><code>glue</code> syntax</a>. However, the following function (<code>logger::log_debug()</code>) doesn’t return a log message to the Console:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>logger<span class="sc">::</span><span class="fu">log_debug</span>(<span class="st">'Hello, {name}'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>This is because the logger package has a threshold configuration that controls the ‘verbosity’ of the logs printed to the <strong>Console</strong>. If we check the <code>log_threshold()</code>, we see it’s set to <code>INFO</code>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>logger<span class="sc">::</span><span class="fu">log_threshold</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>Log level: INFO</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>If we reset the <code>logger::log_threshold()</code> to <code>DEBUG</code>, we will see the call in the <strong>Console</strong>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>logger<span class="sc">::</span><span class="fu">log_threshold</span>(<span class="st">'DEBUG'</span>)</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>logger<span class="sc">::</span><span class="fu">log_debug</span>(<span class="st">'Hello, {name}'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="sourceCode" id="cb21"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>DEBUG [2025-01-22 11:08:36] Hello, world</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>We can set the log threshold dynamically to control the verbosity of logs:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>logger<span class="sc">::</span><span class="fu">log_threshold</span>(<span class="st">'TRACE'</span>) <span class="co"># fine-grained, verbose logging for development</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>logger<span class="sc">::</span><span class="fu">log_threshold</span>(<span class="st">'DEBUG'</span>) <span class="co"># verbose logging for development</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>logger<span class="sc">::</span><span class="fu">log_threshold</span>(<span class="st">'WARN'</span>)  <span class="co"># only warnings and errors for production</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>While developing app-packages, I recommend broadly characterizing the <code>logger</code> log levels into the following categories:</p>
+<div>
+
+</div>
+</section>
+<div class="quarto-layout-panel" data-layout="[50,50]">
+<div class="quarto-layout-row quarto-layout-valign-top">
+<section id="development" class="level3 unnumbered quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<h3 class="unnumbered anchored" data-anchor-id="development">Development</h3>
+<p>Use descriptive messages for easier debugging in development.</p>
+</section>
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<ul>
+<li><p><code>DEBUG</code>: Diagnostic information for inputs, intermediate states, and outputs.</p></li>
+<li><p><code>TRACE</code>: Fine-grained tracking for debugging flows (e.g., reactive updates, function calls).</p></li>
+</ul>
+</div>
+</div>
+<div class="quarto-layout-row quarto-layout-valign-top">
+<section id="production" class="level3 unnumbered quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<h3 class="unnumbered anchored" data-anchor-id="production">Production</h3>
+<p>Use lower verbosity levels in production:</p>
+</section>
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<ul>
+<li><p><code>INFO</code>: Session-level events and significant actions (e.g., app startup, data loading).</p></li>
+<li><p><code>WARN</code>: Suspicious but non-fatal conditions (e.g., unusual input values or data sizes).</p></li>
+<li><p><code>ERROR</code>: Handled errors with appropriate messaging and graceful recovery.</p></li>
+<li><p><code>FATAL</code>: Critical failures leading to app crashes or irrecoverable states.</p></li>
+</ul>
+</div>
+</div>
+</div>
+<section id="storing-log-files" class="level3" data-number="13.3.2">
+<h3 data-number="13.3.2" class="anchored" data-anchor-id="storing-log-files"><span class="header-section-number">13.3.2</span> Storing log files</h3>
+<p>By default, <code>logger</code> logs are written to the console, but the <code>logger::appender_file()</code> function can direct log messages to a file (or to a database or external logging system).<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a></p>
+<p>We also want to periodically archive old logs to prevent storage issues. Storing log messages as JSON objects is sometimes preferred because JSON files are structured, machine-readable, and can easily integrate with logging tools like <a href="https://www.elastic.co/logstash">Logstash</a>, <a href="https://www.elastic.co/elastic-stack">Kibana (ELK Stack)</a> or other log management solutions.</p>
+</section>
+<section id="custom-logger-functions" class="level3" data-number="13.3.3">
+<h3 data-number="13.3.3" class="anchored" data-anchor-id="custom-logger-functions"><span class="header-section-number">13.3.3</span> Custom <span style="font-size: 1.05em;"><code>logger</code></span> functions</h3>
+<p>We’ll write a custom logging function with <code>logger</code> to so our app logs are formatted and managed a consistent manner. Below is a <code>logr_msg()</code> utility function for inserting <code>logger</code>-style logs in our application.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="annotated-cell-22"><pre class="sourceCode r code-annotation-code code-with-copy code-annotated"><code class="sourceCode r"><span id="annotated-cell-22-1"><a href="#annotated-cell-22-1" aria-hidden="true" tabindex="-1"></a>logr_msg <span class="ot">&lt;-</span> <span class="cf">function</span>(message, <span class="at">level =</span> <span class="st">"INFO"</span>, <span class="at">log_file =</span> <span class="cn">NULL</span>, <span class="at">json =</span> <span class="cn">FALSE</span>) {</span>
+<span id="annotated-cell-22-2"><a href="#annotated-cell-22-2" aria-hidden="true" tabindex="-1"></a>  </span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-22" data-target-annotation="1">1</button><span id="annotated-cell-22-3" class="code-annotation-target"><a href="#annotated-cell-22-3" aria-hidden="true" tabindex="-1"></a>  logger<span class="sc">::</span><span class="fu">log_appender</span>(<span class="at">appender =</span> logger<span class="sc">::</span>appender_console)</span>
+<span id="annotated-cell-22-4"><a href="#annotated-cell-22-4" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="annotated-cell-22-5"><a href="#annotated-cell-22-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(log_file)) {</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-22" data-target-annotation="2">2</button><span id="annotated-cell-22-6" class="code-annotation-target"><a href="#annotated-cell-22-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (json) {</span>
+<span id="annotated-cell-22-7"><a href="#annotated-cell-22-7" aria-hidden="true" tabindex="-1"></a>      logger<span class="sc">::</span><span class="fu">log_layout</span>(<span class="at">layout =</span> logger<span class="sc">::</span><span class="fu">layout_json</span>())</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-22" data-target-annotation="3">3</button><span id="annotated-cell-22-8" class="code-annotation-target"><a href="#annotated-cell-22-8" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="annotated-cell-22-9"><a href="#annotated-cell-22-9" aria-hidden="true" tabindex="-1"></a>      logger<span class="sc">::</span><span class="fu">log_appender</span>(<span class="at">appender =</span> logger<span class="sc">::</span><span class="fu">appender_tee</span>(log_file))</span>
+<span id="annotated-cell-22-10"><a href="#annotated-cell-22-10" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="annotated-cell-22-11"><a href="#annotated-cell-22-11" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="annotated-cell-22-12"><a href="#annotated-cell-22-12" aria-hidden="true" tabindex="-1"></a>  </span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-22" data-target-annotation="4">4</button><span id="annotated-cell-22-13" class="code-annotation-target"><a href="#annotated-cell-22-13" aria-hidden="true" tabindex="-1"></a>  logger<span class="sc">::</span><span class="fu">log_formatter</span>(<span class="at">formatter =</span> logger<span class="sc">::</span>formatter_glue)</span>
+<span id="annotated-cell-22-14"><a href="#annotated-cell-22-14" aria-hidden="true" tabindex="-1"></a>  </span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-22" data-target-annotation="5">5</button><span id="annotated-cell-22-15" class="code-annotation-target"><a href="#annotated-cell-22-15" aria-hidden="true" tabindex="-1"></a>  <span class="cf">switch</span>(</span>
+<span id="annotated-cell-22-16"><a href="#annotated-cell-22-16" aria-hidden="true" tabindex="-1"></a>    level,</span>
+<span id="annotated-cell-22-17"><a href="#annotated-cell-22-17" aria-hidden="true" tabindex="-1"></a>    <span class="st">"FATAL"</span> <span class="ot">=</span> logger<span class="sc">::</span><span class="fu">log_fatal</span>(<span class="st">"{message}"</span>),</span>
+<span id="annotated-cell-22-18"><a href="#annotated-cell-22-18" aria-hidden="true" tabindex="-1"></a>    <span class="st">"ERROR"</span> <span class="ot">=</span> logger<span class="sc">::</span><span class="fu">log_error</span>(<span class="st">"{message}"</span>),</span>
+<span id="annotated-cell-22-19"><a href="#annotated-cell-22-19" aria-hidden="true" tabindex="-1"></a>    <span class="st">"WARN"</span> <span class="ot">=</span> logger<span class="sc">::</span><span class="fu">log_warn</span>(<span class="st">"{message}"</span>),</span>
+<span id="annotated-cell-22-20"><a href="#annotated-cell-22-20" aria-hidden="true" tabindex="-1"></a>    <span class="st">"SUCCESS"</span> <span class="ot">=</span> logger<span class="sc">::</span><span class="fu">log_success</span>(<span class="st">"{message}"</span>),</span>
+<span id="annotated-cell-22-21"><a href="#annotated-cell-22-21" aria-hidden="true" tabindex="-1"></a>    <span class="st">"INFO"</span> <span class="ot">=</span> logger<span class="sc">::</span><span class="fu">log_info</span>(<span class="st">"{message}"</span>),</span>
+<span id="annotated-cell-22-22"><a href="#annotated-cell-22-22" aria-hidden="true" tabindex="-1"></a>    <span class="st">"DEBUG"</span> <span class="ot">=</span> logger<span class="sc">::</span><span class="fu">log_debug</span>(<span class="st">"{message}"</span>),</span>
+<span id="annotated-cell-22-23"><a href="#annotated-cell-22-23" aria-hidden="true" tabindex="-1"></a>    <span class="st">"TRACE"</span> <span class="ot">=</span> logger<span class="sc">::</span><span class="fu">log_trace</span>(<span class="st">"{message}"</span>),</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-22" data-target-annotation="6">6</button><span id="annotated-cell-22-24" class="code-annotation-target"><a href="#annotated-cell-22-24" aria-hidden="true" tabindex="-1"></a>    logger<span class="sc">::</span><span class="fu">log_info</span>(<span class="st">"{message}"</span>)</span>
+<span id="annotated-cell-22-25"><a href="#annotated-cell-22-25" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="annotated-cell-22-26"><a href="#annotated-cell-22-26" aria-hidden="true" tabindex="-1"></a>}</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-annotation">
+<dl class="code-annotation-container-hidden code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-22" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-22" data-code-lines="3" data-code-annotation="1">All logs print to console</span>
+</dd>
+<dt data-target-cell="annotated-cell-22" data-target-annotation="2">2</dt>
+<dd>
+<span data-code-cell="annotated-cell-22" data-code-lines="6,7" data-code-annotation="2">Write logs to JSON if the <code>json = TRUE</code><br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-22" data-target-annotation="3">3</dt>
+<dd>
+<span data-code-cell="annotated-cell-22" data-code-lines="8,10" data-code-annotation="3">Default <code>appender_tee</code> for plain text logs<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-22" data-target-annotation="4">4</dt>
+<dd>
+<span data-code-cell="annotated-cell-22" data-code-lines="13" data-code-annotation="4">Set the default formatter<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-22" data-target-annotation="5">5</dt>
+<dd>
+<span data-code-cell="annotated-cell-22" data-code-lines="15,23" data-code-annotation="5">Handle all log levels<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-22" data-target-annotation="6">6</dt>
+<dd>
+<span data-code-cell="annotated-cell-22" data-code-lines="24" data-code-annotation="6">Default to <code>INFO</code></span>
+</dd>
+</dl>
+</div>
+</div>
+<p><a href="https://daroczig.github.io/logger/reference/log_appender.html"><code>log_appender</code></a> controls where the log messages go. It specifies the “destination” for each log message, whether that’s the <strong>Console</strong>, a file, or both.</p>
+<p><a href="https://daroczig.github.io/logger/reference/log_formatter.html"><code>log_formatter</code></a> is like a template for log messages–it determines how log each message is structured and displayed. We can control what information is included in each message (like the timestamp, log level, and the actual message), and how this information is formatted. Predefined formatters (like <code>formatter_glue</code>) uses <code>glue</code> syntax to create flexible and readable formats.</p>
+<p>We’ll demonstrate <code>logr_msg()</code> with the <code>mod_var_input_server()</code> function, which returns the variable inputs from the UI. The <code>message</code> in <code>logr_msg()</code> is built with <code>glue::glue()</code> and includes the three reactive inputs from this module. We’re also appending the log output to a new log file (<code>_logs/app_log.txt</code>).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="annotated-cell-23"><pre class="sourceCode r code-annotation-code code-with-copy code-annotated"><code class="sourceCode r"><span id="annotated-cell-23-1"><a href="#annotated-cell-23-1" aria-hidden="true" tabindex="-1"></a>mod_var_input_server <span class="ot">&lt;-</span> <span class="cf">function</span>(id) {</span>
+<span id="annotated-cell-23-2"><a href="#annotated-cell-23-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">moduleServer</span>(id, <span class="cf">function</span>(input, output, session) {</span>
+<span id="annotated-cell-23-3"><a href="#annotated-cell-23-3" aria-hidden="true" tabindex="-1"></a>    </span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-23" data-target-annotation="1">1</button><span id="annotated-cell-23-4" class="code-annotation-target"><a href="#annotated-cell-23-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">logr_msg</span>(<span class="st">"mod_var_input_server started"</span>,</span>
+<span id="annotated-cell-23-5"><a href="#annotated-cell-23-5" aria-hidden="true" tabindex="-1"></a>      <span class="at">level =</span> <span class="st">"TRACE"</span>, <span class="at">log_file =</span> <span class="st">"_logs/app_log.txt"</span>)</span>
+<span id="annotated-cell-23-6"><a href="#annotated-cell-23-6" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="annotated-cell-23-7"><a href="#annotated-cell-23-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">observe</span>({</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-23" data-target-annotation="2">2</button><span id="annotated-cell-23-8" class="code-annotation-target"><a href="#annotated-cell-23-8" aria-hidden="true" tabindex="-1"></a>        <span class="fu">logr_msg</span>(</span>
+<span id="annotated-cell-23-9"><a href="#annotated-cell-23-9" aria-hidden="true" tabindex="-1"></a>          glue<span class="sc">::</span><span class="fu">glue</span>(<span class="st">"Reactive inputs collected: </span></span>
+<span id="annotated-cell-23-10"><a href="#annotated-cell-23-10" aria-hidden="true" tabindex="-1"></a><span class="st">                      x = {input$x}, y = {input$y}, z = {input$z}"</span>),</span>
+<span id="annotated-cell-23-11"><a href="#annotated-cell-23-11" aria-hidden="true" tabindex="-1"></a>          <span class="at">level =</span> <span class="st">"DEBUG"</span>, <span class="at">log_file =</span> <span class="st">"_logs/app_log.txt"</span>)</span>
+<span id="annotated-cell-23-12"><a href="#annotated-cell-23-12" aria-hidden="true" tabindex="-1"></a>    }) <span class="sc">|&gt;</span> </span>
+<span id="annotated-cell-23-13"><a href="#annotated-cell-23-13" aria-hidden="true" tabindex="-1"></a>      <span class="fu">bindEvent</span>(<span class="fu">c</span>(input<span class="sc">$</span>x, input<span class="sc">$</span>y, input<span class="sc">$</span>z))</span>
+<span id="annotated-cell-23-14"><a href="#annotated-cell-23-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-23-15"><a href="#annotated-cell-23-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(</span>
+<span id="annotated-cell-23-16"><a href="#annotated-cell-23-16" aria-hidden="true" tabindex="-1"></a>      <span class="fu">reactive</span>({</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-23" data-target-annotation="3">3</button><span id="annotated-cell-23-17" class="code-annotation-target"><a href="#annotated-cell-23-17" aria-hidden="true" tabindex="-1"></a>        <span class="fu">logr_msg</span>(</span>
+<span id="annotated-cell-23-18"><a href="#annotated-cell-23-18" aria-hidden="true" tabindex="-1"></a>          glue<span class="sc">::</span><span class="fu">glue</span>(<span class="st">"Reactive inputs returned: </span></span>
+<span id="annotated-cell-23-19"><a href="#annotated-cell-23-19" aria-hidden="true" tabindex="-1"></a><span class="st">                      x = {input$x}, y = {input$y}, z = {input$z}"</span>),</span>
+<span id="annotated-cell-23-20"><a href="#annotated-cell-23-20" aria-hidden="true" tabindex="-1"></a>          <span class="at">level =</span> <span class="st">"DEBUG"</span>, <span class="at">log_file =</span> <span class="st">"_logs/app_log.txt"</span>)</span>
+<span id="annotated-cell-23-21"><a href="#annotated-cell-23-21" aria-hidden="true" tabindex="-1"></a>        <span class="fu">list</span>(</span>
+<span id="annotated-cell-23-22"><a href="#annotated-cell-23-22" aria-hidden="true" tabindex="-1"></a>          <span class="st">"x"</span> <span class="ot">=</span> input<span class="sc">$</span>x,</span>
+<span id="annotated-cell-23-23"><a href="#annotated-cell-23-23" aria-hidden="true" tabindex="-1"></a>          <span class="st">"y"</span> <span class="ot">=</span> input<span class="sc">$</span>y,</span>
+<span id="annotated-cell-23-24"><a href="#annotated-cell-23-24" aria-hidden="true" tabindex="-1"></a>          <span class="st">"z"</span> <span class="ot">=</span> input<span class="sc">$</span>z</span>
+<span id="annotated-cell-23-25"><a href="#annotated-cell-23-25" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="annotated-cell-23-26"><a href="#annotated-cell-23-26" aria-hidden="true" tabindex="-1"></a>      })</span>
+<span id="annotated-cell-23-27"><a href="#annotated-cell-23-27" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="annotated-cell-23-28"><a href="#annotated-cell-23-28" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="annotated-cell-23-29"><a href="#annotated-cell-23-29" aria-hidden="true" tabindex="-1"></a>}</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-annotation">
+<dl class="code-annotation-container-hidden code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-23" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-23" data-code-lines="4,5" data-code-annotation="1"><code>TRACE</code> log for starting the module<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-23" data-target-annotation="2">2</dt>
+<dd>
+<span data-code-cell="annotated-cell-23" data-code-lines="8,11" data-code-annotation="2"><code>DEBUG</code> log for collecting inputs</span>
+</dd>
+<dt data-target-cell="annotated-cell-23" data-target-annotation="3">3</dt>
+<dd>
+<span data-code-cell="annotated-cell-23" data-code-lines="17,20" data-code-annotation="3"><code>DEBUG</code> log for returning inputs</span>
+</dd>
+</dl>
+</div>
+</div>
+<p>An advantage to using the <code>logger</code> package is that our log messages are automatically printed to the Console while the application is launched, although when we load and install <code>sap</code> and launch the <code>inst/tidy-movies</code> app, we don’t see any logs:</p>
+<div>
+
+</div>
+<div class="quarto-layout-panel" data-layout="[ 15, 33, 16 ]">
+<div class="quarto-layout-row">
+<div id="first-column" class="quarto-layout-cell" style="flex-basis: 23.4%;justify-content: flex-start;">
+
+</div>
+<div id="second-column" class="quarto-layout-cell" style="flex-basis: 51.6%;justify-content: flex-start;">
+<div style="font-color: #000000; font-weight: bold; font-size: 1.15em" data-layout-valign="bottom">
+<p><kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd><br>
+<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd><br>
+<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>B</kbd></p>
+</div>
+</div>
+<div id="third-column" class="quarto-layout-cell" style="flex-basis: 25.0%;justify-content: flex-start;">
+
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">launch_app</span>(<span class="st">"ggp2"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/log_ggp2_logr_message_var_input.png" class="lightbox" data-gallery="quarto-lightbox-gallery-5" title="Initial messages from logr_msg()"><img src="images/log_ggp2_logr_message_var_input.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Initial messages from logr_msg()"></a></p>
+</figure>
+</div>
+<figcaption>Initial messages from <code>logr_msg()</code></figcaption>
+</figure>
+</div>
+<p>To view the log in our app, we need to set the log threshold:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>logger<span class="sc">::</span><span class="fu">log_threshold</span>(<span class="st">'TRACE'</span>)</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="fu">launch_app</span>(<span class="st">"ggp2"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The logs are now printed to the console and we can see the level, timestamp, and message:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/log_ggp2_logr_message_var_input_update.png" class="lightbox" data-gallery="quarto-lightbox-gallery-6" title="Updates from logr_msg()"><img src="images/log_ggp2_logr_message_var_input_update.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Updates from logr_msg()"></a></p>
+</figure>
+</div>
+<figcaption>Updates from <code>logr_msg()</code></figcaption>
+</figure>
+</div>
+</section>
+</section>
+<section id="logging-and-debugging" class="level2" data-number="13.4">
+<h2 data-number="13.4" class="anchored" data-anchor-id="logging-and-debugging"><span class="header-section-number">13.4</span> Logging and debugging</h2>
+<p>Our primary application (i.e.&nbsp;the app launched with <code>launch_app()</code>) is currently displaying and error message:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/log_error_in_launch_app.png" class="lightbox" data-gallery="quarto-lightbox-gallery-7" title="Error message in launch_app()"><img src="images/log_error_in_launch_app.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Error message in launch_app()"></a></p>
+</figure>
+</div>
+<figcaption>Error message in <code>launch_app()</code></figcaption>
+</figure>
+</div>
+<p>Let’s try to visualize the call stack and namespaces in this app. The diagram below shows how the variable and aesthetic input modules communicate the user selections across the namespaces in UI and server functions.</p>
+
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+
+</style>
+<div class="cell" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
+flowchart TD
+    subgraph Launch["&lt;strong&gt;launch_app()&lt;/strong&gt;"]
+        subgraph Server["&lt;strong&gt;movies_server()&lt;/strong&gt;"]
+            subgraph VarServerNS["&lt;strong&gt;Variable Namespace&lt;strong&gt;"]
+                VarInpuServer["Server Module:&lt;br&gt;&lt;code&gt;mod_var_input_server()&lt;/code&gt;"]
+            end
+            subgraph AesServerNS["&lt;strong&gt;Aesthetics Namespace&lt;strong&gt;"]
+                AesInpuServer["Server Module:&lt;br&gt;&lt;code&gt;mod_aes_input_server()&lt;/code&gt;"]
+            end
+            subgraph GraphServerNS["&lt;strong&gt;Graph Namespace&lt;strong&gt;"]
+                DisplayServer["Server Module:&lt;br&gt;&lt;code&gt;mod_scatter_display_server()&lt;/code&gt;"]
+                PlotUtil["Utility Function:&lt;br&gt;&lt;code&gt;scatter_plot()&lt;/code&gt;"]
+            end
+        end
+        subgraph UI["&lt;strong&gt;movies_ui()&lt;/strong&gt;"]
+            subgraph VarUINS["&lt;strong&gt;Variable Namespace&lt;strong&gt;"]
+                VarInpuUI["UI Module:&lt;br&gt;&lt;code&gt;mod_var_input_ui()&lt;/code&gt;"]
+            end
+            subgraph AesUINS["&lt;strong&gt;Aesthetics Namespace&lt;strong&gt;"]
+                AesInpuUI["UI Module:&lt;br&gt;&lt;code&gt;mod_aes_input_ui()&lt;/code&gt;"]
+            end
+            subgraph GraphUINS["&lt;strong&gt;Graph Namespace&lt;strong&gt;"]
+                DisplayUI["UI Module:&lt;br&gt;&lt;code&gt;mod_scatter_display_ui()&lt;/code&gt;"]
+            end
+        end
+
+        VarInpuUI &lt;==&gt; |"shared namespace"|VarInpuServer
+        AesInpuUI &lt;==&gt; |"shared namespace"|AesInpuServer
+        DisplayServer &lt;--&gt; PlotUtil &lt;==&gt; |"shared namespace"|DisplayUI
+    end
+
+    VarInpuServer &lt;-.-&gt;|"Communicates &lt;code&gt;selected_vars&lt;/code&gt;&lt;br&gt;across namespaces"| DisplayServer
+    AesInpuServer &lt;-.-&gt;|"Communicate &lt;code&gt;selected_aes&lt;/code&gt;&lt;br&gt;across namespaces"| DisplayServer
+    
+    %% standalone app function 
+    style Launch fill:#F6F6F6,color:#000,stroke:#333
+    %% modules
+    style VarInpuUI color:#000,fill:#f5f5f5,stroke-width:2px,rx:3,ry:3
+    style AesInpuServer color:#000,fill:#f5f5f5,stroke-width:2px,rx:3,ry:3
+    style AesInpuUI color:#000,fill:#f5f5f5,stroke-width:2px,rx:3,ry:3
+    style DisplayServer color:#000,fill:#f5f5f5,stroke-width:2px,rx:3,ry:3
+    style DisplayUI color:#000,fill:#f5f5f5,stroke-width:2px,rx:3,ry:3
+    %% Utility Functions
+    style PlotUtil fill:#595959,color:#FFF,stroke:#333,stroke-width:1px,rx:25,ry:25
+    %% namespaces
+    style VarServerNS fill:#f8f6e7,stroke-width:1px,rx:6,ry:6
+    style VarUINS fill:#f8f6e7,stroke-width:1px,rx:6,ry:6
+    style AesServerNS fill:#f8f6e7,stroke-width:1px,rx:6,ry:6
+    style AesUINS fill:#f8f6e7,stroke-width:1px,rx:6,ry:6
+    style GraphServerNS fill:#f8f6e7,stroke-width:1px,rx:6,ry:6
+    style GraphUINS fill:#f8f6e7,stroke-width:1px,rx:6,ry:6
+    %% UI and Server
+    style Server fill:#e8f0f5,stroke-width:1px,rx:12,ry:12
+    style UI fill:#e8f0f5,stroke-width:1px,rx:12,ry:12
+</pre>
+</div>
+<p></p><figcaption> Primary <code>launch_app()</code> app</figcaption> </figure><p></p>
+</div>
+</div>
+</div>
+<p>Below are examples of various log levels using <code>logr_msg()</code> to debug the error in the primary application.</p>
+<section id="trace-logs" class="level3" data-number="13.4.1">
+<h3 data-number="13.4.1" class="anchored" data-anchor-id="trace-logs"><span class="header-section-number">13.4.1</span> <span style="font-size: 1.05em;"><code>TRACE</code></span> logs</h3>
+<ol type="1">
+<li>In <code>mod_scatter_display_server()</code>, add a <code>TRACE</code> log messages for initiating the scatterplot graph</li>
+</ol>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">logr_msg</span>(<span class="st">"Preparing scatterplot in mod_scatter_display_server"</span>, </span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>          <span class="at">level =</span> <span class="st">"TRACE"</span>, <span class="at">log_file =</span> <span class="st">"_logs/app_log.txt"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="info-logs" class="level3" data-number="13.4.2">
+<h3 data-number="13.4.2" class="anchored" data-anchor-id="info-logs"><span class="header-section-number">13.4.2</span> <span style="font-size: 1.05em;"><code>INFO</code></span> logs</h3>
+<ol type="1">
+<li>In <code>launch_app()</code>, add an <code>INFO</code> log message to print the application being launched with the <code>app</code> argument</li>
+</ol>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>  <span class="fu">logr_msg</span>(glue<span class="sc">::</span><span class="fu">glue</span>(<span class="st">"Launching app: {app}"</span>), <span class="at">level =</span> <span class="st">"INFO"</span>,</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">log_file =</span> <span class="st">"_logs/app_log.txt"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<ol start="2" type="1">
+<li>In <code>movies_ui()</code>, add an <code>INFO</code> log message with the value of the <code>bslib</code> argument</li>
+</ol>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>  <span class="fu">logr_msg</span>(</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>    glue<span class="sc">::</span><span class="fu">glue</span>(<span class="st">"Launching UI with bslib = {bslib}"</span>),</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">level =</span> <span class="st">"INFO"</span>, <span class="at">log_file =</span> <span class="st">"_logs/app_log.txt"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="error-logs" class="level3" data-number="13.4.3">
+<h3 data-number="13.4.3" class="anchored" data-anchor-id="error-logs"><span class="header-section-number">13.4.3</span> <span style="font-size: 1.05em;"><code>ERROR</code></span> logs</h3>
+<ol type="1">
+<li>In <code>movies_ui()</code>, Add logic and an <code>ERROR</code> log message to monitor the format of the <code>bslib</code> argument</li>
+</ol>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.logical</span>(bslib)) {</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">logr_msg</span>(<span class="st">"Argument 'bslib' must be a logical value"</span>, </span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">level =</span> <span class="st">"ERROR"</span>, <span class="at">log_file =</span> <span class="st">"_logs/app_log.txt"</span>)</span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">stop</span>(<span class="st">"Invalid argument: 'bslib' must be TRUE or FALSE."</span>)</span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>  }</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<ol start="2" type="1">
+<li>In <code>mod_scatter_display_server()</code>, add an <code>ERROR</code> log messages (with <code>tryCatch()</code>) to monitor the rendered output</li>
+</ol>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tryCatch</span>({</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>    plot <span class="ot">&lt;-</span> <span class="fu">scatter_plot</span>(</span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>      <span class="co"># data --------------------</span></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>      <span class="at">df =</span> movies,</span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>      <span class="at">x_var =</span> <span class="fu">inputs</span>()<span class="sc">$</span>x,</span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>      <span class="at">y_var =</span> <span class="fu">inputs</span>()<span class="sc">$</span>y,</span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">col_var =</span> <span class="fu">inputs</span>()<span class="sc">$</span>z,</span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a>      <span class="at">alpha_var =</span> <span class="fu">inputs</span>()<span class="sc">$</span>alpha,</span>
+<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a>      <span class="at">size_var =</span> <span class="fu">inputs</span>()<span class="sc">$</span>size</span>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a>    plot <span class="sc">+</span></span>
+<span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a>      ggplot2<span class="sc">::</span><span class="fu">labs</span>(</span>
+<span id="cb29-13"><a href="#cb29-13" aria-hidden="true" tabindex="-1"></a>        <span class="at">title =</span> <span class="fu">inputs</span>()<span class="sc">$</span>plot_title,</span>
+<span id="cb29-14"><a href="#cb29-14" aria-hidden="true" tabindex="-1"></a>          <span class="at">x =</span> stringr<span class="sc">::</span><span class="fu">str_replace_all</span>(tools<span class="sc">::</span><span class="fu">toTitleCase</span>(<span class="fu">inputs</span>()<span class="sc">$</span>x), <span class="st">"_"</span>, <span class="st">" "</span>),</span>
+<span id="cb29-15"><a href="#cb29-15" aria-hidden="true" tabindex="-1"></a>          <span class="at">y =</span> stringr<span class="sc">::</span><span class="fu">str_replace_all</span>(tools<span class="sc">::</span><span class="fu">toTitleCase</span>(<span class="fu">inputs</span>()<span class="sc">$</span>y), <span class="st">"_"</span>, <span class="st">" "</span>)</span>
+<span id="cb29-16"><a href="#cb29-16" aria-hidden="true" tabindex="-1"></a>      ) <span class="sc">+</span></span>
+<span id="cb29-17"><a href="#cb29-17" aria-hidden="true" tabindex="-1"></a>      ggplot2<span class="sc">::</span><span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="cb29-18"><a href="#cb29-18" aria-hidden="true" tabindex="-1"></a>      ggplot2<span class="sc">::</span><span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"bottom"</span>)</span>
+<span id="cb29-19"><a href="#cb29-19" aria-hidden="true" tabindex="-1"></a>  }, <span class="at">error =</span> <span class="cf">function</span>(e) {</span>
+<span id="cb29-20"><a href="#cb29-20" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb29-21"><a href="#cb29-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">logr_msg</span>(glue<span class="sc">::</span><span class="fu">glue</span>(<span class="st">"Failed to render scatterplot. Reason: {e$message}"</span>), </span>
+<span id="cb29-22"><a href="#cb29-22" aria-hidden="true" tabindex="-1"></a>           <span class="at">level =</span> <span class="st">"ERROR"</span>, <span class="at">log_file =</span> <span class="st">"_logs/app_log.txt"</span>)</span>
+<span id="cb29-23"><a href="#cb29-23" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb29-24"><a href="#cb29-24" aria-hidden="true" tabindex="-1"></a>  })</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="fatal-logs" class="level3" data-number="13.4.4">
+<h3 data-number="13.4.4" class="anchored" data-anchor-id="fatal-logs"><span class="header-section-number">13.4.4</span> <span style="font-size: 1.05em;"><code>FATAL</code></span> logs</h3>
+<ol type="1">
+<li>Add a <code>FATAL</code> log message (along with <code>tryCatch()</code> and <code>stop()</code>) in <code>launch_app()</code> to monitor the application being launched</li>
+</ol>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tryCatch</span>({</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (app <span class="sc">==</span> <span class="st">"bslib"</span>) {</span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>      <span class="fu">shinyApp</span>(</span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>        <span class="at">ui =</span> <span class="fu">movies_ui</span>(<span class="at">bslib =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>        <span class="at">server =</span> movies_server,</span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>        <span class="at">options =</span> options</span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> <span class="cf">if</span> (app <span class="sc">==</span> <span class="st">"ggp2"</span>) {</span>
+<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a>      <span class="fu">shinyAppDir</span>(</span>
+<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a>        <span class="at">appDir =</span> <span class="fu">system.file</span>(<span class="st">"tidy-movies"</span>, <span class="at">package =</span> <span class="st">"sap"</span>),</span>
+<span id="cb30-12"><a href="#cb30-12" aria-hidden="true" tabindex="-1"></a>        <span class="at">options =</span> options</span>
+<span id="cb30-13"><a href="#cb30-13" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb30-14"><a href="#cb30-14" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> <span class="cf">if</span> (app <span class="sc">==</span> <span class="st">"quarto"</span>) {</span>
+<span id="cb30-15"><a href="#cb30-15" aria-hidden="true" tabindex="-1"></a>      quarto<span class="sc">::</span><span class="fu">quarto_preview</span>(</span>
+<span id="cb30-16"><a href="#cb30-16" aria-hidden="true" tabindex="-1"></a>        <span class="fu">system.file</span>(<span class="st">"quarto"</span>, <span class="st">"index.qmd"</span>, <span class="at">package =</span> <span class="st">"sap"</span>), </span>
+<span id="cb30-17"><a href="#cb30-17" aria-hidden="true" tabindex="-1"></a>        <span class="at">render =</span> <span class="st">"all"</span></span>
+<span id="cb30-18"><a href="#cb30-18" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb30-19"><a href="#cb30-19" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="cb30-20"><a href="#cb30-20" aria-hidden="true" tabindex="-1"></a>      app <span class="ot">&lt;-</span> <span class="st">"movies"</span></span>
+<span id="cb30-21"><a href="#cb30-21" aria-hidden="true" tabindex="-1"></a>      <span class="fu">shinyApp</span>(</span>
+<span id="cb30-22"><a href="#cb30-22" aria-hidden="true" tabindex="-1"></a>        <span class="at">ui =</span> <span class="fu">movies_ui</span>(...),</span>
+<span id="cb30-23"><a href="#cb30-23" aria-hidden="true" tabindex="-1"></a>        <span class="at">server =</span> movies_server,</span>
+<span id="cb30-24"><a href="#cb30-24" aria-hidden="true" tabindex="-1"></a>        <span class="at">options =</span> options</span>
+<span id="cb30-25"><a href="#cb30-25" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb30-26"><a href="#cb30-26" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb30-27"><a href="#cb30-27" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb30-28"><a href="#cb30-28" aria-hidden="true" tabindex="-1"></a>  }, <span class="at">error =</span> <span class="cf">function</span>(e) {</span>
+<span id="cb30-29"><a href="#cb30-29" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb30-30"><a href="#cb30-30" aria-hidden="true" tabindex="-1"></a>    <span class="fu">logr_msg</span>(glue<span class="sc">::</span><span class="fu">glue</span>(<span class="st">"Application failed to launch. Reason: {e$message}"</span>), </span>
+<span id="cb30-31"><a href="#cb30-31" aria-hidden="true" tabindex="-1"></a>             <span class="at">level =</span> <span class="st">"FATAL"</span>,</span>
+<span id="cb30-32"><a href="#cb30-32" aria-hidden="true" tabindex="-1"></a>             <span class="at">log_file =</span> <span class="st">"_logs/app_log.txt"</span>)</span>
+<span id="cb30-33"><a href="#cb30-33" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb30-34"><a href="#cb30-34" aria-hidden="true" tabindex="-1"></a>    <span class="fu">stop</span>(<span class="st">"Application launch failed. Check logs for details."</span>)</span>
+<span id="cb30-35"><a href="#cb30-35" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb30-36"><a href="#cb30-36" aria-hidden="true" tabindex="-1"></a>  })</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>To use logs during development to trace the flow of our application, we need to set the threshold to <code>TRACE</code> or <code>DEBUG</code> after loading and install.</p>
+<div>
+
+</div>
+<div class="quarto-layout-panel" data-layout="[ 15, 33, 16 ]">
+<div class="quarto-layout-row">
+<div id="first-column" class="quarto-layout-cell" style="flex-basis: 23.4%;justify-content: flex-start;">
+
+</div>
+<div id="second-column" class="quarto-layout-cell" style="flex-basis: 51.6%;justify-content: flex-start;">
+<div style="font-color: #000000; font-weight: bold; font-size: 1.15em" data-layout-valign="bottom">
+<p><kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd><br>
+<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd><br>
+<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>B</kbd></p>
+</div>
+</div>
+<div id="third-column" class="quarto-layout-cell" style="flex-basis: 25.0%;justify-content: flex-start;">
+
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>logger<span class="sc">::</span><span class="fu">log_threshold</span>(<span class="st">'TRACE'</span>)</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="fu">launch_app</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/log_error_info_threshold.png" class="lightbox" data-gallery="quarto-lightbox-gallery-8" title="Log error message in launch_app()"><img src="images/log_error_info_threshold.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Log error message in launch_app()"></a></p>
+</figure>
+</div>
+<figcaption>Log error message in <code>launch_app()</code></figcaption>
+</figure>
+</div>
+<p>While developing our application, we can run the app interactively and monitor the logs in the console. If the application has been deployed, we can search the log files using R (or the command line):</p>
+<p>In R:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">readLines</span>(<span class="st">"_logs/app_log.txt"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>  stringr<span class="sc">::</span><span class="fu">str_view</span>(<span class="st">"ERROR"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="sourceCode" id="cb33"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>&lt;ERROR&gt; [2025-01-29 08:04:30] Failed to render scatterplot. </span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>  Reason: 'text' must be a character vector</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Command line:</p>
+<div class="sourceCode" id="cb34"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> _logs/app_log.txt <span class="kw">|</span> <span class="fu">grep</span> <span class="st">"ERROR"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb35"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>ERROR [2025-01-29 08:04:30] Failed to render scatterplot.</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>  Reason: 'text' must be a character vector</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="callout callout-style-default callout-tip no-icon callout-titled">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-5-contents" aria-controls="callout-5" aria-expanded="true" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span style="font-weight: bold; font-size: 1.15em;">Initialize logging with <code>.onLoad()</code></span>
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-5" class="callout-5-contents callout-collapse collapse show">
+<div class="callout-body-container callout-body">
+<div style="font-size: 1.10em; color: #282b2d;">
+<p>We can set up <code>logger</code>’s logging configuration in an <code>onLoad</code> function of the <code>zzz.R</code> file:</p>
+<div class="sourceCode" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>.onLoad <span class="ot">&lt;-</span> <span class="cf">function</span>(libname, pkgname) {</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>    <span class="co"># configure logger log messages to console</span></span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>    logger<span class="sc">::</span><span class="fu">log_appender</span>(logger<span class="sc">::</span>appender_console)</span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>    <span class="co"># configure logger log messages to file</span></span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>    logger<span class="sc">::</span><span class="fu">log_appender</span>(logger<span class="sc">::</span><span class="fu">appender_file</span>(<span class="st">'sap_apps.log'</span>))</span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>    <span class="co"># set default log level to DEBUG</span></span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>    logger<span class="sc">::</span><span class="fu">log_threshold</span>(<span class="st">'DEBUG'</span>) </span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This setup ensures that logging is ready as soon as your package is loaded.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="package-startup-messages" class="level2" data-number="13.5">
+<h2 data-number="13.5" class="anchored" data-anchor-id="package-startup-messages"><span class="header-section-number">13.5</span> Package startup messages</h2>
+<p>Package startup messages help create a welcoming and professional impression when users load your app-package. These messages can also inform users of any specific requirements, dependencies, or potential conflicts. Package startup messages can also include the logging system (i.e., <code>logger</code>) being used, which can be helpful for debugging or monitoring during development or runtime.</p>
+<section id="onattach" class="level3" data-number="13.5.1">
+<h3 data-number="13.5.1" class="anchored" data-anchor-id="onattach"><span class="header-section-number">13.5.1</span> <span style="font-size: 1.05em;"><code>.onAttach()</code></span></h3>
+<p>Write package startup messages in the <code>.onAttach()</code> function (stored in <code>R/zzz.R</code>).<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a> The example below includes a welcome message, the current Git branch, dependencies (imports, depends, and suggests), and the path where this package is loaded <em>from</em>.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>show/hide</summary>
+<div class="sourceCode cell-code" id="annotated-cell-37"><pre class="sourceCode r code-annotation-code code-with-copy code-annotated"><code class="sourceCode r"><span id="annotated-cell-37-1"><a href="#annotated-cell-37-1" aria-hidden="true" tabindex="-1"></a>.onAttach <span class="ot">&lt;-</span> <span class="cf">function</span>(libname, pkgname) {</span>
+<span id="annotated-cell-37-2"><a href="#annotated-cell-37-2" aria-hidden="true" tabindex="-1"></a>  </span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-37" data-target-annotation="1">1</button><span id="annotated-cell-37-3" class="code-annotation-target"><a href="#annotated-cell-37-3" aria-hidden="true" tabindex="-1"></a>    branch <span class="ot">&lt;-</span> <span class="cf">if</span> (<span class="fu">isTRUE</span>(<span class="fu">system</span>(<span class="st">"git rev-parse --is-inside-work-tree"</span>, <span class="at">intern =</span> <span class="cn">TRUE</span>) <span class="sc">==</span> <span class="st">"true"</span>)) {</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-37" data-target-annotation="2">2</button><span id="annotated-cell-37-4" class="code-annotation-target"><a href="#annotated-cell-37-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tryCatch</span>({</span>
+<span id="annotated-cell-37-5"><a href="#annotated-cell-37-5" aria-hidden="true" tabindex="-1"></a>      <span class="fu">system</span>(<span class="st">"git rev-parse --abbrev-ref HEAD"</span>, <span class="at">intern =</span> <span class="cn">TRUE</span>)</span>
+<span id="annotated-cell-37-6"><a href="#annotated-cell-37-6" aria-hidden="true" tabindex="-1"></a>    }, <span class="at">error =</span> <span class="cf">function</span>(e) <span class="st">"unknown"</span>)</span>
+<span id="annotated-cell-37-7"><a href="#annotated-cell-37-7" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="annotated-cell-37-8"><a href="#annotated-cell-37-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">"not a Git repository"</span></span>
+<span id="annotated-cell-37-9"><a href="#annotated-cell-37-9" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="annotated-cell-37-10"><a href="#annotated-cell-37-10" aria-hidden="true" tabindex="-1"></a></span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-37" data-target-annotation="3">3</button><span id="annotated-cell-37-11" class="code-annotation-target"><a href="#annotated-cell-37-11" aria-hidden="true" tabindex="-1"></a>  version <span class="ot">&lt;-</span> utils<span class="sc">::</span><span class="fu">packageVersion</span>(pkgname)</span>
+<span id="annotated-cell-37-12"><a href="#annotated-cell-37-12" aria-hidden="true" tabindex="-1"></a></span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-37" data-target-annotation="4">4</button><span id="annotated-cell-37-13" class="code-annotation-target"><a href="#annotated-cell-37-13" aria-hidden="true" tabindex="-1"></a>  description <span class="ot">&lt;-</span> utils<span class="sc">::</span><span class="fu">packageDescription</span>(pkgname)</span>
+<span id="annotated-cell-37-14"><a href="#annotated-cell-37-14" aria-hidden="true" tabindex="-1"></a>  imports <span class="ot">&lt;-</span> description<span class="sc">$</span>Imports</span>
+<span id="annotated-cell-37-15"><a href="#annotated-cell-37-15" aria-hidden="true" tabindex="-1"></a>  suggests <span class="ot">&lt;-</span> description<span class="sc">$</span>Suggests</span>
+<span id="annotated-cell-37-16"><a href="#annotated-cell-37-16" aria-hidden="true" tabindex="-1"></a>  depends <span class="ot">&lt;-</span> description<span class="sc">$</span>Depends</span>
+<span id="annotated-cell-37-17"><a href="#annotated-cell-37-17" aria-hidden="true" tabindex="-1"></a></span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-37" data-target-annotation="5">5</button><span id="annotated-cell-37-18" class="code-annotation-target"><a href="#annotated-cell-37-18" aria-hidden="true" tabindex="-1"></a>  parse_dependencies <span class="ot">&lt;-</span> <span class="cf">function</span>(dep_string) {</span>
+<span id="annotated-cell-37-19"><a href="#annotated-cell-37-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">is.null</span>(dep_string)) <span class="fu">return</span>(<span class="st">"None"</span>)</span>
+<span id="annotated-cell-37-20"><a href="#annotated-cell-37-20" aria-hidden="true" tabindex="-1"></a>    deps <span class="ot">&lt;-</span> <span class="fu">strsplit</span>(dep_string, <span class="st">",</span><span class="sc">\\</span><span class="st">s*"</span>)[[<span class="dv">1</span>]]</span>
+<span id="annotated-cell-37-21"><a href="#annotated-cell-37-21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">paste</span>(deps, <span class="at">collapse =</span> <span class="st">", "</span>)</span>
+<span id="annotated-cell-37-22"><a href="#annotated-cell-37-22" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="annotated-cell-37-23"><a href="#annotated-cell-37-23" aria-hidden="true" tabindex="-1"></a></span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-37" data-target-annotation="6">6</button><span id="annotated-cell-37-24" class="code-annotation-target"><a href="#annotated-cell-37-24" aria-hidden="true" tabindex="-1"></a>  imports <span class="ot">&lt;-</span> <span class="fu">parse_dependencies</span>(imports)</span>
+<span id="annotated-cell-37-25"><a href="#annotated-cell-37-25" aria-hidden="true" tabindex="-1"></a>  suggests <span class="ot">&lt;-</span> <span class="fu">parse_dependencies</span>(suggests)</span>
+<span id="annotated-cell-37-26"><a href="#annotated-cell-37-26" aria-hidden="true" tabindex="-1"></a>  depends <span class="ot">&lt;-</span> <span class="fu">parse_dependencies</span>(depends)</span>
+<span id="annotated-cell-37-27"><a href="#annotated-cell-37-27" aria-hidden="true" tabindex="-1"></a>  </span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-37" data-target-annotation="7">7</button><span id="annotated-cell-37-28" class="code-annotation-target"><a href="#annotated-cell-37-28" aria-hidden="true" tabindex="-1"></a>  cli<span class="sc">::</span><span class="fu">cli_h2</span>(<span class="st">"Welcome to the {.pkg {pkgname}} package (version {version}) {cli::symbol$smiley}!"</span>)</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-37" data-target-annotation="8">8</button><span id="annotated-cell-37-29" class="code-annotation-target"><a href="#annotated-cell-37-29" aria-hidden="true" tabindex="-1"></a>  cli<span class="sc">::</span><span class="fu">cli_h3</span>(<span class="st">"Current branch:"</span>)</span>
+<span id="annotated-cell-37-30"><a href="#annotated-cell-37-30" aria-hidden="true" tabindex="-1"></a>  cli<span class="sc">::</span><span class="fu">cli_text</span>(<span class="st">"{.emph {cli::symbol$pointer} {branch}}"</span>)</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-37" data-target-annotation="9">9</button><span id="annotated-cell-37-31" class="code-annotation-target"><a href="#annotated-cell-37-31" aria-hidden="true" tabindex="-1"></a>  cli<span class="sc">::</span><span class="fu">cli_h3</span>(<span class="st">"Dependencies:"</span>)</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-37" data-target-annotation="10">10</button><span id="annotated-cell-37-32" class="code-annotation-target"><a href="#annotated-cell-37-32" aria-hidden="true" tabindex="-1"></a>  cli<span class="sc">::</span><span class="fu">cli_text</span>(<span class="st">"{.emph {cli::symbol$pointer} Imports: {imports}}"</span>)</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-37" data-target-annotation="11">11</button><span id="annotated-cell-37-33" class="code-annotation-target"><a href="#annotated-cell-37-33" aria-hidden="true" tabindex="-1"></a>  cli<span class="sc">::</span><span class="fu">cli_text</span>(<span class="st">"{.emph {cli::symbol$pointer} Suggests: {suggests}}"</span>)</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-37" data-target-annotation="12">12</button><span id="annotated-cell-37-34" class="code-annotation-target"><a href="#annotated-cell-37-34" aria-hidden="true" tabindex="-1"></a>  cli<span class="sc">::</span><span class="fu">cli_text</span>(<span class="st">"{.emph {cli::symbol$pointer} Depends: {depends}}"</span>)</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-37" data-target-annotation="13">13</button><span id="annotated-cell-37-35" class="code-annotation-target"><a href="#annotated-cell-37-35" aria-hidden="true" tabindex="-1"></a>  cli<span class="sc">::</span><span class="fu">cli_h3</span>(<span class="st">"Loaded from:"</span>)</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-37" data-target-annotation="14">14</button><span id="annotated-cell-37-36" class="code-annotation-target"><a href="#annotated-cell-37-36" aria-hidden="true" tabindex="-1"></a>  cli<span class="sc">::</span><span class="fu">cli_text</span>(<span class="st">"{.emph {cli::symbol$pointer} {libname}}"</span>)</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-37" data-target-annotation="15">15</button><span id="annotated-cell-37-37" class="code-annotation-target"><a href="#annotated-cell-37-37" aria-hidden="true" tabindex="-1"></a>  cli<span class="sc">::</span><span class="fu">cli_inform</span>(<span class="fu">c</span>(), <span class="at">class =</span> <span class="st">"packageStartupMessage"</span>)</span>
+<span id="annotated-cell-37-38"><a href="#annotated-cell-37-38" aria-hidden="true" tabindex="-1"></a>}</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-annotation">
+<dl class="code-annotation-container-hidden code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-37" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-37" data-code-lines="3" data-code-annotation="1">Check if the current folder is a Git repo.<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-37" data-target-annotation="2">2</dt>
+<dd>
+<span data-code-cell="annotated-cell-37" data-code-lines="4,7" data-code-annotation="2">Capture the current branch if it’s a Git repo.<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-37" data-target-annotation="3">3</dt>
+<dd>
+<span data-code-cell="annotated-cell-37" data-code-lines="11" data-code-annotation="3">Package version.<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-37" data-target-annotation="4">4</dt>
+<dd>
+<span data-code-cell="annotated-cell-37" data-code-lines="13,16" data-code-annotation="4">Dependencies from <code>DESCRIPTION</code>.<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-37" data-target-annotation="5">5</dt>
+<dd>
+<span data-code-cell="annotated-cell-37" data-code-lines="18,22" data-code-annotation="5">Parse and format dependencies function.<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-37" data-target-annotation="6">6</dt>
+<dd>
+<span data-code-cell="annotated-cell-37" data-code-lines="24,25,26" data-code-annotation="6">Cleaned dependencies.<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-37" data-target-annotation="7">7</dt>
+<dd>
+<span data-code-cell="annotated-cell-37" data-code-lines="28" data-code-annotation="7">Welcome message.<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-37" data-target-annotation="8">8</dt>
+<dd>
+<span data-code-cell="annotated-cell-37" data-code-lines="29,30" data-code-annotation="8">Git branch.<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-37" data-target-annotation="9">9</dt>
+<dd>
+<span data-code-cell="annotated-cell-37" data-code-lines="31" data-code-annotation="9">Dependencies (header).<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-37" data-target-annotation="10">10</dt>
+<dd>
+<span data-code-cell="annotated-cell-37" data-code-lines="32" data-code-annotation="10">Dependencies (<code>Imports</code> from <code>DESCRIPTION</code>).<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-37" data-target-annotation="11">11</dt>
+<dd>
+<span data-code-cell="annotated-cell-37" data-code-lines="33" data-code-annotation="11">Dependencies (<code>Suggests</code> from <code>DESCRIPTION</code>).<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-37" data-target-annotation="12">12</dt>
+<dd>
+<span data-code-cell="annotated-cell-37" data-code-lines="34" data-code-annotation="12">Dependencies (<code>Depends</code> from <code>DESCRIPTION</code>).<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-37" data-target-annotation="13">13</dt>
+<dd>
+<span data-code-cell="annotated-cell-37" data-code-lines="35" data-code-annotation="13">Source of installed packages.<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-37" data-target-annotation="14">14</dt>
+<dd>
+<span data-code-cell="annotated-cell-37" data-code-lines="36" data-code-annotation="14"><code>libname</code> (<em>a character string giving the library directory where the package defining the namespace was found.</em>)<br>
+</span>
+</dd>
+<dt data-target-cell="annotated-cell-37" data-target-annotation="15">15</dt>
+<dd>
+<span data-code-cell="annotated-cell-37" data-code-lines="37" data-code-annotation="15">Output with appropriate class.</span>
+</dd>
+</dl>
+</div>
+</div>
+<p>When we loading <code>sap</code>, we see the output from our startup message:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">load_all</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="ex">ℹ</span> Loading sap</span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a><span class="ex">──</span> Welcome to the sap package <span class="er">(</span><span class="ex">version</span> 0.0.0.9130<span class="kw">)</span> <span class="ex">☺!</span> ──</span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a><span class="ex">──</span> Current branch: </span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a><span class="ex">❯</span> 13_logging</span>
+<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a><span class="ex">──</span> Dependencies: </span>
+<span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a><span class="ex">❯</span> Imports: bslib, cli, ggplot2, logger, pkgload, rlang, sass, shiny, shinythemes,</span>
+<span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a><span class="ex">stringr,</span> tools, withr</span>
+<span id="cb38-10"><a href="#cb38-10" aria-hidden="true" tabindex="-1"></a><span class="ex">❯</span> Suggests: None</span>
+<span id="cb38-11"><a href="#cb38-11" aria-hidden="true" tabindex="-1"></a><span class="ex">❯</span> Depends: R <span class="er">(</span><span class="op">&gt;</span>= <span class="ex">2.10</span><span class="kw">)</span></span>
+<span id="cb38-12"><a href="#cb38-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-13"><a href="#cb38-13" aria-hidden="true" tabindex="-1"></a><span class="ex">──</span> Loaded from: </span>
+<span id="cb38-14"><a href="#cb38-14" aria-hidden="true" tabindex="-1"></a><span class="ex">❯</span> /Users/mjfrigaard/projects/apps/R</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Including a startup message is a helpful tool, but it should be thoughtfully crafted to enhance the user experience without being intrusive. Avoid including a startup message if the app-package if the message doesn’t add meaningful value and becomes unnecessary “noise” for users.</p>
+<p>Also, be sure to allow users to disable the message if possible (e.g., using <code>suppressPackageStartupMessages()</code>):</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">'pak'</span>)</span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>pak<span class="sc">::</span><span class="fu">pak</span>(<span class="st">'mjfrigaard/sap'</span>)</span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a><span class="fu">suppressPackageStartupMessages</span>(<span class="fu">library</span>(sap))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="recap" class="level2" data-number="13.6">
+<h2 data-number="13.6" class="anchored" data-anchor-id="recap"><span class="header-section-number">13.6</span> Recap</h2>
+<p>Logging is an invaluable tool for debugging Shiny applications in an R package. By strategically placing log messages and configuring log levels, you can gain deep insights into your application’s behavior. However, we also want to be selective with logging and avoid exposing or storing sensitive data.</p>
+<p>The techniques discussed in this chapter will help you efficiently diagnose and resolve issues, making your Shiny applications more robust and reliable.</p>
+
+
+</section>
+<section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn1"><p>Integrate with external logging systems (e.g., <a href="https://daroczig.github.io/logger/reference/appender_syslog.html">Syslog</a> or <a href="https://daroczig.github.io/logger/reference/appender_telegram.html">Telegram</a>) using custom appenders.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p>Read more in the <a href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/ns-hooks.html">‘Hooks for Namespace Events’ documentation</a>.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp("https:\/\/mjfrigaard\.github\.io\/shiny-app-pkgs\/");
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      const annoteTargets = window.document.querySelectorAll('.code-annotation-anchor');
+      for (let i=0; i<annoteTargets.length; i++) {
+        const annoteTarget = annoteTargets[i];
+        const targetCell = annoteTarget.getAttribute("data-target-cell");
+        const targetAnnotation = annoteTarget.getAttribute("data-target-annotation");
+        const contentFn = () => {
+          const content = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          if (content) {
+            const tipContent = content.cloneNode(true);
+            tipContent.classList.add("code-annotation-tip-content");
+            return tipContent.outerHTML;
+          }
+        }
+        const config = {
+          allowHTML: true,
+          content: contentFn,
+          onShow: (instance) => {
+            selectCodeLines(instance.reference);
+            instance.reference.classList.add('code-annotation-active');
+            window.tippy.hideAll();
+          },
+          onHide: (instance) => {
+            unselectCodeLines();
+            instance.reference.classList.remove('code-annotation-active');
+          },
+          maxWidth: 300,
+          delay: [50, 0],
+          duration: [200, 0],
+          offset: [5, 10],
+          arrow: true,
+          appendTo: function(el) {
+            return el.parentElement.parentElement.parentElement;
+          },
+          interactive: true,
+          interactiveBorder: 10,
+          theme: 'quarto',
+          placement: 'right',
+          popperOptions: {
+            modifiers: [
+            {
+              name: 'flip',
+              options: {
+                flipVariations: false, // true by default
+                allowedAutoPlacements: ['right'],
+                fallbackPlacements: ['right', 'top', 'top-start', 'top-end', 'bottom', 'bottom-start', 'bottom-end', 'left'],
+              },
+            },
+            {
+              name: 'preventOverflow',
+              options: {
+                mainAxis: false,
+                altAxis: false
+              }
+            }
+            ]        
+          }      
+        };
+        window.tippy(annoteTarget, config); 
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./debug_apps.html" class="pagination-link" aria-label="Debugging apps">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Debugging apps</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./tests.html" class="pagination-link" aria-label="Tests">
+        <span class="nav-page-text">Tests</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/mjfrigaard/shiny-app-pkgs/edit/main/logging.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/mjfrigaard/shiny-app-pkgs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer><script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+</body></html>
