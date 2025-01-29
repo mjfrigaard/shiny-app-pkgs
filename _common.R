@@ -263,8 +263,6 @@ glue::glue("\n:::: {{layout='[ 15, 33, 16 ]'}}
 
 ::: {{style='font-color: #000000; font-weight: bold; font-size: 1.15em' layout-valign='bottom'}}
 
-<br><br>
-
 <kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd>   
 <kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd>   
 <kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>B</kbd>    
@@ -289,9 +287,8 @@ glue::glue("\n:::: {{layout='[ 30, 50, 20 ]'}}
 
 ::: {{style='font-weight: bold; font-size: 1.15em' layout-valign='bottom'}}
 
-<br>
-
 <kbd>Ctrl/Cmd</kbd> + <kbd>T</kbd>
+
 :::
 
 :::
@@ -312,9 +309,9 @@ glue::glue("\n:::: {{layout='[ 30, 50, 20 ]'}}
 
 ::: {{style='font-weight: bold; font-size: 1.15em' layout-valign='bottom'}}
 
-<br>
 
 <kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd>
+
 :::
 
 :::
@@ -335,9 +332,8 @@ glue::glue("\n:::: {{layout='[ 30, 50, 20 ]'}}
 
 ::: {{style='font-weight: bold; font-size: 1.15em' layout-valign='bottom'}}
 
-<br>
-
 <kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>{fun}</kbd>
+
 :::
 
 :::
