@@ -62,7 +62,7 @@ shinypak_apps(regex = "13", branch = "13_logging")
 
 Logging applications app-package lets us track the application flow and record user interactions and inputs, and can also be used to identify runtime errors and unexpected behaviors. Log messages are more structured, flexible, and configurable than print statements or the interactive debugger. Logging is particularly useful in production environments, where direct debugging may not be possible. Logs can also be saved for future analysis, even after the application has stopped running.
 
-### Architecture
+### Architecture {#sec-logging-arch-tidy-movies}
 
 We're going to start logging the behaviors in the `inst/tidy-movies` application. The architecture of this application has been updated to include the two new input modules (see @sec-resources-inst-tidy-movies-app):
 
@@ -216,6 +216,7 @@ validate(
 | `NA`               | ❌ Error: `"Size must be positive"` |
 | `"large"` (string) | ❌ Error: `"Size must be positive"` |
 
+
 ### Handling errors {#sec-logging-trycatch}
 
 The `tryCatch` function can be used by itself to log unexpected errors gracefully. Below is an example of using it with `reactive()` and combining it `message()`:
@@ -233,7 +234,7 @@ safe_reactive <- reactive({
 })
 ```
 
-## Custom logging functions
+## Custom logging functions {#sec-logging-funs}
 
 Logging can be implemented without any dependencies. The `base` package has many tools we can use to write a custom logging function. Below is an example logging utility function we could add to the `R/` folder and use in our app(s):
 
@@ -319,7 +320,7 @@ After loading and installing our package, the output from the log is saved in th
 
 ![Logging data upload with `log_message()`](images/log_ggp2_logr_message_all_data.png){width="100%" fig-align="center"}
 
-### Logging events
+### Logging events  {#sec-logging-events}
 
 We'll continue to integrate log messages into the `inst/tidy-movies` app by inserting `log_message()` at critical points, such creating reactive expressions. For example, `dev_mod_scatter_server()` creates the `graph_data()` reactive based on the missing data checkbox user input:
 
@@ -468,7 +469,7 @@ system.file('tidy-movies', '_logs', 'ggp2_log.txt',
 
 In practice, we'd insert logging messages with `log_message()` and `tryCatch()` for application startup, loading data/connecting to databases, API calls, and when using Shiny's internal validation/error handling functions. In the next section, we're going to explore using add-on packages to implement logging in our app-package.
 
-## App logs with [`logger`]{style="font-size: 1.05em;"}
+## App logs with [`logger`]{style="font-size: 1.05em;"}  {#sec-logging-logger}
 
 ```{r}
 #| label: co_box_log_frameworks
@@ -511,7 +512,7 @@ Add `logger` to the package dependencies in the `DESCRIPTION` file and use the `
 usethis::use_package('logger')
 ```
 
-### Log levels
+### Log levels {#sec-logging-levels}
 
 The `logger` package has a few configurations that can be very helpful for app-package development. We'll start with a basic example using `logger::log_info()`:
 
@@ -600,7 +601,7 @@ While developing app-packages, I recommend broadly characterizing the `logger` l
 :::
 
 
-### Storing log files
+### Storing log files {#sec-logging-files}
 
 By default, `logger` logs are written to the console, but the `logger::appender_file()` function can direct log messages to a file (or to a database or external logging system).[^logging-1]
 
@@ -608,7 +609,7 @@ By default, `logger` logs are written to the console, but the `logger::appender_
 
 We also want to periodically archive old logs to prevent storage issues. Storing log messages as JSON objects is sometimes preferred because JSON files are structured, machine-readable, and can easily integrate with logging tools like [Logstash](https://www.elastic.co/logstash), [Kibana (ELK Stack)](https://www.elastic.co/elastic-stack) or other log management solutions.
 
-### Custom [`logger`]{style="font-size: 1.05em;"} functions
+### Custom [`logger`]{style="font-size: 1.05em;"} functions {#sec-logging-logr_msg}
 
 We'll write a custom logging function with `logger` to so our app logs are formatted and managed a consistent manner. Below is a `logr_msg()` utility function for inserting `logger`-style logs in our application.
 
@@ -725,11 +726,13 @@ The logs are now printed to the console and we can see the level, timestamp, and
 
 ![Updates from `logr_msg()`](images/log_ggp2_logr_message_var_input_update.png){width="100%" fig-align="center"}
 
-## Logging and debugging
+## Logging and debugging {#sec-logging-debugging}
 
 Our primary application (i.e. the app launched with `launch_app()`) is currently displaying and error message:
 
 ![Error message in `launch_app()`](images/log_error_in_launch_app.png){width="100%" fig-align="center"}
+
+### Architecture {#sec-logging-arch-movies}
 
 Let's try to visualize the call stack and namespaces in this app. The diagram below shows how the variable and aesthetic input modules communicate the user selections across the namespaces in UI and server functions.
 
@@ -1038,7 +1041,7 @@ This setup ensures that logging is ready as soon as your package is loaded.
 ")
 ```
 
-## Package startup messages
+## Package startup messages {#sec-logging-pkg-startup-msg}
 
 Package startup messages help create a welcoming and professional impression when users load your app-package. These messages can also inform users of any specific requirements, dependencies, or potential conflicts. Package startup messages can also include the logging system (i.e., `logger`) being used, which can be helpful for debugging or monitoring during development or runtime.
 
@@ -1049,6 +1052,8 @@ Write package startup messages in the `.onAttach()` function (stored in `R/zzz.R
 [^logging-2]: Read more in the ['Hooks for Namespace Events' documentation](https://stat.ethz.ch/R-manual/R-devel/library/base/html/ns-hooks.html).
 
 ```{r}
+#| eval: false 
+#| code-fold: false
 .onAttach <- function(libname, pkgname) {
   
     branch <- if (isTRUE(system("git rev-parse --is-inside-work-tree", intern = TRUE) == "true")) { # <1>
@@ -1076,16 +1081,19 @@ Write package startup messages in the `.onAttach()` function (stored in `R/zzz.R
   suggests <- parse_dependencies(suggests) # <6>
   depends <- parse_dependencies(depends) # <6>
   
-  cli::cli_h2("Welcome to the {.pkg {pkgname}} package (version {version}) {cli::symbol$smiley}!") # <7>
-  cli::cli_h3("Current branch:") # <8>
-  cli::cli_text("{.emph {cli::symbol$pointer} {branch}}")  # <8>
-  cli::cli_h3("Dependencies:")  # <9>
-  cli::cli_text("{.emph {cli::symbol$pointer} Imports: {imports}}") # <10>
-  cli::cli_text("{.emph {cli::symbol$pointer} Suggests: {suggests}}") # <11>
-  cli::cli_text("{.emph {cli::symbol$pointer} Depends: {depends}}") # <12>
-  cli::cli_h3("Loaded from:") # <13>
-  cli::cli_text("{.emph {cli::symbol$pointer} {libname}}") # <14>
-  cli::cli_inform(c(), class = "packageStartupMessage") # <15>
+  cli::cli_inform("{.strong Welcome to the {.pkg {pkgname}} package (version {version}) {cli::symbol$smiley}!}", # <7>
+    class = "packageStartupMessage") # <7>
+  
+  cli::cli_inform("{.strong Current branch:}", class = "packageStartupMessage") # <8>
+  cli::cli_inform("{.emph {cli::symbol$pointer} {branch}}", class = "packageStartupMessage") # <8>
+
+  cli::cli_inform("{.strong Dependencies:}", class = "packageStartupMessage") # <9>
+  cli::cli_inform("{.emph {cli::symbol$pointer} Imports: {imports}}", class = "packageStartupMessage") # <10>
+  cli::cli_inform("{.emph {cli::symbol$pointer} Suggests: {suggests}}", class = "packageStartupMessage")# <11>
+  cli::cli_inform("{.emph {cli::symbol$pointer} Depends: {depends}}", class = "packageStartupMessage")# <12>
+
+  cli::cli_inform("{.strong Loaded from:}", class = "packageStartupMessage") # <13>
+  cli::cli_inform("{.emph {cli::symbol$pointer} {libname}}", class = "packageStartupMessage") # <14>
 }
 ```
 1.  Check if the current folder is a Git repo.\
@@ -1102,11 +1110,10 @@ Write package startup messages in the `.onAttach()` function (stored in `R/zzz.R
 12. Dependencies (`Depends` from `DESCRIPTION`).\
 13. Source of installed packages.\
 14. `libname` (*a character string giving the library directory where the package defining the namespace was found.*)\
-15. Output with appropriate class.
 
 When we loading `sap`, we see the output from our startup message:
 
-![Package startup message in sap`](images/log_pkg_startup_load_all.png){width="100%" fig-align="center"}
+![Package startup message in `sap`](images/log_pkg_startup_load_all.png){width="100%" fig-align="center"}
 
 Including a startup message is a helpful tool, but it should be thoughtfully crafted to enhance the user experience without being intrusive. Avoid including a startup message if the app-package if the message doesn’t add meaningful value and becomes unnecessary "noise" for users.
 
@@ -1122,6 +1129,27 @@ suppressPackageStartupMessages(library(sap))
 
 ## Recap {.unnumbered}
 
-Logging is an invaluable tool for debugging Shiny applications in an R package. By strategically placing log messages and configuring log levels, you can gain deep insights into your application’s behavior. However, we also want to be selective with logging and avoid exposing or storing sensitive data.
+The techniques discussed in this chapter will help you efficiently diagnose and resolve issues, making your Shiny app-package more robust and reliable.
 
-The techniques discussed in this chapter will help you efficiently diagnose and resolve issues, making your Shiny applications more robust and reliable.
+```{r}
+#| label: co_box_recap
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g", 
+  fold = FALSE,
+  look = "default", 
+  hsize = "1.10", 
+  size = "1.05", 
+  header = "Recap: Logging",
+  contents = "Logging is an invaluable tool for debugging Shiny app-packages. By strategically placing log messages and configuring log levels, you can gain deep insights into your application’s behavior. 
+  
+- Use log levels to differentiate between logs. 
+
+- Configure log settings with `.onLoad()` (stored in `R/zzz.R`)
+
+- Store package startup messages in `onAttach()` (stored in `R/zzz.R`)
+  
+Be selective with logging and avoid exposing or storing sensitive data.")
+```

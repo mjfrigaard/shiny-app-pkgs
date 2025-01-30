@@ -31,7 +31,7 @@ When debugging Shiny apps, it's likely you'll use a combination of these methods
 shinypak_apps(regex = "12", branch = "12.1_debug-mods")
 ```
 
-## Abstract syntax trees {#sec-debug-apps-abstract-syntax-trees .unnumbered}
+## Abstract syntax trees {#sec-debug-apps-abstract-syntax-trees}
 
 Shiny app-packages can quickly become a complex and intertwined web of functions: utility functions, modules, user interface (UI) elements, server logic, etc. Before we jump into debugging modules, we'll revisit their function and purpose by considering the following description of namespaces from the [`NS()` function documentation](https://shiny.posit.co/r/reference/shiny/latest/ns.html):
 
@@ -144,7 +144,7 @@ lobstr::ast(
   )
 ```
 
-### Input modules
+### Input modules {#sec-debug-apps-input-modules}
 
 The diagram below illustrates the changes to the variable input module. 
 
@@ -987,7 +987,7 @@ lobstr::ast(
 
 :::
 
-We'll remove (or comment out) the calls to `observe()` and `browser()` from `movies_server()` and repeat a similar process in `mod_scatter_display_server()`, but include the calls to `observe()` and `browser()` after `moduleServer()`. Then we'll load, document, and install the package and run the application again: 
+We'll remove (or comment out) the calls to `observe()` and `browser()` from `movies_server()` and repeat a similar process in `mod_scatter_display_server()`, but include the calls to `observe()` and `browser()` after `moduleServer()`. 
 
 ```{r}
 #| eval: false 
@@ -1040,6 +1040,8 @@ mod_scatter_display_server <- function(id, var_inputs, aes_inputs) {
 ```
 1. Wrap `browser()` in `observe()` and place after the call to `moduleServer()` 
 
+Then we'll load, document, and install the package and run the application again: 
+
 ```{r}
 #| label: hot_key_04
 #| echo: false
@@ -1051,9 +1053,9 @@ hot_key(fun = "all")
 
 :::{layout="[40,60]" layout-valign="top"}
 
-Advance the debugger to the line *after* `inputs()` is created with `var_inputs()` and `aes_inputs()`
+Advance the debugger to the line *after* `inputs()` is created with `var_inputs()` and `aes_inputs()` (the line with `output$scatterplot` should be [highlighted]{style="background-color: #FAFFC1; font-weight: bold;"}).
 
-![](images/debug_apps_browser_n_aes_inputs.png){fig-align='center'}
+![`inputs()` reactive created in `mod_scatter_display_server()` ](images/debug_apps_browser_n_aes_inputs.png){fig-align='center'}
 
 :::
 
@@ -1061,12 +1063,12 @@ Advance the debugger to the line *after* `inputs()` is created with `var_inputs(
 
 We can see the `input()$plot_title` appears to be a character, but the structure of `inputs()` returns the error we saw in the **Console**
 
-![](images/debug_apps_browser_aes_inputs.png){fig-align='center'}
+![Error in graph `inputs()`](images/debug_apps_browser_aes_inputs.png){fig-align='center'}
 
 :::
 
 
-### Verifying inputs
+### Verifying inputs {#sec-debug-apps-verify-inputs}
 
 Now that we've isolated the error to the `tools::toTitleCase()` call in the creation of the `inputs()` reactive. We can confirm this in the interactive debugger: 
 
