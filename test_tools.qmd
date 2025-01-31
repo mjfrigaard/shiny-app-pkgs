@@ -79,52 +79,158 @@ By integrating fixtures, helpers, and snapshots from `testthat` into your Shiny 
 
 ---
 
-This chapter introduces tools to help write clean and efficient tests. These files, folders and methods can be included in our app-package test suite and are thoroughly described in [R Packages, 2ed](https://r-pkgs.org/testing-design.html#sec-testing-design-principles) and the [`testthat` documentation](https://testthat.r-lib.org/articles/third-edition.html), but within the context of a standard R package. The sections below contain examples of each tool implemented in our example app-package.[^test_tools-documentation]
-
-:::: {.callout-tip collapse='true' appearance='default'}
-
-## [Accessing the code examples]{style='font-weight: bold; font-size: 1.15em;'}
-
-::: {style='font-size: 0.95em; color: #282b2d;'}
-
-I've created the [`shinypak` R package](https://mjfrigaard.github.io/shinypak/) In an effort to make each section accessible and easy to follow:
-  
-Install `shinypak` using `pak` (or `remotes`):
-
-```{r}
-#| code-fold: false 
-#| message: false
-#| warning: false
-#| eval: false
-# install.packages('pak')
-pak::pak('mjfrigaard/shinypak')
-```
-
-Review the chapters in each section:
-  
-```{r}
-#| code-fold: false 
-#| message: false
-#| warning: false
-#| collapse: true
-library(shinypak)
-list_apps(regex = '^12')
-```
-
-Launch an app: 
-
-```{r}
-#| code-fold: false 
-#| eval: false
-launch(app = "12.1_tests-fixtures")
-```
-
-::: 
-
-::::
+This chapter introduces tools to help write clean and efficient tests. We'll cover using the [`ensure` package](https://simonpcouch.github.io/ensure/) to help write tests, where to store test data, snapshots, and more. Most of methods I'll cover below are thoroughly described in [R Packages, 2ed](https://r-pkgs.org/testing-design.html#sec-testing-design-principles) and the `testthat` [documentation](https://testthat.r-lib.org/articles/third-edition.html), but within the context of a standard R package.[^test_tools-documentation] 
 
 [^test_tools-documentation]: The three chapters in R Packages, 2ed, dedicated to testing are [Testing basics](https://r-pkgs.org/testing-basics.html), [Designing your test suite](https://r-pkgs.org/testing-design.html), and [Advanced testing techniques](https://r-pkgs.org/testing-advanced.html)
 
+```{r}
+#| label: shinypak_apps
+#| echo: false
+#| results: asis
+#| eval: true
+shinypak_apps(regex = "^16", branch = "16.1_test-data")
+```
+
+## Help writing tests {#sec-test-tools-help}
+
+I recommend using the [`ensure` package](https://simonpcouch.github.io/ensure/) to help write tests in your app-package. If you're already using an LLM to help write code, `ensure` is a nice addition to your LLM toolbox because of it's focus on testing. 
+
+> "*The ensurer is familiar with `testthat` 3e as well as tidy style, and incorporates context from the rest of your R package to write concise and relevant tests.*" - [`ensure` documentation](https://simonpcouch.github.io/ensure/) 
+
+Follow the [setup instructions](https://simonpcouch.github.io/ensure/articles/ensure.html) to activate the addin (and I highly recommend creating a keyboard shortcut). 
+
+### Help, not automation
+
+The `ensure` package does a great job when writing basic unit tests, but as you'll see, it doesn't have a solid understanding of the reactivity in your application (but you should). The test code created by `ensure` often needs some editing. 
+
+For example, the following test code was created for `R/scatter_plot.R` function: 
+
+```{r}
+#| eval: false 
+#| code-fold: false
+test_that("scatter_plot creates a ggplot object", {
+  
+  p <- scatter_plot(mtcars, "mpg", "hp", "cyl", 0.7, 3)
+  
+  expect_s3_class(p, "gg")
+  expect_equal(ggplot2::ggplot_build(p)$layout$panel_ranges[[1]]$x.range,
+    range(mtcars$mpg))
+  expect_equal(ggplot2::ggplot_build(p)$layout$panel_ranges[[1]]$y.range,
+    range(mtcars$hp))
+})
+
+test_that("scatter_plot handles different alpha and size values", {
+  
+  p1 <- scatter_plot(mtcars, "mpg", "hp", "cyl", 0.5, 2)
+  p2 <- scatter_plot(mtcars, "mpg", "hp", "cyl", 1, 4)
+  
+  expect_true(p1$layers[[1]]$aes_params$alpha < p2$layers[[1]]$aes_params$alpha)
+  expect_true(p1$layers[[1]]$aes_params$size < p2$layers[[1]]$aes_params$size)
+})
+```
+
+Based on the descriptions, these would test two important functional requirements of our application. However, two of these tests fail: 
+
+```{verbatim}
+[ FAIL 2 | WARN 0 | SKIP 0 | PASS 3 ]
+
+── Failure (test-scatter_plot.R:6:3): scatter_plot creates a ggplot object ─────
+ggplot2::ggplot_build(p)$layout$panel_ranges[[1]]$x.range (`actual`) not equal to range(mtcars$mpg) (`expected`).
+
+`actual` is NULL
+`expected` is a double vector (10.4, 33.9)
+
+── Failure (test-scatter_plot.R:8:3): scatter_plot creates a ggplot object ─────
+ggplot2::ggplot_build(p)$layout$panel_ranges[[1]]$y.range (`actual`) not equal to range(mtcars$hp) (`expected`).
+
+`actual` is NULL
+`expected` is a double vector (52, 335)
+[ FAIL 2 | WARN 0 | SKIP 0 | PASS 3 ]
+```
+
+This might lead us to believe our utility function is not behaving as expected. But when we dig into the method and values these tests are using, we discover it's an issue with the test: 
+
+```{r}
+#| eval: false 
+#| code-fold: false
+# build plot
+p <- scatter_plot(mtcars, "mpg", "hp", "cyl", 0.7, 3)
+# check x 
+ggplot2::ggplot_build(p)$layout$panel_ranges[[1]]$x.range
+```
+
+```{verbatim}
+NULL
+```
+
+```{r}
+#| eval: false 
+#| code-fold: false
+# check y 
+ggplot2::ggplot_build(p)$layout$panel_ranges[[1]]$y.range
+```
+
+```{verbatim}
+NULL
+```
+
+The correct code for these tests *would be* the `panel_params` (not `panel_ranges`), but these aren't going to work either, because `ggplot2` automatically adjusts the axis limits based on the data and potential aesthetic mappings (which we can confirm with `waldo::compare()`):[^ggp2-scales]
+
+[^ggp2-scales]: Read more about numeric position scales in the [Position scales and axes](https://ggplot2-book.org/scales-position) chapter of [ggplot2, 3e](https://ggplot2-book.org/)
+
+```{r}
+#| eval: false 
+#| code-fold: false
+waldo::compare(
+  x = ggplot2::ggplot_build(p)$layout$panel_params[[1]]$x.range, 
+  y = range(mtcars$mpg))
+```
+
+```{verbatim}
+`old`:  9.2 35.1
+`new`: 10.4 33.9
+```
+
+
+```{r}
+#| eval: false 
+#| code-fold: false
+waldo::compare(
+  x = ggplot2::ggplot_build(p)$layout$panel_params[[1]]$y.range, 
+  y = range(mtcars$hp))
+```
+
+```{verbatim}
+`old`: 37.9 349.1
+`new`: 52.0 335.0
+```
+
+We can continue trying to find something produced by  `ggplot2::ggplot_build(p)`, but this test confirms the "*scatter_plot creates a ggplot object*", so why not just use `ggplot2::is.ggplot()`:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+test_that("scatter_plot creates a ggplot object", {
+  p <- scatter_plot(mtcars, "mpg", "hp", "cyl", 0.7, 3)
+  expect_true(ggplot2::is.ggplot(p))
+})
+test_that("scatter_plot handles different alpha and size values", {
+  p1 <- scatter_plot(mtcars, "mpg", "hp", "cyl", 0.5, 2)
+  p2 <- scatter_plot(mtcars, "mpg", "hp", "cyl", 1, 4)
+  expect_true(p1$layers[[1]]$aes_params$alpha < p2$layers[[1]]$aes_params$alpha)
+  expect_true(p1$layers[[1]]$aes_params$size < p2$layers[[1]]$aes_params$size)
+})
+```
+
+```{verbatim}
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 3 ]
+```
+
+I've provided this example because it illustrates some important limitations when using `ensure` (or any LLM) to help write code: **Don't confuse volume with precision.** LLMs are great at generating lots of code to answer questions when a the better answer is concise and accurate. In this case, it arguably would've taken less time to do the research and write the correct test (instead of debugging the one created by `ensure`). 
+
+It's also worth pointing out that if the test *did* pass, the expectations wouldn't match the test description (these belong in a "*scatter_plot x and y limits match true range of values*" test).
+
+### Test scope {#sec-test-tools-scope}
 
 One of the recent updates to the `testthat` package (version 3.2.0) emphasizes limiting code that exists outside of our tests.[^test_tools-testthat-recent-changes]
 
@@ -140,7 +246,7 @@ Strategies for reducing or removing the code outside of `test_that()` tests incl
 
 [^test_tools-pkg-dev-masterclass]: these tips (and more!) were covered in the Package Development Masterclass delivered at [posit::conf(2023)](https://github.com/posit-conf-2023)
 
-Code outside of `test_that()` usually serves a specific purpose (load or manipulate data, set options, create folders or files, etc). The topics in this chapter will demonstrate how to include these behaviors in our tests without placing code outside of the test scope.[^bdd-chapter]
+Code outside of `test_that()` usually serves a specific purpose (load or manipulate data, set options, create folders or files, etc). The topics below demonstrate how to include these behaviors in tests without placing code outside the test scope.[^bdd-chapter]
 
 [^bdd-chapter]: Read more about BDD functions in the [appendix.](bdd.qmd)
 
@@ -203,8 +309,6 @@ tests
 2.  The test data file (i.e., `tidy_ggp2_movies.rds`):
 
 Data files stored in `tests/testthat/fixtures/` can be accessed with `testthat::test_path()` inside each test.
-
-### Example test fixture
 
 Below is a test for the `scatter_plot()` utility function that answers the question, '*does the plot generate without producing an error?*' using the `tidy_ggp2_movies.rds` test fixture. 
 
