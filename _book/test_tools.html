@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2025-01-31">
+<meta name="dcterms.date" content="2025-02-03">
 <meta name="description" content="Getting your app into an R package">
 
 <title>16&nbsp; Test tools – Shiny App-Packages</title>
@@ -495,14 +495,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#help-not-automation" id="toc-help-not-automation" class="nav-link" data-scroll-target="#help-not-automation"><span class="header-section-number">16.1.1</span> Help, not automation</a></li>
   <li><a href="#sec-test-tools-scope" id="toc-sec-test-tools-scope" class="nav-link" data-scroll-target="#sec-test-tools-scope"><span class="header-section-number">16.1.2</span> Test scope</a></li>
+  <li><a href="#sec-test-fixtures" id="toc-sec-test-fixtures" class="nav-link" data-scroll-target="#sec-test-fixtures"><span class="header-section-number">16.1.3</span> Test fixtures</a></li>
   </ul></li>
-  <li><a href="#sec-test-fixtures" id="toc-sec-test-fixtures" class="nav-link" data-scroll-target="#sec-test-fixtures"><span class="header-section-number">16.2</span> Test fixtures</a>
+  <li><a href="#sec-test-data" id="toc-sec-test-data" class="nav-link" data-scroll-target="#sec-test-data"><span class="header-section-number">16.2</span> Test data</a></li>
+  <li><a href="#sec-test-logger" id="toc-sec-test-logger" class="nav-link" data-scroll-target="#sec-test-logger"><span class="header-section-number">16.3</span> Test utility files</a>
   <ul>
-  <li><a href="#test-data" id="toc-test-data" class="nav-link" data-scroll-target="#test-data"><span class="header-section-number">16.2.1</span> Test data</a></li>
-  </ul></li>
-  <li><a href="#sec-test-helpers" id="toc-sec-test-helpers" class="nav-link" data-scroll-target="#sec-test-helpers"><span class="header-section-number">16.3</span> Test helpers</a>
-  <ul>
-  <li><a href="#test-logger" id="toc-test-logger" class="nav-link" data-scroll-target="#test-logger"><span class="header-section-number">16.3.1</span> Test logger</a></li>
+  <li><a href="#sec-test-helpers" id="toc-sec-test-helpers" class="nav-link" data-scroll-target="#sec-test-helpers"><span class="header-section-number">16.3.1</span> Test helpers</a></li>
   <li><a href="#sec-test-coverage-active-file" id="toc-sec-test-coverage-active-file" class="nav-link" data-scroll-target="#sec-test-coverage-active-file"><span class="header-section-number">16.3.2</span> Test development</a></li>
   </ul></li>
   <li><a href="#sec-test-snapshots" id="toc-sec-test-snapshots" class="nav-link" data-scroll-target="#sec-test-snapshots"><span class="header-section-number">16.4</span> Test snapshots</a>
@@ -529,7 +527,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">2025-01-31</p>
+      <p class="date">2025-02-03</p>
     </div>
   </div>
   
@@ -600,7 +598,7 @@ https://www.freecodecamp.org/news/clean-coding-for-beginners/
 </div>
 </div>
 <hr>
-<p>This chapter introduces tools to help write clean and efficient tests. We’ll cover using the <a href="https://simonpcouch.github.io/ensure/"><code>ensure</code> package</a> to help write tests, where to store test data, snapshots, and more. Most of methods I’ll cover below are thoroughly described in <a href="https://r-pkgs.org/testing-design.html#sec-testing-design-principles">R Packages, 2ed</a> and the <code>testthat</code> <a href="https://testthat.r-lib.org/articles/third-edition.html">documentation</a>, but within the context of a standard R package.<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a></p>
+<p>This chapter introduces tools to help write clean and efficient tests. We’ll cover using the <a href="https://simonpcouch.github.io/ensure/"><code>ensure</code> package</a> to help write tests, where to store test data, snapshots, and more. Most of methods I’ll cover below are described within the context of a standard R package in <a href="https://r-pkgs.org/testing-design.html#sec-testing-design-principles">R Packages, 2ed</a> and the <code>testthat</code> <a href="https://testthat.r-lib.org/articles/third-edition.html">documentation</a>.<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a></p>
 <div class="callout callout-style-default callout-tip no-icon callout-titled">
 <div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
@@ -630,14 +628,14 @@ https://www.freecodecamp.org/news/clean-coding-for-beginners/
 </div>
 <section id="sec-test-tools-help" class="level2" data-number="16.1">
 <h2 data-number="16.1" class="anchored" data-anchor-id="sec-test-tools-help"><span class="header-section-number">16.1</span> Help writing tests</h2>
-<p>I recommend using the <a href="https://simonpcouch.github.io/ensure/"><code>ensure</code> package</a> to help write tests in your app-package. If you’re already using an LLM to help write code, <code>ensure</code> is a nice addition to your LLM toolbox because of it’s focus on testing.</p>
+<p>I recommend using the <a href="https://simonpcouch.github.io/ensure/"><code>ensure</code> package</a> to help write tests in your app-package. If you’re already using LLMs to help write code, <code>ensure</code> is a nice addition to your toolbox because of it’s focus on testing.</p>
 <blockquote class="blockquote">
 <p>“<em>The ensurer is familiar with <code>testthat</code> 3e as well as tidy style, and incorporates context from the rest of your R package to write concise and relevant tests.</em>” - <a href="https://simonpcouch.github.io/ensure/"><code>ensure</code> documentation</a></p>
 </blockquote>
 <p>Follow the <a href="https://simonpcouch.github.io/ensure/articles/ensure.html">setup instructions</a> to activate the addin (and I highly recommend creating a keyboard shortcut).</p>
 <section id="help-not-automation" class="level3" data-number="16.1.1">
 <h3 data-number="16.1.1" class="anchored" data-anchor-id="help-not-automation"><span class="header-section-number">16.1.1</span> Help, not automation</h3>
-<p>The <code>ensure</code> package does a great job when writing basic unit tests, but as you’ll see, it doesn’t have a solid understanding of the reactivity in your application (but you should). The test code created by <code>ensure</code> often needs some editing.</p>
+<p>The <code>ensure</code> package does a great job when writing basic unit tests, but as you’ll see, it doesn’t have a solid understanding of the specification or functional requirements of your application (only you know these). The test code created by <code>ensure</code> often needs some editing.</p>
 <p>For example, the following test code was created for <code>R/scatter_plot.R</code> function:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">test_that</span>(<span class="st">"scatter_plot creates a ggplot object"</span>, {</span>
@@ -703,7 +701,7 @@ https://www.freecodecamp.org/news/clean-coding-for-beginners/
 </div>
 <div class="sourceCode" id="cb17"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>`old`: 37.9 349.1</span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>`new`: 52.0 335.0</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>We can continue trying to find something produced by <code>ggplot2::ggplot_build(p)</code>, but this test confirms the “<em>scatter_plot creates a ggplot object</em>”, so why not just use <code>ggplot2::is.ggplot()</code>:</p>
+<p>We can continue trying to find something produced by <a href="https://ggplot2.tidyverse.org/reference/ggplot_build.html"><code>ggplot2::ggplot_build()</code></a>, but this test confirms the “<em>scatter_plot creates a ggplot object</em>”, so why not just use <a href="https://ggplot2.tidyverse.org/reference/is.ggplot.html"><code>ggplot2::is.ggplot()</code></a>:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">test_that</span>(<span class="st">"scatter_plot creates a ggplot object"</span>, {</span>
 <span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  p <span class="ot">&lt;-</span> <span class="fu">scatter_plot</span>(mtcars, <span class="st">"mpg"</span>, <span class="st">"hp"</span>, <span class="st">"cyl"</span>, <span class="fl">0.7</span>, <span class="dv">3</span>)</span>
@@ -717,8 +715,8 @@ https://www.freecodecamp.org/news/clean-coding-for-beginners/
 <span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="sourceCode" id="cb19"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 0 | SKIP 0 | PASS 3 ]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>I’ve provided this example because it illustrates some important limitations when using <code>ensure</code> (or any LLM) to help write code: <strong>Don’t confuse volume with precision.</strong> LLMs are great at generating lots of code to answer questions when a the better answer is concise and accurate. In this case, it arguably would’ve taken less time to do the research and write the correct test (instead of debugging the one created by <code>ensure</code>).</p>
-<p>It’s also worth pointing out that if the test <em>did</em> pass, the expectations wouldn’t match the test description (these belong in a “<em>scatter_plot x and y limits match true range of values</em>” test).</p>
+<p>I’ve provided this example because it illustrates some important limitations when using <code>ensure</code> (or any LLMs) to help write code: <strong>Don’t confuse volume with precision.</strong> LLMs are great at generating copius amounts of code, but have no way of checking if the code is functional or accurate. In this case, it arguably would’ve taken less time to do the research and write the correct test (instead of debugging the one created by <code>ensure</code>).</p>
+<p>It’s also worth pointing out that if the original test code <em>did</em> pass, the <code>test_that()</code> description wouldn’t the expectation (these belong in a “<em>scatter_plot x and y limits match true range of values</em>” test).</p>
 </section>
 <section id="sec-test-tools-scope" class="level3" data-number="16.1.2">
 <h3 data-number="16.1.2" class="anchored" data-anchor-id="sec-test-tools-scope"><span class="header-section-number">16.1.2</span> Test scope</h3>
@@ -728,34 +726,35 @@ https://www.freecodecamp.org/news/clean-coding-for-beginners/
 </blockquote>
 <p>Strategies for reducing or removing the code outside of <code>test_that()</code> tests include:<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a></p>
 <blockquote class="blockquote">
-<ul>
+<ol type="1">
 <li><p><em>Move file-scope logic to either narrower scope (just this test) or a broader scope (all files).</em></p></li>
 <li><p><em>It’s ok to copy and paste: test code doesn’t have to be super DRY. Obvious &gt;&gt;&gt; DRY</em></p></li>
-</ul>
+</ol>
 </blockquote>
-<p>Code outside of <code>test_that()</code> usually serves a specific purpose (load or manipulate data, set options, create folders or files, etc). The topics below demonstrate how to include these behaviors in tests without placing code outside the test scope.<a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a></p>
+<p>Code outside of <code>test_that()</code> usually serves a specific purpose (load or manipulate data, set options, create folders or files, etc). The section below describes methods for including these behaviors in tests without placing code outside the test scope.</p>
 </section>
-</section>
-<section id="sec-test-fixtures" class="level2 page-columns page-full" data-number="16.2">
-<h2 data-number="16.2" class="anchored" data-anchor-id="sec-test-fixtures"><span class="header-section-number">16.2</span> Test fixtures</h2>
+<section id="sec-test-fixtures" class="level3" data-number="16.1.3">
+<h3 data-number="16.1.3" class="anchored" data-anchor-id="sec-test-fixtures"><span class="header-section-number">16.1.3</span> Test fixtures</h3>
 <!-- https://www.tidyverse.org/blog/2020/04/self-cleaning-test-fixtures/ -->
-<p>Test fixtures can be anything used to create repeatable test conditions (data, file paths, functions, etc.). Good test fixtures provide a consistent, well-defined test environment, and then are removed/destroyed when the test is executed. This ensures any changes made during the test don’t persist or interfere with future tests.<a href="#fn6" class="footnote-ref" id="fnref6" role="doc-noteref"><sup>6</sup></a></p>
+<p>Test fixtures can be anything used to create repeatable test conditions (data, file paths, functions, etc.). Good test fixtures provide a consistent, well-defined test environment, and then are removed/destroyed when the test is executed. This ensures any changes made during the test don’t persist or interfere with future tests.<a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a></p>
+<p>In R packages, test fixtures are stored in the <code>tests/testthat/fixtures/</code> folder:<a href="#fn6" class="footnote-ref" id="fnref6" role="doc-noteref"><sup>6</sup></a></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ex">tests/</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="ex">├──</span> testthat/</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="ex">│</span>   └── fixtures/                                         </span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="ex">└──</span> testthat.R</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="sec-test-data" class="level2 page-columns page-full" data-number="16.2">
+<h2 data-number="16.2" class="anchored" data-anchor-id="sec-test-data"><span class="header-section-number">16.2</span> Test data</h2>
 
 <div class="no-row-height column-margin column-container"><div class="">
 <p>Launch app with the <a href="https://mjfrigaard.github.io/shinypak/articles/getting-started.html"><code>shinypak</code> package</a>:</p>
 <div style="font-size: 0.65rem;">
-<div class="sourceCode" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">launch</span>(<span class="st">'12.1_tests-fixtures'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">launch</span>(<span class="st">'16.2_test-data'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-</div></div><p>In R packages, test fixtures are stored in the <code>tests/testthat/fixtures/</code> folder:<a href="#fn7" class="footnote-ref" id="fnref7" role="doc-noteref"><sup>7</sup></a></p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">tests/</span></span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="ex">├──</span> testthat/</span>
-<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="ex">│</span>   └── fixtures/                                         </span>
-<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="ex">└──</span> testthat.R</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<section id="test-data" class="level3" data-number="16.2.1">
-<h3 data-number="16.2.1" class="anchored" data-anchor-id="test-data"><span class="header-section-number">16.2.1</span> Test data</h3>
-<p>Large static data files are an example of a test fixture.<a href="#fn8" class="footnote-ref" id="fnref8" role="doc-noteref"><sup>8</sup></a> Any code used to create test data should be stored with the output file (using a clear naming convention).</p>
+</div></div><p>Large static data files are an example of a test fixture.<a href="#fn7" class="footnote-ref" id="fnref7" role="doc-noteref"><sup>7</sup></a> Any code used to create test data should be stored with the output file (using a clear naming convention).</p>
 <p>For example, I’ve stored the code used to create a <a href="https://github.com/mjfrigaard/sap/blob/12a_tests-fixtures/tests/testthat/fixtures/make-tidy_ggp2_movies.R">‘tidy’ version</a> of the <code>ggplot2movies::movies</code> data along with the output dataset in <code>tests/testthat/fixtures/</code>:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="annotated-cell-14"><pre class="sourceCode bash code-annotation-code code-with-copy code-annotated"><code class="sourceCode bash"><span id="annotated-cell-14-1"><a href="#annotated-cell-14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">tests</span></span>
@@ -781,8 +780,7 @@ https://www.freecodecamp.org/news/clean-coding-for-beginners/
 </div>
 </div>
 <p>Data files stored in <code>tests/testthat/fixtures/</code> can be accessed with <code>testthat::test_path()</code> inside each test.</p>
-<p>Below is a test for the <code>scatter_plot()</code> utility function that answers the question, ‘<em>does the plot generate without producing an error?</em>’ using the <code>tidy_ggp2_movies.rds</code> test fixture.</p>
-<p>This type of test appropriate because we want to confirm the data source will generate a plot object when passed to our graphing utility function, not necessarily to verify the specific contents of the graph.<a href="#fn9" class="footnote-ref" id="fnref9" role="doc-noteref"><sup>9</sup></a></p>
+<p>Below is a test for the <code>scatter_plot()</code> utility function that answers the question, ‘<em>does the plot generate without producing an error?</em>’ using the <code>tidy_ggp2_movies.rds</code> test fixture:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="annotated-cell-15"><pre class="sourceCode r code-annotation-code code-with-copy code-annotated"><code class="sourceCode r"><button class="code-annotation-anchor" data-target-cell="annotated-cell-15" data-target-annotation="1">1</button><span id="annotated-cell-15-1" class="code-annotation-target"><a href="#annotated-cell-15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">describe</span>(</span>
 <span id="annotated-cell-15-2"><a href="#annotated-cell-15-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Feature: Scatter plot data visualization</span></span>
@@ -857,22 +855,130 @@ https://www.freecodecamp.org/news/clean-coding-for-beginners/
 </dl>
 </div>
 </div>
+<p>This type of test is appropriate because we want to confirm the tidy movies data will generate a plot object when passed to our graphing utility function, not necessarily to verify the specific contents of the graph.<a href="#fn8" class="footnote-ref" id="fnref8" role="doc-noteref"><sup>8</sup></a></p>
 <p>If the <code>tidy_ggp2_movies.rds</code> file in the <code>tests/testthat/fixtures/</code> folder are going to be used repeatedly, it might make sense to store the data in <code>inst/extdata/</code> or <code>data-raw/</code>. Test fixtures are described in-depth in <a href="https://r-pkgs.org/testing-advanced.html#test-fixtures">R Packages, 2ed</a> and in the <a href="https://testthat.r-lib.org/articles/test-fixtures.html#test-fixtures"><code>testthat</code> documentation</a>.</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset">
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" aria-current="page">Tests in RStudio <img src="images/rstudio-icon.png" height="20"></a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false">Tests in Positron <img src="images/positron.png" height="20"></a></li></ul>
 <div class="tab-content">
 <div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
+<p>If we’ve created the keyboard shortcut for <code>devtools::test_active_file()</code> in RStudio, we’ll see the following in the <strong>Console</strong>.</p>
+<div>
 
+</div>
+<div class="quarto-layout-panel" data-layout="[ 30, 50, 20 ]">
+<div class="quarto-layout-row">
+<div id="first-column" class="quarto-layout-cell" style="flex-basis: 30.0%;justify-content: flex-start;">
+
+</div>
+<div id="second-column" class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<div style="font-weight: bold; font-size: 1.15em" data-layout-valign="bottom">
+<p><kbd>Ctrl/Cmd</kbd> + <kbd>T</kbd></p>
+</div>
+</div>
+<div id="third-column" class="quarto-layout-cell" style="flex-basis: 20.0%;justify-content: flex-start;">
+
+</div>
+</div>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/test_tools_test_data_rstudio.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Test active file in RStudio (click to enlarge)"><img src="images/test_tools_test_data_rstudio.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Test active file in RStudio (click to enlarge)"></a></p>
+</figure>
+</div>
+<figcaption>Test active file in RStudio (click to enlarge)</figcaption>
+</figure>
+</div>
 </div>
 <div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
-
+<p>In Positron, the <strong>Testing</strong> menu gives us a hierarchical breakdown of the <code>describe()</code> and <code>it()</code> testing functions. When we click on the <em>Run Tests</em> icon, we’ll see the following in the <strong>Test Results</strong>.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/test_tools_test_data_positron.png" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="Run tests in Positron (click to enlarge)"><img src="images/test_tools_test_data_positron.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Run tests in Positron (click to enlarge)"></a></p>
+</figure>
+</div>
+<figcaption>Run tests in Positron (click to enlarge)</figcaption>
+</figure>
+</div>
 </div>
 </div>
 </div>
 </section>
-</section>
-<section id="sec-test-helpers" class="level2 page-columns page-full" data-number="16.3">
-<h2 data-number="16.3" class="anchored" data-anchor-id="sec-test-helpers"><span class="header-section-number">16.3</span> Test helpers</h2>
+<section id="sec-test-logger" class="level2 page-columns page-full" data-number="16.3">
+<h2 data-number="16.3" class="anchored" data-anchor-id="sec-test-logger"><span class="header-section-number">16.3</span> Test utility files</h2>
+<p>As we covered in the previous section (<a href="logging.html" class="quarto-xref"><span>Chapter 13</span></a>), we can create a <code>test_logger()</code> helper function to monitor our tests and provide additional context:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># test logger helper</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>test_logger <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">start =</span> <span class="cn">NULL</span>, <span class="at">end =</span> <span class="cn">NULL</span>, msg) {</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">is.null</span>(start) <span class="sc">&amp;</span> <span class="fu">is.null</span>(end)) {</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>    logger<span class="sc">::</span><span class="fu">log_info</span>(<span class="st">"{msg}"</span>)</span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(start) <span class="sc">&amp;</span> <span class="fu">is.null</span>(end)) {</span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>    logger<span class="sc">::</span><span class="fu">log_info</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">[ START {start} = {msg}]"</span>)</span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> <span class="cf">if</span> (<span class="fu">is.null</span>(start) <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.null</span>(end)) {</span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a>    logger<span class="sc">::</span><span class="fu">log_info</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">[ END {end} = {msg}]"</span>)</span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a>    logger<span class="sc">::</span><span class="fu">log_info</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">[ START {start} = {msg}]"</span>)</span>
+<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a>    logger<span class="sc">::</span><span class="fu">log_info</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">[ END {end} = {msg}]"</span>)</span>
+<span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb22-18"><a href="#cb22-18" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p><code>test_logger()</code> can be used to log the <code>start</code> and <code>end</code> of each test, and it includes a message argument (<code>msg</code>) we can use to reference the test <code>description</code> argument in each <code>it()</code> call.<a href="#fn9" class="footnote-ref" id="fnref9" role="doc-noteref"><sup>9</sup></a></p>
+<p>An example of using the <code>test_logger()</code> function is below:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>    <span class="fu">it</span>(<span class="st">"Scenario: Scatter plot initial x, y, color values </span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="st">         When I launch the Scatter Plot Data Visualization</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="st">         And I have a IMDB dataset of movie reviews </span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="st">         Then the plot should show 'Rating' on the x-axis</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="st">         And the plot should show 'Length' on the y-axis</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a><span class="st">         And the points on the plot should be colored by 'MPAA' rating"</span>, </span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>        <span class="at">code =</span> {</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>          </span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>    ggp2_scatter_inputs <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>          <span class="at">x =</span> <span class="st">"rating"</span>,</span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>          <span class="at">y =</span> <span class="st">"length"</span>,</span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>          <span class="at">z =</span> <span class="st">"mpaa"</span>,</span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>          <span class="at">alpha =</span> <span class="fl">0.75</span>,</span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a>          <span class="at">size =</span> <span class="dv">3</span>,</span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a>          <span class="at">plot_title =</span> <span class="st">"Enter plot title"</span></span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">test_logger</span>(<span class="at">start =</span> <span class="st">"Step1"</span>, <span class="at">msg =</span> <span class="st">"Loading tidy_ggp2_movies.rds data"</span>)</span>
+<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a>    tidy_ggp2_movies <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="fu">test_path</span>(<span class="st">"fixtures"</span>,</span>
+<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a>                                <span class="st">"tidy_ggp2_movies.rds"</span>))</span>
+<span id="cb23-21"><a href="#cb23-21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">test_logger</span>(<span class="at">end =</span> <span class="st">"Step1"</span>, <span class="at">msg =</span> <span class="st">"Data loaded successfully"</span>)</span>
+<span id="cb23-22"><a href="#cb23-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">test_logger</span>(<span class="at">start =</span> <span class="st">"Step2"</span>, <span class="at">msg =</span> <span class="st">"Creating graph"</span>)</span>
+<span id="cb23-23"><a href="#cb23-23" aria-hidden="true" tabindex="-1"></a>    app_graph <span class="ot">&lt;-</span> <span class="fu">scatter_plot</span>(tidy_ggp2_movies,</span>
+<span id="cb23-24"><a href="#cb23-24" aria-hidden="true" tabindex="-1"></a>      <span class="at">x_var =</span> ggp2_scatter_inputs<span class="sc">$</span>x,</span>
+<span id="cb23-25"><a href="#cb23-25" aria-hidden="true" tabindex="-1"></a>      <span class="at">y_var =</span> ggp2_scatter_inputs<span class="sc">$</span>y,</span>
+<span id="cb23-26"><a href="#cb23-26" aria-hidden="true" tabindex="-1"></a>      <span class="at">col_var =</span> ggp2_scatter_inputs<span class="sc">$</span>z,</span>
+<span id="cb23-27"><a href="#cb23-27" aria-hidden="true" tabindex="-1"></a>      <span class="at">alpha_var =</span> ggp2_scatter_inputs<span class="sc">$</span>alpha,</span>
+<span id="cb23-28"><a href="#cb23-28" aria-hidden="true" tabindex="-1"></a>      <span class="at">size_var =</span> ggp2_scatter_inputs<span class="sc">$</span>size</span>
+<span id="cb23-29"><a href="#cb23-29" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb23-30"><a href="#cb23-30" aria-hidden="true" tabindex="-1"></a>    <span class="fu">test_logger</span>(<span class="at">end =</span> <span class="st">"Step2"</span>, <span class="at">msg =</span> <span class="st">"Graph created"</span>)</span>
+<span id="cb23-31"><a href="#cb23-31" aria-hidden="true" tabindex="-1"></a>    <span class="fu">expect_true</span>(ggplot2<span class="sc">::</span><span class="fu">is.ggplot</span>(app_graph))</span>
+<span id="cb23-32"><a href="#cb23-32" aria-hidden="true" tabindex="-1"></a>  }) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>When the test is run, the following output is printed to the <strong>Console</strong>:</p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>INFO [2025-02-03 13:34:16] [ START Step1 = Loading tidy_ggp2_movies.rds data]</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>INFO [2025-02-03 13:34:16] [ END Step1 = Data loaded successfully]</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>INFO [2025-02-03 13:34:16] [ START Step2 = Creating graph]</span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>INFO [2025-02-03 13:34:16] [ END Step2 = Graph created]</span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 0 | SKIP 0 | PASS 1 ]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>There’s nothing prohibiting placing <code>test_logger()</code> in a testing utility file (<a href="https://github.com/mjfrigaard/sap/blob/13_tests-modules/R/testthat.R"><code>R/testthat.R</code></a>) below the <code>R/</code> folder. Including testing functions in the <code>R/</code> folder also ensures they’re documented (and any dependencies become part of your app-package).<a href="#fn10" class="footnote-ref" id="fnref10" role="doc-noteref"><sup>10</sup></a></p>
+<section id="sec-test-helpers" class="level3 page-columns page-full" data-number="16.3.1">
+<h3 data-number="16.3.1" class="anchored" data-anchor-id="sec-test-helpers"><span class="header-section-number">16.3.1</span> Test helpers</h3>
 <!-- https://r-pkgs.org/testing-design.html#testthat-helper-files -->
 <blockquote class="blockquote">
 <p>“<em>Helper files are a mighty weapon in the battle to eliminate code floating around at the top-level of test files.</em>” Testthat helper files, <a href="https://r-pkgs.org/testing-design.html#testthat-helper-files">R Packages, 2ed</a></p>
@@ -881,33 +987,33 @@ https://www.freecodecamp.org/news/clean-coding-for-beginners/
 <div class="no-row-height column-margin column-container"><div class="">
 <p>Launch app with the <a href="https://mjfrigaard.github.io/shinypak/articles/getting-started.html"><code>shinypak</code> package</a>:</p>
 <div style="font-size: 0.65rem;">
-<div class="sourceCode" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">launch</span>(<span class="st">'12.2_tests-helpers'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">launch</span>(<span class="st">'12.2_tests-helpers'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </div></div><p>Test helpers reduce repeated/duplicated test code. In general, objects or values that aren’t large enough to justify storing as static test fixtures can be created with helper functions. Helper functions are stored in <code>tests/testthat/helper.R</code>, which is automatically loaded with <code>devtools::load_all()</code>:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="annotated-cell-16"><pre class="sourceCode bash code-annotation-code code-with-copy code-annotated"><code class="sourceCode bash"><span id="annotated-cell-16-1"><a href="#annotated-cell-16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">tests/</span></span>
-<span id="annotated-cell-16-2"><a href="#annotated-cell-16-2" aria-hidden="true" tabindex="-1"></a>  <span class="ex">├──</span> testthat/</span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-16" data-target-annotation="1">1</button><span id="annotated-cell-16-3" class="code-annotation-target"><a href="#annotated-cell-16-3" aria-hidden="true" tabindex="-1"></a>  <span class="ex">│</span>   ├── fixtures/</span>
-<span id="annotated-cell-16-4"><a href="#annotated-cell-16-4" aria-hidden="true" tabindex="-1"></a>  <span class="ex">│</span>   │   ├── make-tidy_ggp2_movies.R</span>
-<span id="annotated-cell-16-5"><a href="#annotated-cell-16-5" aria-hidden="true" tabindex="-1"></a>  <span class="ex">│</span>   │   └── tidy_ggp2_movies.rds</span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-16" data-target-annotation="2">2</button><span id="annotated-cell-16-6" class="code-annotation-target"><a href="#annotated-cell-16-6" aria-hidden="true" tabindex="-1"></a>  <span class="ex">│</span>   ├── helper.R</span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-16" data-target-annotation="3">3</button><span id="annotated-cell-16-7" class="code-annotation-target"><a href="#annotated-cell-16-7" aria-hidden="true" tabindex="-1"></a>  <span class="ex">│</span>   └── test-scatter_plot.R</span>
-<span id="annotated-cell-16-8"><a href="#annotated-cell-16-8" aria-hidden="true" tabindex="-1"></a>  <span class="ex">└──</span> testthat.R</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="annotated-cell-19"><pre class="sourceCode bash code-annotation-code code-with-copy code-annotated"><code class="sourceCode bash"><span id="annotated-cell-19-1"><a href="#annotated-cell-19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">tests/</span></span>
+<span id="annotated-cell-19-2"><a href="#annotated-cell-19-2" aria-hidden="true" tabindex="-1"></a>  <span class="ex">├──</span> testthat/</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-19" data-target-annotation="1">1</button><span id="annotated-cell-19-3" class="code-annotation-target"><a href="#annotated-cell-19-3" aria-hidden="true" tabindex="-1"></a>  <span class="ex">│</span>   ├── fixtures/</span>
+<span id="annotated-cell-19-4"><a href="#annotated-cell-19-4" aria-hidden="true" tabindex="-1"></a>  <span class="ex">│</span>   │   ├── make-tidy_ggp2_movies.R</span>
+<span id="annotated-cell-19-5"><a href="#annotated-cell-19-5" aria-hidden="true" tabindex="-1"></a>  <span class="ex">│</span>   │   └── tidy_ggp2_movies.rds</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-19" data-target-annotation="2">2</button><span id="annotated-cell-19-6" class="code-annotation-target"><a href="#annotated-cell-19-6" aria-hidden="true" tabindex="-1"></a>  <span class="ex">│</span>   ├── helper.R</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-19" data-target-annotation="3">3</button><span id="annotated-cell-19-7" class="code-annotation-target"><a href="#annotated-cell-19-7" aria-hidden="true" tabindex="-1"></a>  <span class="ex">│</span>   └── test-scatter_plot.R</span>
+<span id="annotated-cell-19-8"><a href="#annotated-cell-19-8" aria-hidden="true" tabindex="-1"></a>  <span class="ex">└──</span> testthat.R</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-annotation">
 <dl class="code-annotation-container-hidden code-annotation-container-grid">
-<dt data-target-cell="annotated-cell-16" data-target-annotation="1">1</dt>
+<dt data-target-cell="annotated-cell-19" data-target-annotation="1">1</dt>
 <dd>
-<span data-code-cell="annotated-cell-16" data-code-lines="3,4,5" data-code-annotation="1">Test fixture scripts and <code>.rds</code> files<br>
+<span data-code-cell="annotated-cell-19" data-code-lines="3,4,5" data-code-annotation="1">Test fixture scripts and <code>.rds</code> files<br>
 </span>
 </dd>
-<dt data-target-cell="annotated-cell-16" data-target-annotation="2">2</dt>
+<dt data-target-cell="annotated-cell-19" data-target-annotation="2">2</dt>
 <dd>
-<span data-code-cell="annotated-cell-16" data-code-lines="6" data-code-annotation="2">Helper functions<br>
+<span data-code-cell="annotated-cell-19" data-code-lines="6" data-code-annotation="2">Helper functions<br>
 </span>
 </dd>
-<dt data-target-cell="annotated-cell-16" data-target-annotation="3">3</dt>
+<dt data-target-cell="annotated-cell-19" data-target-annotation="3">3</dt>
 <dd>
-<span data-code-cell="annotated-cell-16" data-code-lines="7" data-code-annotation="3">Test file</span>
+<span data-code-cell="annotated-cell-19" data-code-lines="7" data-code-annotation="3">Test file</span>
 </dd>
 </dl>
 </div>
@@ -920,108 +1026,108 @@ https://www.freecodecamp.org/news/clean-coding-for-beginners/
 <p>However, when we’re writing tests, it’s more important that tests are easy to read and understand <strong>when they fail</strong>.</p>
 <p>For example, consider the <code>ggp2_scatter_inputs</code> inputs passed to the <code>scatter_plot()</code> function in the previous test:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>ggp2_scatter_inputs <span class="ot">&lt;-</span> <span class="fu">list</span>(  </span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>        <span class="at">x =</span> <span class="st">"rating"</span>,</span>
-<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>        <span class="at">y =</span> <span class="st">"length"</span>,</span>
-<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>        <span class="at">z =</span> <span class="st">"mpaa"</span>,</span>
-<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>        <span class="at">alpha =</span> <span class="fl">0.75</span>,</span>
-<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>        <span class="at">size =</span> <span class="dv">3</span>,</span>
-<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>        <span class="at">plot_title =</span> <span class="st">"Enter plot title"</span></span>
-<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>)            </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>ggp2_scatter_inputs <span class="ot">&lt;-</span> <span class="fu">list</span>(  </span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>        <span class="at">x =</span> <span class="st">"rating"</span>,</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>        <span class="at">y =</span> <span class="st">"length"</span>,</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>        <span class="at">z =</span> <span class="st">"mpaa"</span>,</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>        <span class="at">alpha =</span> <span class="fl">0.75</span>,</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>        <span class="at">size =</span> <span class="dv">3</span>,</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>        <span class="at">plot_title =</span> <span class="st">"Enter plot title"</span></span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>)            </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>We could write a <code>var_inputs()</code> function that stores these values in a list. In our tests, this would allow us to use <code>var_inputs()</code> with the same ‘reactive syntax’ we use with <code>scatter_plot()</code> in the module server function:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>var_inputs <span class="ot">&lt;-</span> <span class="cf">function</span>() {</span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>   <span class="fu">list</span>(<span class="at">x =</span> <span class="st">"rating"</span>,</span>
-<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>        <span class="at">y =</span> <span class="st">"length"</span>,</span>
-<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>        <span class="at">z =</span> <span class="st">"mpaa"</span>,</span>
-<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>        <span class="at">alpha =</span> <span class="fl">0.75</span>,</span>
-<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>        <span class="at">size =</span> <span class="dv">3</span>,</span>
-<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>        <span class="at">plot_title =</span> <span class="st">"Enter plot title"</span>)</span>
-<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a><span class="fu">var_inputs</span>()</span>
-<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a><span class="do">## $x</span></span>
-<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] "rating"</span></span>
-<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
-<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a><span class="do">## $y</span></span>
-<span id="cb24-14"><a href="#cb24-14" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] "length"</span></span>
-<span id="cb24-15"><a href="#cb24-15" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
-<span id="cb24-16"><a href="#cb24-16" aria-hidden="true" tabindex="-1"></a><span class="do">## $z</span></span>
-<span id="cb24-17"><a href="#cb24-17" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] "mpaa"</span></span>
-<span id="cb24-18"><a href="#cb24-18" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
-<span id="cb24-19"><a href="#cb24-19" aria-hidden="true" tabindex="-1"></a><span class="do">## $alpha</span></span>
-<span id="cb24-20"><a href="#cb24-20" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.75</span></span>
-<span id="cb24-21"><a href="#cb24-21" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
-<span id="cb24-22"><a href="#cb24-22" aria-hidden="true" tabindex="-1"></a><span class="do">## $size</span></span>
-<span id="cb24-23"><a href="#cb24-23" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 3</span></span>
-<span id="cb24-24"><a href="#cb24-24" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
-<span id="cb24-25"><a href="#cb24-25" aria-hidden="true" tabindex="-1"></a><span class="do">## $plot_title</span></span>
-<span id="cb24-26"><a href="#cb24-26" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] "Enter plot title"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>var_inputs <span class="ot">&lt;-</span> <span class="cf">function</span>() {</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>   <span class="fu">list</span>(<span class="at">x =</span> <span class="st">"rating"</span>,</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>        <span class="at">y =</span> <span class="st">"length"</span>,</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>        <span class="at">z =</span> <span class="st">"mpaa"</span>,</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>        <span class="at">alpha =</span> <span class="fl">0.75</span>,</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>        <span class="at">size =</span> <span class="dv">3</span>,</span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>        <span class="at">plot_title =</span> <span class="st">"Enter plot title"</span>)</span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a><span class="fu">var_inputs</span>()</span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a><span class="do">## $x</span></span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] "rating"</span></span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a><span class="do">## $y</span></span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] "length"</span></span>
+<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a><span class="do">## $z</span></span>
+<span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] "mpaa"</span></span>
+<span id="cb27-18"><a href="#cb27-18" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb27-19"><a href="#cb27-19" aria-hidden="true" tabindex="-1"></a><span class="do">## $alpha</span></span>
+<span id="cb27-20"><a href="#cb27-20" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.75</span></span>
+<span id="cb27-21"><a href="#cb27-21" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb27-22"><a href="#cb27-22" aria-hidden="true" tabindex="-1"></a><span class="do">## $size</span></span>
+<span id="cb27-23"><a href="#cb27-23" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 3</span></span>
+<span id="cb27-24"><a href="#cb27-24" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb27-25"><a href="#cb27-25" aria-hidden="true" tabindex="-1"></a><span class="do">## $plot_title</span></span>
+<span id="cb27-26"><a href="#cb27-26" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] "Enter plot title"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>While this removes duplicated code, it also makes it less clear for the reader what <code>var_inputs()</code> contains and where it was created (without opening the <code>helper.R</code> file).</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="annotated-cell-19"><pre class="sourceCode r code-annotation-code code-with-copy code-annotated"><code class="sourceCode r"><button class="code-annotation-anchor" data-target-cell="annotated-cell-19" data-target-annotation="1">1</button><span id="annotated-cell-19-1" class="code-annotation-target"><a href="#annotated-cell-19-1" aria-hidden="true" tabindex="-1"></a>tidy_ggp2_movies <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="fu">test_path</span>(<span class="st">"fixtures"</span>,</span>
-<span id="annotated-cell-19-2"><a href="#annotated-cell-19-2" aria-hidden="true" tabindex="-1"></a>                                <span class="st">"tidy_ggp2_movies.rds"</span>))</span>
-<span id="annotated-cell-19-3"><a href="#annotated-cell-19-3" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="annotated-cell-19-4"><a href="#annotated-cell-19-4" aria-hidden="true" tabindex="-1"></a>app_graph <span class="ot">&lt;-</span> <span class="fu">scatter_plot</span>(</span>
-<span id="annotated-cell-19-5"><a href="#annotated-cell-19-5" aria-hidden="true" tabindex="-1"></a>  tidy_ggp2_movies,</span>
-<button class="code-annotation-anchor" data-target-cell="annotated-cell-19" data-target-annotation="2">2</button><span id="annotated-cell-19-6" class="code-annotation-target"><a href="#annotated-cell-19-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">x_var =</span> <span class="fu">var_inputs</span>()<span class="sc">$</span>x,</span>
-<span id="annotated-cell-19-7"><a href="#annotated-cell-19-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">y_var =</span> <span class="fu">var_inputs</span>()<span class="sc">$</span>y,</span>
-<span id="annotated-cell-19-8"><a href="#annotated-cell-19-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">col_var =</span> <span class="fu">var_inputs</span>()<span class="sc">$</span>z,</span>
-<span id="annotated-cell-19-9"><a href="#annotated-cell-19-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">alpha_var =</span> <span class="fu">var_inputs</span>()<span class="sc">$</span>alpha,</span>
-<span id="annotated-cell-19-10"><a href="#annotated-cell-19-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">size_var =</span> <span class="fu">var_inputs</span>()<span class="sc">$</span>size)</span>
-<span id="annotated-cell-19-11"><a href="#annotated-cell-19-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="annotated-cell-19-12"><a href="#annotated-cell-19-12" aria-hidden="true" tabindex="-1"></a>testthat<span class="sc">::</span><span class="fu">expect_true</span>(ggplot2<span class="sc">::</span><span class="fu">is.ggplot</span>(app_graph))</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="annotated-cell-22"><pre class="sourceCode r code-annotation-code code-with-copy code-annotated"><code class="sourceCode r"><button class="code-annotation-anchor" data-target-cell="annotated-cell-22" data-target-annotation="1">1</button><span id="annotated-cell-22-1" class="code-annotation-target"><a href="#annotated-cell-22-1" aria-hidden="true" tabindex="-1"></a>tidy_ggp2_movies <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="fu">test_path</span>(<span class="st">"fixtures"</span>,</span>
+<span id="annotated-cell-22-2"><a href="#annotated-cell-22-2" aria-hidden="true" tabindex="-1"></a>                                <span class="st">"tidy_ggp2_movies.rds"</span>))</span>
+<span id="annotated-cell-22-3"><a href="#annotated-cell-22-3" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="annotated-cell-22-4"><a href="#annotated-cell-22-4" aria-hidden="true" tabindex="-1"></a>app_graph <span class="ot">&lt;-</span> <span class="fu">scatter_plot</span>(</span>
+<span id="annotated-cell-22-5"><a href="#annotated-cell-22-5" aria-hidden="true" tabindex="-1"></a>  tidy_ggp2_movies,</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-22" data-target-annotation="2">2</button><span id="annotated-cell-22-6" class="code-annotation-target"><a href="#annotated-cell-22-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">x_var =</span> <span class="fu">var_inputs</span>()<span class="sc">$</span>x,</span>
+<span id="annotated-cell-22-7"><a href="#annotated-cell-22-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">y_var =</span> <span class="fu">var_inputs</span>()<span class="sc">$</span>y,</span>
+<span id="annotated-cell-22-8"><a href="#annotated-cell-22-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">col_var =</span> <span class="fu">var_inputs</span>()<span class="sc">$</span>z,</span>
+<span id="annotated-cell-22-9"><a href="#annotated-cell-22-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">alpha_var =</span> <span class="fu">var_inputs</span>()<span class="sc">$</span>alpha,</span>
+<span id="annotated-cell-22-10"><a href="#annotated-cell-22-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">size_var =</span> <span class="fu">var_inputs</span>()<span class="sc">$</span>size)</span>
+<span id="annotated-cell-22-11"><a href="#annotated-cell-22-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-22-12"><a href="#annotated-cell-22-12" aria-hidden="true" tabindex="-1"></a>testthat<span class="sc">::</span><span class="fu">expect_true</span>(ggplot2<span class="sc">::</span><span class="fu">is.ggplot</span>(app_graph))</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-annotation">
 <dl class="code-annotation-container-hidden code-annotation-container-grid">
-<dt data-target-cell="annotated-cell-19" data-target-annotation="1">1</dt>
+<dt data-target-cell="annotated-cell-22" data-target-annotation="1">1</dt>
 <dd>
-<span data-code-cell="annotated-cell-19" data-code-lines="1,2" data-code-annotation="1">Load test fixture<br>
+<span data-code-cell="annotated-cell-22" data-code-lines="1,2" data-code-annotation="1">Load test fixture<br>
 </span>
 </dd>
-<dt data-target-cell="annotated-cell-19" data-target-annotation="2">2</dt>
+<dt data-target-cell="annotated-cell-22" data-target-annotation="2">2</dt>
 <dd>
-<span data-code-cell="annotated-cell-19" data-code-lines="6,10" data-code-annotation="2">Identical to the code in <code>mod_scatter_display_server()</code></span>
+<span data-code-cell="annotated-cell-22" data-code-lines="6,10" data-code-annotation="2">Identical to the code in <code>mod_scatter_display_server()</code></span>
 </dd>
 </dl>
 </div>
 </div>
 <p>In contrast, the <code>make_ggp2_inputs()</code> function below creates inputs for the <code>scatter_plot()</code> utility function:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>make_ggp2_inputs <span class="ot">&lt;-</span> <span class="cf">function</span>() {</span>
-<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>  glue<span class="sc">::</span><span class="fu">glue_collapse</span>(<span class="st">"list(x = 'rating',</span></span>
-<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="st">     y = 'length',</span></span>
-<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a><span class="st">     z = 'mpaa',</span></span>
-<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a><span class="st">     alpha = 0.75,</span></span>
-<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a><span class="st">     size = 3,</span></span>
-<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a><span class="st">     plot_title = 'Enter plot title'</span></span>
-<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a><span class="st">     )"</span></span>
-<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>make_ggp2_inputs <span class="ot">&lt;-</span> <span class="cf">function</span>() {</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>  glue<span class="sc">::</span><span class="fu">glue_collapse</span>(<span class="st">"list(x = 'rating',</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="st">     y = 'length',</span></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a><span class="st">     z = 'mpaa',</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a><span class="st">     alpha = 0.75,</span></span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a><span class="st">     size = 3,</span></span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a><span class="st">     plot_title = 'Enter plot title'</span></span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a><span class="st">     )"</span></span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>I can call <code>make_ggp2_inputs()</code> in the <strong>Console</strong> and it will return the list of values to paste into each test:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">make_ggp2_inputs</span>()</span>
-<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="fu">list</span>(<span class="at">y =</span> <span class="st">'audience_score'</span>, </span>
-<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">x =</span> <span class="st">'imdb_rating'</span>,</span>
-<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>     <span class="at">z =</span> <span class="st">'mpaa_rating'</span>,</span>
-<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>     <span class="at">alpha =</span> <span class="fl">0.5</span>,</span>
-<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>     <span class="at">size =</span> <span class="dv">2</span>,</span>
-<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>     <span class="at">plot_title =</span> <span class="st">'Enter plot title'</span></span>
-<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>    )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">make_ggp2_inputs</span>()</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="fu">list</span>(<span class="at">y =</span> <span class="st">'audience_score'</span>, </span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">x =</span> <span class="st">'imdb_rating'</span>,</span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>     <span class="at">z =</span> <span class="st">'mpaa_rating'</span>,</span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>     <span class="at">alpha =</span> <span class="fl">0.5</span>,</span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>     <span class="at">size =</span> <span class="dv">2</span>,</span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>     <span class="at">plot_title =</span> <span class="st">'Enter plot title'</span></span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a>    )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>This reduces the number of keystrokes per test, but doesn’t obscure the source of the values in the test.</p>
 <p><code>glue::glue_collapse()</code> is your friend when you want to quickly reproduce code for your tests. <code>make_var_inputs()</code> creates the list of inputs for testing the original <code>movies</code> data:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>make_var_inputs <span class="ot">&lt;-</span> <span class="cf">function</span>() {</span>
-<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>  glue<span class="sc">::</span><span class="fu">glue_collapse</span>(<span class="st">"list(y = 'audience_score', </span></span>
-<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="st">     x = 'imdb_rating',</span></span>
-<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="st">     z = 'mpaa_rating',</span></span>
-<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a><span class="st">     alpha = 0.5,</span></span>
-<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a><span class="st">     size = 2,</span></span>
-<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a><span class="st">     plot_title = 'Enter plot title'</span></span>
-<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a><span class="st">    )"</span>)</span>
-<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>make_var_inputs <span class="ot">&lt;-</span> <span class="cf">function</span>() {</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>  glue<span class="sc">::</span><span class="fu">glue_collapse</span>(<span class="st">"list(y = 'audience_score', </span></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a><span class="st">     x = 'imdb_rating',</span></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a><span class="st">     z = 'mpaa_rating',</span></span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a><span class="st">     alpha = 0.5,</span></span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a><span class="st">     size = 2,</span></span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a><span class="st">     plot_title = 'Enter plot title'</span></span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a><span class="st">    )"</span>)</span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="callout callout-style-default callout-important no-icon callout-titled">
 <div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-3-contents" aria-controls="callout-3" aria-expanded="false" aria-label="Toggle callout">
@@ -1046,31 +1152,6 @@ https://www.freecodecamp.org/news/clean-coding-for-beginners/
 </div>
 </div>
 </div>
-<section id="test-logger" class="level3" data-number="16.3.1">
-<h3 data-number="16.3.1" class="anchored" data-anchor-id="test-logger"><span class="header-section-number">16.3.1</span> Test logger</h3>
-<p>I prefer test outputs to be verbose, so I usually create a <code>test_logger()</code> helper function that allows me to give more context and information with each test:</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co"># test logger helper</span></span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>test_logger <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">start =</span> <span class="cn">NULL</span>, <span class="at">end =</span> <span class="cn">NULL</span>, msg) {</span>
-<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">is.null</span>(start) <span class="sc">&amp;</span> <span class="fu">is.null</span>(end)) {</span>
-<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>    logger<span class="sc">::</span><span class="fu">log_info</span>(<span class="st">"{msg}"</span>)</span>
-<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(start) <span class="sc">&amp;</span> <span class="fu">is.null</span>(end)) {</span>
-<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a>    logger<span class="sc">::</span><span class="fu">log_info</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">[ START {start} = {msg}]"</span>)</span>
-<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> <span class="cf">if</span> (<span class="fu">is.null</span>(start) <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.null</span>(end)) {</span>
-<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a>    logger<span class="sc">::</span><span class="fu">log_info</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">[ END {end} = {msg}]"</span>)</span>
-<span id="cb28-12"><a href="#cb28-12" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
-<span id="cb28-13"><a href="#cb28-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb28-14"><a href="#cb28-14" aria-hidden="true" tabindex="-1"></a>    logger<span class="sc">::</span><span class="fu">log_info</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">[ START {start} = {msg}]"</span>)</span>
-<span id="cb28-15"><a href="#cb28-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb28-16"><a href="#cb28-16" aria-hidden="true" tabindex="-1"></a>    logger<span class="sc">::</span><span class="fu">log_info</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">[ END {end} = {msg}]"</span>)</span>
-<span id="cb28-17"><a href="#cb28-17" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb28-18"><a href="#cb28-18" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<p><code>test_logger()</code> can be used to ‘log’ the <code>start</code> and <code>end</code> of each test, and it includes a message argument (<code>msg</code>) I’ll use to reference the test <code>description</code> argument in each <code>it()</code> call.<a href="#fn10" class="footnote-ref" id="fnref10" role="doc-noteref"><sup>10</sup></a></p>
-<p>I tend to use functions like <code>test_logger()</code> enough to justify placing them in a testing utility file (<a href="https://github.com/mjfrigaard/sap/blob/13_tests-modules/R/testthat.R"><code>R/testthat.R</code></a>) below <code>R/</code>. Including testing functions in the <code>R/</code> folder also ensures they’re documented (and any dependencies become part of your app-package).<a href="#fn11" class="footnote-ref" id="fnref11" role="doc-noteref"><sup>11</sup></a></p>
 </section>
 <section id="sec-test-coverage-active-file" class="level3" data-number="16.3.2">
 <h3 data-number="16.3.2" class="anchored" data-anchor-id="sec-test-coverage-active-file"><span class="header-section-number">16.3.2</span> Test development</h3>
@@ -1093,15 +1174,15 @@ https://www.freecodecamp.org/news/clean-coding-for-beginners/
 </div>
 </div>
 </div>
-<div class="sourceCode" id="cb29"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>devtools:::test_active_file()</span>
-<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a> FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]</span>
-<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>INFO [2023-10-27 12:39:23] [ START fixture = tidy_ggp2_movies.rds]</span>
-<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 0 | SKIP 0 | PASS 1 ]</span>
-<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>INFO [2023-10-27 12:39:23] [ START fixture = tidy_ggp2_movies.rds]</span>
-<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>INFO [2023-10-27 12:39:23] [ START data = movies.rda]</span>
-<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 0 | SKIP 0 | PASS 2 ]</span>
-<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a>INFO [2023-10-27 12:39:23] [ END data = movies.rda]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb31"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>devtools:::test_active_file()</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a> FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]</span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>INFO [2023-10-27 12:39:23] [ START fixture = tidy_ggp2_movies.rds]</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 0 | SKIP 0 | PASS 1 ]</span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>INFO [2023-10-27 12:39:23] [ START fixture = tidy_ggp2_movies.rds]</span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>INFO [2023-10-27 12:39:23] [ START data = movies.rda]</span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 0 | SKIP 0 | PASS 2 ]</span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a>INFO [2023-10-27 12:39:23] [ END data = movies.rda]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div>
 
 </div>
@@ -1121,13 +1202,13 @@ https://www.freecodecamp.org/news/clean-coding-for-beginners/
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">:::</span><span class="fu">test_coverage_active_file</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">:::</span><span class="fu">test_coverage_active_file</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><a href="images/tests_coverage_scatter_plot.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Test coverage on active file"><img src="images/tests_coverage_scatter_plot.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Test coverage on active file"></a></p>
+<p><a href="images/tests_coverage_scatter_plot.png" class="lightbox" data-gallery="quarto-lightbox-gallery-3" title="Test coverage on active file"><img src="images/tests_coverage_scatter_plot.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Test coverage on active file"></a></p>
 </figure>
 </div>
 <figcaption>Test coverage on active file</figcaption>
@@ -1141,9 +1222,9 @@ https://www.freecodecamp.org/news/clean-coding-for-beginners/
 <div class="no-row-height column-margin column-container"><div class="">
 <p>Launch app with the <a href="https://mjfrigaard.github.io/shinypak/articles/getting-started.html"><code>shinypak</code> package</a>:</p>
 <div style="font-size: 0.65rem;">
-<div class="sourceCode" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">launch</span>(<span class="st">'12.3_tests-snapshots'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">launch</span>(<span class="st">'12.3_tests-snapshots'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-</div></div><p>Writing tests for UI outputs can be difficult because their “correctness” is somewhat subjective and requires human judgment. If the expected output we’re interesting in testing is cumbersome to describe programmatically, we can consider using a snapshot tests. Examples of this include UI elements (which are mostly HTML created by Shiny’s UI layout and input/output functions) and data visualizations.<a href="#fn12" class="footnote-ref" id="fnref12" role="doc-noteref"><sup>12</sup></a></p>
+</div></div><p>Writing tests for UI outputs can be difficult because their “correctness” is somewhat subjective and requires human judgment. If the expected output we’re interesting in testing is cumbersome to describe programmatically, we can consider using a snapshot tests. Examples of this include UI elements (which are mostly HTML created by Shiny’s UI layout and input/output functions) and data visualizations.<a href="#fn11" class="footnote-ref" id="fnref11" role="doc-noteref"><sup>11</sup></a></p>
 <div class="callout callout-style-default callout-note no-icon callout-titled">
 <div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-4-contents" aria-controls="callout-4" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
@@ -1166,46 +1247,46 @@ https://www.freecodecamp.org/news/clean-coding-for-beginners/
 <div class="cell">
 <details open="" class="code-fold">
 <summary>show/hide text_logo()</summary>
-<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="co">#' Create a Text-based Logo in HTML</span></span>
-<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a><span class="co">#'</span></span>
-<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a><span class="co">#' `text_logo()` generates a text-based logo enclosed within HTML tags, allowing</span></span>
-<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a><span class="co">#' for the specification of the heading size (h1 through h6). The logo features</span></span>
-<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a><span class="co">#' a stylized representation of a face within arrows, using ASCII characters.</span></span>
-<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a><span class="co">#'</span></span>
-<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a><span class="co">#' @param size A character string specifying the heading size for the logo. </span></span>
-<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a><span class="co">#' Valid options include "h1", "h2", "h3", "h4", "h5", and "h6". </span></span>
-<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a><span class="co">#' Defaults to "h3".</span></span>
-<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a><span class="co">#'</span></span>
-<span id="cb32-11"><a href="#cb32-11" aria-hidden="true" tabindex="-1"></a><span class="co">#' @return An HTML object containing the logo. This object can be directly used</span></span>
-<span id="cb32-12"><a href="#cb32-12" aria-hidden="true" tabindex="-1"></a><span class="co">#' in R Markdown documents or Shiny applications to render the logo in a web page.</span></span>
-<span id="cb32-13"><a href="#cb32-13" aria-hidden="true" tabindex="-1"></a><span class="co">#'</span></span>
-<span id="cb32-14"><a href="#cb32-14" aria-hidden="true" tabindex="-1"></a><span class="co">#' @examples</span></span>
-<span id="cb32-15"><a href="#cb32-15" aria-hidden="true" tabindex="-1"></a><span class="co">#' # Generate a logo with default size h3</span></span>
-<span id="cb32-16"><a href="#cb32-16" aria-hidden="true" tabindex="-1"></a><span class="co">#' text_logo()</span></span>
-<span id="cb32-17"><a href="#cb32-17" aria-hidden="true" tabindex="-1"></a><span class="co">#'</span></span>
-<span id="cb32-18"><a href="#cb32-18" aria-hidden="true" tabindex="-1"></a><span class="co">#' # Generate a logo with size h1</span></span>
-<span id="cb32-19"><a href="#cb32-19" aria-hidden="true" tabindex="-1"></a><span class="co">#' text_logo(size = "h1")</span></span>
-<span id="cb32-20"><a href="#cb32-20" aria-hidden="true" tabindex="-1"></a><span class="co">#'</span></span>
-<span id="cb32-21"><a href="#cb32-21" aria-hidden="true" tabindex="-1"></a><span class="co">#'</span></span>
-<span id="cb32-22"><a href="#cb32-22" aria-hidden="true" tabindex="-1"></a><span class="co">#' @export</span></span>
-<span id="cb32-23"><a href="#cb32-23" aria-hidden="true" tabindex="-1"></a>text_logo <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">size =</span> <span class="st">'h3'</span>) {</span>
-<span id="cb32-24"><a href="#cb32-24" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">any</span>(size <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"h1"</span>, <span class="st">"h2"</span>, <span class="st">"h3"</span>, <span class="st">"h4"</span>, <span class="st">"h5"</span>, <span class="st">"h6"</span>))) {</span>
-<span id="cb32-25"><a href="#cb32-25" aria-hidden="true" tabindex="-1"></a>  htmltools<span class="sc">::</span><span class="fu">HTML</span>(</span>
-<span id="cb32-26"><a href="#cb32-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">paste0</span>(</span>
-<span id="cb32-27"><a href="#cb32-27" aria-hidden="true" tabindex="-1"></a>    <span class="st">"&lt;span&gt;</span><span class="sc">\n</span><span class="st">"</span>, </span>
-<span id="cb32-28"><a href="#cb32-28" aria-hidden="true" tabindex="-1"></a>      <span class="fu">paste0</span>(<span class="st">"  &lt;"</span>, size, <span class="st">"&gt;"</span>, <span class="at">collapse =</span> <span class="st">""</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>,</span>
-<span id="cb32-29"><a href="#cb32-29" aria-hidden="true" tabindex="-1"></a>      <span class="st">"    &lt;code&gt;√</span><span class="sc">\\</span><span class="st">/--‹(•_•)›--√</span><span class="sc">\\</span><span class="st">/&lt;/code&gt;</span><span class="sc">\n</span><span class="st">"</span>, </span>
-<span id="cb32-30"><a href="#cb32-30" aria-hidden="true" tabindex="-1"></a>      <span class="fu">paste0</span>(<span class="st">"  &lt;"</span>, size, <span class="st">"/&gt;"</span>, <span class="at">collapse =</span> <span class="st">""</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>,</span>
-<span id="cb32-31"><a href="#cb32-31" aria-hidden="true" tabindex="-1"></a>    <span class="st">"&lt;/span&gt;</span><span class="sc">\n</span><span class="st">"</span></span>
-<span id="cb32-32"><a href="#cb32-32" aria-hidden="true" tabindex="-1"></a>      )</span>
-<span id="cb32-33"><a href="#cb32-33" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb32-34"><a href="#cb32-34" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
-<span id="cb32-35"><a href="#cb32-35" aria-hidden="true" tabindex="-1"></a>    rlang<span class="sc">::</span><span class="fu">abort</span>(<span class="fu">paste</span>(size, <span class="st">"isnt supported"</span>, <span class="at">sep =</span> <span class="st">" "</span>))</span>
-<span id="cb32-36"><a href="#cb32-36" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb32-37"><a href="#cb32-37" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="co">#' Create a Text-based Logo in HTML</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a><span class="co">#'</span></span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a><span class="co">#' `text_logo()` generates a text-based logo enclosed within HTML tags, allowing</span></span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a><span class="co">#' for the specification of the heading size (h1 through h6). The logo features</span></span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a><span class="co">#' a stylized representation of a face within arrows, using ASCII characters.</span></span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a><span class="co">#'</span></span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a><span class="co">#' @param size A character string specifying the heading size for the logo. </span></span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a><span class="co">#' Valid options include "h1", "h2", "h3", "h4", "h5", and "h6". </span></span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a><span class="co">#' Defaults to "h3".</span></span>
+<span id="cb34-10"><a href="#cb34-10" aria-hidden="true" tabindex="-1"></a><span class="co">#'</span></span>
+<span id="cb34-11"><a href="#cb34-11" aria-hidden="true" tabindex="-1"></a><span class="co">#' @return An HTML object containing the logo. This object can be directly used</span></span>
+<span id="cb34-12"><a href="#cb34-12" aria-hidden="true" tabindex="-1"></a><span class="co">#' in R Markdown documents or Shiny applications to render the logo in a web page.</span></span>
+<span id="cb34-13"><a href="#cb34-13" aria-hidden="true" tabindex="-1"></a><span class="co">#'</span></span>
+<span id="cb34-14"><a href="#cb34-14" aria-hidden="true" tabindex="-1"></a><span class="co">#' @examples</span></span>
+<span id="cb34-15"><a href="#cb34-15" aria-hidden="true" tabindex="-1"></a><span class="co">#' # Generate a logo with default size h3</span></span>
+<span id="cb34-16"><a href="#cb34-16" aria-hidden="true" tabindex="-1"></a><span class="co">#' text_logo()</span></span>
+<span id="cb34-17"><a href="#cb34-17" aria-hidden="true" tabindex="-1"></a><span class="co">#'</span></span>
+<span id="cb34-18"><a href="#cb34-18" aria-hidden="true" tabindex="-1"></a><span class="co">#' # Generate a logo with size h1</span></span>
+<span id="cb34-19"><a href="#cb34-19" aria-hidden="true" tabindex="-1"></a><span class="co">#' text_logo(size = "h1")</span></span>
+<span id="cb34-20"><a href="#cb34-20" aria-hidden="true" tabindex="-1"></a><span class="co">#'</span></span>
+<span id="cb34-21"><a href="#cb34-21" aria-hidden="true" tabindex="-1"></a><span class="co">#'</span></span>
+<span id="cb34-22"><a href="#cb34-22" aria-hidden="true" tabindex="-1"></a><span class="co">#' @export</span></span>
+<span id="cb34-23"><a href="#cb34-23" aria-hidden="true" tabindex="-1"></a>text_logo <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">size =</span> <span class="st">'h3'</span>) {</span>
+<span id="cb34-24"><a href="#cb34-24" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">any</span>(size <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"h1"</span>, <span class="st">"h2"</span>, <span class="st">"h3"</span>, <span class="st">"h4"</span>, <span class="st">"h5"</span>, <span class="st">"h6"</span>))) {</span>
+<span id="cb34-25"><a href="#cb34-25" aria-hidden="true" tabindex="-1"></a>  htmltools<span class="sc">::</span><span class="fu">HTML</span>(</span>
+<span id="cb34-26"><a href="#cb34-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">paste0</span>(</span>
+<span id="cb34-27"><a href="#cb34-27" aria-hidden="true" tabindex="-1"></a>    <span class="st">"&lt;span&gt;</span><span class="sc">\n</span><span class="st">"</span>, </span>
+<span id="cb34-28"><a href="#cb34-28" aria-hidden="true" tabindex="-1"></a>      <span class="fu">paste0</span>(<span class="st">"  &lt;"</span>, size, <span class="st">"&gt;"</span>, <span class="at">collapse =</span> <span class="st">""</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb34-29"><a href="#cb34-29" aria-hidden="true" tabindex="-1"></a>      <span class="st">"    &lt;code&gt;√</span><span class="sc">\\</span><span class="st">/--‹(•_•)›--√</span><span class="sc">\\</span><span class="st">/&lt;/code&gt;</span><span class="sc">\n</span><span class="st">"</span>, </span>
+<span id="cb34-30"><a href="#cb34-30" aria-hidden="true" tabindex="-1"></a>      <span class="fu">paste0</span>(<span class="st">"  &lt;"</span>, size, <span class="st">"/&gt;"</span>, <span class="at">collapse =</span> <span class="st">""</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb34-31"><a href="#cb34-31" aria-hidden="true" tabindex="-1"></a>    <span class="st">"&lt;/span&gt;</span><span class="sc">\n</span><span class="st">"</span></span>
+<span id="cb34-32"><a href="#cb34-32" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb34-33"><a href="#cb34-33" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb34-34"><a href="#cb34-34" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb34-35"><a href="#cb34-35" aria-hidden="true" tabindex="-1"></a>    rlang<span class="sc">::</span><span class="fu">abort</span>(<span class="fu">paste</span>(size, <span class="st">"isnt supported"</span>, <span class="at">sep =</span> <span class="st">" "</span>))</span>
+<span id="cb34-36"><a href="#cb34-36" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb34-37"><a href="#cb34-37" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
-<p>This function generates the HTML so we can include a small logo in the UI.<a href="#fn13" class="footnote-ref" id="fnref13" role="doc-noteref"><sup>13</sup></a></p>
+<p>This function generates the HTML so we can include a small logo in the UI.<a href="#fn12" class="footnote-ref" id="fnref12" role="doc-noteref"><sup>12</sup></a></p>
 <div>
 
 </div>
@@ -1215,7 +1296,7 @@ https://www.freecodecamp.org/news/clean-coding-for-beginners/
 <p>The output in the UI:</p>
 </div>
 <div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
-<div class="sourceCode" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">text_logo</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">text_logo</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </div>
 <div class="quarto-layout-row quarto-layout-valign-center">
@@ -1223,15 +1304,15 @@ https://www.freecodecamp.org/news/clean-coding-for-beginners/
 <p>The pre-rendered HTML:</p>
 </div>
 <div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
-<div class="sourceCode" id="cb34"><pre class="sourceCode html code-with-copy"><code class="sourceCode html"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">span</span><span class="dt">&gt;</span></span>
-<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&lt;</span><span class="kw">h3</span><span class="dt">&gt;</span></span>
-<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&lt;</span><span class="kw">code</span><span class="dt">&gt;</span>√\/--‹(•_•)›--√\/<span class="dt">&lt;/</span><span class="kw">code</span><span class="dt">&gt;</span></span>
-<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&lt;/</span><span class="kw">h3</span><span class="dt">&gt;</span></span>
-<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">span</span><span class="dt">&gt;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb36"><pre class="sourceCode html code-with-copy"><code class="sourceCode html"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">span</span><span class="dt">&gt;</span></span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&lt;</span><span class="kw">h3</span><span class="dt">&gt;</span></span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&lt;</span><span class="kw">code</span><span class="dt">&gt;</span>√\/--‹(•_•)›--√\/<span class="dt">&lt;/</span><span class="kw">code</span><span class="dt">&gt;</span></span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&lt;/</span><span class="kw">h3</span><span class="dt">&gt;</span></span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">span</span><span class="dt">&gt;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </div>
 </div>
-<p>Reviewing the entire HTML contents of <code>movies_ui()</code> to see if <code>text_logo()</code> is working isn’t practical, but we can store it’s results in a snapshot file using <code>expect_snapshot()</code>. In <code>tests/testthat/test-text_logo.R</code>, I’ll write the following tests:<a href="#fn14" class="footnote-ref" id="fnref14" role="doc-noteref"><sup>14</sup></a></p>
+<p>Reviewing the entire HTML contents of <code>movies_ui()</code> to see if <code>text_logo()</code> is working isn’t practical, but we can store it’s results in a snapshot file using <code>expect_snapshot()</code>. In <code>tests/testthat/test-text_logo.R</code>, I’ll write the following tests:<a href="#fn13" class="footnote-ref" id="fnref13" role="doc-noteref"><sup>13</sup></a></p>
 <div class="callout callout-style-default callout-important no-icon callout-titled">
 <div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-5-contents" aria-controls="callout-5" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
@@ -1255,93 +1336,93 @@ https://www.freecodecamp.org/news/clean-coding-for-beginners/
 <ul>
 <li><p>Confirm the default <code>size</code> argument:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">describe</span>(</span>
-<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Scenario: Generating a logo with default size</span></span>
-<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a><span class="st">    Given the user did not specify a [size] in text_logo()</span></span>
-<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a><span class="st">    When text_logo() is invoked without a [size] argument</span></span>
-<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a><span class="st">    Then the correct HTML for a ['h3'] text logo is returned"</span>,</span>
-<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">code =</span> {</span>
-<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">test_that</span>(<span class="st">"text_logo()"</span>, <span class="at">code =</span> {</span>
-<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a>      <span class="fu">test_logger</span>(<span class="at">start =</span> <span class="st">"snap"</span>, <span class="at">msg =</span> <span class="st">"text_logo()"</span>)</span>
-<span id="cb35-10"><a href="#cb35-10" aria-hidden="true" tabindex="-1"></a>      <span class="fu">expect_snapshot</span>(<span class="fu">text_logo</span>())</span>
-<span id="cb35-11"><a href="#cb35-11" aria-hidden="true" tabindex="-1"></a>      <span class="fu">test_logger</span>(<span class="at">end =</span> <span class="st">"snap"</span>, <span class="at">msg =</span> <span class="st">"text_logo()"</span>)</span>
-<span id="cb35-12"><a href="#cb35-12" aria-hidden="true" tabindex="-1"></a>    })</span>
-<span id="cb35-13"><a href="#cb35-13" aria-hidden="true" tabindex="-1"></a>  })</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">describe</span>(</span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Scenario: Generating a logo with default size</span></span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a><span class="st">    Given the user did not specify a [size] in text_logo()</span></span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a><span class="st">    When text_logo() is invoked without a [size] argument</span></span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a><span class="st">    Then the correct HTML for a ['h3'] text logo is returned"</span>,</span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">code =</span> {</span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">test_that</span>(<span class="st">"text_logo()"</span>, <span class="at">code =</span> {</span>
+<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a>      <span class="fu">test_logger</span>(<span class="at">start =</span> <span class="st">"snap"</span>, <span class="at">msg =</span> <span class="st">"text_logo()"</span>)</span>
+<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a>      <span class="fu">expect_snapshot</span>(<span class="fu">text_logo</span>())</span>
+<span id="cb37-11"><a href="#cb37-11" aria-hidden="true" tabindex="-1"></a>      <span class="fu">test_logger</span>(<span class="at">end =</span> <span class="st">"snap"</span>, <span class="at">msg =</span> <span class="st">"text_logo()"</span>)</span>
+<span id="cb37-12"><a href="#cb37-12" aria-hidden="true" tabindex="-1"></a>    })</span>
+<span id="cb37-13"><a href="#cb37-13" aria-hidden="true" tabindex="-1"></a>  })</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div></li>
 <li><p>Confirm a new <code>size</code> argument:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>  <span class="fu">describe</span>(</span>
-<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Scenario: Generating a logo of a specified size</span></span>
-<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a><span class="st">    Given the user wants a ['h1'] sized text logo</span></span>
-<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a><span class="st">    When text_logo(size = 'h1') is invoked </span></span>
-<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a><span class="st">    Then the correct HTML for a ['h1'] text logo is returned"</span>, </span>
-<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">code =</span> {</span>
-<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">test_that</span>(<span class="st">"text_logo('h1')"</span>, <span class="at">code =</span> {</span>
-<span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a>      <span class="fu">test_logger</span>(<span class="at">start =</span> <span class="st">"snap"</span>, <span class="at">msg =</span> <span class="st">"text_logo('})')"</span>)</span>
-<span id="cb36-10"><a href="#cb36-10" aria-hidden="true" tabindex="-1"></a>      <span class="fu">expect_snapshot</span>(<span class="fu">text_logo</span>(<span class="st">"h1"</span>))</span>
-<span id="cb36-11"><a href="#cb36-11" aria-hidden="true" tabindex="-1"></a>      <span class="fu">test_logger</span>(<span class="at">start =</span> <span class="st">"snap"</span>, <span class="at">msg =</span> <span class="st">"text_logo('h1')"</span>)</span>
-<span id="cb36-12"><a href="#cb36-12" aria-hidden="true" tabindex="-1"></a>    })  </span>
-<span id="cb36-13"><a href="#cb36-13" aria-hidden="true" tabindex="-1"></a>  })</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>  <span class="fu">describe</span>(</span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Scenario: Generating a logo of a specified size</span></span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a><span class="st">    Given the user wants a ['h1'] sized text logo</span></span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a><span class="st">    When text_logo(size = 'h1') is invoked </span></span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a><span class="st">    Then the correct HTML for a ['h1'] text logo is returned"</span>, </span>
+<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">code =</span> {</span>
+<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">test_that</span>(<span class="st">"text_logo('h1')"</span>, <span class="at">code =</span> {</span>
+<span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a>      <span class="fu">test_logger</span>(<span class="at">start =</span> <span class="st">"snap"</span>, <span class="at">msg =</span> <span class="st">"text_logo('})')"</span>)</span>
+<span id="cb38-10"><a href="#cb38-10" aria-hidden="true" tabindex="-1"></a>      <span class="fu">expect_snapshot</span>(<span class="fu">text_logo</span>(<span class="st">"h1"</span>))</span>
+<span id="cb38-11"><a href="#cb38-11" aria-hidden="true" tabindex="-1"></a>      <span class="fu">test_logger</span>(<span class="at">start =</span> <span class="st">"snap"</span>, <span class="at">msg =</span> <span class="st">"text_logo('h1')"</span>)</span>
+<span id="cb38-12"><a href="#cb38-12" aria-hidden="true" tabindex="-1"></a>    })  </span>
+<span id="cb38-13"><a href="#cb38-13" aria-hidden="true" tabindex="-1"></a>  })</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div></li>
 <li><p>Confirm an invalid <code>size</code> argument:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">describe</span>(</span>
-<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Scenario: Attempting to generate a logo with an invalid size</span></span>
-<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a><span class="st">  Given the user specifies an invalid [size] for the text logo</span></span>
-<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a><span class="st">  When text_logo() is invoked with an invalid [size] argument</span></span>
-<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a><span class="st">  Then an error is returned stating the [size] is not recognized"</span>, </span>
-<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">code =</span> {</span>
-<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">test_that</span>(<span class="st">"text_logo('invalid')"</span>, <span class="at">code =</span> {</span>
-<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">test_logger</span>(<span class="at">start =</span> <span class="st">"snap"</span>, <span class="at">msg =</span> <span class="st">"text_logo('invalid')"</span>)</span>
-<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">expect_error</span>(<span class="fu">text_logo</span>(<span class="st">"massive"</span>), <span class="cn">NULL</span>)</span>
-<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">test_logger</span>(<span class="at">end =</span> <span class="st">"snap"</span>, <span class="at">msg =</span> <span class="st">"text_logo('invalid')"</span>)</span>
-<span id="cb37-11"><a href="#cb37-11" aria-hidden="true" tabindex="-1"></a>    })</span>
-<span id="cb37-12"><a href="#cb37-12" aria-hidden="true" tabindex="-1"></a>  })</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">describe</span>(</span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Scenario: Attempting to generate a logo with an invalid size</span></span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a><span class="st">  Given the user specifies an invalid [size] for the text logo</span></span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a><span class="st">  When text_logo() is invoked with an invalid [size] argument</span></span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a><span class="st">  Then an error is returned stating the [size] is not recognized"</span>, </span>
+<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">code =</span> {</span>
+<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">test_that</span>(<span class="st">"text_logo('invalid')"</span>, <span class="at">code =</span> {</span>
+<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">test_logger</span>(<span class="at">start =</span> <span class="st">"snap"</span>, <span class="at">msg =</span> <span class="st">"text_logo('invalid')"</span>)</span>
+<span id="cb39-9"><a href="#cb39-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">expect_error</span>(<span class="fu">text_logo</span>(<span class="st">"massive"</span>), <span class="cn">NULL</span>)</span>
+<span id="cb39-10"><a href="#cb39-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">test_logger</span>(<span class="at">end =</span> <span class="st">"snap"</span>, <span class="at">msg =</span> <span class="st">"text_logo('invalid')"</span>)</span>
+<span id="cb39-11"><a href="#cb39-11" aria-hidden="true" tabindex="-1"></a>    })</span>
+<span id="cb39-12"><a href="#cb39-12" aria-hidden="true" tabindex="-1"></a>  })</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div></li>
 </ul>
 <p>When I test this file, I see the following results and output from <code>test_logger()</code> along with two warnings about the creating of the snapshot files:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">:::</span><span class="fu">test_active_file</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">:::</span><span class="fu">test_active_file</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="sourceCode" id="cb39"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]</span>
-<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>INFO [2023-11-17 08:50:55] [ START snap = text_logo()]</span>
-<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 1 | SKIP 0 | PASS 1 ]</span>
-<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>INFO [2023-11-17 08:50:55] [ END snap = text_logo()]</span>
-<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a>INFO [2023-11-17 08:50:55] [ START snap = text_logo('h1')]</span>
-<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 2 | SKIP 0 | PASS 2 ]</span>
-<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a>INFO [2023-11-17 08:50:55] [ START snap = text_logo('h1')]</span>
-<span id="cb39-9"><a href="#cb39-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb39-10"><a href="#cb39-10" aria-hidden="true" tabindex="-1"></a>INFO [2023-11-17 08:50:55] [ START snap = text_logo('invalid')]</span>
-<span id="cb39-11"><a href="#cb39-11" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 2 | SKIP 0 | PASS 3 ]</span>
-<span id="cb39-12"><a href="#cb39-12" aria-hidden="true" tabindex="-1"></a>INFO [2023-11-17 08:50:55] [ END snap = text_logo('invalid')]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="sourceCode" id="cb40"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>── Warning (test-text_logo.R:13:7): text_logo() ──</span>
-<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>Adding new snapshot:</span>
-<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>Code</span>
-<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>  text_logo()</span>
-<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>Output</span>
-<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a>  &lt;span&gt;</span>
-<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a>    &lt;h3&gt;</span>
-<span id="cb40-8"><a href="#cb40-8" aria-hidden="true" tabindex="-1"></a>      &lt;code&gt;√\/--‹(•_•)›--√\/&lt;/code&gt;</span>
-<span id="cb40-9"><a href="#cb40-9" aria-hidden="true" tabindex="-1"></a>    &lt;/h3&gt;</span>
-<span id="cb40-10"><a href="#cb40-10" aria-hidden="true" tabindex="-1"></a>  &lt;/span&gt;</span>
-<span id="cb40-11"><a href="#cb40-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb40-12"><a href="#cb40-12" aria-hidden="true" tabindex="-1"></a>── Warning (test-text_logo.R:22:7): text_logo('h1') ──</span>
-<span id="cb40-13"><a href="#cb40-13" aria-hidden="true" tabindex="-1"></a>Adding new snapshot:</span>
-<span id="cb40-14"><a href="#cb40-14" aria-hidden="true" tabindex="-1"></a>Code</span>
-<span id="cb40-15"><a href="#cb40-15" aria-hidden="true" tabindex="-1"></a>  text_logo("h1")</span>
-<span id="cb40-16"><a href="#cb40-16" aria-hidden="true" tabindex="-1"></a>Output</span>
-<span id="cb40-17"><a href="#cb40-17" aria-hidden="true" tabindex="-1"></a>  &lt;span&gt;</span>
-<span id="cb40-18"><a href="#cb40-18" aria-hidden="true" tabindex="-1"></a>    &lt;h1&gt;</span>
-<span id="cb40-19"><a href="#cb40-19" aria-hidden="true" tabindex="-1"></a>      &lt;code&gt;√\/-‹(•_•)›-√\/&lt;/code&gt;</span>
-<span id="cb40-20"><a href="#cb40-20" aria-hidden="true" tabindex="-1"></a>    &lt;/h1&gt;</span>
-<span id="cb40-21"><a href="#cb40-21" aria-hidden="true" tabindex="-1"></a>  &lt;/span&gt;</span>
-<span id="cb40-22"><a href="#cb40-22" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 2 | SKIP 0 | PASS 3 ]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb41"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]</span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>INFO [2023-11-17 08:50:55] [ START snap = text_logo()]</span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 1 | SKIP 0 | PASS 1 ]</span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>INFO [2023-11-17 08:50:55] [ END snap = text_logo()]</span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>INFO [2023-11-17 08:50:55] [ START snap = text_logo('h1')]</span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 2 | SKIP 0 | PASS 2 ]</span>
+<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a>INFO [2023-11-17 08:50:55] [ START snap = text_logo('h1')]</span>
+<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a>INFO [2023-11-17 08:50:55] [ START snap = text_logo('invalid')]</span>
+<span id="cb41-11"><a href="#cb41-11" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 2 | SKIP 0 | PASS 3 ]</span>
+<span id="cb41-12"><a href="#cb41-12" aria-hidden="true" tabindex="-1"></a>INFO [2023-11-17 08:50:55] [ END snap = text_logo('invalid')]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb42"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>── Warning (test-text_logo.R:13:7): text_logo() ──</span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>Adding new snapshot:</span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>Code</span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>  text_logo()</span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>Output</span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a>  &lt;span&gt;</span>
+<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a>    &lt;h3&gt;</span>
+<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a>      &lt;code&gt;√\/--‹(•_•)›--√\/&lt;/code&gt;</span>
+<span id="cb42-9"><a href="#cb42-9" aria-hidden="true" tabindex="-1"></a>    &lt;/h3&gt;</span>
+<span id="cb42-10"><a href="#cb42-10" aria-hidden="true" tabindex="-1"></a>  &lt;/span&gt;</span>
+<span id="cb42-11"><a href="#cb42-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-12"><a href="#cb42-12" aria-hidden="true" tabindex="-1"></a>── Warning (test-text_logo.R:22:7): text_logo('h1') ──</span>
+<span id="cb42-13"><a href="#cb42-13" aria-hidden="true" tabindex="-1"></a>Adding new snapshot:</span>
+<span id="cb42-14"><a href="#cb42-14" aria-hidden="true" tabindex="-1"></a>Code</span>
+<span id="cb42-15"><a href="#cb42-15" aria-hidden="true" tabindex="-1"></a>  text_logo("h1")</span>
+<span id="cb42-16"><a href="#cb42-16" aria-hidden="true" tabindex="-1"></a>Output</span>
+<span id="cb42-17"><a href="#cb42-17" aria-hidden="true" tabindex="-1"></a>  &lt;span&gt;</span>
+<span id="cb42-18"><a href="#cb42-18" aria-hidden="true" tabindex="-1"></a>    &lt;h1&gt;</span>
+<span id="cb42-19"><a href="#cb42-19" aria-hidden="true" tabindex="-1"></a>      &lt;code&gt;√\/-‹(•_•)›-√\/&lt;/code&gt;</span>
+<span id="cb42-20"><a href="#cb42-20" aria-hidden="true" tabindex="-1"></a>    &lt;/h1&gt;</span>
+<span id="cb42-21"><a href="#cb42-21" aria-hidden="true" tabindex="-1"></a>  &lt;/span&gt;</span>
+<span id="cb42-22"><a href="#cb42-22" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 2 | SKIP 0 | PASS 3 ]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <section id="sec-test-snaps-review" class="level3" data-number="16.4.1">
 <h3 data-number="16.4.1" class="anchored" data-anchor-id="sec-test-snaps-review"><span class="header-section-number">16.4.1</span> Reviewing <code>_snaps/</code></h3>
-<p>Snapshots are stored in the <code>tests/testthat/_snaps/</code> folder. The output from <code>expect_snapshot_file()</code> is a markdown file with contents similar to what we saw above in the warning message. Should the markdown file contents change in future test runs, the tests will fail and we’ll be prompted to review the changes. <a href="#fn15" class="footnote-ref" id="fnref15" role="doc-noteref"><sup>15</sup></a></p>
+<p>Snapshots are stored in the <code>tests/testthat/_snaps/</code> folder. The output from <code>expect_snapshot_file()</code> is a markdown file with contents similar to what we saw above in the warning message. Should the markdown file contents change in future test runs, the tests will fail and we’ll be prompted to review the changes. <a href="#fn14" class="footnote-ref" id="fnref14" role="doc-noteref"><sup>14</sup></a></p>
 <p>For example, if the <code>&lt;span&gt;</code> changed to a <code>&lt;div&gt;</code> in <code>text_logo()</code> and caused a test failure, I could review the changes in <code>tests/testthat/_snaps/text_logo.md</code> with <code>testthat::snapshot_review('text_logo')</code>:</p>
 <div id="fig-tests_tools_review_snapshot" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-fig figure">
@@ -1430,17 +1511,16 @@ Figure&nbsp;16.1: Click <strong>Accept</strong>: <code>Accepting snapshot: 'test
 <li id="fn2"><p>Read more about numeric position scales in the <a href="https://ggplot2-book.org/scales-position">Position scales and axes</a> chapter of <a href="https://ggplot2-book.org/">ggplot2, 3e</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn3"><p>Read a summary of the changes to the <code>testthat</code> package on the <a href="https://www.tidyverse.org/blog/2023/10/testthat-3-2-0/">tidyverse blog</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn4"><p>these tips (and more!) were covered in the Package Development Masterclass delivered at <a href="https://github.com/posit-conf-2023">posit::conf(2023)</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn5"><p>Read more about BDD functions in the <a href="./bdd.html">appendix.</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn6"><p>For a concrete example, see <a href="https://www.tidyverse.org/blog/2020/04/self-cleaning-test-fixtures/">this article</a> on self-cleaning tests.<a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn7"><p>The name ‘<code>fixtures</code>’ isn’t required (you can name this folder anything).<a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn8"><p>Creating a tidied version of <code>ggplot2movies::movies</code> would be costly to re-create with every test, so it’s advised to store it as an <a href="https://r-pkgs.org/testing-advanced.html#sec-testing-advanced-concrete-fixture">static test fixture.</a><a href="#fnref8" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn9"><p>Snapshot tests would be more appropriate for answering the question, <a href="https://shiny.posit.co/r/articles/improve/server-function-testing/index.html#complex-outputs-plots-htmlwidgets">‘<em>is the plot visually correct?</em>’</a>.<a href="#fnref9" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn10"><p>If you like verbose logging outputs, check out the <a href="https://daroczig.github.io/logger/"><code>logger</code> package</a><a href="#fnref10" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn11"><p>Placing common files for testing below <code>R/</code> is covered in <a href="https://r-pkgs.org/testing-design.html#hiding-in-plain-sight-files-below-r">R Packages, 2ed</a><a href="#fnref11" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn12"><p>Graph snapshots are covered in <a href="test_snapshots_mocks.html#sec-tests-snapshots-vdiffr" class="quarto-xref"><span>Section E.1</span></a>.<a href="#fnref12" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn13"><p>This is a simple example, but I chose it because it needs some tricky escape characters to work.<a href="#fnref13" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn14"><p>Mastering Shiny covers <a href="https://mastering-shiny.org/scaling-testing.html#user-interface-functions">creatng a snapshot file</a> to test UI elements, but also notes this is probably not the best approach.<a href="#fnref14" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn15"><p>We’ll encounter this folder again in the <a href="test_system.html" class="quarto-xref"><span>Chapter 18</span></a> on system tests with <code>shinytest2</code>.<a href="#fnref15" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn5"><p>For a concrete example, see <a href="https://www.tidyverse.org/blog/2020/04/self-cleaning-test-fixtures/">this article</a> on self-cleaning tests.<a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn6"><p>The name ‘<code>fixtures</code>’ isn’t required (you can name this folder anything).<a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn7"><p>Creating a tidied version of <code>ggplot2movies::movies</code> would be costly to re-create with every test, so it’s advised to store it as an <a href="https://r-pkgs.org/testing-advanced.html#sec-testing-advanced-concrete-fixture">static test fixture.</a><a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn8"><p>Snapshot tests would be more appropriate for answering the question, <a href="https://shiny.posit.co/r/articles/improve/server-function-testing/index.html#complex-outputs-plots-htmlwidgets">‘<em>is the plot visually correct?</em>’</a>.<a href="#fnref8" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn9"><p>Check out the <a href="https://daroczig.github.io/logger/"><code>logger</code> package</a> for more information.<a href="#fnref9" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn10"><p>Placing common files for testing below <code>R/</code> is covered in <a href="https://r-pkgs.org/testing-design.html#hiding-in-plain-sight-files-below-r">R Packages, 2ed</a><a href="#fnref10" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn11"><p>Graph snapshots are covered in <a href="test_snapshots_mocks.html#sec-tests-snapshots-vdiffr" class="quarto-xref"><span>Section E.1</span></a>.<a href="#fnref11" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn12"><p>This is a simple example, but I chose it because it needs some tricky escape characters to work.<a href="#fnref12" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn13"><p>Mastering Shiny covers <a href="https://mastering-shiny.org/scaling-testing.html#user-interface-functions">creatng a snapshot file</a> to test UI elements, but also notes this is probably not the best approach.<a href="#fnref13" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn14"><p>We’ll encounter this folder again in the <a href="test_system.html" class="quarto-xref"><span>Chapter 18</span></a> on system tests with <code>shinytest2</code>.<a href="#fnref14" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 
