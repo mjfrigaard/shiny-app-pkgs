@@ -79,7 +79,7 @@ By integrating fixtures, helpers, and snapshots from `testthat` into your Shiny 
 
 ---
 
-This chapter introduces tools to help write clean and efficient tests. We'll cover using the [`ensure` package](https://simonpcouch.github.io/ensure/) to help write tests, where to store test data, snapshots, and more. Most of methods I'll cover below are thoroughly described in [R Packages, 2ed](https://r-pkgs.org/testing-design.html#sec-testing-design-principles) and the `testthat` [documentation](https://testthat.r-lib.org/articles/third-edition.html), but within the context of a standard R package.[^test_tools-documentation] 
+This chapter introduces tools to help write clean and efficient tests. We'll cover using the [`ensure` package](https://simonpcouch.github.io/ensure/) to help write tests, where to store test data, snapshots, and more. Most of methods I'll cover below are described within the context of a standard R package in [R Packages, 2ed](https://r-pkgs.org/testing-design.html#sec-testing-design-principles) and the `testthat` [documentation](https://testthat.r-lib.org/articles/third-edition.html).[^test_tools-documentation] 
 
 [^test_tools-documentation]: The three chapters in R Packages, 2ed, dedicated to testing are [Testing basics](https://r-pkgs.org/testing-basics.html), [Designing your test suite](https://r-pkgs.org/testing-design.html), and [Advanced testing techniques](https://r-pkgs.org/testing-advanced.html)
 
@@ -93,7 +93,7 @@ shinypak_apps(regex = "^16", branch = "16.1_test-data")
 
 ## Help writing tests {#sec-test-tools-help}
 
-I recommend using the [`ensure` package](https://simonpcouch.github.io/ensure/) to help write tests in your app-package. If you're already using an LLM to help write code, `ensure` is a nice addition to your LLM toolbox because of it's focus on testing. 
+I recommend using the [`ensure` package](https://simonpcouch.github.io/ensure/) to help write tests in your app-package. If you're already using LLMs to help write code, `ensure` is a nice addition to your toolbox because of it's focus on testing. 
 
 > "*The ensurer is familiar with `testthat` 3e as well as tidy style, and incorporates context from the rest of your R package to write concise and relevant tests.*" - [`ensure` documentation](https://simonpcouch.github.io/ensure/) 
 
@@ -101,7 +101,7 @@ Follow the [setup instructions](https://simonpcouch.github.io/ensure/articles/en
 
 ### Help, not automation
 
-The `ensure` package does a great job when writing basic unit tests, but as you'll see, it doesn't have a solid understanding of the reactivity in your application (but you should). The test code created by `ensure` often needs some editing. 
+The `ensure` package does a great job when writing basic unit tests, but as you'll see, it doesn't have a solid understanding of the specification or functional requirements of your application (only you know these). The test code created by `ensure` often needs some editing. 
 
 For example, the following test code was created for `R/scatter_plot.R` function: 
 
@@ -205,7 +205,7 @@ waldo::compare(
 `new`: 52.0 335.0
 ```
 
-We can continue trying to find something produced by  `ggplot2::ggplot_build(p)`, but this test confirms the "*scatter_plot creates a ggplot object*", so why not just use `ggplot2::is.ggplot()`:
+We can continue trying to find something produced by  [`ggplot2::ggplot_build()`](https://ggplot2.tidyverse.org/reference/ggplot_build.html), but this test confirms the "*scatter_plot creates a ggplot object*", so why not just use [`ggplot2::is.ggplot()`](https://ggplot2.tidyverse.org/reference/is.ggplot.html):
 
 ```{r}
 #| eval: false 
@@ -226,9 +226,9 @@ test_that("scatter_plot handles different alpha and size values", {
 [ FAIL 0 | WARN 0 | SKIP 0 | PASS 3 ]
 ```
 
-I've provided this example because it illustrates some important limitations when using `ensure` (or any LLM) to help write code: **Don't confuse volume with precision.** LLMs are great at generating lots of code to answer questions when a the better answer is concise and accurate. In this case, it arguably would've taken less time to do the research and write the correct test (instead of debugging the one created by `ensure`). 
+I've provided this example because it illustrates some important limitations when using `ensure` (or any LLMs) to help write code: **Don't confuse volume with precision.** LLMs are great at generating copius amounts of code, but have no way of checking if the code is functional or accurate. In this case, it arguably would've taken less time to do the research and write the correct test (instead of debugging the one created by `ensure`). 
 
-It's also worth pointing out that if the test *did* pass, the expectations wouldn't match the test description (these belong in a "*scatter_plot x and y limits match true range of values*" test).
+It's also worth pointing out that if the original test code *did* pass, the `test_that()` description wouldn't the expectation (these belong in a "*scatter_plot x and y limits match true range of values*" test).
 
 ### Test scope {#sec-test-tools-scope}
 
@@ -240,35 +240,21 @@ One of the recent updates to the `testthat` package (version 3.2.0) emphasizes l
 
 Strategies for reducing or removing the code outside of `test_that()` tests include:[^test_tools-pkg-dev-masterclass]
 
-> - *Move file-scope logic to either narrower scope (just this test) or a broader scope (all files).*
+> 1. *Move file-scope logic to either narrower scope (just this test) or a broader scope (all files).*
 > 
-> - *It's ok to copy and paste: test code doesn't have to be super DRY. Obvious >>> DRY*
+> 2. *It's ok to copy and paste: test code doesn't have to be super DRY. Obvious >>> DRY*
 
 [^test_tools-pkg-dev-masterclass]: these tips (and more!) were covered in the Package Development Masterclass delivered at [posit::conf(2023)](https://github.com/posit-conf-2023)
 
-Code outside of `test_that()` usually serves a specific purpose (load or manipulate data, set options, create folders or files, etc). The topics below demonstrate how to include these behaviors in tests without placing code outside the test scope.[^bdd-chapter]
+Code outside of `test_that()` usually serves a specific purpose (load or manipulate data, set options, create folders or files, etc). The section below describes methods for including these behaviors in tests without placing code outside the test scope.
 
-[^bdd-chapter]: Read more about BDD functions in the [appendix.](bdd.qmd)
-
-## Test fixtures {#sec-test-fixtures}
+### Test fixtures {#sec-test-fixtures}
 
 <!-- https://www.tidyverse.org/blog/2020/04/self-cleaning-test-fixtures/ -->
 
 Test fixtures can be anything used to create repeatable test conditions (data, file paths, functions, etc.). Good test fixtures provide a consistent, well-defined test environment, and then are removed/destroyed when the test is executed. This ensures any changes made during the test don't persist or interfere with future tests.[^test_tools-5]
 
 [^test_tools-5]: For a concrete example, see [this article](https://www.tidyverse.org/blog/2020/04/self-cleaning-test-fixtures/) on self-cleaning tests.
-
-```{r}
-#| label: git_box_12.1_tests-fixtures
-#| echo: false
-#| results: asis
-#| eval: true
-git_margin_box(
-  contents = "launch",
-  fig_pw = '65%', 
-  branch = "12.1_tests-fixtures", 
-  repo = 'sap')
-```
 
 In R packages, test fixtures are stored in the `tests/testthat/fixtures/` folder:[^tests-fixtures-folder-name]
 
@@ -283,7 +269,19 @@ tests/
 └── testthat.R
 ```
 
-### Test data
+## Test data {#sec-test-data}
+
+```{r}
+#| label: git_box_16.2_test-data
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  fig_pw = '65%', 
+  branch = "16.2_test-data", 
+  repo = 'sap')
+```
 
 Large static data files are an example of a test fixture.[^test_tools-6] Any code used to create test data should be stored with the output file (using a clear naming convention).
 
@@ -310,11 +308,7 @@ tests
 
 Data files stored in `tests/testthat/fixtures/` can be accessed with `testthat::test_path()` inside each test.
 
-Below is a test for the `scatter_plot()` utility function that answers the question, '*does the plot generate without producing an error?*' using the `tidy_ggp2_movies.rds` test fixture. 
-
-This type of test appropriate because we want to confirm the data source will generate a plot object when passed to our graphing utility function, not necessarily to verify the specific contents of the graph.[^test_tools-is.ggplot]
-
-[^test_tools-is.ggplot]: Snapshot tests would be more appropriate for answering the question, ['*is the plot visually correct?*'](https://shiny.posit.co/r/articles/improve/server-function-testing/index.html#complex-outputs-plots-htmlwidgets).
+Below is a test for the `scatter_plot()` utility function that answers the question, '*does the plot generate without producing an error?*' using the `tidy_ggp2_movies.rds` test fixture:
 
 ```{r}
 #| eval: false 
@@ -366,18 +360,126 @@ describe( # <1>
 5.  Create observed object  
 6.  Expectation
 
+This type of test is appropriate because we want to confirm the tidy movies data will generate a plot object when passed to our graphing utility function, not necessarily to verify the specific contents of the graph.[^test_tools-is.ggplot]
+
+[^test_tools-is.ggplot]: Snapshot tests would be more appropriate for answering the question, ['*is the plot visually correct?*'](https://shiny.posit.co/r/articles/improve/server-function-testing/index.html#complex-outputs-plots-htmlwidgets).
+
 If the `tidy_ggp2_movies.rds` file in the `tests/testthat/fixtures/` folder are going to be used repeatedly, it might make sense to store the data in `inst/extdata/` or `data-raw/`. Test fixtures are described in-depth in [R Packages, 2ed](https://r-pkgs.org/testing-advanced.html#test-fixtures) and in the [`testthat` documentation](https://testthat.r-lib.org/articles/test-fixtures.html#test-fixtures).
 
 ::: {.panel-tabset}
 
 ### Tests in RStudio ![](images/rstudio-icon.png){height=20}
 
+If we've created the keyboard shortcut for `devtools::test_active_file()` in RStudio, we'll see the following in the **Console**.
+
+```{r}
+#| label: hot_key_tf_data
+#| echo: false
+#| results: asis
+#| eval: true
+hot_key(fun = 'tf')
+```
+
+![Test active file in RStudio (click to enlarge)](images/test_tools_test_data_rstudio.png){width='100%' fig-align='center'}
 
 ### Tests in Positron ![](images/positron.png){height=20}
 
+In Positron, the **Testing** menu gives us a hierarchical breakdown of the `describe()` and `it()` testing functions. When we click on the *Run Tests* icon, we'll see the following in the **Test Results**.
+
+![Run tests in Positron (click to enlarge)](images/test_tools_test_data_positron.png){width='100%' fig-align='center'}
+
 :::
 
-## Test helpers {#sec-test-helpers}
+## Test utility files {#sec-test-logger}
+
+As we covered in the previous section (@sec-logging), we can  create a `test_logger()` helper function to monitor our tests and provide additional context:
+
+```{r}
+#| code-fold: false
+#| eval: true
+# test logger helper
+test_logger <- function(start = NULL, end = NULL, msg) {
+  if (is.null(start) & is.null(end)) {
+    cat("\n")
+    logger::log_info("{msg}")
+  } else if (!is.null(start) & is.null(end)) {
+    cat("\n")
+    logger::log_info("\n[ START {start} = {msg}]")
+  } else if (is.null(start) & !is.null(end)) {
+    cat("\n")
+    logger::log_info("\n[ END {end} = {msg}]")
+  } else {
+    cat("\n")
+    logger::log_info("\n[ START {start} = {msg}]")
+    cat("\n")
+    logger::log_info("\n[ END {end} = {msg}]")
+  }
+}
+```
+
+`test_logger()` can be used to log the `start` and `end` of each test, and it includes a message argument (`msg`) we can use to reference the test `description` argument in each `it()` call.[^test_tools-logging]
+
+[^test_tools-logging]: Check out the [`logger` package](https://daroczig.github.io/logger/) for more information.
+
+An example of using the `test_logger()` function is below:
+
+```{r}
+#| code-fold: false
+#| eval: false
+    it("Scenario: Scatter plot initial x, y, color values 
+         When I launch the Scatter Plot Data Visualization
+         And I have a IMDB dataset of movie reviews 
+         Then the plot should show 'Rating' on the x-axis
+         And the plot should show 'Length' on the y-axis
+         And the points on the plot should be colored by 'MPAA' rating", 
+        code = {
+          
+    ggp2_scatter_inputs <- list(
+          x = "rating",
+          y = "length",
+          z = "mpaa",
+          alpha = 0.75,
+          size = 3,
+          plot_title = "Enter plot title"
+        )
+    
+    test_logger(start = "Step1", msg = "Loading tidy_ggp2_movies.rds data")
+    tidy_ggp2_movies <- readRDS(test_path("fixtures",
+                                "tidy_ggp2_movies.rds"))
+    test_logger(end = "Step1", msg = "Data loaded successfully")
+    test_logger(start = "Step2", msg = "Creating graph")
+    app_graph <- scatter_plot(tidy_ggp2_movies,
+      x_var = ggp2_scatter_inputs$x,
+      y_var = ggp2_scatter_inputs$y,
+      col_var = ggp2_scatter_inputs$z,
+      alpha_var = ggp2_scatter_inputs$alpha,
+      size_var = ggp2_scatter_inputs$size
+    )
+    test_logger(end = "Step2", msg = "Graph created")
+    expect_true(ggplot2::is.ggplot(app_graph))
+  }) 
+```
+
+When the test is run, the following output is printed to the **Console**:
+
+```{verbatim}
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]
+INFO [2025-02-03 13:34:16] [ START Step1 = Loading tidy_ggp2_movies.rds data]
+
+INFO [2025-02-03 13:34:16] [ END Step1 = Data loaded successfully]
+
+INFO [2025-02-03 13:34:16] [ START Step2 = Creating graph]
+
+INFO [2025-02-03 13:34:16] [ END Step2 = Graph created]
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 1 ]
+```
+
+
+There's nothing prohibiting placing `test_logger()` in a testing utility file ([`R/testthat.R`](https://github.com/mjfrigaard/sap/blob/13_tests-modules/R/testthat.R)) below the `R/` folder. Including testing functions in the `R/` folder also ensures they're documented (and any dependencies become part of your app-package).[^test_tools-helpers-r-dir]
+
+[^test_tools-helpers-r-dir]: Placing common files for testing below `R/` is covered in [R Packages, 2ed](https://r-pkgs.org/testing-design.html#hiding-in-plain-sight-files-below-r)
+
+### Test helpers {#sec-test-helpers}
 
 <!-- https://r-pkgs.org/testing-design.html#testthat-helper-files -->
 
@@ -409,7 +511,6 @@ tests/
   │   └── test-scatter_plot.R                       # <3>
   └── testthat.R
 ```
-
 1.  Test fixture scripts and `.rds` files\
 2.  Helper functions\
 3.  Test file
@@ -548,41 +649,6 @@ It’s more important that test code is obvious than DRY, because it’s more li
 "
 )
 ```
-
-### Test logger 
-
-I prefer test outputs to be verbose, so I usually create a `test_logger()` helper function that allows me to give more context and information with each test:
-
-```{r}
-#| code-fold: false
-#| eval: true
-# test logger helper
-test_logger <- function(start = NULL, end = NULL, msg) {
-  if (is.null(start) & is.null(end)) {
-    cat("\n")
-    logger::log_info("{msg}")
-  } else if (!is.null(start) & is.null(end)) {
-    cat("\n")
-    logger::log_info("\n[ START {start} = {msg}]")
-  } else if (is.null(start) & !is.null(end)) {
-    cat("\n")
-    logger::log_info("\n[ END {end} = {msg}]")
-  } else {
-    cat("\n")
-    logger::log_info("\n[ START {start} = {msg}]")
-    cat("\n")
-    logger::log_info("\n[ END {end} = {msg}]")
-  }
-}
-```
-
-`test_logger()` can be used to 'log' the `start` and `end` of each test, and it includes a message argument (`msg`) I'll use to reference the test `description` argument in each `it()` call.[^test_tools-logging]
-
-[^test_tools-logging]: If you like verbose logging outputs, check out the [`logger` package](https://daroczig.github.io/logger/)
-
-I tend to use functions like `test_logger()` enough to justify placing them in a testing utility file ([`R/testthat.R`](https://github.com/mjfrigaard/sap/blob/13_tests-modules/R/testthat.R)) below `R/`. Including testing functions in the `R/` folder also ensures they're documented (and any dependencies become part of your app-package).[^test_tools-helpers-r-dir]
-
-[^test_tools-helpers-r-dir]: Placing common files for testing below `R/` is covered in [R Packages, 2ed](https://r-pkgs.org/testing-design.html#hiding-in-plain-sight-files-below-r)
 
 ### Test development {#sec-test-coverage-active-file}
 
