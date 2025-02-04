@@ -22,9 +22,11 @@ co_box(
 
 Expand the callout boxes below to review what we've covered in the last section:
 
+:::: {.callout-tip collapse="true" title="Review Chapters 5 - 9"}
+
 ::: {.callout-note collapse='true'}
 
-## [Documentation (Chapter 5)]{style='font-size: 1.35em;'}
+#### Documentation (Chapter 5)
 
 In the [Documentation](document.qmd) chapter we covered: 
 
@@ -43,7 +45,7 @@ In the [Documentation](document.qmd) chapter we covered:
 
 ::: {.callout-note collapse='true'}
 
-## [Dependencies (Chapter 6)]{style='font-size: 1.35em;'}
+#### Dependencies (Chapter 6)
 
 In [Dependencies](dependencies.qmd), we walked through:
 
@@ -54,7 +56,7 @@ In [Dependencies](dependencies.qmd), we walked through:
 
 ::: {.callout-note collapse='true'}
 
-## [Data (Chapter 7)]{style='font-size: 1.35em;'}
+#### Data (Chapter 7)
 
 [Data](data.qmd) covered three common locations for storing and documenting data in R packages: 
 
@@ -69,7 +71,7 @@ In [Dependencies](dependencies.qmd), we walked through:
 
 ::: {.callout-note collapse='true'}
 
-## [Launch (Chapter 8)]{style='font-size: 1.35em;'}
+#### Launch (Chapter 8)
 
 [Launch](launch.qmd) describes the differences between Shiny run functions and what to include in the app.R file and standalone app function:
 
@@ -85,7 +87,7 @@ In [Dependencies](dependencies.qmd), we walked through:
 
 ::: {.callout-note collapse='true'}
 
-## [Resources (Chapter 9)]{style='font-size: 1.35em;'}
+#### Resources (Chapter 9)
 
 [Resources](resources.qmd) covered how to include external files and/or resources in your app (i.e., those previously stored in `www/`): 
 
@@ -99,9 +101,61 @@ In [Dependencies](dependencies.qmd), we walked through:
 
 :::
 
-Debugging is the process of identifying, analyzing, and fixing errors in our code.[^debug-define] In Shiny apps, debugging can be challenging because the reactive model involves dynamic interactions and a non-linear flow of execution between inputs, reactive expressions, and outputs. Consider the diagram below that illustrates the functions and modules in our application: 
+::::
+
+
+So far this book has covered the contents of an R package when it contains a basic, functional Shiny application. However, as applications grow in complexity, it's highly likely you'll encounter bugs or errors during development. Fortunately, both RStudio and Positron come with powerful interactive debuggers, which help us identify, analyze, and fix errors in our code.[^debug-define] Consider the diagram below that illustrates the reactive inputs in our application: 
 
 [^debug-define]: The definition in [this article from AWS](https://aws.amazon.com/what-is/debugging/#:~:text=Debugging) gives a great general overview of debugging. 
+
+```{=html}
+
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+
+</style>
+```
+
+```{mermaid}
+%%| fig-cap: 'Reactive flow in Movies App'
+%%| fig-align: center
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"13px"}}}%%
+flowchart TD
+    subgraph Inputs["Inputs"]
+        subgraph Variables["Variables"]
+        var_input[/"<code>input$x</code><br><code>input$y</code><br><code>input$z</code>"/]
+        end
+        subgraph Aesthetics["Aesthetics"]
+        aes_input[/"<code>input$alpha</code><br><code>input$size</code>"/]
+        end
+        
+    end
+    subgraph React["Reactives"]
+        var_inputs>"<code>var_inputs()</code> "]
+        inputs>"<code>inputs()</code>"]
+    end
+    subgraph Output["Output"]
+        output[\"output$scatterplot"\]
+    end
+
+
+    var_input & aes_input <==> |"UI"|var_inputs 
+    var_inputs <==> |"Server"|inputs
+    inputs <==> |"UI"|output
+    
+    style var_input stroke:#333,stroke-width:1px,rx:5,ry:5 
+    style aes_input stroke:#333,stroke-width:1px,rx:5,ry:5
+```
+
+<!--
 
 ```{=html}
 
@@ -155,7 +209,8 @@ style scatter_plot color:#FFF,fill:#595959,stroke:#333,stroke-width:1px,rx:25,ry
 
 ```
 
- 
+-->
+
 The inputs are collected by the variable input module[^mod_var_input] and passed to the graph display module(as `var_inputs()`),[^mod_scatter_display] where they become `inputs()` to the graph utility function before finally being rendered.[^scatter_plot]
 
 [^mod_var_input]: Our variable input model is in `R/mod_var_input.R`.
@@ -163,53 +218,6 @@ The inputs are collected by the variable input module[^mod_var_input] and passed
 [^mod_scatter_display]: The graph display module is in `R/mod_scatter_display.R`.
 
 [^scatter_plot]: The graph utility function is in `R/scatter_plot.R`
-
-```{=html}
-
-<style>
-
-.codeStyle span:not(.nodeLabel) {
-  font-family: monospace;
-  font-size: 1.5em;
-  font-weight: bold;
-  color: #9753b8 !important;
-  background-color: #f6f6f6;
-  padding: 0.2em;
-}
-
-</style>
-```
-
-```{mermaid}
-%%| fig-cap: 'Reactive flow in Movies App'
-%%| fig-align: center
-%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"13px"}}}%%
-flowchart TD
-    subgraph Inputs["Inputs"]
-        subgraph Variables["Variables"]
-        var_input[/"<code>input$x</code><br><code>input$y</code><br><code>input$z</code>"/]
-        end
-        subgraph Aesthetics["Aesthetics"]
-        aes_input[/"<code>input$alpha</code><br><code>input$size</code>"/]
-        end
-        
-    end
-    subgraph React["Reactives"]
-        var_inputs>"<code>var_inputs()</code> "]
-        inputs>"<code>inputs()</code>"]
-    end
-    subgraph Output["Output"]
-        output[\"output$scatterplot"\]
-    end
-
-
-    var_input & aes_input <==> |"UI"|var_inputs 
-    var_inputs <==> |"Server"|inputs
-    inputs <==> |"UI"|output
-    
-    style var_input stroke:#333,stroke-width:1px,rx:5,ry:5 
-    style aes_input stroke:#333,stroke-width:1px,rx:5,ry:5
-```
 
 Our application launches with pre-selected values for the `x`, `y` and `color` graph inputs, along with values for the `size` and opacity (`alpha`) of the points. 
 
@@ -273,7 +281,7 @@ flowchart TD
 
 ### Shiny bugs
 
-Shiny is inherently asynchronous, so bugs can originate from reactive dependencies, execution order, utility functions, hidden states, lazy evaluation, and invalidation (i.e., `reactive()`, `observe()`, `isolate()`, etc.).
+In Shiny apps, debugging can be challenging because the reactive model involves dynamic interactions and a non-linear flow of execution between inputs, reactive expressions, and outputs. Shiny is inherently asynchronous, so bugs can originate from reactive dependencies, execution order, utility functions, hidden states, lazy evaluation, and invalidation (i.e., `reactive()`, `observe()`, `isolate()`, etc.).
 
 For example, we could have an incorrectly defined `inputId`s or `outputId`s in the UI, which causes our graph utility function to fail. We could also have missing parentheses on reactive values in the server. Finally, the bug could be originating from the output/render point.
 
