@@ -79,7 +79,7 @@ By integrating fixtures, helpers, and snapshots from `testthat` into your Shiny 
 
 ---
 
-This chapter introduces tools to help write clean and efficient tests. We'll cover using the [`ensure` package](https://simonpcouch.github.io/ensure/) to help write tests, where to store test data, snapshots, and more. Most of methods I'll cover below are described within the context of a standard R package in [R Packages, 2ed](https://r-pkgs.org/testing-design.html#sec-testing-design-principles) and the `testthat` [documentation](https://testthat.r-lib.org/articles/third-edition.html).[^test_tools-documentation] 
+This chapter introduces some tools to help write clean and efficient tests. We'll cover using the [`ensure` package](https://simonpcouch.github.io/ensure/) to help write tests, where to store test data, snapshots, and more. Most of topics and methods covered in [R Packages, 2ed](https://r-pkgs.org/testing-design.html#sec-testing-design-principles) and the `testthat` [documentation](https://testthat.r-lib.org/articles/third-edition.html), but within the context of a standard R package .[^test_tools-documentation] 
 
 [^test_tools-documentation]: The three chapters in R Packages, 2ed, dedicated to testing are [Testing basics](https://r-pkgs.org/testing-basics.html), [Designing your test suite](https://r-pkgs.org/testing-design.html), and [Advanced testing techniques](https://r-pkgs.org/testing-advanced.html)
 
@@ -88,12 +88,24 @@ This chapter introduces tools to help write clean and efficient tests. We'll cov
 #| echo: false
 #| results: asis
 #| eval: true
-shinypak_apps(regex = "^16", branch = "16.1_test-data")
+shinypak_apps(regex = "^16", branch = "16.2_test-data")
 ```
 
 ## Help writing tests {#sec-test-tools-help}
 
 I recommend using the [`ensure` package](https://simonpcouch.github.io/ensure/) to help write tests in your app-package. If you're already using LLMs to help write code, `ensure` is a nice addition to your toolbox because of it's focus on testing. 
+
+```{r}
+#| label: git_box_16.1_test-help
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  fig_pw = '65%', 
+  branch = "16.1_test-help", 
+  repo = 'sap')
+```
 
 > "*The ensurer is familiar with `testthat` 3e as well as tidy style, and incorporates context from the rest of your R package to write concise and relevant tests.*" - [`ensure` documentation](https://simonpcouch.github.io/ensure/) 
 
@@ -271,6 +283,10 @@ tests/
 
 ## Test data {#sec-test-data}
 
+Large static data files are an example of a test fixture.[^test_tools-6] Any code used to create test data should be stored with the output file (using a clear naming convention).
+
+[^test_tools-6]: Creating a tidied version of `ggplot2movies::movies` would be costly to re-create with every test, so it's advised to store it as an [static test fixture.](https://r-pkgs.org/testing-advanced.html#sec-testing-advanced-concrete-fixture)
+
 ```{r}
 #| label: git_box_16.2_test-data
 #| echo: false
@@ -282,10 +298,6 @@ git_margin_box(
   branch = "16.2_test-data", 
   repo = 'sap')
 ```
-
-Large static data files are an example of a test fixture.[^test_tools-6] Any code used to create test data should be stored with the output file (using a clear naming convention).
-
-[^test_tools-6]: Creating a tidied version of `ggplot2movies::movies` would be costly to re-create with every test, so it's advised to store it as an [static test fixture.](https://r-pkgs.org/testing-advanced.html#sec-testing-advanced-concrete-fixture)
 
 For example, I've stored the code used to create a ['tidy' version](https://github.com/mjfrigaard/sap/blob/12a_tests-fixtures/tests/testthat/fixtures/make-tidy_ggp2_movies.R) of the `ggplot2movies::movies` data along with the output dataset in `tests/testthat/fixtures/`:
 
@@ -390,7 +402,8 @@ In Positron, the **Testing** menu gives us a hierarchical breakdown of the `desc
 
 :::
 
-## Test utility files {#sec-test-logger}
+## Test logging {#sec-test-logger}
+
 
 As we covered in the previous section (@sec-logging), we can  create a `test_logger()` helper function to monitor our tests and provide additional context:
 
@@ -417,60 +430,87 @@ test_logger <- function(start = NULL, end = NULL, msg) {
 }
 ```
 
-`test_logger()` can be used to log the `start` and `end` of each test, and it includes a message argument (`msg`) we can use to reference the test `description` argument in each `it()` call.[^test_tools-logging]
+```{r}
+#| label: git_box_16.3_test-logger
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  fig_pw = '65%', 
+  branch = "16.3_test-logger", 
+  repo = 'sap')
+```
+
+`test_logger()` can be used to log the `start` and `end` of each test, and it includes a message argument (`msg`) we can use to reference the test `description` in each `test_that()` or `it()` call.[^test_tools-logging]
 
 [^test_tools-logging]: Check out the [`logger` package](https://daroczig.github.io/logger/) for more information.
 
-An example of using the `test_logger()` function is below:
+An example of using `test_logger()` with the `movies` data is below:
 
 ```{r}
 #| code-fold: false
 #| eval: false
-    it("Scenario: Scatter plot initial x, y, color values 
+describe(
+  "Feature: Scatter plot data visualization
+     As a film data analyst
+     I want to explore movie review data
+     So that I can examine relationships between movie reivew metrics
+   Background:
+     Given I have movie reviews data
+     And the data contains continuous variables like 'IMDB rating'
+     And the data contains categorical variables like 'mpaa'",
+     code = {
+    test_that(
+      "Scenario: Scatter plot initial x, y, color values 
          When I launch the Scatter Plot Data Visualization
          And I have a IMDB dataset of movie reviews 
-         Then the plot should show 'Rating' on the x-axis
-         And the plot should show 'Length' on the y-axis
+         Then the plot should show 'IMDB rating' on the x-axis
+         And the plot should show 'Audience score' on the y-axis
          And the points on the plot should be colored by 'MPAA' rating", 
         code = {
           
-    ggp2_scatter_inputs <- list(
-          x = "rating",
-          y = "length",
-          z = "mpaa",
-          alpha = 0.75,
-          size = 3,
-          plot_title = "Enter plot title"
-        )
+    ggp2_scatter_inputs <- list(y = 'audience_score', 
+                                x = 'imdb_rating',
+                                z = 'mpaa_rating',
+                                alpha = 0.5,
+                                size = 2,
+                                plot_title = 'Enter plot title')
     
-    test_logger(start = "Step1", msg = "Loading tidy_ggp2_movies.rds data")
-    tidy_ggp2_movies <- readRDS(test_path("fixtures",
-                                "tidy_ggp2_movies.rds"))
-    test_logger(end = "Step1", msg = "Data loaded successfully")
-    test_logger(start = "Step2", msg = "Creating graph")
-    app_graph <- scatter_plot(tidy_ggp2_movies,
+    test_logger(start = "Step1", msg = "loading movies data") #<1>
+    movies <- sap::movies
+    test_logger(end = "Step1", msg = "movies data loaded successfully")  #<1>
+    
+    test_logger(start = "Step2", msg = "creating graph")  #<2>
+    app_graph <- scatter_plot(movies,
       x_var = ggp2_scatter_inputs$x,
       y_var = ggp2_scatter_inputs$y,
       col_var = ggp2_scatter_inputs$z,
       alpha_var = ggp2_scatter_inputs$alpha,
       size_var = ggp2_scatter_inputs$size
     )
-    test_logger(end = "Step2", msg = "Graph created")
-    expect_true(ggplot2::is.ggplot(app_graph))
+    test_logger(end = "Step2", msg = "graph created")  #<2>
+    
+    expect_true(ggplot2::is.ggplot(app_graph))  #<3>
   }) 
+
+})
 ```
+1. Log the data loading  
+2. Log the `scatter_plot()` function execution  
+3. Run the test  
 
 When the test is run, the following output is printed to the **Console**:
 
 ```{verbatim}
 [ FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]
-INFO [2025-02-03 13:34:16] [ START Step1 = Loading tidy_ggp2_movies.rds data]
+INFO [2025-02-04 07:29:57] [ START Step1 = loading movies data]
 
-INFO [2025-02-03 13:34:16] [ END Step1 = Data loaded successfully]
+INFO [2025-02-04 07:29:57] [ END Step1 = movies data loaded successfully]
 
-INFO [2025-02-03 13:34:16] [ START Step2 = Creating graph]
+INFO [2025-02-04 07:29:57] [ START Step2 = creating graph]
 
-INFO [2025-02-03 13:34:16] [ END Step2 = Graph created]
+INFO [2025-02-04 07:29:57] [ END Step2 = graph created]
 [ FAIL 0 | WARN 0 | SKIP 0 | PASS 1 ]
 ```
 
@@ -485,17 +525,6 @@ There's nothing prohibiting placing `test_logger()` in a testing utility file ([
 
 > "*Helper files are a mighty weapon in the battle to eliminate code floating around at the top-level of test files.*" Testthat helper files, [R Packages, 2ed](https://r-pkgs.org/testing-design.html#testthat-helper-files)
 
-```{r}
-#| label: git_box_12.2_tests-helpers
-#| echo: false
-#| results: asis
-#| eval: true
-git_margin_box(
-  contents = "launch",
-  fig_pw = '65%', 
-  branch = "12.2_tests-helpers", 
-  repo = 'sap')
-```
 
 Test helpers reduce repeated/duplicated test code. In general, objects or values that aren't large enough to justify storing as static test fixtures can be created with helper functions. Helper functions are stored in `tests/testthat/helper.R`, which is automatically loaded with `devtools::load_all()`:
 
@@ -581,7 +610,7 @@ testthat::expect_true(ggplot2::is.ggplot(app_graph))
 In contrast, the `make_ggp2_inputs()` function below creates inputs for the `scatter_plot()` utility function:
 
 ```{r}
-#| eval: false 
+#| eval: true 
 #| code-fold: false 
 make_ggp2_inputs <- function() {
   glue::glue_collapse("list(x = 'rating',
@@ -598,19 +627,13 @@ make_ggp2_inputs <- function() {
 I can call `make_ggp2_inputs()` in the **Console** and it will return the list of values to paste into each test:
 
 ```{r}
-#| eval: false 
+#| eval: true 
 #| code-fold: false 
+#| collapse: true
 make_ggp2_inputs()
-list(y = 'audience_score', 
-     x = 'imdb_rating',
-     z = 'mpaa_rating',
-     alpha = 0.5,
-     size = 2,
-     plot_title = 'Enter plot title'
-    )
 ```
 
-This reduces the number of keystrokes per test, but doesn't obscure the source of the values in the test.
+While copying and pasting this list into the test doesn't reduce the number of keystrokes per test, it also doesn't obscure the source of the values in the test (like with `var_inputs()`).
 
 `glue::glue_collapse()` is your friend when you want to quickly reproduce code for your tests. `make_var_inputs()` creates the list of inputs for testing the original `movies` data:
 
@@ -634,7 +657,7 @@ make_var_inputs <- function() {
 #| results: asis
 #| eval: true
 co_box(
-  color = "r", fold = TRUE,
+  color = "r", fold = FALSE,
   look = "default", hsize = "1.10", size = "1.05",
   header = "Violating the DRY principle",
   contents = "
@@ -655,28 +678,6 @@ It’s more important that test code is obvious than DRY, because it’s more li
 While developing, using keyboard shortcuts makes it easier to iterate between building fixtures, writing and running tests, and checking code coverage.
 
 ```{r}
-#| label: hot_key_tf_01
-#| echo: false
-#| results: asis
-#| eval: true
-hot_key(fun = 'tf')
-```
-
-```{verbatim}
-#| eval: false 
-#| code-fold: false
-devtools:::test_active_file()
- FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]
-INFO [2023-10-27 12:39:23] [ START fixture = tidy_ggp2_movies.rds]
-[ FAIL 0 | WARN 0 | SKIP 0 | PASS 1 ]
-INFO [2023-10-27 12:39:23] [ START fixture = tidy_ggp2_movies.rds]
-
-INFO [2023-10-27 12:39:23] [ START data = movies.rda]
-[ FAIL 0 | WARN 0 | SKIP 0 | PASS 2 ]
-INFO [2023-10-27 12:39:23] [ END data = movies.rda]
-```
-
-```{r}
 #| label: hot_key_cf_01
 #| echo: false
 #| results: asis
@@ -692,25 +693,18 @@ devtools:::test_coverage_active_file()
 
 ![Test coverage on active file](images/tests_coverage_scatter_plot.png){width="100%" fig-align="center"}
 
-
-## Test snapshots {#sec-test-snapshots}
+We can see the test coverage on the `scatter_plot()` function is 100%, but this only covers a small percentage of the code in our app-package.
 
 ```{r}
-#| label: git_box_12.3_tests-snapshots
-#| echo: false
-#| results: asis
-#| eval: true
-git_margin_box(
-  contents = "launch",
-  fig_pw = '65%', 
-  branch = "12.3_tests-snapshots", 
-  repo = 'sap')
+#| eval: false 
+#| code-fold: false
+devtools:::test_coverage()
 ```
 
+![Test coverage on `sap` package](images/tests_coverage_logger_sap.png){width="100%" fig-align="center"}
 
-Writing tests for UI outputs can be difficult because their "correctness" is somewhat subjective and requires human judgment. If the expected output we're interesting in testing is cumbersome to describe programmatically, we can consider using a snapshot tests. Examples of this include UI elements (which are mostly HTML created by Shiny's UI layout and input/output functions) and data visualizations.[^test_tools-graph-snapshots]
 
-[^test_tools-graph-snapshots]: Graph snapshots are covered in @sec-tests-snapshots-vdiffr.
+## Test snapshots {#sec-test-snapshots}
 
 ```{r}
 #| label: co_box_mocking
@@ -726,6 +720,24 @@ Test mocks are covered in @sec-tests-mocks-snapshots, but the example isn't from
 "
 )
 ```
+
+```{r}
+#| label: git_box_16.4_test-snapshots
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  fig_pw = '65%', 
+  branch = "16.4_test-snapshots", 
+  repo = 'sap')
+```
+
+If the expected output we're interesting in testing is cumbersome to describe programmatically, we can consider using a snapshot tests. 
+
+Examples of this include UI elements (which are mostly HTML created by Shiny's UI layout and input/output functions) and data visualizations. Writing tests for these outputs can be difficult because their "correctness" is somewhat subjective and requires human judgment. [^test_tools-graph-snapshots]
+
+[^test_tools-graph-snapshots]: Graph snapshots are covered in @sec-tests-snapshots-vdiffr.
 
 I've included a small UI function (`text_logo()`) in the `R/` folder of `sap`: 
 
@@ -798,26 +810,6 @@ The pre-rendered HTML:
 
 Reviewing the entire HTML contents of `movies_ui()` to see if `text_logo()` is working isn't practical, but we can store it's results in a snapshot file using `expect_snapshot()`. In `tests/testthat/test-text_logo.R`, I'll write the following tests:[^test_tools-snapshot-advice]
 
-```{r}
-#| label: co_box_snaps_warning
-#| echo: false
-#| results: asis
-#| eval: true
-co_box(
-  color = "r", 
-  look = "default", hsize = "1.10", size = "1.05",
-  fold = TRUE,
-  header = "Warning: snapshots and multiple line descriptions",
-  contents = "
-It's important to include any multiple-line text in the `describe()` block when creating snapshots with `expect_snapshot()`. Multiline text in the `desc` of `test_that()` will always overwrite the snapshot file. 
-  
-Thank you to [@LDSamson](https://github.com/LDSamson) for bringing this to my attention!
-  
-See [this issue](https://github.com/r-lib/testthat/issues/1900) for more information.
-  "
-)
-```
-
 [^test_tools-snapshot-advice]: Mastering Shiny covers [creatng a snapshot file](https://mastering-shiny.org/scaling-testing.html#user-interface-functions) to test UI elements, but also notes this is probably not the best approach.
 
 -   Confirm the default `size` argument:
@@ -881,7 +873,7 @@ See [this issue](https://github.com/r-lib/testthat/issues/1900) for more informa
 
 
     
-When I test this file, I see the following results and output from `test_logger()` along with two warnings about the creating of the snapshot files:
+When we test this file, we see the following warnings about the creating of the snapshot files:
 
 ```{r}
 #| code-fold: false
@@ -889,45 +881,8 @@ When I test this file, I see the following results and output from `test_logger(
 devtools:::test_active_file()
 ```
 
-```{verbatim}
-[ FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]
-INFO [2023-11-17 08:50:55] [ START snap = text_logo()]
-[ FAIL 0 | WARN 1 | SKIP 0 | PASS 1 ]
-INFO [2023-11-17 08:50:55] [ END snap = text_logo()]
 
-INFO [2023-11-17 08:50:55] [ START snap = text_logo('h1')]
-[ FAIL 0 | WARN 2 | SKIP 0 | PASS 2 ]
-INFO [2023-11-17 08:50:55] [ START snap = text_logo('h1')]
-
-INFO [2023-11-17 08:50:55] [ START snap = text_logo('invalid')]
-[ FAIL 0 | WARN 2 | SKIP 0 | PASS 3 ]
-INFO [2023-11-17 08:50:55] [ END snap = text_logo('invalid')]
-```
-
-```{verbatim}
-── Warning (test-text_logo.R:13:7): text_logo() ──
-Adding new snapshot:
-Code
-  text_logo()
-Output
-  <span>
-    <h3>
-      <code>√\/--‹(•_•)›--√\/</code>
-    </h3>
-  </span>
-
-── Warning (test-text_logo.R:22:7): text_logo('h1') ──
-Adding new snapshot:
-Code
-  text_logo("h1")
-Output
-  <span>
-    <h1>
-      <code>√\/-‹(•_•)›-√\/</code>
-    </h1>
-  </span>
-[ FAIL 0 | WARN 2 | SKIP 0 | PASS 3 ]
-```
+![Test snapshot warnings](images/tests_snapshot_text_logo.png){width="100%" fig-align="center"}
 
 ### Reviewing `_snaps/` {#sec-test-snaps-review}
 
