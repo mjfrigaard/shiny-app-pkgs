@@ -410,22 +410,51 @@ As we covered in the previous section (@sec-logging), we can  create a `test_log
 ```{r}
 #| code-fold: false
 #| eval: true
-# test logger helper
+#' Log test messages (helper)
+#'
+#' `test_logger()` logs informational messages using the `cli` package. It 
+#' allows optional `start` and `end` tags to indicate the beginning and end of
+#' a process.
+#'
+#' @param start A character string indicating the start tag. Default is `NULL`.
+#' @param end A character string indicating the end tag. Default is `NULL`.
+#' @param msg A character string containing the log message.
+#'
+#' @details
+#' - If both `start` and `end` are `NULL`, logs only the message.
+#' - If `start` is provided and `end` is `NULL`, logs a message prefixed with 
+#' `START <start> = <msg>`.
+#' - If `start` is `NULL` and `end` is provided, logs a message prefixed with 
+#' `END <end> = <msg>`.
+#' - If both `start` and `end` are provided, logs both `START` and `END`
+#'  messages.
+#'
+#' @return Logs messages and returns `NULL` (used for side effects).
+#'
+#' @examples
+#' test_logger(msg = "Processing started")
+#' test_logger(start = "Step1", msg = "Loading data")
+#' test_logger(end = "Step1", msg = "Data loaded successfully")
+#' test_logger(start = "Step2", end = "Step2", msg = "Performing computation")
+#'
+#' @keywords internal
+#' 
+#' @export
 test_logger <- function(start = NULL, end = NULL, msg) {
   if (is.null(start) & is.null(end)) {
     cat("\n")
-    logger::log_info("{msg}")
+    cli::cli_inform("TEST:[{format(Sys.time(), '%Y-%m-%d %H:%M:%S')}] = {msg}")
   } else if (!is.null(start) & is.null(end)) {
     cat("\n")
-    logger::log_info("\n[ START {start} = {msg}]")
+    cli::cli_inform("\nTEST: START [{format(Sys.time(), '%Y-%m-%d %H:%M:%S')}] {start} = {msg}")
   } else if (is.null(start) & !is.null(end)) {
     cat("\n")
-    logger::log_info("\n[ END {end} = {msg}]")
+    cli::cli_inform("\nTEST: END [{format(Sys.time(), '%Y-%m-%d %H:%M:%S')}] {end} = {msg}")
   } else {
     cat("\n")
-    logger::log_info("\n[ START {start} = {msg}]")
+    cli::cli_inform("\nTEST: START [{format(Sys.time(), '%Y-%m-%d %H:%M:%S')}]{start} = {msg}")
     cat("\n")
-    logger::log_info("\n[ END {end} = {msg}]")
+    cli::cli_inform("\nTEST: END [{format(Sys.time(), '%Y-%m-%d %H:%M:%S')}] {end} = {msg}")
   }
 }
 ```
@@ -444,7 +473,7 @@ git_margin_box(
 
 `test_logger()` can be used to log the `start` and `end` of each test, and it includes a message argument (`msg`) we can use to reference the test `description` in each `test_that()` or `it()` call.[^test_tools-logging]
 
-[^test_tools-logging]: Check out the [`logger` package](https://daroczig.github.io/logger/) for more information.
+[^test_tools-logging]: Check out the [`logger` package](https://daroczig.github.io/logger/) for more information on logging your app-package.
 
 An example of using `test_logger()` with the `movies` data is below:
 
@@ -504,13 +533,13 @@ When the test is run, the following output is printed to the **Console**:
 
 ```{verbatim}
 [ FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]
-INFO [2025-02-04 07:29:57] [ START Step1 = loading movies data]
+TEST: START [2025-02-06 07:50:53] Step1 = loading movies data
 
-INFO [2025-02-04 07:29:57] [ END Step1 = movies data loaded successfully]
+TEST: END [2025-02-06 07:50:53] Step1 = movies data loaded successfully
 
-INFO [2025-02-04 07:29:57] [ START Step2 = creating graph]
+TEST: START [2025-02-06 07:50:53] Step2 = creating graph
 
-INFO [2025-02-04 07:29:57] [ END Step2 = graph created]
+TEST: END [2025-02-06 07:50:53] Step2 = graph created
 [ FAIL 0 | WARN 0 | SKIP 0 | PASS 1 ]
 ```
 
@@ -845,9 +874,9 @@ Reviewing the entire HTML contents of `movies_ui()` to see if `text_logo()` is w
         code = {
           
         test_that("text_logo('h1')", code = {
-          test_logger(start = "snap", msg = "text_logo('})')")
-          expect_snapshot(text_logo("h1"))
           test_logger(start = "snap", msg = "text_logo('h1')")
+          expect_snapshot(text_logo("h1"))
+          test_logger(end = "snap", msg = "text_logo('h1')")
         })  
       })
     ```
