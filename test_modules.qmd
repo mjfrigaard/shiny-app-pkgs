@@ -47,70 +47,91 @@ co_box(
 
 ---
 
-In the previous chapters we covered adding test fixtures and helpers to our test suite. In this chapter, we're going briefly discuss some tips for testing modules with `testServer()`--specifically, how to verify modules are transferring values correctly.
-
-:::: {.callout-tip collapse='true' appearance='default'}
-
-## [Accessing the code examples]{style='font-weight: bold; font-size: 1.15em;'}
-
-::: {style='font-size: 0.95em; color: #282b2d;'}
-
-I've created the [`shinypak` R package](https://mjfrigaard.github.io/shinypak/) In an effort to make each section accessible and easy to follow:
-  
-Install `shinypak` using `pak` (or `remotes`):
+In the previous chapters we covered using fixtures and helpers to our test suite. In this chapter, we're going briefly discuss some tips for testing modules with Shiny's [`testServer()`](https://shiny.posit.co/r/articles/improve/server-function-testing/) function--specifically, how to verify modules are collecting and returning values correctly.
 
 ```{r}
-#| code-fold: false 
-#| message: false
-#| warning: false
-#| eval: false
-# install.packages('pak')
-pak::pak('mjfrigaard/shinypak')
+#| label: shinypak_apps
+#| echo: false
+#| results: asis
+#| eval: true
+shinypak_apps(regex = "^17", branch = "17_test-modules")
 ```
 
-Review the chapters in each section:
-  
-```{r}
-#| code-fold: false 
-#| message: false
-#| warning: false
-#| collapse: true
-library(shinypak)
-list_apps(regex = 'modules')
-```
-
-Launch an app: 
-
-```{r}
-#| code-fold: false 
-#| eval: false
-launch(app = "13_tests-modules")
-```
-
-::: 
-
-::::
 
 ## Integration tests 
 
-Integration tests verify that functions and components work together, and often involves instantiating multiple objects to interact with each other in a single test.
+Integration tests verify that functions and components work together, and often involves instantiating multiple objects to interact with each other in a single test. In Shiny apps, integration tests typically involve using [`testServer()`](https://shiny.posit.co/r/articles/improve/server-function-testing/) function to test *reactive interactions* between modules. 
 
 ```{r}
-#| label: git_box_13_tests-modules
+#| label: git_box_17_test-modules
 #| echo: false
 #| results: asis
 #| eval: true
 git_margin_box(
   contents = "launch",
   fig_pw = '65%',
-  branch = "13_tests-modules", 
+  branch = "17_test-modules", 
   repo = 'sap')
 ```
 
-We can combine the BDD functions with `testServer()` to test *reactive interactions* between modules. For example, to confirm that the drop-down feature requirement is working (i.e., that user-inputs are updating in the application), we need to test two changes:
+For example, to confirm that the UI module functions are working (i.e., that user-inputs are updating in the application), we need to test the following changes:
 
-1. Values passed to the UI are returned from `mod_var_input_server()`  
-2. The reactive values returned from `mod_var_input_server()` are passed into `mod_scatter_display_server()` and available as the reactive object `inputs()`
+1. Input values collected in the UI are returned from `mod_var_input` and `mod_aes_input` modules  
+2. The returned values are passed into `mod_scatter_display` and rendered in the UI  
+
+```{=html}
+
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+
+</style>
+```
+
+```{mermaid}
+%%| fig-cap: '*Module communication between UI and server*'
+%%| fig-align: center
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"13px"}}}%%
+flowchart TD
+    subgraph Inputs["Inputs"]
+        subgraph Variables["mod_var_input"]
+        var_input[/"<code>input$x</code><br><code>input$y</code><br><code>input$z</code>"/]
+        end
+        subgraph Aesthetics["mod_aes_input"]
+        aes_input[/"<code>input$alpha</code><br><code>input$size</code>"/]
+        plot_title[/"<code>input$plot_title</code>"/]
+        end
+        
+    end
+    subgraph React["Server"]
+        subgraph Display["mod_scatter_display"]
+        var_inputs>"<code>var_inputs</code> "]
+        aes_inputs>"<code>aes_inputs</code> "]
+        inputs>"<code>inputs()</code>"]
+        end
+    end
+    subgraph Output["Output"]
+        output[\"output$scatterplot"\]
+    end
+
+
+    var_input <--> |"Pre-selected<br>values"|var_inputs 
+    aes_input <--> |"Pre-selected<br>values"|aes_inputs 
+    plot_title -.-> |"User<br>input"|aes_inputs 
+    var_inputs & aes_inputs <--> |"Assembled into.."|inputs
+    inputs <--> |"Rendered as..."|output
+    
+    style var_input stroke:#333,stroke-width:1px,rx:5,ry:5 
+    style aes_input stroke:#333,stroke-width:1px,rx:5,ry:5
+    
+```
 
 ::: {.callout-note collapse="true" appearance="default"}
 
@@ -151,9 +172,50 @@ Feature: # <1>
 Read more about Gherkin on the [Cucumber website.](https://cucumber.io/docs/gherkin/reference/).
 
 :::
+
 :::
 
-The feature, background, and scenario for the changes in `mod_var_input_server()` are provided below: 
+## Testing return values {#sec-tests-mods-returned}
+
+We'll start with a test for the `mod_var_input_server()` function. Let's simplify the diagram above to visualize what we're attempting to capture in this test: 
+
+```{=html}
+
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+
+</style>
+```
+
+```{mermaid}
+%%| fig-cap: '*Variable and aesthetic returned values*'
+%%| fig-align: center
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
+flowchart 
+    subgraph VarModule["Variable Module"]
+        VarInputs[/"Selected<br>Variables"/]
+    end
+    subgraph AesModule["Aesthetic Module"]
+        AesInputs[/"Selected<br>Aesthetics"/]
+    end
+    subgraph GraphDisplay["Display Module"]
+        ScatterDiplay[\"Graph Display"\]
+    end
+    
+    VarInputs -.->|"Returns x, y<br>and color"|ScatterDiplay
+    AesInputs -.->|"Returns size, <br>alpha and title"|ScatterDiplay
+
+```
+
+Based on our diagram, we'll write feature, background, and scenario for the default values: 
 
 ```{r}
 #| eval: false 
@@ -161,32 +223,26 @@ The feature, background, and scenario for the changes in `mod_var_input_server()
 #| code-fold: false
 describe(
   "Feature: Scatter Plot Configuration in Movie Review Application
-      As a user 
-      I want the initial graph pre-configured with variables and aesthetics,
-      So that I can change the inputs and see a meaningful visualization.", 
+      As a user
+      I want the initial graph pre-configured with variables,
+      So that I can change the inputs and see a meaningful visualization.",
   code = {
-  
-  describe(
-    "Background: Initial scatter plot x, y, color values 
+    describe(
+      "Background: Initial scatter plot x, y, color values
          Given the movie review application is loaded
-         And the scatter plot initial x-axis value is [IMDB Rating] 
-         And the scatter plot initial y-axis value is [Audience Score]
-         And the scatter plot initial color value is [MPAA Rating]
-         And the initial opacity of the points is set to [0.5]
-         And the initial size of the points is set to [2]
-         And the initial plot title is set to [Enter plot title]", code = {
-           
-  it("Scenario: Changing scatter plot x, y, color values
-       Given the movie review application is loaded
-       When I choose the [Critics Score] variable for the x-axis
-       And I choose the [Runtime] variable for the y-axis
-       And I choose the [Title type] variable for color
-       Then the scatter plot should show [Critics score] on the x-axis
-       And the scatter plot should show [Runtime] on the y-axis
-       And the points on the scatter plot should be colored by [Title type]
-       And the opacity of the points should be set to [0.5]
-       And the size of the points should be set to [2]
-       And the plot title should be [Enter plot title]", code = {
+         And the initial x-axis value is [IMDB Rating]
+         And the initial y-axis value is [Audience Score]
+         And the initial color value is [MPAA Rating]",
+      code = {
+        it("Scenario: Changing scatter plot x, y, and color values
+             Given the movie review application is loaded
+             When I choose the [Critics Score] for the x-axis
+             And I choose the [Runtime] for the y-axis
+             And I choose the [Title type] for color
+             Then the scatter plot should show [Critics score] on the x-axis
+             And the scatter plot should show [Runtime] on the y-axis
+             And the points on the scatter plot should be colored by [Title type]", 
+          code = {
          
          shiny::testServer(app = mod_var_input_server, expr = {
             
@@ -198,173 +254,199 @@ describe(
 })
 ```
 
-### Testing return values {#sec-tests-mods-returned}
+Inside `testServer()`: 
 
-Inside `testServer()`, we can create a list of initial graph inputs for `mod_var_input_server()`, then pass identical values to `session$setInputs()`, and confirm the returned object with `session$returned()`:[^tests-modules-returned]
+1. We can create a list of initial graph inputs (`test_vals`), then 
+2. Pass identical values to `session$setInputs()`, and 
+3. Confirm the returned object with `session$returned()` vs. `test_vals`,[^tests-modules-returned] and finally  
+4. We'll end the test by flushing the reactives set by `session$setInputs()` [^tests-modules-flush-react]
 
 [^tests-modules-returned]: Read more about returned values in the section titled, ***'Modules with return values'*** in the [Shiny documentation](https://shiny.posit.co/r/articles/improve/server-function-testing/index.html).
+
+[^tests-modules-flush-react]: Read more about flushing reactive values in the section titled, ***'Flushing Reactives'*** in the [Shiny documentation](https://shiny.posit.co/r/articles/improve/server-function-testing/index.html).
 
 ```{r}
 #| eval: false 
 #| include: true
 #| code-fold: false
-       
+testServer(app = mod_var_input_server, expr = { 
+
+    test_vals <- list( #<1>
+      x = "audience_score",
+      y = "imdb_rating",
+      z = "mpaa_rating") #<1>
     
-    shiny::testServer(app = mod_var_input_server, expr = {       # <1>
-      
-      test_logger(start = "var_inputs", msg = "initial returned()")
-      
-      # create list of output vals
-      test_vals <- list(y = "imdb_rating",                      # <2>
-                        x = "audience_score",
-                        z = "mpaa_rating",
-                        alpha = 0.75,
-                        size = 3,
-                        plot_title = "Example title")           # <2>
+    test_logger(start = "RETURNED", msg = "test_vals vs. session$returned()")
+  
+    session$setInputs( # <2>
+      x = "audience_score",
+      y = "imdb_rating",
+      z = "mpaa_rating") # <2>
 
-      # change inputs
-      session$setInputs(y = "imdb_rating",                       # <3>
-                        x = "audience_score",
-                        z = "mpaa_rating",
-                        alpha = 0.75,
-                        size = 3,
-                        plot_title = "Example title")           # <3>
-
-      expect_equal(
-        object = session$returned(),        # <4>
-        expected = test_vals                # <4>
-      )
-
-      test_logger(end = "var_inputs", msg = "initial returned()")
-      
-}) # <1>
-```
-1. Call to `testServer()`   
-2. Create output values for comparison  
-3. Set each input using `setInputs(input = )`  
-4. Confirm returned values against `test_vals`     
-
-The test above confirms the initial values can be passed and returned from `mod_var_input_server()`.
-
-### Flushing the reactives
-
-If we want to test changing inputs, we should call `session$flushReact()` to remove the values set by `session$setInputs()` [^tests-modules-flush-react]
-
-```{r}
-#| eval: false 
-#| code-fold: false
-shiny::testServer(app = mod_var_input_server, expr = {       # <1>
-    # flush reactives
-    session$flushReact() # <2>
-    test_logger(start = "var_inputs", msg = "updated returned()")
-    # set inputs
-    session$setInputs(y = "critics_score", # <3>
-                      x = "runtime",
-                      z = "title_type",
-                      alpha = 0.5,
-                      size = 2,
-                      plot_title = "Enter plot title") # <3>
-
-    expect_equal(object = session$returned(), # <4>
-      expected = list(y = "critics_score",
-                      x = "runtime",
-                      z = "title_type",
-                      alpha = 0.5,
-                      size = 2,
-                      plot_title = "Enter plot title")) # <4>
+    expect_equal( # <3>
+      object = session$returned(),
+      expected = test_vals) # <3>
     
-    test_logger(end = "var_inputs", msg = "updated returned()")
-}) # <1>
+    test_logger(end = "RETURNED", msg = "test_vals vs. session$returned()")
+    
+    session$flushReact() # <4>
+  
+})
 ```
-1. Call to `testServer()`   
-2. Flush reactives from previous `expect_equal()`
-3. Set changed input values using `setInputs(input = )`  
-4. Confirm returned values against `session$returned()`
+1. Create output values for comparison  
+2. Set each input using `setInputs(input = )` 
+3. Confirm returned values against `test_vals`     
+4. Flush reactives  
 
-[^tests-modules-flush-react]: Read more about flushing reactive values in the section titled, ***'Flushing Reactives'*** in the [Shiny documentation](https://shiny.posit.co/r/articles/improve/server-function-testing/index.html).
-
-The final result of running `test_active_file()` on `test-mod_var_input.R` is below: 
+The test above confirms the initial values can be returned from `mod_var_input_server()` and the result of running `test_active_file()` on `test-mod_var_input.R` is below: 
 
 ```{verbatim}
-#| eval: false 
-#| code-fold: false
 [ FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]
-INFO [2023-11-08 20:00:39] [ START var_inputs = initial returned()]
+TEST: START [2025-02-06 08:43:46] RETURNED = test_vals vs. session$returned()
 [ FAIL 0 | WARN 0 | SKIP 0 | PASS 1 ]
-INFO [2023-11-08 20:00:39] [ END var_inputs = initial returned()]
-
-INFO [2023-11-08 20:00:39] [ START var_inputs = updated returned()]
-[ FAIL 0 | WARN 0 | SKIP 0 | PASS 2 ]
-INFO [2023-11-08 20:00:39] [ END var_inputs = updated returned()]
+TEST: END [2025-02-06 08:43:47] RETURNED = test_vals vs. session$returned()
 ```
 
-### Testing module parameters {#sec-tests-mods-args-list}
+## Testing module inputs {#sec-tests-mods-args-list}
 
-Now that we've confirmed `mod_var_input_server()` is returning the initial updated values, we want to make sure reactive values are passed correctly into `mod_scatter_display_server()`. 
+Now that we've confirmed the variable input module is returning the initial values from the UI, we want to make sure the reactive values are passed correctly into the graph display module. We'll update our diagram for the module input arguments:
 
-In `movies_server()`, when we pass `selected_vars` to the `var_inputs` argument, we're not passing the returned values (this is why we don't need the parentheses). We're calling on the *method* (or function) created by the call to `reactive()` (inside `mod_var_input_server()`).
 
-I've included the `movies_server()` function below to refresh our memory of how this *should* work:[^tests-12]
+```{=html}
 
-[^tests-12]: `selected_vars` are the reactive plot values returned from `mod_var_input_server()`.
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+
+</style>
+```
+
+```{mermaid}
+%%| fig-cap: '*Variable and aesthetic collected values*'
+%%| fig-align: center
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
+flowchart 
+    subgraph VarModule["Variable Module"]
+        VarInputs[/"Selected<br>Variables"/]
+    end
+    subgraph AesModule["Aesthetic Module"]
+        AesInputs[/"Selected<br>Aesthetics"/]
+    end
+    subgraph GraphDisplay["Display Module"]
+        ScatterDiplay[\"Graph Display"\]
+    end
+    
+    VarInputs <-->|"Collects x, y<br>and color"|ScatterDiplay
+    AesInputs <-->|"Collects size, <br>alpha and title"|ScatterDiplay
+
+```
+
+I've included the `movies_server()` function below to refresh our memory of how this *should* work:
 
 ```{r}
 #| eval: false 
 #| code-fold: false
 movies_server <- function(input, output, session) {
-
-      selected_vars <- mod_var_input_server("vars") # <1>
-
-      mod_scatter_display_server("plot", var_inputs = selected_vars)
       
+  logr_msg(message = "New user session started", level = "INFO")  # <1>
+            
+  tryCatch({ # <2>
+    selected_vars <- mod_var_input_server("vars")
+  }, error = function(e) {
+    logr_msg(glue::glue("Error in variable selection module: {e$message}"), level = "ERROR") 
+  }) # <2>
+
+  tryCatch({ # <3>
+    selected_aes <- mod_aes_input_server("aes")
+  }, error = function(e) {
+    logr_msg(glue::glue("Error in aesthetics selection module: {e$message}"),
+           level = "ERROR")
+  }) # <3>
+
+  tryCatch({ # <4>
+    mod_scatter_display_server("plot", 
+                              var_inputs = selected_vars, 
+                              aes_inputs = selected_aes)
+  }, error = function(e) {
+    logr_msg(glue::glue("Error in scatter display: {e$message}"), 
+    level = "ERROR")
+  }) # <4>
+
+  logr_msg(message = "Server function execution completed", # <5>
+           level = "TRACE") # <5>
 }
 ```
-1. Calls `return(reactive(list(...)))`  
+1. User session log message  
+2. Selected variable inputs  
+3. Selected aesthetic inputs  
+4. Variables and aesthetics passed to scatter display module  
+5. Server execution log message 
 
-When we pause execution with Posit Workbench's debugger we can see the difference between calling `selected_vars` and `selected_vars()`:
+### Debugging and testing {#sec-tests-mods-debug}
 
-::: {layout="[49, -2, 49]"}
+**Debugging is your friend when you're writing tests.** We covered using `browser()` and the interactive debugger in the [**Debuggers** chapter](debugger.qmd). `browser()` is a powerful tool for interactive debugging during development, and tests ensure long-term stability and reliability. I recommend using both in tandem, because the interactive debugger can help us understand reactivity, and then we can write tests to prevent bugs and errors and confirm fixes. 
 
-``` r
-Browse[1]> selected_vars
-reactive({
-    list(
-      y = input$y, 
-      x = input$x, 
-      z = input$z, 
-      alpha = input$alpha, 
-      size = input$size, 
-      plot_title = input$plot_title
-      )
-})
+For example, if we pause execution with the interactive debugger in `movies_server()`, we can see the difference between calling `selected_vars` and `selected_vars()`:
+
+![`selected_vars` vs. `selected_vars()`](images/test_modules_interactive_debugger.png){width='100%' fig-align='center'}
+
+When we pass `selected_vars` and `selected_aes` to the `var_inputs` and `aes_inputs` arguments, we're not passing the returned values (this is why we don't need the parentheses).
+
+```{r}
+#| eval: false 
+#| code-fold: false
+mod_scatter_display_server("plot", 
+                          var_inputs = selected_vars, 
+                          aes_inputs = selected_aes)
 ```
 
-``` r
-Browse[1]> selected_vars()
-$y
-[1] "audience_score"
+Without the parentheses, we're calling on the *method* (or function) created by the call to `reactive()` (inside `mod_var_input_server()`).[^tests-12]
 
+```{r}
+#| eval: false 
+#| code-fold: false
+Browse[1]> selected_vars
+```
+
+```{verbatim}
+reactive({
+    logr_msg(glue::glue("Reactive inputs returned: x = {input$x}, y = {input$y}, z = {input$z}"), 
+        level = "DEBUG")
+    list(x = input$x, y = input$y, z = input$z)
+}) 
+```
+
+[^tests-12]: `selected_vars` are the reactive variable names returned from `mod_var_input_server()` and `selected_aes` are the reactive size, alpha, and title values returned from `mod_aes_input_server()`.
+
+Viewing `selected_vars()` in the interactive debugger *with* the parentheses, we see the actual values from the `mod_var_input` module:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+Browse[1]> selected_vars()
+```
+
+```{verbatim}
 $x
 [1] "imdb_rating"
 
+$y
+[1] "audience_score"
+
 $z
 [1] "mpaa_rating"
-
-$alpha
-[1] 0.5
-
-$size
-[1] 2
-
-$plot_title
-[1] ""
 ```
 
-:::
+This distinction is important because we need to know what to pass into the `var_inputs` and `aes_inputs` arguments when we test the `mod_scatter_display_server()` function. 
 
-We'll cover using `browser()` and the IDE's debugger more the [debug section](debug.qmd).
-
-The feature and scenario for the functionality above is captured in `testthat`'s BDD functions below: 
+We'll start by writing the feature and scenario for this functionality using `testthat`'s BDD functions below: 
 
 ```{r}
 #| eval: false 
@@ -385,14 +467,16 @@ describe(
          And the points on the scatter plot should be colored by 'MPAA Rating'
          And the size of the points should be set to '2'
          And the opacity of the points should be set to '0.5'
-         And the plot title should be 'Enter plot title'",
+         And the plot title should be 'New Plot Title'",
       code = {
+        
+        # testServer() code
         
       })
   })
 ```
 
-Inside `testServer()`, if we're testing a module function that collects the reactive values, we need to wrap those values in `reactive()` in the `args()` argument: [^tests-modules-args]
+We're going to break the contents of `testServer()` down sequentially based on what we saw in the interactive debugger and the functionality of `mod_scatter_display_server`. We know we're testing a module function that *collects the reactive values*, so we need to wrap those values in `reactive()` in the `args()` argument: [^tests-modules-args]
 
 [^tests-modules-args]: Read more about adding parameters to `testServer()` in the section titled, ***'Modules with additional parameters'*** in the [Shiny documentation](https://shiny.posit.co/r/articles/improve/server-function-testing/index.html).
 
@@ -402,36 +486,98 @@ Inside `testServer()`, if we're testing a module function that collects the reac
 shiny::testServer(
   app = mod_scatter_display_server,
   args = list(
-    var_inputs =
-      reactive( # <1>
+    var_inputs = # <1>
+      reactive( # <3>
         list( 
             x = "critics_score",
             y = "imdb_rating",
-            z = "mpaa_rating",
+            z = "mpaa_rating"
+          )
+        ), # <3>
+    # <1>
+      aes_inputs = # <2>
+        reactive( # <4>
+          list( 
             alpha = 0.5,
             size = 2,
-            plot_title = "Enter Plot Title"
-          )
-        ) # <1>
+            plot_title = "enter plot title"
+            )
+          ) # <4> 
+    # <2>
   ),
   expr = {
-    test_logger(start = "display", msg = "selected_vars initial values")
-    expect_equal( # <2>
-      object = inputs(),
+
+})
+```
+1. `var_inputs` argument in `mod_scatter_display_server`
+2. `aes_inputs` argument in `mod_scatter_display_server`
+3. List of reactive variable inputs  
+4. List of reactive aesthetic inputs 
+
+We know that inside `mod_scatter_display_server`, the values collected from `var_inputs` and `aes_inputs` are assembled into a single `inputs()` reactive. We also know the plot title will be converted to title case before it's rendered in the UI, so we need to account for this in the `expected` values. 
+
+```{r}
+#| eval: false 
+#| code-fold: false
+shiny::testServer(
+  app = mod_scatter_display_server,
+  args = list(
+    var_inputs = # <1>
+      reactive( # <3>
+        list( 
+            x = "critics_score",
+            y = "imdb_rating",
+            z = "mpaa_rating"
+          )
+        ), # <3>
+    # <1>
+      aes_inputs = # <2>
+        reactive( # <4>
+          list( 
+            alpha = 0.5,
+            size = 2,
+            plot_title = "enter plot title"
+            )
+          ) # <4> 
+    # <2>
+  ),
+  expr = {
+    test_logger(start = "COLLECT", msg = "collected module values")
+    expect_equal(
+      object = inputs(), # <5>
       expected = list(
         x = "critics_score",
         y = "imdb_rating",
         z = "mpaa_rating",
         alpha = 0.5,
         size = 2,
-        plot_title = "Enter Plot Title"
+        plot_title = "Enter Plot Title" # <6>
       )
-    ) # <2>
-    test_logger(end = "display", msg = "selected_vars initial values")
+    )
+    test_logger(end = "COLLECT", msg = "collected module values")
 })
 ```
-1. List of reactive variable inputs  
-2. Compare `inputs()` to initial values  
+1. `var_inputs` argument in `mod_scatter_display_server`
+2. `aes_inputs` argument in `mod_scatter_display_server`
+3. List of reactive variable inputs  
+4. List of reactive aesthetic inputs 
+5. Compare `inputs()` to initial values  
+6. Title case plot title  
+
+The `test_logger()` can tell us when the `expr` begins (so we can assume there aren't errors in the input arguments to `args` list).
+
+```{r}
+#| eval: false 
+#| code-fold: false
+devtools::test_active_file()
+```
+
+```{verbatim}
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]
+TEST: START [2025-02-06 08:20:36] COLLECT = collected module values
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 1 ]
+TEST: END [2025-02-06 08:20:36] COLLECT = collected module values
+```
 
 I've included the example above because it's not included on the `testServer()` [documentation](https://shiny.posit.co/r/articles/improve/server-function-testing/), and I've found this method works well if you want to confirm two modules are communicating (i.e., returning and collecting outputs). System test with `shinytest2` are a better option if we're trying to capture a more comprehensive execution path (i.e., user scenario) in the application. 
 

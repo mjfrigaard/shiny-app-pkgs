@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2025-02-04">
+<meta name="dcterms.date" content="2025-02-06">
 <meta name="description" content="Getting your app into an R package">
 
 <title>16&nbsp; Test tools – Shiny App-Packages</title>
@@ -527,7 +527,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">2025-02-04</p>
+      <p class="date">2025-02-06</p>
     </div>
   </div>
   
@@ -917,24 +917,53 @@ https://www.freecodecamp.org/news/clean-coding-for-beginners/
 <h2 data-number="16.3" class="anchored" data-anchor-id="sec-test-logger"><span class="header-section-number">16.3</span> Test logging</h2>
 <p>As we covered in the previous section (<a href="logging.html" class="quarto-xref"><span>Chapter 13</span></a>), we can create a <code>test_logger()</code> helper function to monitor our tests and provide additional context:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># test logger helper</span></span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>test_logger <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">start =</span> <span class="cn">NULL</span>, <span class="at">end =</span> <span class="cn">NULL</span>, msg) {</span>
-<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">is.null</span>(start) <span class="sc">&amp;</span> <span class="fu">is.null</span>(end)) {</span>
-<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>    logger<span class="sc">::</span><span class="fu">log_info</span>(<span class="st">"{msg}"</span>)</span>
-<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(start) <span class="sc">&amp;</span> <span class="fu">is.null</span>(end)) {</span>
-<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>    logger<span class="sc">::</span><span class="fu">log_info</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">[ START {start} = {msg}]"</span>)</span>
-<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> <span class="cf">if</span> (<span class="fu">is.null</span>(start) <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.null</span>(end)) {</span>
-<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>    logger<span class="sc">::</span><span class="fu">log_info</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">[ END {end} = {msg}]"</span>)</span>
-<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
-<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a>    logger<span class="sc">::</span><span class="fu">log_info</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">[ START {start} = {msg}]"</span>)</span>
-<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a>    logger<span class="sc">::</span><span class="fu">log_info</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">[ END {end} = {msg}]"</span>)</span>
-<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co">#' Log test messages (helper)</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="co">#'</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="co">#' `test_logger()` logs informational messages using the `cli` package. It </span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="co">#' allows optional `start` and `end` tags to indicate the beginning and end of</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="co">#' a process.</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a><span class="co">#'</span></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a><span class="co">#' @param start A character string indicating the start tag. Default is `NULL`.</span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a><span class="co">#' @param end A character string indicating the end tag. Default is `NULL`.</span></span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a><span class="co">#' @param msg A character string containing the log message.</span></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a><span class="co">#'</span></span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a><span class="co">#' @details</span></span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a><span class="co">#' - If both `start` and `end` are `NULL`, logs only the message.</span></span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a><span class="co">#' - If `start` is provided and `end` is `NULL`, logs a message prefixed with </span></span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a><span class="co">#' `START &lt;start&gt; = &lt;msg&gt;`.</span></span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a><span class="co">#' - If `start` is `NULL` and `end` is provided, logs a message prefixed with </span></span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a><span class="co">#' `</span><span class="re">END</span><span class="co"> &lt;end&gt; = &lt;msg&gt;`.</span></span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a><span class="co">#' - If both `start` and `end` are provided, logs both `START` and `</span><span class="re">END</span><span class="co">`</span></span>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a><span class="co">#'  messages.</span></span>
+<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a><span class="co">#'</span></span>
+<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a><span class="co">#' @return Logs messages and returns `NULL` (used for side effects).</span></span>
+<span id="cb23-21"><a href="#cb23-21" aria-hidden="true" tabindex="-1"></a><span class="co">#'</span></span>
+<span id="cb23-22"><a href="#cb23-22" aria-hidden="true" tabindex="-1"></a><span class="co">#' @examples</span></span>
+<span id="cb23-23"><a href="#cb23-23" aria-hidden="true" tabindex="-1"></a><span class="co">#' test_logger(msg = "Processing started")</span></span>
+<span id="cb23-24"><a href="#cb23-24" aria-hidden="true" tabindex="-1"></a><span class="co">#' test_logger(start = "Step1", msg = "Loading data")</span></span>
+<span id="cb23-25"><a href="#cb23-25" aria-hidden="true" tabindex="-1"></a><span class="co">#' test_logger(end = "Step1", msg = "Data loaded successfully")</span></span>
+<span id="cb23-26"><a href="#cb23-26" aria-hidden="true" tabindex="-1"></a><span class="co">#' test_logger(start = "Step2", end = "Step2", msg = "Performing computation")</span></span>
+<span id="cb23-27"><a href="#cb23-27" aria-hidden="true" tabindex="-1"></a><span class="co">#'</span></span>
+<span id="cb23-28"><a href="#cb23-28" aria-hidden="true" tabindex="-1"></a><span class="co">#' @keywords internal</span></span>
+<span id="cb23-29"><a href="#cb23-29" aria-hidden="true" tabindex="-1"></a><span class="co">#' </span></span>
+<span id="cb23-30"><a href="#cb23-30" aria-hidden="true" tabindex="-1"></a><span class="co">#' @export</span></span>
+<span id="cb23-31"><a href="#cb23-31" aria-hidden="true" tabindex="-1"></a>test_logger <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">start =</span> <span class="cn">NULL</span>, <span class="at">end =</span> <span class="cn">NULL</span>, msg) {</span>
+<span id="cb23-32"><a href="#cb23-32" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">is.null</span>(start) <span class="sc">&amp;</span> <span class="fu">is.null</span>(end)) {</span>
+<span id="cb23-33"><a href="#cb23-33" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb23-34"><a href="#cb23-34" aria-hidden="true" tabindex="-1"></a>    cli<span class="sc">::</span><span class="fu">cli_inform</span>(<span class="st">"TEST:[{format(Sys.time(), '%Y-%m-%d %H:%M:%S')}] = {msg}"</span>)</span>
+<span id="cb23-35"><a href="#cb23-35" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(start) <span class="sc">&amp;</span> <span class="fu">is.null</span>(end)) {</span>
+<span id="cb23-36"><a href="#cb23-36" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb23-37"><a href="#cb23-37" aria-hidden="true" tabindex="-1"></a>    cli<span class="sc">::</span><span class="fu">cli_inform</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">TEST: START [{format(Sys.time(), '%Y-%m-%d %H:%M:%S')}] {start} = {msg}"</span>)</span>
+<span id="cb23-38"><a href="#cb23-38" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> <span class="cf">if</span> (<span class="fu">is.null</span>(start) <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.null</span>(end)) {</span>
+<span id="cb23-39"><a href="#cb23-39" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb23-40"><a href="#cb23-40" aria-hidden="true" tabindex="-1"></a>    cli<span class="sc">::</span><span class="fu">cli_inform</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">TEST: END [{format(Sys.time(), '%Y-%m-%d %H:%M:%S')}] {end} = {msg}"</span>)</span>
+<span id="cb23-41"><a href="#cb23-41" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb23-42"><a href="#cb23-42" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb23-43"><a href="#cb23-43" aria-hidden="true" tabindex="-1"></a>    cli<span class="sc">::</span><span class="fu">cli_inform</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">TEST: START [{format(Sys.time(), '%Y-%m-%d %H:%M:%S')}]{start} = {msg}"</span>)</span>
+<span id="cb23-44"><a href="#cb23-44" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb23-45"><a href="#cb23-45" aria-hidden="true" tabindex="-1"></a>    cli<span class="sc">::</span><span class="fu">cli_inform</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">TEST: END [{format(Sys.time(), '%Y-%m-%d %H:%M:%S')}] {end} = {msg}"</span>)</span>
+<span id="cb23-46"><a href="#cb23-46" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb23-47"><a href="#cb23-47" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 
 <div class="no-row-height column-margin column-container"><div class="">
@@ -1010,13 +1039,13 @@ https://www.freecodecamp.org/news/clean-coding-for-beginners/
 </div>
 <p>When the test is run, the following output is printed to the <strong>Console</strong>:</p>
 <div class="sourceCode" id="cb25"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 0 | SKIP 0 | PASS 0 ]</span>
-<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>INFO [2025-02-04 07:29:57] [ START Step1 = loading movies data]</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>TEST: START [2025-02-06 07:50:53] Step1 = loading movies data</span>
 <span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>INFO [2025-02-04 07:29:57] [ END Step1 = movies data loaded successfully]</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>TEST: END [2025-02-06 07:50:53] Step1 = movies data loaded successfully</span>
 <span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>INFO [2025-02-04 07:29:57] [ START Step2 = creating graph]</span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>TEST: START [2025-02-06 07:50:53] Step2 = creating graph</span>
 <span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>INFO [2025-02-04 07:29:57] [ END Step2 = graph created]</span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>TEST: END [2025-02-06 07:50:53] Step2 = graph created</span>
 <span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a>[ FAIL 0 | WARN 0 | SKIP 0 | PASS 1 ]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>There’s nothing prohibiting placing <code>test_logger()</code> in a testing utility file (<a href="https://github.com/mjfrigaard/sap/blob/13_tests-modules/R/testthat.R"><code>R/testthat.R</code></a>) below the <code>R/</code> folder. Including testing functions in the <code>R/</code> folder also ensures they’re documented (and any dependencies become part of your app-package).<a href="#fn10" class="footnote-ref" id="fnref10" role="doc-noteref"><sup>10</sup></a></p>
 <section id="sec-test-helpers" class="level3" data-number="16.3.1">
@@ -1364,9 +1393,9 @@ https://www.freecodecamp.org/news/clean-coding-for-beginners/
 <span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">code =</span> {</span>
 <span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">test_that</span>(<span class="st">"text_logo('h1')"</span>, <span class="at">code =</span> {</span>
-<span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a>      <span class="fu">test_logger</span>(<span class="at">start =</span> <span class="st">"snap"</span>, <span class="at">msg =</span> <span class="st">"text_logo('})')"</span>)</span>
+<span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a>      <span class="fu">test_logger</span>(<span class="at">start =</span> <span class="st">"snap"</span>, <span class="at">msg =</span> <span class="st">"text_logo('h1')"</span>)</span>
 <span id="cb38-10"><a href="#cb38-10" aria-hidden="true" tabindex="-1"></a>      <span class="fu">expect_snapshot</span>(<span class="fu">text_logo</span>(<span class="st">"h1"</span>))</span>
-<span id="cb38-11"><a href="#cb38-11" aria-hidden="true" tabindex="-1"></a>      <span class="fu">test_logger</span>(<span class="at">start =</span> <span class="st">"snap"</span>, <span class="at">msg =</span> <span class="st">"text_logo('h1')"</span>)</span>
+<span id="cb38-11"><a href="#cb38-11" aria-hidden="true" tabindex="-1"></a>      <span class="fu">test_logger</span>(<span class="at">end =</span> <span class="st">"snap"</span>, <span class="at">msg =</span> <span class="st">"text_logo('h1')"</span>)</span>
 <span id="cb38-12"><a href="#cb38-12" aria-hidden="true" tabindex="-1"></a>    })  </span>
 <span id="cb38-13"><a href="#cb38-13" aria-hidden="true" tabindex="-1"></a>  })</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div></li>
@@ -1495,7 +1524,7 @@ Figure&nbsp;16.1: Click <strong>Accept</strong>: <code>Accepting snapshot: 'test
 <li id="fn6"><p>The name ‘<code>fixtures</code>’ isn’t required (you can name this folder anything).<a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn7"><p>Creating a tidied version of <code>ggplot2movies::movies</code> would be costly to re-create with every test, so it’s advised to store it as an <a href="https://r-pkgs.org/testing-advanced.html#sec-testing-advanced-concrete-fixture">static test fixture.</a><a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn8"><p>Snapshot tests would be more appropriate for answering the question, <a href="https://shiny.posit.co/r/articles/improve/server-function-testing/index.html#complex-outputs-plots-htmlwidgets">‘<em>is the plot visually correct?</em>’</a>.<a href="#fnref8" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn9"><p>Check out the <a href="https://daroczig.github.io/logger/"><code>logger</code> package</a> for more information.<a href="#fnref9" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn9"><p>Check out the <a href="https://daroczig.github.io/logger/"><code>logger</code> package</a> for more information on logging your app-package.<a href="#fnref9" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn10"><p>Placing common files for testing below <code>R/</code> is covered in <a href="https://r-pkgs.org/testing-design.html#hiding-in-plain-sight-files-below-r">R Packages, 2ed</a><a href="#fnref10" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn11"><p>Graph snapshots are covered in <a href="test_snapshots_mocks.html#sec-tests-snapshots-vdiffr" class="quarto-xref"><span>Section E.1</span></a>.<a href="#fnref11" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn12"><p>This is a simple example, but I chose it because it needs some tricky escape characters to work.<a href="#fnref12" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
