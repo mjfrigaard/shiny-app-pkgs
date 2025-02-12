@@ -41,14 +41,24 @@ co_box(
   contents = "
 
 <br>
-  
-Logging plays a crucial role in... 
 
-  "
+Logging is essential for debugging and monitoring apps, helping track errors, warnings, and user activity. `validate()` ensures valid inputs and `tryCatch()` can catch unexpected errors in reactive expressions and log them instead of crashing the app. 
+
+The `logger` package provides structured logging, allowing us to save logs to files, console, or external services.  
+
+**Key Benefits:**  
+
+1. Aids debugging by capturing detailed error messages and execution flow.
+
+2. Improves user experience by preventing unexpected crashes and providing informative error messages.  
+
+3. Enables performance monitoring by logging app usage patterns and slow operations.  
+
+"
 )
 ```
 
-Another proactive approach to debugging Shiny applications is implementing logging. Logs help with debugging, auditing, and monitoring and should be considered an essential feature while developing a Shiny app, especially when building an R package. This chapter introduces integrating logging in a Shiny app-package to make debugging and issue tracking more efficient.
+A proactive method for debugging Shiny applications is implementing logging. Logs are essential for debugging, auditing, and monitoring, particularly in Shiny app development and R packages. This chapter discusses integrating logging into a Shiny app-package to improve debugging and issue-tracking efficiency.
 
 ```{r}
 #| label: shinypak_apps
@@ -60,11 +70,11 @@ shinypak_apps(regex = "13", branch = "13_logging")
 
 ## Why Use Logging? {#sec-logging-why}
 
-Logging applications app-package lets us track the application flow and record user interactions and inputs, and can also be used to identify runtime errors and unexpected behaviors. Log messages are more structured, flexible, and configurable than print statements or the interactive debugger. Logging is particularly useful in production environments, where direct debugging may not be possible. Logs can also be saved for future analysis, even after the application has stopped running.
+Logging enables us to monitor application flow and user interactions while identifying runtime errors and unexpected behaviors. It offers more structure and flexibility than print statements or interactive debuggers. Logs are particularly beneficial in production environments where direct debugging isn't possible. Logs can also be saved for future analysis even after the application has stopped.
 
 ### Architecture {#sec-logging-arch-tidy-movies}
 
-We're going to start logging the behaviors in the `inst/tidy-movies` application. The architecture of this application has been updated to include the two new input modules (see @sec-resources-inst-tidy-movies-app):
+We're going to start logging the behaviors of our app in the `inst/tidy-movies` folder. The architecture of this application has been updated to include the two new input modules (review this app in @sec-resources-inst-tidy-movies-app):
 
 ```{=html}
 
@@ -125,9 +135,9 @@ flowchart LR
     %% standalone app function
     style launch fill:#F6F6F6,color:#000,stroke:#333,stroke-width:1px,rx:10,ry:10
     %% modules 
-    style mod_var_input_server color:#000,fill:#f5f5f5,stroke:#333,stroke-width:1px,rx:12,ry:12
-    style mod_aes_input_ui color:#000,fill:#f5f5f5,stroke:#333,stroke-width:1px,rx:12,ry:12
-    style mod_aes_input_server color:#000,fill:#f5f5f5,stroke:#333,stroke-width:1px,rx:12,ry:12
+    style mod_var_input_server font-size:14px,color:#000,fill:#f5f5f5,stroke:#333,stroke-width:1px,rx:12,ry:12
+    style mod_aes_input_ui font-size:14px,color:#000,fill:#f5f5f5,stroke:#333,stroke-width:1px,rx:12,ry:12
+    style mod_aes_input_server font-size:14px,color:#000,fill:#f5f5f5,stroke:#333,stroke-width:1px,rx:12,ry:12
     %% utility functions
     style scatter_plot fill:#595959,color:#FFF,stroke:#333,stroke-width:1px,rx:25,ry:25
     style display_type fill:#595959,color:#FFF,stroke:#333,stroke-width:1px,rx:25,ry:25
@@ -139,9 +149,9 @@ flowchart LR
     %% tidy-movies/R/ files
     style devUI stroke:#333,stroke-width:1px,rx:6,ry:6
     style devServer stroke:#333,stroke-width:1px,rx:6,ry:6
-    style dev_mod_scatter_server color:#000,fill:#f5f5f5,stroke:#333,stroke-width:1px,rx:12,ry:12
-    style dev_mod_scatter_ui color:#000,fill:#f5f5f5,stroke:#333,stroke-width:1px,rx:12,ry:12
-    style dev_mod_vars_ui color:#000,fill:#f5f5f5,stroke:#333,stroke-width:1px,rx:12,ry:12
+    style dev_mod_scatter_server font-size:14px,color:#000,fill:#f5f5f5,stroke:#333,stroke-width:1px,rx:12,ry:12
+    style dev_mod_scatter_ui font-size:14px,color:#000,fill:#f5f5f5,stroke:#333,stroke-width:1px,rx:12,ry:12
+    style dev_mod_vars_ui font-size:14px,color:#000,fill:#f5f5f5,stroke:#333,stroke-width:1px,rx:12,ry:12
     %% files 
     style app fill:#f8f6e7,color:#000
     style data fill:#f8f6e7,color:#000
@@ -166,17 +176,32 @@ launch_app("ggp2")
 
 ![Launching `inst/tidy-movies` app with `launch_app()`](images/log_ggp2_initial_launch.png){width="100%" fig-align="center"}
 
-The reactive values from the `R/mod_var_input.R` are printed to the **Console** from the previous chapter (See @sec-debug-ui).
+The reactive values from the `R/mod_var_input.R` are printed to the **Console** from the previous chapter (review this in  @sec-debug-ui). 
+
+
+Validation and error handling ensures both expected and unexpected issues are managed effectively. Below I'll briefly cover Shiny's `validate()` function to check if input values or conditions are valid before executing server code and `tryCatch()` for handling unexpected runtime errors.
 
 ### Validating inputs {#sec-logging-validate}
 
-`shiny::validate()` can be used to prevent unexpected errors by preventing execution of subsequent code if the provided validation conditions fail. 
+`validate()` can be used to prevent unexpected errors by preventing the execution of subsequent code if the validation conditions fail. 
 
-- `need()` is used inside `validate()` to check if a condition is met, and `try()` catches errors that might occur if inputs are `NULL` or missing. 
+- Inside `validate()`, we can use `need()` to check if a condition is met
+  - `try()` will catch any errors that occur if the inputs are `NULL` or missing. 
+    - If an error occurs, `try()` prevents the application from crashing and instead returns an error message:
+    
+```r
+validate(
+  need(
+    try(some code),
+    "Error message"
+  )
+)
+```
 
-- If an error occurs, `try()` prevents the application from crashing and instead returns an error object.
 
-For example, the `alpha` and `size` inputs can validated with `try()` and `need()`:
+Below are example of `validate()`, `try()` and `need()` for the `alpha` and `size` inputs:
+
+#### [`input$alpha`]{style="font-size: 1.05em;"} {.unnumbered}
 
 ```{r}
 #| eval: false 
@@ -189,6 +214,8 @@ validate(
 )
 ```
 
+**Values and behaviors**:
+
 | `input$alpha`     | Behavior                                    |
 |:------------------|:--------------------------------------------|
 | `0.5` (valid)     | ✅ Passes validation                        |
@@ -196,6 +223,9 @@ validate(
 | `NULL`            | ❌ Error: `"Alpha must be between 0 and 1"` |
 | `NA`              | ❌ Error: `"Alpha must be between 0 and 1"` |
 | `"high"` (string) | ❌ Error: `"Alpha must be between 0 and 1"` |
+
+
+#### [`input$size`]{style="font-size: 1.05em;"} {.unnumbered}
 
 ```{r}
 #| eval: false 
@@ -208,6 +238,8 @@ validate(
 )
 ```
 
+**Values and behaviors**:
+
 | `input$size`       | Behavior                            |
 |:-------------------|:------------------------------------|
 | `3` (valid)        | ✅ Passes validation                |
@@ -217,9 +249,11 @@ validate(
 | `"large"` (string) | ❌ Error: `"Size must be positive"` |
 
 
+`validate()`, `need()` and `try()` can prevent unnecessary computations when an input is missing or incorrect, and they provide a user-friendly message instead of a cryptic error.
+
 ### Handling errors {#sec-logging-trycatch}
 
-The `tryCatch` function can be used by itself to log unexpected errors gracefully. Below is an example of using it with `reactive()` and combining it `message()`:
+The base R `tryCatch` function can also be used to log unexpected errors gracefully. *What does gracefully mean?* In this case, it means we can decide what we want to do if a particular function fails. Below is an example of using it with `reactive()` and combining it `message()`:
 
 ```{r}
 #| eval: false 
@@ -234,9 +268,14 @@ safe_reactive <- reactive({
 })
 ```
 
-## Custom logging functions {#sec-logging-funs}
 
-Logging can be implemented without any dependencies. The `base` package has many tools we can use to write a custom logging function. Below is an example logging utility function we could add to the `R/` folder and use in our app(s):
+`tryCatch()` will catch unpredictable errors (e.g., missing file, incorrect format) and prevent our entire Shiny app from stopping due to a single point of failure.
+
+Combining Shiny's validation functions with `tryCatch()` ensures both expected and unexpected issues are managed effectively, making our apps more resilient, user-friendly, and stable.
+
+## Base R logging {#sec-logging-funs}
+
+Custom logging functions can be written entirely using base R (i.e., without adding any dependencies to our app-package). Below is an example logging utility function I've added to the `R/` folder to use in our app(s):
 
 ```{r}
 #| eval: false 
@@ -290,7 +329,7 @@ log_message <- function(message, log_file = "logs/app_log.txt", save = FALSE) {
 5.  We explicitly add the newline (`\n`) directly in the `cat()` function, ensuring the log entry is written properly even if message lacks a newline.\
 6.  Finally, the `message()` is preferred here instead of `print()` for consistent output formatting.
 
-Adapted to use in the `inst/tidy-movies/` app, the `tryCatch()` function might look like:
+In the `inst/tidy-movies/` app, we could use `log_message()` and `tryCatch()` like so:
 
 ```{r}
 #| eval: false 
@@ -433,7 +472,7 @@ inputs <- reactive({
 3.  Log the error if anything goes wrong.\
 4.  Return `NULL` on error to prevent breaking downstream dependencies.
 
-After loading and installing sap, we launch the `inst/tidy-movies` app again, but this time we un-check the remove missing checkbox and add a new title before stopping the application.
+After loading and installing `sap`, we launch the `inst/tidy-movies` app again, but this time we un-check the remove missing checkbox and add a new plot title before stopping the application.
 
 ```{r}
 #| eval: false 
@@ -469,7 +508,7 @@ system.file('tidy-movies', '_logs', 'ggp2_log.txt',
 
 In practice, we'd insert logging messages with `log_message()` and `tryCatch()` for application startup, loading data/connecting to databases, API calls, and when using Shiny's internal validation/error handling functions. In the next section, we're going to explore using add-on packages to implement logging in our app-package.
 
-## App logs with [`logger`]{style="font-size: 1.05em;"}  {#sec-logging-logger}
+## Logging with [`logger`]{style="font-size: 1.05em;"}  {#sec-logging-logger}
 
 ```{r}
 #| label: co_box_log_frameworks
@@ -732,9 +771,11 @@ Our primary application (i.e. the app launched with `launch_app()`) is currently
 
 ![Error message in `launch_app()`](images/log_error_in_launch_app.png){width="100%" fig-align="center"}
 
+Before adding our new custom `logger` function, we'll review the architecture of this application and it's modules. 
+
 ### Architecture {#sec-logging-arch-movies}
 
-Let's try to visualize the call stack and namespaces in this app. The diagram below shows how the variable and aesthetic input modules communicate the user selections across the namespaces in UI and server functions.
+The diagram below illustrates the namespaces and module communication in our `movies` app. The 'variables' and 'aesthetics' input modules pass the user inputs into the 'scatter display' module namespace in the server and UI functions:
 
 ```{=html}
 
@@ -760,44 +801,45 @@ flowchart TD
     subgraph Launch["<strong>launch_app()</strong>"]
         subgraph Server["<strong>movies_server()</strong>"]
             subgraph VarServerNS["<strong>Variable Namespace<strong>"]
-                VarInpuServer["Server Module:<br><code>mod_var_input_server()</code>"]
+                VarInpuServer["mod_var_input_server()"]
             end
             subgraph AesServerNS["<strong>Aesthetics Namespace<strong>"]
-                AesInpuServer["Server Module:<br><code>mod_aes_input_server()</code>"]
+                AesInpuServer["mod_aes_input_server()"]
             end
             subgraph GraphServerNS["<strong>Graph Namespace<strong>"]
-                DisplayServer["Server Module:<br><code>mod_scatter_display_server()</code>"]
-                PlotUtil["Utility Function:<br><code>scatter_plot()</code>"]
+                DisplayServer["mod_scatter_display_server()"]
+                PlotUtil["scatter_plot()"]
             end
         end
         subgraph UI["<strong>movies_ui()</strong>"]
             subgraph VarUINS["<strong>Variable Namespace<strong>"]
-                VarInpuUI["UI Module:<br><code>mod_var_input_ui()</code>"]
+                VarInpuUI["mod_var_input_ui()"]
             end
             subgraph AesUINS["<strong>Aesthetics Namespace<strong>"]
-                AesInpuUI["UI Module:<br><code>mod_aes_input_ui()</code>"]
+                AesInpuUI["mod_aes_input_ui()"]
             end
             subgraph GraphUINS["<strong>Graph Namespace<strong>"]
-                DisplayUI["UI Module:<br><code>mod_scatter_display_ui()</code>"]
+                DisplayUI["mod_scatter_display_ui()"]
             end
         end
 
-        VarInpuUI <==> |"shared namespace"|VarInpuServer
-        AesInpuUI <==> |"shared namespace"|AesInpuServer
-        DisplayServer <--> PlotUtil <==> |"shared namespace"|DisplayUI
+        VarInpuUI <==> VarInpuServer
+        AesInpuUI <==> AesInpuServer
+        DisplayServer <--> PlotUtil <==> DisplayUI
     end
 
-    VarInpuServer <-.->|"Communicates <code>selected_vars</code><br>across namespaces"| DisplayServer
-    AesInpuServer <-.->|"Communicate <code>selected_aes</code><br>across namespaces"| DisplayServer
+    VarInpuServer <-.->|"Communicates<br><code>selected_vars</code><br>across modules"| DisplayServer
+    AesInpuServer <-.->|"Communicates<br><code>selected_aes</code><br>across modules"| DisplayServer
     
     %% standalone app function 
     style Launch fill:#F6F6F6,color:#000,stroke:#333
     %% modules
-    style VarInpuUI color:#000,fill:#f5f5f5,stroke-width:2px,rx:3,ry:3
-    style AesInpuServer color:#000,fill:#f5f5f5,stroke-width:2px,rx:3,ry:3
-    style AesInpuUI color:#000,fill:#f5f5f5,stroke-width:2px,rx:3,ry:3
-    style DisplayServer color:#000,fill:#f5f5f5,stroke-width:2px,rx:3,ry:3
-    style DisplayUI color:#000,fill:#f5f5f5,stroke-width:2px,rx:3,ry:3
+    style VarInpuUI font-size:14px,color:#000,fill:#f5f5f5,stroke-width:2px,rx:3,ry:3
+    style VarInpuServer font-size:14px,color:#000,fill:#f5f5f5,stroke-width:2px,rx:3,ry:3
+    style AesInpuServer font-size:14px,color:#000,fill:#f5f5f5,stroke-width:2px,rx:3,ry:3
+    style AesInpuUI font-size:14px,color:#000,fill:#f5f5f5,stroke-width:2px,rx:3,ry:3
+    style DisplayServer font-size:12px,color:#000,fill:#f5f5f5,stroke-width:2px,rx:3,ry:3
+    style DisplayUI font-size:14px,color:#000,fill:#f5f5f5,stroke-width:2px,rx:3,ry:3
     %% Utility Functions
     style PlotUtil fill:#595959,color:#FFF,stroke:#333,stroke-width:1px,rx:25,ry:25
     %% namespaces
@@ -812,11 +854,11 @@ flowchart TD
     style UI fill:#e8f0f5,stroke-width:1px,rx:12,ry:12
 ```
 
-Below are examples of various log levels using `logr_msg()` to help us debug the error in the primary application.
+The diagram above gives us an idea of the critical events we'll want to log in the `movies` app. Below are examples of `TRACE`, `INFO`, `WARN`, `ERROR`, and `FATAL` log levels using `logr_msg()`.
 
 ### [`TRACE`]{style="font-size: 1.05em;"} logs
 
-1. In `movies_server()`, add a `TRACE` log message for signaling the server function has executed.
+1. In `movies_server()`, a `TRACE` log message will signal the server function has executed:
 
 ```{r}
 #| eval: false 
@@ -826,7 +868,7 @@ Below are examples of various log levels using `logr_msg()` to help us debug the
 ```
 
 
-2.  In `mod_scatter_display_server()`, add a `TRACE` log messages for initiating the scatterplot graph
+2.  In `mod_scatter_display_server()`, a `TRACE` log message for initiating the scatterplot graph:
 
 ```{r}
 #| eval: false 
@@ -837,7 +879,7 @@ logr_msg("Preparing scatterplot in mod_scatter_display_server",
 
 ### [`INFO`]{style="font-size: 1.05em;"} logs
 
-1.  In `launch_app()`, add an `INFO` log message to print the application being launched with the `app` argument
+1.  In `launch_app()`, an `INFO` log message prints the application being launched with the `app` argument:
 
 ```{r}
 #| eval: false 
@@ -846,7 +888,7 @@ logr_msg("Preparing scatterplot in mod_scatter_display_server",
     log_file = "_logs/app_log.txt")
 ```
 
-2.  In `movies_ui()`, add an `INFO` log message with the value of the `bslib` argument
+2.  In `movies_ui()`, an `INFO` log message prints the value of the `bslib` argument
 
 ```{r}
 #| eval: false 
@@ -858,7 +900,7 @@ logr_msg("Preparing scatterplot in mod_scatter_display_server",
 
 ### [`WARN`]{style="font-size: 1.05em;"} logs
 
-1. In `mod_aes_input_server()`, add a `WARN` log message (with validate) for input warnings. 
+1. In `mod_aes_input_server()`, a `WARN` log message (with validate) prints input warnings:
 
 ```{r}
 #| eval: false 
@@ -876,7 +918,7 @@ logr_msg("Preparing scatterplot in mod_scatter_display_server",
 
 ### [`ERROR`]{style="font-size: 1.05em;"} logs
 
-1.  In `movies_ui()`, Add logic and an `ERROR` log message to monitor the format of the `bslib` argument
+1.  In `movies_ui()`, logic and an `ERROR` log message monitors the format of the `bslib` argument:
 
 ```{r}
 #| eval: false 
@@ -888,7 +930,7 @@ if (!is.logical(bslib)) {
   }
 ```
 
-2.  In `mod_scatter_display_server()`, add an `ERROR` log messages (with `tryCatch()`) to monitor the rendered output
+2.  In `mod_scatter_display_server()`, an `ERROR` log message (with `tryCatch()`) monitors the rendered output:
 
 ```{r}
 #| eval: false 
@@ -921,7 +963,7 @@ if (!is.logical(bslib)) {
 
 ### [`FATAL`]{style="font-size: 1.05em;"} logs
 
-1. In `launch_app()`, add a `FATAL` log message (along with `tryCatch()` and `stop()`) to monitor the application being launched
+1. In `launch_app()`, a `FATAL` log message (along with `tryCatch()` and `stop()`) monitors the application being launched:
 
 ```{r}
 #| eval: false 
@@ -964,7 +1006,7 @@ if (!is.logical(bslib)) {
   })
 ```
 
-To use logs during development to trace the flow of our application, we need to set the threshold to `TRACE` or `DEBUG` after loading and install.
+During development, I recommend setting the log threshold to `TRACE` or `DEBUG` after loading and installing `sap`:
 
 ```{r}
 #| label: hot_key_03
@@ -983,9 +1025,9 @@ launch_app()
 
 ![Log error message in `launch_app()`](images/log_error_info_threshold.png){width="100%" fig-align="center"}
 
-While developing our application, we can run the app interactively and monitor the logs in the console. If the application has been deployed, we can search the log files using R (or the command line):
+The logs successfully capture all events up to and including the error message. While developing our application, we can run the app interactively and monitor the logs in the console. If the application has been deployed, we can search the log files using R (or the command line):
 
-In R:
+**In R**:
 
 ```{r}
 #| eval: false 
@@ -999,7 +1041,7 @@ readLines("_logs/app_log.txt") |>
   Reason: 'text' must be a character vector
 ```
 
-Command line:
+**At the command line**:
 
 ``` sh
 cat _logs/app_log.txt | grep "ERROR"
@@ -1008,37 +1050,6 @@ cat _logs/app_log.txt | grep "ERROR"
 ```{verbatim}
 ERROR [2025-01-29 13:55:36] Failed to render scatterplot. 
   Reason: 'text' must be a character vector
-```
-
-```{r}
-#| label: co_box_log_init
-#| echo: false
-#| results: asis
-#| eval: true
-#| include: true
-co_box(
-  color = "g", fold = FALSE,
-  look = "default", 
-  hsize = "1.15",
-  size = "1.10",
-  header = "Initialize logging with `.onLoad()`", 
-  contents = "
-
-We can set up `logger`'s logging configuration in an `onLoad` function of the `zzz.R` file:
-
-\`\`\`r
-.onLoad <- function(libname, pkgname) {
-    # configure logger log messages to console
-    logger::log_appender(logger::appender_console)
-    # configure logger log messages to file
-    logger::log_appender(logger::appender_file('sap_apps.log'))
-    # set default log level to DEBUG
-    logger::log_threshold('DEBUG') 
-}
-\`\`\`
-
-This setup ensures that logging is ready as soon as your package is loaded.
-")
 ```
 
 ## Package startup messages {#sec-logging-pkg-startup-msg}
@@ -1127,6 +1138,37 @@ pak::pak('mjfrigaard/sap')
 suppressPackageStartupMessages(library(sap))
 ```
 
+```{r}
+#| label: co_box_log_init
+#| echo: false
+#| results: asis
+#| eval: true
+#| include: true
+co_box(
+  color = "g", fold = FALSE,
+  look = "default", 
+  hsize = "1.15",
+  size = "1.10",
+  header = "Initialize logging with `.onLoad()`", 
+  contents = "
+
+We can set up `logger`'s logging configuration in an `onLoad` function of the `zzz.R` file:
+
+\`\`\`r
+.onLoad <- function(libname, pkgname) {
+    # configure logger log messages to console
+    logger::log_appender(logger::appender_console)
+    # configure logger log messages to file
+    logger::log_appender(logger::appender_file('sap_apps.log'))
+    # set default log level to DEBUG
+    logger::log_threshold('DEBUG') 
+}
+\`\`\`
+
+This setup ensures that logging is ready as soon as your package is loaded.
+")
+```
+
 ## Recap {.unnumbered}
 
 The techniques discussed in this chapter will help you efficiently diagnose and resolve issues, making your Shiny app-package more robust and reliable.
@@ -1150,6 +1192,25 @@ co_box(
 - Configure log settings with `.onLoad()` (stored in `R/zzz.R`)
 
 - Store package startup messages in `onAttach()` (stored in `R/zzz.R`)
+
+- Be selective with logging and avoid exposing or storing sensitive data.
+
+By integrating structured logging, we can proactively detect issues, debug efficiently, and maintain application stability in production environments. 
   
-Be selective with logging and avoid exposing or storing sensitive data.")
+")
 ```
+
+<!--
+https://www.jumpingrivers.com/blog/api-as-a-package-logging/
+
+https://github.com/tanho63/talk_shinyprod2023_logging/blob/main/examples/sitrep.R
+
+https://daroczig.github.io/logger/articles/logger_structure.svg
+
+https://daroczig.github.io/logger/reference/layout_glue_generator.html
+
+https://reflectoring.io/structured-logging/
+
+https://levelup.gitconnected.com/a-guide-to-application-logging-665b4f38e1a6
+
+-->
