@@ -47,14 +47,15 @@ co_box(
 
 ---
 
-This chapter focuses on what to test--or specifically, ***how to figure out what to test***. This process usually involves converting a list of user needs into testable requirements. The following chapters in this section have examples of tests, but don't go into depth on *how* to write tests. Excellent resources exist for writing unit tests in R packages [^tests-intro-unit-tests] and testing shiny apps. [^tests-intro-testing] [^tests-intro-testserver] The goal of this chapter is to illustrate the connections between the user's needs, the code below `R/`, and developing tests.
+This chapter focuses on what to test--or specifically, ***how to figure out what to test***. This process usually involves converting a list of user needs into testable requirements. The following chapters in this section have examples of tests, but don't go into depth on *how* to write tests. Excellent resources exist for writing unit tests [^tests-intro-unit-tests] and testing shiny apps.[^tests-intro-testing] The goal of this chapter is to illustrate the connections between the user's needs, the code below `R/`, and developing tests.[^tests-intro-testserver]
 
 
 [^tests-intro-unit-tests]: Unit tests are covered extensively in [R Packages, 2ed](https://r-pkgs.org/testing-basics.html) and the [`testthat` documentation](https://testthat.r-lib.org/index.html)
 
 [^tests-intro-testing]: Mastering shiny dedicates an entire [Chapter to Testing](https://mastering-shiny.org/scaling-testing.html). `shinytest2` also has [excellent documentation](https://rstudio.github.io/shinytest2/) (and [videos](https://www.youtube.com/watch?v=Gucwz865aqQ)), and I highly recommend reading through those resources.
 
-[^tests-intro-testserver]: I *will* cover a few tips and tricks I've learned for testing module server functions with `testServer()` because they're not in the  [documentation](https://shiny.posit.co/r/articles/improve/server-function-testing/).
+[^tests-intro-testserver]: The next chapter covers a few tips and tricks for testing module server functions with `testServer()` because they're not in the  [documentation](https://shiny.posit.co/r/articles/improve/server-function-testing/).
+
 ```{r}
 #| label: shinypak_apps
 #| echo: false
@@ -62,16 +63,6 @@ This chapter focuses on what to test--or specifically, ***how to figure out what
 #| eval: true
 shinypak_apps(regex = "^15", branch = "15_specs")
 ```
-
-
-```{r}
-#| eval: false
-#| code-fold: false
-install.packages("testthat")
-library(testthat)
-```
-
-(*If you're using `devtools`, you won't have to worry about installing `testthat` and `covr`*)
 
 
 ## Application requirements {#sec-tests-specs-app-reqs}
@@ -235,7 +226,7 @@ Placing an emphasis on writing human-readable expectations for the application's
 
 [^tests-bdd-readmore]: Read more about [behavior-driven development](https://en.wikipedia.org/wiki/Behavior-driven_development)
 
-#### [`Feature`]{style="font-size: 0.90em;"} {.unnumbered}
+#### [Features]{style="font-weight: bold;"} {.unnumbered}
 
 In BDD, a `Feature` describes an *implemented behavior or capability* in the application, from a user's perspective. Typically, these are written in the Gherkin format using specific keywords:[^tests-gherkin]
 
@@ -248,8 +239,6 @@ In BDD, a `Feature` describes an *implemented behavior or capability* in the app
 Below is an example Gherkin `Feature` for the graph in `launch_app()`:
 
 ```{verbatim}
-#| eval: false 
-#| code-fold: false
 Feature: Visualization
     As a user
     I want to see the changes in the plot
@@ -258,7 +247,7 @@ Feature: Visualization
 
 As you can see, the feature uses plain language and the wording is user-centric, so it remains accessible to *both* developers and users (or other non-technical stakeholders).
 
-#### [`Scenario`]{style="font-size: 0.90em;"} {.unnumbered}
+#### [Scenarios]{style="font-weight: bold;"} {.unnumbered}
 
 A Gherkin `Scenario` provides a concrete example of how the `Feature` works and has the following general format: 
 
@@ -269,8 +258,6 @@ A Gherkin `Scenario` provides a concrete example of how the `Feature` works and 
 An example `Scenario` for `launch_app()` might be:
 
 ```{verbatim}
-#| eval: false 
-#| code-fold: false
   Scenario: Viewing the Data Visualization
     Given I have launched the application
     And it contains movie review data from IMDB and Rotten Tomatoes
@@ -279,13 +266,11 @@ An example `Scenario` for `launch_app()` might be:
     Then the graph should update with the selected options
 ```
 
-#### [`Background`]{style="font-size: 0.90em;"} {.unnumbered}
+#### [Backgrounds]{style="font-weight: bold;"} {.unnumbered}
 
 Instead of repeating any pre-conditions in each `Scenario` (i.e., the steps contained in the "*`Given`*" and first "*`And`*" statement), we can establish the context with a `Background`:
 
 ```{verbatim}
-#| eval: false 
-#| code-fold: false
   Background: Launching the application
     Given I have launched the application
     And it loads with movie review data from IMDB and Rotten Tomatoes
@@ -306,7 +291,7 @@ Adopting the Gherkin format (or something similar) provides a common language to
 
 In the next section we'll cover how to map test code for each `Scenario` step with `testthat`.
 
-## BDD and `testthat` {#sec-tests-specs-bdd-testthat}
+## BDD and testthat {#sec-tests-specs-bdd-testthat}
 
 `testthat`'s BDD functions (`describe()` and `it()`) allow us add Gherkin-style features and scenarios to our test files, ensuring the application remains user-centric while meeting the technical specifications.[^tests-bdd-describe]
 
@@ -317,7 +302,7 @@ We can use the language from our `Feature`, `Background`, and `Scenario` to in t
 ```{r}
 #| eval: false 
 #| code-fold: false
-testthat::describe(
+describe(
   description = "Feature: Visualization
                    As a user
                    I want to see the changes in the plot
@@ -361,20 +346,20 @@ In the example below, we'll use an `it()` block to test the example scenario fro
 ```{r}
 #| eval: false 
 #| code-fold: false
-testthat::describe( # <1>
+describe( # <1>
   "Feature: Visualization
       As a user
       I want to see the changes in the graph
       So that I can visualize the impact of my customizations.", 
   code = { # <1>
   
-  testthat::describe(# <2>
+  describe(# <2>
     "Background: Launching the application
         Given I have launched the application
         And it loads with movie review data from IMDB and Rotten Tomatoes",
       code = { # <2>
       
-    testthat::it( # <3>
+    it( # <3>
       "Scenario: Viewing the Data Visualization
          Given the data contains variables like 'Critics Score' and 'MPAA'
          When I interact with the controls in the sidebar panel
@@ -480,19 +465,15 @@ co_box(
   header = "Recap: Test Specifications",
   contents = "
   
-<br>
+Specifications outline software goals and needs, and the functional requirements provide the technical details to achieve them. 
   
-**Specifications**
+  - **User specifications**: descriptions of what a user expects the application to do (i.e., the user 'wish list' of features they want in the application).
   
-  - Scoping tests: user specifications outline software goals and needs, and the functional requirements provide the technical details to achieve them. 
+  - **Features**: detailed list of the main capabilities and functions the application needs to offer to users.
   
-    - User specifications: descriptions of what a user expects the application to do (i.e., the user 'wish list' of features they want in the application).
+  - **Functional requierments**: testable, specific step-by-step instructions for ensuring the application does what it's supposed to do.
   
-    - Features: detailed list of the main capabilities and functions the application needs to offer to users.
-  
-    - Functional requierments: testable, specific step-by-step instructions for ensuring the application does what it's supposed to do.
-  
-    - Traceability matrix: tracking tool for connecting the users 'wish list' (i.e, specifications) to what's being tested.
+  - **Traceability matrix**: tracking tool for connecting the users 'wish list' (i.e, specifications) to what's being tested.
   
   ", 
   fold = FALSE
