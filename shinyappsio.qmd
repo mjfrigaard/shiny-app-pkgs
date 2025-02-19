@@ -22,49 +22,78 @@ co_box(
 )
 ```
 
-## Deploying the app 
+This chapter covers deploying your app-package to [shinyapps.io](https://www.shinyapps.io/),  a cloud-based hosting service provided by Posit (formerly RStudio) for deploying and managing Shiny applications, Quarto/RMarkdown reports, APIs, and other content. We deployed the production version of our application in the previous @sec-resources-prod-deploy, but we will go into more depth below. 
+
+## Publishing to Connect {#sec-shinyappsio-publish}
 
 Below we'll cover deploying your Shiny app-package in RStudio ![](images/rstudio-icon.png){height=20} and Positron ![](images/positron.png){height=20}. The Positron ![](images/positron.png){height=20} IDE was still in the early stages of development when this section was written, so some of these steps may change in future versions. 
 
+Make sure the [`rsconnect` package](https://rstudio.github.io/rsconnect/) is installed and loaded:
+
+```{r}
+#| eval: false 
+#| code-fold: false 
+install.packages("rsconnect")
+library(rsconnect)
+```
+
+
 ### In RStudio ![](images/rstudio-icon.png){height=20}
 
-To deploy the app, I can click on the **Publish** icon: 
+RStudio ![](images/rstudio-icon.png){height=20} can be configured to work with your [shinyapps.io](https://www.shinyapps.io/) account by clicking on **Tools** > **Global options** > **Publishing** and following the [documentation.](https://docs.posit.co/shinyapps.io/guide/getting_started/) 
 
-![Send app.R to **Console** and click **Publish**](images/launch_deploy_app_dot_r.png){width=100%}
+![shinyapps.io account added to RStudio](images/deploy_shinyappsio_pub_accounts.png){width=100% fig-align='center'}
 
-Make sure all the files in the package are selected, then click **Publish**
+You can also manually set the [shinyapps.io](https://www.shinyapps.io/) account info using `rsconnect::setAccountInfo()`:
 
-![Publishing apps to `shinyapps.io`](images/launch_publilsh_window.png){width=80%}
+```{r}
+#| eval: false 
+#| code-fold: false
+rsconnect::setAccountInfo(
+  name = 'your_username',
+  token = 'your_token',
+  secret = 'your_secret')
+```
+
+After configuring our [shinyapps.io](https://www.shinyapps.io/) account and loading, documenting, and installing the `sap` package, we can launch the application and click on the **Publish** icon: 
+
+![Send app.R to **Console** and click **Publish**](images/shinyappsio_deploy_app_dot_r.png){width=100% fig-align='center'}
+
+Make sure all the files in the package are selected, enter an app title, then click **Publish**:
+
+![Publishing apps to `shinyapps.io`](images/shinyappsio_publish_window.png){width=100% fig-align='center'}
 
 
 The **Deploy** pane will open and you'll see a deployment log as your application is sent to the server: 
 
-```{bash}
+```{verbatim}
 #| eval: false 
-#| code-fold: true 
+#| code-fold: show 
 #| code-summary: 'show/hide deployment log'
 ── Preparing for deployment ────────────────────────────────────────────────────
-✔ Deploying "movie-reviews" using "server: shinyapps.io / username: yourusername"
+✔ Deploying "movie-reviews" using "server: shinyapps.io / username: paradigmdata"
 ℹ Creating application on server...
-✔ Created application with id 12692760
-ℹ Bundling 27 files: .Rbuildignore, app.R, data/movies.rda, data/movies.RData, 
-DESCRIPTION, inst/extdata/movies.fst, NAMESPACE, README.md, www/shiny.png,
-man/display_type.Rd, man/launch_app.Rd, man/mod_scatter_display_server.Rd,
-man/mod_scatter_display_ui.Rd, man/mod_var_input_server.Rd, 
-man/mod_var_input_ui.Rd, man/movies_server.Rd, man/movies_ui.Rd, man/movies.Rd,
-…, R/movies_ui.R, and R/scatter_plot.R
-ℹ Capturing R dependencies with renv
-✔ Found 61 dependencies
-✔ Created 389,882b bundle
+✔ Created application with id 14030745
+ℹ Bundling 72 files: .Rbuildignore, .Rprofile, .vscode/tasks.json, app.R, 
+data/movies.rda, data/movies.RData, data-raw/tidy_movies.R, DESCRIPTION, 
+NAMESPACE, README.md, vignettes/specs.Rmd, inst/extdata/movies.fst, 
+inst/prod/app/.DS_Store, inst/prod/app/app.R, inst/quarto/_quarto.yml, 
+inst/quarto/.gitignore, inst/quarto/index.html, inst/quarto/index.qmd, …, 
+tests/testthat/test-text_logo.R, and tests/testthat.R
+ℹ Capturing R dependencies
+✔ Found 103 dependencies
+✔ Created 3,283,848b bundle
 ℹ Uploading bundle...
-✔ Uploaded bundle with id 9093617
+✔ Uploaded bundle with id 9818877
 ── Deploying to server ─────────────────────────────────────────────────────────
-Waiting for task: 1456625417
-  building: Building image: 11062313
+Waiting for task: 1510689240
+  building: Parsing manifest
+  building: Building image: 12075212
+  building: Installing system dependencies
   building: Fetching packages
   building: Installing packages
-  building: Installing files
-  building: Pushing image: 11062313
+building: Installing files
+  building: Pushing image: 12075212
   deploying: Starting instances
   rollforward: Activating new instances
   success: Stopping old instances
@@ -73,13 +102,31 @@ Waiting for task: 1456625417
 Deployment completed: https://yourusername.shinyapps.io/app-name//
 ```
 
-#### Deploy logs {#sec-launch-shinyapps-log}
+### In Positron ![](images/positron.png){height=20}
 
-On [shinyapps.io](https://www.shinyapps.io/), the deployment log shows the `loadSupport()` warning persists (but the application still [deploys](https://paradigmdata.shinyapps.io/movie-reviews/). The server-side warning is a known issue.[^launch-loadsupport-warning]
+After authenticating [shinyapps.io](https://www.shinyapps.io/), loading, documenting, and installing our app-package, we can deploy it in Positron ![](images/positron.png){height=20} using the `rsconnect::deployApp()` function.  
+
+```{r}
+#| eval: false 
+#| code-fold: false
+rsconnect::deployApp(
+  appDir = getwd(),
+  appName = "movie-reviews")
+```
+
+![Deploying Shiny app from Positron's **Console**](images/launch_positron_deployApp.png){width=100%}
+
+As we can see, Positron doesn't open a **Deploy** window or separate Terminal task for launching the application (it's printed directly to the **Console**). 
+
+## Deploy logs {#sec-shinyappsio-deploy-log}
+
+On [shinyapps.io](https://www.shinyapps.io/), the deployment log shows the `loadSupport()` warning persists (but the application still [deploys](https://paradigmdata.shinyapps.io/movie-reviews/)). The server-side warning is a known issue.[^launch-loadsupport-warning]
 
 [^launch-loadsupport-warning]: You can learn more about this warning by reading these posts on StackOverflow: [How can I deploy my shiny app as a package?](https://stackoverflow.com/questions/64774355/how-can-i-deploy-my-shiny-app-as-a-package); [Problem with directory when deploying app on shinyapps](https://stackoverflow.com/questions/67511409/problem-with-directory-when-deploying-app-on-shinyapps), and this post on Posit Community: [Errors when deploying app on shinyapps.io](https://community.rstudio.com/t/errors-when-deploying-app-on-shinyapps-io/104550).
 
 ```{verbatim}
+#| eval: false 
+#| code-fold: false
 shinyapps[12692760]: Running as user: uid=10001(shiny) gid=10001(shiny) groups=10001(shiny)
 shinyapps[12692760]: Connect version: 2024.05.0
 shinyapps[12692760]: LANG: C.UTF-8
@@ -101,25 +148,253 @@ shinyapps[12692760]: Using pandoc: /opt/connect/ext/pandoc/2.16
 shinyapps[12692760]: 
 shinyapps[12692760]: Starting R with process ID: '31'
 shinyapps[12692760]: Shiny application starting ...
-shinyapps[12692760]: Warning in warn_if_app_dir_is_package(appDir) :
+shinyapps[12692760]: Warning in warn_if_app_dir_is_package(appDir) : # <1>
 shinyapps[12692760]:   Loading R/ subdirectory for Shiny application, 
   but this directory appears to contain an R package. Sourcing files 
-  in R/ may cause unexpected behavior. See `?loadSupport` for more details.
+  in R/ may cause unexpected behavior. See `?loadSupport` for more details. # <1>
 shinyapps[12692760]: ℹ Loading sap
 shinyapps[12692760]: 
 shinyapps[12692760]: Listening on http://127.0.0.1:123456
 ```
+1. `loadSupport()` warning
 
-### In Positron ![](images/positron.png){height=20}
+## The [`rsconnect`]{style="font-size: 0.90em; font-weight: bold;"} folder {#sec-shinyappsio-rsconnect-dir}
 
-After loading, documenting, and installing our app-package, we can deploy it in Positron ![](images/positron.png){height=20} using the `rsconnect::deployApp()` function.  
+When deploying a Shiny app, the `rsconnect/` folder is automatically created to store configuration settings and deployment metadata for the app. 
 
-![Deploying Shiny app from Positron's **Console**](images/launch_positron_deployApp.png){width=100%}
+```{verbatim}
+#| eval: false 
+#| code-fold: false
+rsconnect/
+└── shinyapps.io
+    └── paradigmdata
+        └── movie-reviews.dcf
 
-As we can see, Positron doesn't open a **Deploy** window or separate Terminal task for launching the application (it's printed directly to the **Console**). 
+3 directories, 1 file
+```
+
+`rsconnect/` contains deployment-related metadata, including information about our [shinyapps.io](https://www.shinyapps.io/) account, and app-specific deployment history and settings.
+
+The `rsconnect/` folder **should not** be included in your Git repository because it contains machine-specific settings and is not required for running the app locally. This folder can also lead to conflicts when multiple users work on the same repo.
+
+To ensure the `rsconnect` folder is not included in your Git repository, add `rsconnect/` to `.gitignore`:
+
+```ini
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.DS_Store
+sap.Rcheck/
+sap*.tar.gz
+sap*.tgz
+rsconnect/
+
+/.quarto/
+inst/doc
+# {shinytest2}: Ignore new debug snapshots for `$expect_values()`
+*_.new.png
+
+```
 
 
-## The [`rsconnect`]{style="font-size: 0.90em; font-weight: bold;"} folder
+If you need to remove `rsconnect/` from Git because it's already been committed, remove it with the following commands:
 
-When deploying a Shiny app, the `rsconnect/` folder is automatically created to store configuration settings and deployment metadata for the app. Below are a few points to consider with regard to this folder:
+```{bash}
+#| eval: false 
+#| code-fold: false
+git rm -r --cached rsconnect/
+git commit -m "Remove rsconnect folder from repository"
+git push origin main
+```
 
+This will remove it from the Git history while keeping it locally. If we need to share deployment details with our team, we can document the deployment process in the `README.Rmd` or create a `deploy.Rmd` vignette.
+
+## App logs {#sec-shinyappsio-app-logs}
+
+We've covered the deployment logs that are generated when we publish our app to [shinyapps.io](https://www.shinyapps.io/), but what about the logs we're using to track our application's behavior (we covered this in @sec-logging-logger)? In this branch, I've added the `store_log` argument to `logr_msg()` that toggles a 'save log to external log file' functionality: 
+
+```{r}
+#| eval: false
+#| code-fold: show 
+#| code-summary: 'show/hide logr_msg()'
+logr_msg <- function(message, level = "INFO", log_file = "app_log.txt", json = FALSE, store_log = TRUE) {
+  
+  # Console logging 
+  logger::log_formatter(formatter = logger::formatter_glue)
+  logger::log_layout(layout = logger::layout_glue_generator())
+  
+  if (store_log) { #<1>
+    log_dir <- dirname(log_file)
+    if (!dir.exists(log_dir)) {
+      dir.create(log_dir, recursive = TRUE)
+    }
+    if (!file.exists(log_file)) {
+      file.create(log_file)
+    } # <1>
+    
+    if (json) { # <2>
+      logger::log_appender(appender = logger::appender_tee(log_file))
+      logger::log_layout(layout = logger::layout_json())
+    } else {
+      logger::log_appender(appender = logger::appender_tee(log_file))
+      logger::log_layout(layout = logger::layout_glue_generator())
+    } # <2>
+  } else { # <3>
+    logger::log_appender(appender = logger::appender_console)
+  } # <3>
+  
+  # levels
+  switch(
+    level,
+    "FATAL" = logger::log_fatal("{message}"),
+    "ERROR" = logger::log_error("{message}"),
+    "WARN" = logger::log_warn("{message}"),
+    "SUCCESS" = logger::log_success("{message}"),
+    "INFO" = logger::log_info("{message}"),
+    "DEBUG" = logger::log_debug("{message}"),
+    "TRACE" = logger::log_trace("{message}"),
+    logger::log_info("{message}") # default to INFO if level is invalid
+  )
+}
+
+```
+1. Configure file logging
+2. Log as JSON file 
+3. Prevent file logging
+
+I've set the default value of `store_log` to `FALSE`, but we can change this `TRUE` and `logr_msg()` will automatically save the logs (after loading, documenting, and installing the package).
+
+To ensure the logs are stored when the application is deployed, we need to add a `logger::log_threshold()` argument in `inst/prod/app/app.R`:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+library(sap)
+logger::log_threshold('TRACE')
+launch_app(app = "bslib")
+```
+
+After loading, documenting and installing `sap`, we can re-deploy with `rsconnect::deployApp()` (with the `forceUpdate = TRUE` argument, because we're updating an existing application).
+
+```{r}
+#| eval: false 
+#| code-fold: false
+rsconnect::deployApp(
+  appDir = getwd(), 
+  appName = "movie-reviews", 
+  forceUpdate = TRUE)
+```
+
+After the application re-deploys, we can view and/or download the **Logs** in the [shinyapps.io](https://www.shinyapps.io/) interface: 
+
+![logs in the shinyapps.io interface](images/deploy_shinyappsio_logs.png){width='100%' fig-align='center'}
+
+It's also possible to get the application logs remotely using [`rsconnect::showLogs()`](https://rstudio.github.io/rsconnect/reference/showLogs.html). We can also download the code image from the **Overview** tab.
+
+![Download image from shinyapps.io interface](images/deploy_shinyappsio_download_log.png){width='100%' fig-align='center'}
+
+The downloaded image will contain the files we've published. A downloaded image is stored in the `inst/image` folder of this branch:
+
+```{verbatim}
+#| code-fold: false 
+inst/image/e47f9753baa54a599719c0b68c05521f/
+├── DESCRIPTION
+├── NAMESPACE
+├── R
+│   ├── data.R
+│   ├── display_type.R
+│   ├── launch_app.R
+│   ├── log_message.R
+│   ├── logr_msg.R
+│   ├── mod_aes_input.R
+│   ├── mod_scatter_display.R
+│   ├── mod_var_input.R
+│   ├── movies_server.R
+│   ├── movies_ui.R
+│   ├── scatter_plot.R
+│   ├── testthat.R
+│   ├── text_logo.R
+│   └── zzz.R
+├── README.md
+├── app.R
+├── data
+│   ├── movies.RData
+│   └── movies.rda
+├── data-raw
+│   └── tidy_movies.R
+├── inst
+│   ├── extdata
+│   ├── prod
+│   ├── quarto
+│   ├── tidy-movies
+│   └── www
+├── man
+│   ├── display_type.Rd
+│   ├── launch_app.Rd
+│   ├── log_message.Rd
+│   ├── logr_msg.Rd
+│   ├── mod_aes_input_server.Rd
+│   ├── mod_aes_input_ui.Rd
+│   ├── mod_scatter_display_server.Rd
+│   ├── mod_scatter_display_ui.Rd
+│   ├── mod_var_input_server.Rd
+│   ├── mod_var_input_ui.Rd
+│   ├── movies.Rd
+│   ├── movies_server.Rd
+│   ├── movies_ui.Rd
+│   ├── scatter_plot.Rd
+│   ├── test_logger.Rd
+│   └── text_logo.Rd
+├── manifest.json # <1>
+├── tests
+│   ├── testthat
+│   └── testthat.R
+└── vignettes
+    └── specs.Rmd
+
+14 directories, 40 files
+```
+1. manifest of application dependencies 
+
+The `manifest.json` contains the application dependencies (similar to the lock file created by [`renv`](https://rstudio.github.io/renv/articles/lockfile.html)). 
+
+## Recap {.unnumbered}
+
+
+Deploying a Shiny app-package to [shinyapps.io](https://www.shinyapps.io/) requires keeping a clutter-free package structure, authenticating with `rsconnect`, and managing dependencies for a smooth workflow.
+
+```{r}
+#| label: co_box_recap
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g", 
+  fold = FALSE,
+  look = "default", 
+  hsize = "1.10", 
+  size = "1.05", 
+  header = "Recap: shinyapps.io",
+  contents = "
+  
+1. Store the app in the package so it can be accessed using `system.file()` (i.e., `inst/`) in an `app.R` file. 
+
+2. Be able to run the app locally (i.e., using `devtools::install()` and `sap::launch_app()`)
+
+3. Install `rsconnect` and authenticate with [shinyapps.io](https://www.shinyapps.io/) using `setAccountInfo()` or by accessing **Tools > Global Options > Publishing** in RStudio.
+
+4. Deplo the app by clicking on the **Publish** icon or by using `rsconnect::deployApp()`. 
+
+5. Add `rsconnect/` to the `.gitignore` file to keep deployment metadata out of Git.   
+    - If already committed, remove it:  
+  
+    \`\`\`sh
+    git rm -r --cached rsconnect/
+    git commit -m 'Removed rsconnect folder'
+    git push origin main
+    \`\`\`
+  
+6. Check logs if issues arise by downloading log file from shinyapps.io interface or using `rsconnect::showLogs()`.
+  ")
+```
