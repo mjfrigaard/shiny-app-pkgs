@@ -17,7 +17,7 @@ library(testthat)
 co_box(
   color = "b",
   look = "default", hsize = "1.10", size = "1.05",
-  header = "TLDR &emsp; ![](images/docker-icon.png){width='50' height='55'}",
+  header = "TLDR &emsp; ![](images/docker-icon.png){width='35' height='25'}",
   fold = TRUE,
   contents = "
 
@@ -32,48 +32,13 @@ co_box(
 ---
 
 [Docker](https://www.docker.com/) containers ensure your Shiny applications are deployed with the necessary tools and resources (dependencies, libraries, etc.) without significantly interfering with the native operating system or hardware.
-
-:::: {.callout-tip collapse='true' appearance='default'}
-
-## [Accessing the code examples]{style='font-weight: bold; font-size: 1.15em;'}
-
-::: {style='font-size: 0.95em; color: #282b2d;'}
-
-I've created the [`shinypak` R package](https://mjfrigaard.github.io/shinypak/) In an effort to make each section accessible and easy to follow:
-  
-Install `shinypak` using `pak` (or `remotes`):
-
 ```{r}
-#| code-fold: false 
-#| message: false
-#| warning: false
-#| eval: false
-# install.packages('pak')
-pak::pak('mjfrigaard/shinypak')
+#| label: shinypak_apps
+#| echo: false
+#| results: asis
+#| eval: true
+shinypak_apps(regex = "^20", branch = "20_docker")
 ```
-
-Review the chapters in each section:
-  
-```{r}
-#| code-fold: false 
-#| message: false
-#| warning: false
-#| collapse: true
-library(shinypak)
-list_apps(regex = '^15')
-```
-
-Launch an app: 
-
-```{r}
-#| code-fold: false 
-#| eval: false
-launch(app = "15_docker")
-```
-
-::: 
-
-::::
 
 ::: {layout="[50,-10,40]" layout-valign="center"}
 
@@ -101,42 +66,54 @@ Three terms to know when working with Docker are **`Dockerfile`**, **image**, an
 
 ### How Docker works
 
-Imagine your computer as a building. In this building, your operating system (OS) is like a big kitchen where everyone cooks. If someone (a software application) needs the oven at a specific temperature or requires a particular ingredient, this can interfere with what someone else (i.e., other applications) wants to cook. This situation is somewhat analogous to the competition for resources software applications can have while running on a particular machine. 
+Imagine a computer as a building and the operating system (OS) is like the big kitchen where everyone cooks. If someone's (i.e., a software application) recipe calls for the oven to be at a specific temperature or requires a particular ingredient, this can interfere with what someone else (i.e., other applications) wants to make. This situation is somewhat analogous to the competition for resources all software applications have while running on a particular machine. 
 
-Docker containers are like individual, self-contained mini-kitchens containing appliances, ingredients, and utensils. Each mini-kitchen can operate independently, regardless of what's happening in the others. Docker images can contain different 'recipes' for software applications, and each application can have different requirements (dependencies, libraries, versions, etc.).[^docker-not-vm]
+Docker images are like different recipes for running software applications, with each recipe requiring different ingredients (requirements, dependencies, libraries, etc.). Docker containers are similar to individual, self-contained mini-kitchens. The mini-kitchens operate independently (with their own appliances, ingredients, and utensils), regardless of what's happening in the other mini-kitchens.[^docker-not-vm]
 
 <!--![Docker + Shiny app workflow](images/docker-flow.png){width='100%'}-->
 
 [^docker-not-vm]: Docker containers are similar to virtual machine environments (like [VMware](https://www.vmware.com/)), but don't use a significant portion of the hardware system’s resources.
 
-Inside our app-packages, we can write a `Dockerfile` (a text file containing a series of instructions) that defines how to build the Docker image. The image is a snapshot representing our Shiny app and its dependencies. Docker containers are instantiated with the `build` command, which reads and executes the instructions inside the `Dockerfile` and creates a runtime instance of the image.
+We can write a `Dockerfile` (a text file containing a series of instructions) inside our app-package that defines how to build the Docker image. The image is a snapshot representing our Shiny app and its dependencies. Docker containers are instantiated with the `build` command, which reads and executes the instructions inside the `Dockerfile` and creates a runtime instance of the image.
 
-```{mermaid}
-%%| fig-width: 6.5
-%%| fig-align: center
-%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'monospace'}}}%%
+```{=html}
+<style>
 
-flowchart TB
-    subgraph App-Package
-        subgraph Dockerfile
-            A["Instructions"] --> B["Docker Image"]
-        end
-        subgraph Container
-            B --> C["Docker Container"]
-            C --> D["Image & dependencies are safely stored"]
-            C --> E["Ensures consistency across environments"]
-        end
-    end
-    F["Host System"] -->|Isolated from...| App-Package
-
-
-  style A fill:#8dd38d,color:#000000;
-  style B fill:#89D6FB,color:#000000,stroke:none,rx:10,ry:10;
-  style C fill:#89D6FB,color:#000000,stroke:none,rx:10,ry:10;
-  style F fill:#5c6192,color:#FFFFFF,stroke:none,rx:10,ry:10;
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+</style>
 ```
 
-The image containing our applications' dependencies is safely stored inside the container, which ensures consistency across environments. The container also isolates the image (and the application) from the host system. 
+```{mermaid}
+%%| fig-align: center
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
+
+flowchart TB
+    subgraph AP["App-Package"]
+        subgraph DockFile["<code>Dockerfile</code>"]
+            Instructions["Instructions for<br>building image"]
+        end
+    end
+        subgraph DockImg["Docker Image"]
+            Image["Dependencies for Shiny app"]
+        end
+
+        subgraph DockCont["Docker Container"]
+            R["R version"]
+            ShinyDep["Shiny server"]
+        end
+
+    DockFile -->|"<code>docker build</code> <em>creates instance of image</em>"| DockImg
+    DockImg --> |"<em>Executes instance of image</em>"|DockCont
+```
+
+The image containing our applications' dependencies is safely stored *inside* the container, which ensures consistency across environments. The container also isolates the image (and the application) from the host system. 
 
 ## Installing Docker {#sec-docker-install}
 
