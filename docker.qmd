@@ -31,7 +31,8 @@ co_box(
 
 ---
 
-[Docker](https://www.docker.com/) containers ensure your Shiny applications are deployed with the necessary tools and resources (dependencies, libraries, etc.) without significantly interfering with the native operating system or hardware.
+[Docker](https://www.docker.com/) ensures your Shiny applications are deployed with the necessary resources (dependencies, libraries, etc.) without significantly interfering with the host operating system or hardware.
+
 ```{r}
 #| label: shinypak_apps
 #| echo: false
@@ -40,29 +41,26 @@ co_box(
 shinypak_apps(regex = "^20", branch = "20_docker")
 ```
 
-::: {layout="[50,-10,40]" layout-valign="center"}
-
-![Common problem when shipping apps](images/it-works-on-my-machine-meme.png){width=60% fig-align='right'}
-
-![Docker Whale](images/docker-icon.png){width=60% fig-align='right'}
-
-
-:::
-
-
 With Docker, each Shiny application runs from an *image* in an isolated *container*, which ensures your app works consistently, regardless of where it's deployed.[^docker-documentation]
 
 [^docker-documentation]: Read more about Docker in the [official documentation.](https://docs.docker.com/)
 
-## What is Docker? {#sec-docker-what-is-docker}
+## What is Docker ![](images/docker-icon.png){height=20 width=30} ? {#sec-docker-what-is-docker}
 
-Three terms to know when working with Docker are **`Dockerfile`**, **image**, and **container**. Containers and images work together but they serve different purposes in the Docker ecosystem.
+![The common problem Docker solves when shipping applications](images/it-works-on-my-machine-meme.png){width=60% fig-align='center'}
 
-*   `Dockerfile`: The file containing instructions on how to build the Docker image.
 
-*   **Docker Image**: A snapshot of the Shiny application and its dependencies, built based on the `Dockerfile`.
+The three important concepts to understand when deploying Shiny apps with Docker are **Dockerfiles**, **images**, and **containers**.
 
-*   **Docker Container**: A runtime instance of the Docker image, isolated from the host system, ensuring consistent behavior across environments. When we run an image, Docker creates a container from that image. A Docker image can exist without a container, but all containers must be instantiated from an image.
+*   `Dockerfile`: The text file containing instructions on how to build the Docker image.
+
+*   **Docker Image**: A *instantiated* snapshot of the Shiny application and its dependencies, which is built based on the `Dockerfile`. 
+
+*   **Docker Container**: A runtime instance of the Docker image, isolated from the host system, ensuring consistent behavior across environments. When we *instantiate* an image, Docker creates a container from that image.[^docker-img-vs-cont]
+
+Containers and images work together but they serve different purposes in the Docker ecosystem.
+
+[^docker-img-vs-cont]: A Docker image can exist without a container, but all containers must be instantiated from an image.
 
 ### How Docker works
 
@@ -73,8 +71,6 @@ Docker images are like different recipes for running software applications, with
 <!--![Docker + Shiny app workflow](images/docker-flow.png){width='100%'}-->
 
 [^docker-not-vm]: Docker containers are similar to virtual machine environments (like [VMware](https://www.vmware.com/)), but don't use a significant portion of the hardware system’s resources.
-
-We can write a `Dockerfile` (a text file containing a series of instructions) inside our app-package that defines how to build the Docker image. The image is a snapshot representing our Shiny app and its dependencies. Docker containers are instantiated with the `build` command, which reads and executes the instructions inside the `Dockerfile` and creates a runtime instance of the image.
 
 ```{=html}
 <style>
@@ -96,24 +92,31 @@ We can write a `Dockerfile` (a text file containing a series of instructions) in
 
 flowchart TB
     subgraph AP["App-Package"]
-        subgraph DockFile["<code>Dockerfile</code>"]
-            Instructions["Instructions for<br>building image"]
+        subgraph DockFile["<strong>Dockerfile</strong>"]
+            Instructions[["<em>Stores instructions<br>for building image</em>"]]
         end
     end
-        subgraph DockImg["Docker Image"]
-            Image["Dependencies for Shiny app"]
+        subgraph DockImg["<strong>Docker Image</strong>"]
+            Image["Shiny app dependencies"]
         end
 
-        subgraph DockCont["Docker Container"]
-            R["R version"]
-            ShinyDep["Shiny server"]
+        subgraph DockCont["<strong>Docker Container</strong>"]
+            R["Load R version"]
+            Pkg["Install app-package"]
+            ShinyDep["Run Shiny server"]
         end
 
     DockFile -->|"<code>docker build</code> <em>creates instance of image</em>"| DockImg
-    DockImg --> |"<em>Executes instance of image</em>"|DockCont
+    DockImg --> |"<em>Runtime instance of image</em>"|DockCont
+
+    style DockFile fill:#FFFFFF,color:#000000,stroke:#333,stroke-width:1px,rx:10,ry:10
+    style DockImg fill:#FFFFFF,color:#000000,stroke:#333,stroke-width:1px,rx:10,ry:10
+    style DockCont fill:#FFFFFF,color:#000000,stroke:#333,stroke-width:1px,rx:10,ry:10
 ```
 
-The image containing our applications' dependencies is safely stored *inside* the container, which ensures consistency across environments. The container also isolates the image (and the application) from the host system. 
+We can place a series of instructions inside a `Dockerfile` that define how to build a Docker image. The `docker build` command packages our application, its dependencies, and configurations into a portable image, which can then be used to create and run containers.
+
+The image containing our applications' dependencies is safely stored *within* the container, ensuring consistency across environments. The container also isolates the image (and the application) from the host system. 
 
 ## Installing Docker {#sec-docker-install}
 
@@ -133,14 +136,14 @@ The development process for your Shiny app-package doesn't change until you're r
 We'll be using the `sap` example from the previous chapter as an example (the folder/file structure is below):
 
 ```{r}
-#| label: git_box_15_docker
+#| label: git_box_20_docker
 #| echo: false
 #| results: asis
 #| eval: true
 git_margin_box(
   contents = "launch",
   fig_pw = '75%', 
-  branch = "15_docker", 
+  branch = "20_docker", 
   repo = 'sap')
 ```
 
@@ -155,14 +158,18 @@ git_margin_box(
 ├── R
 │   ├── data.R
 │   ├── display_type.R
-│   ├── ggp2_movies_app.R
+│   ├── launch_app.R
+│   ├── log_message.R
+│   ├── logr_msg.R
+│   ├── mod_aes_input.R
 │   ├── mod_scatter_display.R
 │   ├── mod_var_input.R
-│   ├── launch_app.R
 │   ├── movies_server.R
 │   ├── movies_ui.R
 │   ├── scatter_plot.R
-│   └── testthat.R
+│   ├── testthat.R
+│   ├── text_logo.R
+│   └── zzz.R
 ├── README.md
 ├── app.R
 ├── data
@@ -171,36 +178,49 @@ git_margin_box(
 ├── data-raw
 │   └── tidy_movies.R
 ├── inst
-│   ├── dev
-│   │   ├── R
-│   │   │   ├── devServer.R
-│   │   │   ├── devUI.R
-│   │   │   ├── dev_mod_scatter.R
-│   │   │   └── dev_mod_vars.R
-│   │   ├── app.R
-│   │   ├── imdb.png
-│   │   └── tidy_movies.fst
 │   ├── extdata
 │   │   └── movies.fst
 │   ├── prod
 │   │   └── app
 │   │       └── app.R
+│   ├── quarto
+│   │   ├── _quarto.yml
+│   │   ├── index.html
+│   │   ├── index.qmd
+│   │   └── www
+│   │       ├── quarto.png
+│   │       └── styles.scss
+│   ├── tidy-movies
+│   │   ├── R
+│   │   │   ├── devServer.R
+│   │   │   ├── devUI.R
+│   │   │   ├── dev_mod_scatter.R
+│   │   │   └── dev_mod_vars.R
+│   │   ├── _logs
+│   │   ├── app.R
+│   │   ├── app_log.txt
+│   │   ├── imdb.png
+│   │   └── tidy_movies.fst
 │   └── www
 │       ├── bootstrap.png
 │       └── shiny.png
 ├── man
 │   ├── display_type.Rd
-│   ├── ggp2_movies_app.Rd
+│   ├── launch_app.Rd
+│   ├── log_message.Rd
+│   ├── logr_msg.Rd
+│   ├── mod_aes_input_server.Rd
+│   ├── mod_aes_input_ui.Rd
 │   ├── mod_scatter_display_server.Rd
 │   ├── mod_scatter_display_ui.Rd
 │   ├── mod_var_input_server.Rd
 │   ├── mod_var_input_ui.Rd
 │   ├── movies.Rd
-│   ├── launch_app.Rd
 │   ├── movies_server.Rd
 │   ├── movies_ui.Rd
 │   ├── scatter_plot.Rd
-│   └── test_logger.Rd
+│   ├── test_logger.Rd
+│   └── text_logo.Rd
 ├── sap.Rproj
 ├── tests
 │   ├── testthat
@@ -209,23 +229,24 @@ git_margin_box(
 │   │   │   └── tidy_ggp2_movies.rds
 │   │   ├── helper.R
 │   │   ├── setup-shinytest2.R
-│   │   ├── test-app-feature-01.R
-│   │   ├── test-ggp2_app-feature-01.R
-│   │   ├── test-mod_scatter_display.R
-│   │   ├── test-mod_var_input.R
+│   │   ├── test-mod_scatter_display_server.R
+│   │   ├── test-mod_var_input_server.R
 │   │   ├── test-scatter_plot.R
-│   │   └── test-shinytest2.R
+│   │   ├── test-shinytest2-export.R
+│   │   ├── test-shinytest2-prod.R
+│   │   ├── test-shinytest2.R
+│   │   └── test-text_logo.R
 │   └── testthat.R
 └── vignettes
-    └── test-specs.Rmd
+    └── specs.Rmd
 
-16 directories, 54 files
+19 directories, 69 files
 ```
 
 
 When our application is ready to deploy, we'll create a `Dockerfile`, which is a plain-text file (no extension). `Dockerfile`s are a blend of commands, numeric values, and character strings with the following general conventions: 
 
-1. **Each line in the `Dockerfile` starts with an instruction**. These aren't case-sensitive, but it's common practice to capitalize each command.
+1. **Each line in the `Dockerfile` starts with an instruction**. These aren't case-sensitive, but it's common practice to capitalize each command. Each instruction in the `Dockerfile` generates a new layer in the image (the layered filesystem and caching is part of what makes Docker efficient).
 
 2. **Comments or explanatory notes begin with `#`**. These will be ignored by the Docker engine.
 
@@ -362,7 +383,14 @@ As the docker image builds you'll see the output in the Terminal:
 
 After the image is built, we'll see a new image listed in Docker desktop:
 
-![](images/docker_deployed_container.png){width=100% fig-align='center'}
+![New Docker image](images/docker_deployed_container.png){width=100% fig-align='center'}
+
+
+Each Docker image consists of layers, which we can see if we click on the image in Docker Desktop: 
+
+![Docker image layers](images/docker_image_layers.png){width=100% fig-align='center'}
+
+These layers give us some insight into what the image contains. We can see the R version is specified and other scripts are copied from the [`rocker/shiny`](https://rocker-project.org/images/versioned/shiny.html) image.
 
 ### Running the container {#sec-docker-run-container}
 
@@ -377,8 +405,8 @@ docker run -p 8180:8180 movies-app-docker-demo
 
 In the Terminal, we'll see an R session initialize, and the R function calls from the last line of our `Dockerfile`:
 
-``` sh
-R version 4.4.1 (2024-06-14) -- "Race for Your Life"
+```{verbatim}
+R version 4.4.2 (2024-10-31) -- "Pile of Leaves"
 Copyright (C) 2024 The R Foundation for Statistical Computing
 Platform: x86_64-pc-linux-gnu
 
@@ -396,19 +424,24 @@ Type 'demo()' for some demos, 'help()' for on-line help, or
 'help.start()' for an HTML browser interface to help.
 Type 'q()' to quit R.
 
-> options('shiny.port'=8180,shiny.host='0.0.0.0');library(sap);sap::launch_app()
-Loading required package: shiny
+> options('shiny.port'=8180,shiny.host='0.0.0.0');library(sap);sap::launch_app() #<1>
+INFO [2025-02-25 17:28:17] Launching app: movies #<2>
+INFO [2025-02-25 17:28:17] Launching UI with bslib = FALSE #<2>
+Loading required package: shiny 
 
-Listening on http://0.0.0.0:8180
+Listening on http://0.0.0.0:8180 #<3>
 ```
+1. Final line in our `Dockerfile`  
+2. Log comments from our app code  
+3. Port we specified in `docker run`  
 
 Copy the hyperlink above and place it in the browser to view the application: 
 
-![](images/docker_app_port.png){width=100% fig-align='center'}
+![App launched in Docker container](images/docker_app_port.png){width=100% fig-align='center'}
 
 New Docker containers are named using a random combination of adjectives and famous scientists' surnames (unless the `--name` flag is added). 
 
-![](images/docker_initial_container.png){width=100% fig-align='center'}
+![Docker initial container](images/docker_initial_container.png){width=100% fig-align='center'}
 
 You can change the name of a Docker image by stopping the container and passing `docker rename <old_name> <new_name>` to the Terminal:
 
