@@ -35,7 +35,9 @@ Managing dependencies:
 ---
 
 Dependencies are the must-have components for your app-package, and they can be divided into imports and exports. 
+
 - **Imports** are the functions we're borrowing from add-on/third party packages (i.e., any packages not automatically loaded in a new R session).  
+
 - **Exports** are the functions, data, and other R objects our app-package offers to users. 
 
 In this chapter we'll cover how to manage dependencies in your new app-package.
@@ -48,10 +50,10 @@ In this chapter we'll cover how to manage dependencies in your new app-package.
 shinypak_apps(regex = "^06", branch = "06.1_exports")
 ```
 
+Dependencies are handled with the `NAMESPACE` (generated via `roxygen2` tags) and in the `DESCRIPTION` file. Together, these files determine which packages and functions our app-package depends on, and the functions and objects we're making available to anyone using our app-package. 
 
-Dependencies are handled with in the `NAMESPACE` directives (generated via `roxygen2` tags) and three fields in the `DESCRIPTION` file (`Suggests`, `Imports`, or `Depends`). Together, these files determine which functions and packages our app-package depends on, and which functions and object we make available to users of our app-package. This chapter will pick up where we left off with the [`05_roxygen2`](document.qmd)  branch of  `sap`.
 
-Below is a folder tree of it's contents:
+This chapter will pick up where we left off with the [`05_roxygen2`](document.qmd)  branch of  `sap`. Below is a folder tree of it's contents:
 
 ```{verbatim}
 #| eval: false
@@ -124,28 +126,12 @@ During development, you might lose track of the last `devtools` function you cal
 hot_key("L")
 ```
 
-```{verbatim}
-#| eval: false
-#| code-fold: false
-ℹ Loading sap
-```
-
 ```{r}
 #| label: dev_key_doc_intro
 #| echo: false
 #| results: asis
 #| eval: true
 hot_key("D")
-```
-
-```{verbatim}
-#| eval: false
-#| code-fold: false
-==> devtools::document(roclets = c('rd', 'collate', 'namespace'))
-
-ℹ Updating sap documentation
-ℹ Loading sap
-Documentation completed
 ```
 
 ```{r}
@@ -156,33 +142,57 @@ Documentation completed
 hot_key("B")
 ```
 
-```{verbatim}
-#| eval: false
-#| code-fold: false
-==> R CMD INSTALL --preclean --no-multiarch --with-keep.source sap
-
-* installing to library ‘/path/to/local/install/sap-090c61fc/R-4.2/x86_64-apple-darwin17.0’
-* installing *source* package ‘sap’ ...
-** using staged installation
-** R
-** byte-compile and prepare package for lazy loading
-** help
-*** installing help indices
-** building package indices
-** testing if installed package can be loaded from temporary location
-** testing if installed package can be loaded from final location
-** testing if installed package keeps a record of temporary installation path
-* DONE (sap)
-
-Restarting R session...
-
-```
-
 It's also satisfying to see all three functions execute without any errors!
 
-## Identifying dependencies {.unnumbered}
+## Managing dependencies {.unnumbered}
 
-The first step in managing dependencies is identifying which add-on packages `sap` relies on.[^depends-pkg-ns] The diagram below outlines the basic process for importing functions from add-on packages to use in our locally developed package, and then exporting those functions for people to use when they install/load our package.
+The first step in managing dependencies is identifying which packages `sap` relies on. In the [Shiny](shiny.qmd) chapter I introduced the [`renv` package](https://rstudio.github.io/renv/articles/renv.html) (see @sec-shiny-renv), which is designed for **project-level dependency management**. `renv` ensures the same package versions are used across different systems by capturing R and package versions in a lockfile (`renv.lock`) and a private library (`renv/library`).[^renv-rec]
+
+[^renv-rec]: Although the branches throughout the book do not use `renv`, I highly recommend adopting this practice (especially if you're collaborating with other developers).
+
+```{=html}
+
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.75rem;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #faf9ed;
+  padding: 0.2em;
+}
+
+</style>
+```
+
+```{mermaid}
+%%| fig-cap: 'Project level dependencies with renv'
+%%| fig-align: center
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
+flowchart TD
+    subgraph Dir["<strong>App-Package Directory</strong>"]
+        Init(["<code>renv::init()</code>"])
+        Snap[["<code>renv::snapshot()</code>"]]
+    end
+    subgraph RepEnv["<strong>Reproducible Environment</strong>"]
+        Lock("<code>renv.lock</code>")
+        Lib("<code>renv/library</code>")
+    end
+  Init --> Snap
+  Snap -->|Captures dependencies in lockfile|Lock
+  Snap -->|Stores packages in private library|Lib
+  
+  style Dir stroke:1px,rx:3,ry:3,font-size:13px
+  style RepEnv stroke:1px,rx:3,ry:3,font-size:13px
+```
+
+
+R packages are designed to **distribute and reuse code**, so the dependencies are listed in the `DESCRIPTION` file under `Imports`, `Depends`, `Suggests`, and `Remotes`. The packages listed in the `DESCRIPTION` of our app-package will be different than those listed in a `renv.lock` file because not every package used to create an app-package needs to be used to use and run said app-package.[^depends-devtools] However, it's worth noting that installing an R package doesn't enforce the strict version control like `renv`.
+
+[^depends-devtools]: We're using `devtools` and `usethis` to develop our app-package, but these packages are not needed for our code to run. 
+
+The diagram below outlines the basic process for importing functions from add-on packages to use in our locally developed package, and then exporting those functions for people to use when they install/load our package.[^depends-pkg-ns] 
 
 ```{=html}
 
@@ -203,18 +213,20 @@ The first step in managing dependencies is identifying which add-on packages `sa
 ```{mermaid}
 %%| fig-cap: 'Handling package dependencies'
 %%| fig-align: center
-%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"13px"}}}%%
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
 flowchart TD
-    subgraph RPkg["R Package:<code>pkg</code>"]
-        fun("Has <code>fun()</code> function")
+    subgraph RPkg["<strong>R Package (<code>pkg</code>)</strong>"]
+        fun("Exports <code>fun()</code> function")
     end
-    subgraph SapPkg["<code>sap</code> Package"]
-    sap("Uses <code>pkg::fun()</code> in local<br><code>foo()</code> function")
+    subgraph SapPkg["<strong><code>sap</code></strong>"]
+    sap("Uses <code>pkg::fun()</code> for local<br><code>foo()</code> function")
     end
     Users("Users install/load <code>sap</code> to use <code>foo()</code>")
-    RPkg -->|"import <code>fun()</code> from <code>pkg</code>"| SapPkg
-    SapPkg -->|"export <code>foo()</code> from <code>sap</code>"| Users
-
+    RPkg -->|"<em>imports <code>fun()</code> from <code>pkg</code></em>"| SapPkg
+    SapPkg -->|"<em>exports <code>foo()</code> from <code>sap</code></em>"| Users
+    
+    style RPkg stroke:1px,rx:3,ry:3,font-size:15px
+    style SapPkg stroke:1px,rx:3,ry:3,font-size:16px
 ```
 
 

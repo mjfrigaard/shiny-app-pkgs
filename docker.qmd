@@ -21,11 +21,15 @@ co_box(
   fold = TRUE,
   contents = "
 
-<br>
-  
-**Docker**
+To deploy a Shiny app-package using Docker, start by creating a `Dockerfile`, which serves as a set of instructions for building the container. 
 
-  "
+  - Use the `rocker/shiny` base image, install necessary R packages, and copy the app-package into the container. 
+  
+- Once the `Dockerfile` is ready, build the image with `docker build`, which packages everything into a reusable format. 
+
+- Finally, launch the container with `docker run`, mapping a port so the app is accessible in the web browser. 
+
+This setup ensures the Shiny app is fully self-contained and easily deployable across different environments."
 )
 ```
 
@@ -49,6 +53,13 @@ With Docker, each Shiny application runs from an *image* in an isolated *contain
 
 ![The common problem Docker solves when shipping applications](images/it-works-on-my-machine-meme.png){width=60% fig-align='center'}
 
+Imagine a computer as a building and the operating system (OS) is like the big kitchen where everyone cooks. If someone's (i.e., a software application) recipe calls for the oven to be at a specific temperature or requires a particular ingredient, this can interfere with what someone else (i.e., other applications) wants to make. This situation is somewhat analogous to the competition for resources all software applications have while running on a particular machine. 
+
+Docker images are like different recipes for running software applications, with each recipe requiring different ingredients (requirements, dependencies, libraries, etc.). Docker containers are similar to individual, self-contained mini-kitchens. The mini-kitchens operate independently (with their own appliances, ingredients, and utensils), regardless of what's happening in the other mini-kitchens.[^docker-not-vm]
+
+[^docker-not-vm]: Docker containers are similar to virtual machine environments (like [VMware](https://www.vmware.com/)), but don't use a significant portion of the hardware system’s resources.
+
+### How Docker works
 
 The three important concepts to understand when deploying Shiny apps with Docker are **Dockerfiles**, **images**, and **containers**.
 
@@ -62,15 +73,7 @@ Containers and images work together but they serve different purposes in the Doc
 
 [^docker-img-vs-cont]: A Docker image can exist without a container, but all containers must be instantiated from an image.
 
-### How Docker works
-
-Imagine a computer as a building and the operating system (OS) is like the big kitchen where everyone cooks. If someone's (i.e., a software application) recipe calls for the oven to be at a specific temperature or requires a particular ingredient, this can interfere with what someone else (i.e., other applications) wants to make. This situation is somewhat analogous to the competition for resources all software applications have while running on a particular machine. 
-
-Docker images are like different recipes for running software applications, with each recipe requiring different ingredients (requirements, dependencies, libraries, etc.). Docker containers are similar to individual, self-contained mini-kitchens. The mini-kitchens operate independently (with their own appliances, ingredients, and utensils), regardless of what's happening in the other mini-kitchens.[^docker-not-vm]
-
-<!--![Docker + Shiny app workflow](images/docker-flow.png){width='100%'}-->
-
-[^docker-not-vm]: Docker containers are similar to virtual machine environments (like [VMware](https://www.vmware.com/)), but don't use a significant portion of the hardware system’s resources.
+We can place a series of instructions inside a `Dockerfile` that define how to build a Docker image. The `docker build` command packages our application, its dependencies, and configurations into a portable image, which can then be used to create and run containers.
 
 ```{=html}
 <style>
@@ -101,20 +104,18 @@ flowchart TB
         end
 
         subgraph DockCont["<strong>Docker Container</strong>"]
-            R["Load R version"]
-            Pkg["Install app-package"]
-            ShinyDep["Run Shiny server"]
+            R["Installs R version"]
+            Pkg["Installs app-package"]
+            ShinyDep["Runs Shiny server"]
         end
 
     DockFile -->|"<code>docker build</code> <em>creates instance of image</em>"| DockImg
-    DockImg --> |"<em>Runtime instance of image</em>"|DockCont
+    DockImg --> |"<code>docker run</code> <em>creates runtime instance of image</em>"|DockCont
 
     style DockFile fill:#FFFFFF,color:#000000,stroke:#333,stroke-width:1px,rx:10,ry:10
     style DockImg fill:#FFFFFF,color:#000000,stroke:#333,stroke-width:1px,rx:10,ry:10
     style DockCont fill:#FFFFFF,color:#000000,stroke:#333,stroke-width:1px,rx:10,ry:10
 ```
-
-We can place a series of instructions inside a `Dockerfile` that define how to build a Docker image. The `docker build` command packages our application, its dependencies, and configurations into a portable image, which can then be used to create and run containers.
 
 The image containing our applications' dependencies is safely stored *within* the container, ensuring consistency across environments. The container also isolates the image (and the application) from the host system. 
 
@@ -392,7 +393,7 @@ Each Docker image consists of layers, which we can see if we click on the image 
 
 These layers give us some insight into what the image contains. We can see the R version is specified and other scripts are copied from the [`rocker/shiny`](https://rocker-project.org/images/versioned/shiny.html) image.
 
-### Running the container {#sec-docker-run-container}
+## Running the container {#sec-docker-run-container}
 
 After building the image, we can run the new container using `docker run`
 
