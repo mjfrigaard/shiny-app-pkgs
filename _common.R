@@ -1,4 +1,4 @@
-# upgrade pak
+# upgrade with pak
 # pak::pak('mjfrigaard/shinypak', ask = FALSE, upgrade = TRUE)
 
 options(width = 50L, pillar.width = 50L)
