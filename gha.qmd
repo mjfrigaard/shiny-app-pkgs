@@ -19,24 +19,19 @@ co_box(
   header = "TLDR &emsp; ![](images/gha.png){width='45'}",
   fold = TRUE,
   contents = "
-
-<br>
+  - GitHub Actions automate testing and deployment for R packages.
   
-**CI/CD**
-
-  "
+  - Workflows are defined in YAML files under `.github/workflows/`.
+  
+  - Common tasks include styling/linting, running tests, and deploying apps."
 )
 ```
 
----
+Continuous Integration (CI) and Continuous Deployment (CD) help automate software development tasks, especially testing and deployment. In the context of a Shiny app-package, CI/CD usually refers to GitHub Actions or Travis CI.
 
-GitHub Actions are a powerful tool for automating workflows, such as testing, building, and deploying Shiny apps. Workflows (YAML files) are executed on GitHub's servers and be configured to respond to specific events (e.g., pushing code, creating a pull request, etc.).
+This chapter will only cover CI/CD with GitHub Actions. Travis-CI has been around longer than GitHub Actions, and if you'd like to compare the two, I recommend [this article.](https://talent500.co/blog/github-actions-vs-travis-ci-weighing-pros-cons-and-selecting-the-ideal-platform/)
 
-[**Continuous Integration & Deployment (CI/CD)**]{style="font-size: 1.30em;"}
 
-**Continuous Integration (CI)** can automate testing with `testthat` and `shinytest2`, ensuring any new features or bug fixes don’t introduce errors. It can verify that our app-package installs correctly and prevents any breaking changes. When integrated with version control systems like Git, CI tracks modifications and enforces code reviews before merging updates.  
-
-**Continuous Deployment (CD)** can be used to automate releases by deploying tested code to a package management system, ensuring users always have the latest version without manual updates. This accelerates feature delivery, reduces downtime, and streamlines development, allowing us to focus more on writing code than testing and deployments.
 
 ```{r}
 #| label: co_box_cicd
@@ -46,13 +41,12 @@ GitHub Actions are a powerful tool for automating workflows, such as testing, bu
 co_box(
   color = "b",
   look = "default", hsize = "1.10", size = "1.05",
-  header = "CI/CD & Shiny App-Packages",
+  header = "Continuous Integration & Deployment (CI/CD)",
   fold = TRUE,
-  contents = " 
-Continuous Integration (CI) and Continuous Deployment (CD) help automate software development tasks, especially testing and deployment. In the context of a Shiny app-package, CI/CD usually refers to GitHub Actions or Travis CI.
+  contents = "
+**Continuous Integration (CI)** can automate testing with `testthat` and `shinytest2`, ensuring any new features or bug fixes don’t introduce errors. It can verify that our app-package installs correctly and prevents any breaking changes. When integrated with version control systems like Git, CI tracks modifications and enforces code reviews before merging updates.  
 
-This chapter will only cover CI/CD with GitHub Actions. Travis-CI has been around longer than GitHub Actions, and if you'd like to compare the two, I recommend [this article.](https://talent500.co/blog/github-actions-vs-travis-ci-weighing-pros-cons-and-selecting-the-ideal-platform/)
-
+**Continuous Deployment (CD)** can be used to automate app-package releases by deploying tested code to an internal package management system, ensuring users always have the latest version without manual updates. This accelerates feature delivery, reduces downtime, and streamlines development, allowing us to focus more on writing code than testing and deployments.
   ")
 
 ```
@@ -96,7 +90,7 @@ A workflow is a YAML file placed in a repository to automate processes and execu
 %%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
 
 flowchart TD
-  workflow(["Workflow YAML file"]) -->|"<em>Triggered by<em>"| event("Pull request, commit, etc.")
+  workflow(["Workflow"]) -->|"<em>Triggered by<em>"| event("<strong>Event</strong>: push, pull request, etc.")
     
 ```
 
@@ -156,10 +150,10 @@ A [**job**](https://docs.github.com/en/actions/about-github-actions/understandin
 ```{mermaid}
 %%| fig-align: center
 %%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
-flowchart TD
-  workflow(["Workflow YAML file"]) -->|"<em>Triggered by<em>"| event("Pull request, commit, etc.")
+flowchart 
+  workflow(["Workflow"]) -->|"<em>Triggered by<em>"| event("<strong>Event</strong>: push, pull request, etc.")
 
-  event --> |"<em>Executes</em>"| Jobs{"Jobs"}
+  event --> |"<em>Executes</em>"| Jobs{"<strong>Jobs</strong>"}
 ```
 
 :::: {layout="[50,50]" layout-valign="top"}
@@ -195,20 +189,18 @@ A [**runner**](https://docs.github.com/en/actions/about-github-actions/understan
 %%| fig-align: center
 %%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
 
-flowchart
-  workflow(["Workflow YAML file"]) -->|"<em>Triggered by<em>"| event("Pull request, commit, etc.")
+flowchart 
+  workflow(["Workflow"]) -->|"<em>Triggered by<em>"| event("<strong>Event</strong>: push, pull request, etc.")
   
-  subgraph VM["Virtual Machines"]
-    subgraph runner02[Runner 2]
-
+  subgraph VM["Virtual Machine"]
+    subgraph runner02["<strong>Runner</strong> 2"]
     end
-    subgraph runner01[Runner 1]
-
+    subgraph runner01["<strong>Runner</strong> 1"]
     end
   end
 
-  event --> |"<em>Executes</em>"| Jobs{"Jobs"}
-  Jobs --> runner01 & runner02
+  event --> |"<em>Executes</em>"| Jobs{"<strong>Jobs</strong>"}
+  Jobs --> |"<em>Launches</em>"|runner01 & runner02
 ```
 
 Each **runner** can run a single **job** at a time. 
@@ -253,7 +245,7 @@ jobs:
 
 [`steps`]{style="font-size: 1.45em; font-weight: bold; font-style: italic;"}
 
-Each **step** can be a shell script or an [**action**](https://docs.github.com/en/actions/about-github-actions/understanding-github-actions#actions), and are executed in the order they are written. For example, building an R package, running tests, or launching apps. 
+Each **step** can be a shell script or an [**action**](https://docs.github.com/en/actions/about-github-actions/understanding-github-actions#actions), and they are executed in the order they are written. For example, checking out code from a repository, setting up R, installing a package, and launching an app. 
 
 ```{=html}
 <style>
@@ -274,23 +266,23 @@ Each **step** can be a shell script or an [**action**](https://docs.github.com/e
 %%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
 
 flowchart 
-  workflow(["Workflow YAML file"]) -->|"<em>Triggered by<em>"| event("Pull request, commit, etc.")
+  workflow(["Workflow"]) -->|"<em>Triggered by<em>"| event("<strong>Event</strong>: push, pull request, etc.")
   
-  subgraph VM["Virtual Machines"]
-    subgraph runner02[Runner 2]
+  subgraph VM["Virtual Machine"]
+    subgraph runner02["<strong>Runner</strong> 2"]
         action02a("<strong>Action</strong>: checkout code")
         action02b("<strong>Action</strong>: set up R")
-        step02a("<strong>Step</strong>: launch app")
+        step02a("<strong>Script</strong>: launch app")
     end
-    subgraph runner01[Runner 1]
+    subgraph runner01["<strong>Runner</strong> 1"]
         action01a("<strong>Action</strong>: checkout code")
         action01b("<strong>Action</strong>: set up R")
-        step01a("<strong>Step</strong>: install package")
+        step01a("<strong>Script</strong>: install package")
     end
   end
 
-  event --> |"<em>Executes</em>"| Jobs{"Jobs"}
-  Jobs --> runner01 & runner02
+  event --> |"<em>Executes</em>"| Jobs{"<strong>Jobs</strong>"}
+  Jobs --> |"<em>Launches</em>"|runner01 & runner02
 ```
 
 :::: {layout="[50,50]" layout-valign="top"}
@@ -353,7 +345,7 @@ Finally, lines beginning with `#` will not be executed. It's common to provide 1
 # Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
 ```
 
-### Workflow permissions {.unnumbered}
+### Permissions {.unnumbered}
 
 In order for workflows to run, we'll need to make sure Actions have read and write permissions. We can do this by clicking on the repository's **Settings** tab, then expand the **Actions** menu and select **General**:
 
@@ -792,14 +784,14 @@ name: shiny
 %%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
 flowchart TD
   Push(["Push to branch"])
-  Push -->|"<em>Triggers</em>"| Shiny[["<strong>Job</strong>: <code>shiny</code>"]]
+  Push -->|"<em>Triggers</em>"| Shiny{"<strong>Job</strong>: <code>shiny</code>"}
 ```
 
 
 
 #### Jobs 
 
-The job will set up the runner and use our stored `GITHUB_TOKEN`.
+The **job** will set up the runner and pass our stored `GITHUB_TOKEN`. `runs-on` launches a runner with the latest Ubuntu operating system and `env` [maps](https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#env) the `GITHUB_TOKEN` environment variable (we can access those secrets with `secrets.<SECRET_NAME>`).
 
 ::: {layout="[50,50]" layout-valign="top"}
 
@@ -812,9 +804,7 @@ jobs:
 ```
 
 
-[**`jobs`** remains unchanged, but the identifier should match the **`name`**.]{style="font-size: 0.90rem;"} [^jobs-shiny]
-
-[^jobs-shiny]: `run-on` is the latest Ubuntu runner and `env` is the `GITHUB_PAT` environment variable is your GitHub personal access token (access a secret with `secrets.<SECRET_NAME>`) 
+[**`jobs`** remains unchanged, but the identifier should match the **`name`**.]{style="font-size: 0.90rem;"}
 
 :::
 
@@ -837,19 +827,17 @@ jobs:
 %%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
 flowchart TD
   Push(["Push to branch"])
-  Push -->|"<em>Triggers</em>"| Shiny[["<strong>Job</strong>: <code>shiny</code>"]]
-  subgraph ubuntu["<strong>Runner</strong>"]
-      Action("<strong>Action</strong>:")
-      Script("<strong>Script</strong>:")
+  Push -->|"<em>Triggers</em>"| Shiny{"<strong>Job</strong>: <code>shiny</code>"}
+    subgraph ubuntu["<strong>Runner</strong>"]
+      Env("<strong>Env</strong>: <code>GITHUB</code>")
     end
   Shiny -->|"<em>Runs on: Ubuntu Latest</em>"| ubuntu
-  Action --> Script
 ```
 
 
 #### Steps 
 
-The first four steps are **actions** (the path to the action is passed to `uses`, so `actions/checkout@v4` uses the YAML file from the [actions/checkout repo](https://github.com/actions/checkout))
+The first four **steps** are **actions** that clone our repo and set up the environment for performing the tasks in the **workflow**. The path to the action is passed to `uses:`, so `actions/checkout@v4` uses the YAML file from the [actions/checkout repo](https://github.com/actions/checkout). 
 
 ::: {layout="[50,50]" layout-valign="top"}
 
@@ -879,7 +867,39 @@ The first four steps are **actions** (the path to the action is passed to `uses`
 
 [^r-env]: `use-public-rspm` is the public RStudio package manager and `r-version: renv` indicates the R version is captured with `renv`.
 
-The following step is a script (i.e., `run:`) and it installs `rsconnect`:
+```{=html}
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+</style>
+```
+
+```{mermaid}
+%%| fig-align: center
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
+flowchart TD
+  Push(["Push to branch"])
+  Push -->|"<em>Triggers</em>"| Shiny{"<strong>Job</strong>: <code>shiny</code>"}
+    subgraph ubuntu["<strong>Runner</strong>"]
+        PAT("<strong>Env</strong>: <code>GITHUB</code>")
+        Checkout("<strong>Action</strong>: Checkout")
+        SetupPandoc("<strong>Action</strong>: Pandoc")
+        SetupR("<strong>Action</strong>: R env")
+        SetupRenv("<strong>Action</strong>: <code>renv</code>")
+    end
+  Shiny -->|"<em>Runs on: Ubuntu Latest</em>"| ubuntu
+  PAT --> Checkout --> SetupPandoc --> SetupR
+  SetupR --> SetupRenv
+```
+
+The following **step** is a script (i.e., `run:`) and it installs the `rsconnect` package:
 
 ::: {layout="[50,50]" layout-valign="center"}
 
@@ -890,10 +910,9 @@ The following step is a script (i.e., `run:`) and it installs `rsconnect`:
 ```
 
 [`Install rsconnect` uses R to install the `rsconnect`]{style="font-size: 0.90rem;"}       
-
 :::
 
-Next we [map](https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#env) our account username (`mjfrigaard`) and app name (`shinyDeployApp`):
+Next we use `env` again to [map](https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#env) our account username (`mjfrigaard`) and app name (`shinyDeployApp`):
         
 ::: {layout="[50,50]" layout-valign="center"}
 
@@ -910,7 +929,7 @@ Next we [map](https://docs.github.com/en/actions/writing-workflows/workflow-synt
         
 :::
 
-The final `run` step sets the account information using `rsconnect::setAccountInfo()` and deploys the app to the specified server using `rsconnect::deployApp()` (we'll add `forceUpdate = TRUE`):
+The final `run` **step** sets the account information using `rsconnect::setAccountInfo()` and deploys the app to the specified server using `rsconnect::deployApp()` (we'll add `forceUpdate = TRUE`):
 
     
 ``` yaml
@@ -920,7 +939,7 @@ The final `run` step sets the account information using `rsconnect::setAccountIn
     shell: Rscript {0}
 ```
 
-This will deploy an application at `https://<ACCOUNT>.shinyapps.io/<APPNAME>/`
+This will deploy an application at `https://<ACCOUNT>.shinyapps.io/<APPNAME>/`.
 
 ```{=html}
 <style>
@@ -941,19 +960,21 @@ This will deploy an application at `https://<ACCOUNT>.shinyapps.io/<APPNAME>/`
 %%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
 flowchart TD
   Push(["Push to branch"])
-  Push -->|"<em>Triggers</em>"| Shiny[["<strong>Job</strong>: <code>shiny</code>"]]
-  subgraph ubuntu["<strong>Runner</strong>"]
-        Checkout("<strong>Action</strong>: Checkout repo")
-        SetupPandoc("<strong>Action</strong>: Setup Pandoc")
-        SetupR("<strong>Action</strong>: Set up R env")
-        SetupRenv("<strong>Action</strong>: Set up (<code>renv</code>)")
-        InstallRsconnect("<strong>Script</strong>: Install <code>rsconnect</code>")
-        Deploy("<strong>Script</strong>: Authorize and Deploy App")
+  Push -->|"<em>Triggers</em>"| Shiny{"<strong>Job</strong>: <code>shiny</code>"}
+    subgraph ubuntu["<strong>Runner</strong>"]
+        PAT("<strong>Env</strong>: <code>GITHUB</code>")
+        Checkout("<strong>Action</strong>: Checkout")
+        SetupPandoc("<strong>Action</strong>: Pandoc")
+        SetupR("<strong>Action</strong>: R env")
+        SetupRenv("<strong>Action</strong>: <code>renv</code>")
+        InstallRsconnect("<strong>Script</strong>: <code>rsconnect</code>")
+        Auth("<strong>Env</strong>: <code>RSCONNECT</code>")
+        Deploy("<strong>Script</strong>: Deploy")
     end
   Shiny -->|"<em>Runs on: Ubuntu Latest</em>"| ubuntu
-  Checkout --> SetupPandoc --> SetupR
+  PAT --> Checkout --> SetupPandoc --> SetupR
   SetupR --> SetupRenv --> InstallRsconnect
-  InstallRsconnect --> Deploy
+  InstallRsconnect --> Auth --> Deploy
 ```
 
 When we add, commit, and push the changes to the repo, we see the following deployment log:
@@ -977,7 +998,7 @@ git push
  create mode 100644 rsconnect/shinyapps.io/mjfrigaard/shinyDeployApp.dcf
 ```
 
-We can see the workflow running on the **Actions** tab of the `sap` repository: 
+On GitHub, we can see the workflow running on the **Actions** tab of the `sap` repository: 
 
 ![shiny deploy workflow running](images/gh_action_shiny_tab.png){width='100%' fig-align='center'}
 
@@ -987,7 +1008,7 @@ When it's finished, we can see the deployment log from the workflow looks simila
 
 You can view the deployed application here: <https://mjfrigaard.shinyapps.io/shinyDeployApp/>
 
-## Shiny apps & Docker {#sec-gha-shiny-docker}
+## Actions, Shiny & Docker {#sec-gha-shiny-docker}
 
 We covered Docker in the previous chapter, which builds and application in an image and containerizes it's deployment. In this section we'll combine Docker and GitHub Actions to automate deployment of our app. Automating app deployments will minimize the risk of environmental discrepancies (avoiding the "*it works on my machine*" problem) and manual deployment processes. Plus, if something goes wrong after a workflow run, rolling back to a previous version in Git is straightforward. 
 
@@ -1046,7 +1067,6 @@ The `deploy.R` script should be placed in the root folder of `sap`. By default, 
 #| eval: false
 #| code-fold: show 
 #| code-summary: 'show/hide updated app.R'
-# set option to turn off loadSupport() ----
 withr::with_options(new = list(shiny.autoload.r = FALSE), code = {
   if (!interactive()) {
     sink(stderr(), type = "output")
@@ -1058,13 +1078,11 @@ withr::with_options(new = list(shiny.autoload.r = FALSE), code = {
         pkgload::load_all()
       }
     )
-    # create shiny object from prod/ ----
-    shinyAppDir(appDir = 
-                system.file("prod", package = "sap"))
+    shinyAppDir(appDir = system.file("prod/app", package = "sap"))
   } else {
     pkgload::load_all()
-    launch_app(app = 'ggp2')
   }
+  launch_app(app = 'ggp2', options = list(test.mode = FALSE))
 })
 ```
 
@@ -1073,10 +1091,12 @@ withr::with_options(new = list(shiny.autoload.r = FALSE), code = {
 
 The `Dockerfile` will look similar to the example in the [Docker](docker.qmd) chapter, but with a few important changes: 
 
-1. The `/home/shinyAppPkgsDockerCiCd` directory is not only the image location we'll be launching the application from, it's also the URL for the deployed app: 
+1. When we make the path `/home/shinyAppPkgsDockerCiCd` with `mkdir`, this is not only the image location we'll be launching the application from, but it's also the URL for the deployed app: 
     -   `https://` **`username`** `.shinyapps.io/shinyAppPkgsDockerCiCd/`
-2. We'll include `rsconnect` and `bslib` in the list of packages to install.   
-3. The final command runs the application from the `deploy.R` file
+    
+2. We'll include the packages in the `DESCRIPTION` in our list of dependencies to install, *and* the `remotes` and `rsconnect` packages. 
+
+3. The final `Rscript` command will run the application using our `deploy.R` file.
 
 
 ``` sh
@@ -1084,52 +1104,54 @@ FROM rocker/shiny
 RUN mkdir /home/shinyAppPkgsDockerCiCd
 ADD . /home/shinyAppPkgsDockerCiCd
 WORKDIR /home/shinyAppPkgsDockerCiCd
-RUN R -e 'install.packages(c("rlang", "stringr", "shiny", "ggplot2", "remotes", "rsconnect", "bslib"))'
+RUN R -e 'install.packages(c("bslib", "cli", "fst", "ggplot2", "ggplot2movies", "logger", "pkgload", "quarto", "ragg", "remotes", "rlang", "rsconnect", "sass", "shiny", "shinytest2", "shinythemes", "stringr", "thematic", "tidyr", "testthat", "tools", "waldo", "withr"))'
 RUN R -e 'remotes::install_local(upgrade="never")'
 EXPOSE 8180
 CMD Rscript deploy.R
 ```
 
-### [`docker.yml`]{style="font-size: 0.95em; font-weight: bold;"}
+### [`shiny-docker.yml`]{style="font-size: 0.95em; font-weight: bold;"}
+
+In the `.github/workflows` folder, we'll create a `shiny-docker.yml` file with the following contents:
 
 ::: {layout="[50,50]" layout-valign="top"}
 
 ``` yaml
-name: docker-shiny, shinyrpkgs
+name: docker-shiny, sap
 
 on:
   push:
-    branches: [ 16.3_gha-docker ]
+    branches: [ 21.3_gha-shiny-docker ]
 
 jobs:
   docker:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Build image
-        run: docker build -t shinyrpkgs . 
+        run: docker build -t sap . 
 ```
 
-1.   [Add a `name` for the Docker/Shiny workflow]{style="font-size: 0.90rem;"}   
+  - [Add a `name` for the Docker/Shiny workflow]{style="font-size: 0.90rem;"}   
 
-2.   [Specify the triggering event the workflow will run **`on`**]{style="font-size: 0.90rem;"} 
+  - [Specify the triggering event the workflow will run **`on`**]{style="font-size: 0.90rem;"} 
 
-3.   [The **`job`** will run on `ubuntu-latest` (with **`docker`** id)]{style="font-size: 0.90rem;"}  
+  - [The **`job`** will run on `ubuntu-latest` (with **`docker`** id)]{style="font-size: 0.90rem;"}  
 
-4.   [Checkout the code]{style="font-size: 0.90rem;"}
+  - [Checkout the code]{style="font-size: 0.90rem;"}
 
-5.   [Build the docker image with `docker build`]{style="font-size: 0.90rem;"}
+  - [Build the docker image with `docker build`]{style="font-size: 0.90rem;"}
 
 :::
 
-The final `execute` step is runs docker run and passes our environment variables to the secrets we have stored in GitHub (i.e., with `secrets.<SECRET_NAME>`):
+The final `execute` **step** is `docker run` and it passes our environment variables to the secrets we have stored in GitHub (i.e., with `secrets.<SECRET_NAME>`):
 
 ``` yaml
       - name: execute
         run: >
-          docker run -e RSCONNECT_USER=${{ secrets.RSCONNECT_USER }} -e RSCONNECT_TOKEN=${{ secrets.RSCONNECT_TOKEN }}  -e RSCONNECT_SECRET=${{ secrets.RSCONNECT_SECRET }} shinyrpkgs  
+          docker run -e RSCONNECT_USER=${{ secrets.RSCONNECT_USER }} -e RSCONNECT_TOKEN=${{ secrets.RSCONNECT_TOKEN }}  -e RSCONNECT_SECRET=${{ secrets.RSCONNECT_SECRET }} sap  
        
 ```
 
@@ -1146,13 +1168,13 @@ head(rsconnect:::appDependencies(appDir = "."))
 ```{r}
 #| eval: false
 #| code-fold: false
-#>        Package  Version Source               Repository
-#> 1  AsioHeaders 1.22.1-2   CRAN https://cran.rstudio.com
-#> 2         MASS   7.3-60   CRAN https://cran.rstudio.com
-#> 3       Matrix    1.6-4   CRAN https://cran.rstudio.com
-#> 4           R6    2.5.1   CRAN https://cran.rstudio.com
-#> 5 RColorBrewer    1.1-3   CRAN https://cran.rstudio.com
-#> 6         Rcpp   1.0.12   CRAN https://cran.rstudio.com
+#        Package Version Source               Repository
+# 1         MASS  7.3-65   CRAN https://cran.rstudio.com
+# 2       Matrix   1.7-2   CRAN https://cran.rstudio.com
+# 3           R6   2.6.1   CRAN https://cran.rstudio.com
+# 4 RColorBrewer   1.1-3   CRAN https://cran.rstudio.com
+# 5         Rcpp  1.0.14   CRAN https://cran.rstudio.com
+# 6    base64enc   0.1-3   CRAN https://cran.rstudio.com
 ```
 
 Passing `appDependencies()` in your app-package's root directory will tell you if any packages have missing `Source` or `Repository` values (this can cause the deployment to fail).
@@ -1178,6 +1200,11 @@ After installing the dependencies, the `sap.tar.gz` is installed from `*source*`
 
 The output above should look familiar--it's very similar to what we see when we run `devtools::load_all()`.
 
+After installing the dependencies, we can see the Shiny deployment log execute in the workflow: 
+
+![Docker deploy log](images/gh_docker_deploy.png){width='100%' fig-align='center'}
+
+View the deployed application [here](https://mjfrigaard.shinyapps.io/shinyAppPkgsDockerCiCd/).
 
 ```{r}
 #| label: co_box_app_depends
@@ -1187,7 +1214,7 @@ The output above should look familiar--it's very similar to what we see when we 
 co_box(
   color = "r",
   look = "default", 
-  hsize = "1.05", 
+  hsize = "1.10", 
   size = "1.05",
   header = "Capturing and recording dependencies with `renv`",
   fold = FALSE,
@@ -1203,14 +1230,9 @@ Not having `shinytest2` and `testthat` packages installed won't interfere with o
   ")
 ```
 
-
-After installing the dependencies, we can see the Shiny deployment log execute in the workflow: 
-
-![Docker deploy log](images/gh_docker_deploy.png){width='80%' fig-align='center'}
-
-View the deployed application [here](https://mjfrigaard.shinyapps.io/shinyAppPkgsDockerCiCd/).
-
 ## Recap {.unnumbered}
+
+GitHub Actions can be used to set up the necessary R environment and dependencies required to deploy the application from your app-package, while allowing secure account credentials stored in GitHub secrets. 
 
 ```{r}
 #| label: co_box_recap
@@ -1225,9 +1247,7 @@ co_box(
   contents = "
 <br>
   
-- GitHub Actions can be used to set up the necessary R environment and dependencies required to deploy the application from your app-package, while allowing secure account credentials stored in GitHub secrets. 
-  
-- The workflows in this chapter are only triggered by changes to the `21.1_gha-style`, `21.2_gha-shiny`, and `16.3_gha-docker` branches of the `sap` repository.
+We've covered the GitHub Action examples for styling the code in our package, deploying our app, and running a docker container. 
   
 - GitHub Actions can streamline a secure deployment process, which allows you to focus more on developing your application.
   
