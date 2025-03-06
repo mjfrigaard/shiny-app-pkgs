@@ -287,32 +287,32 @@ Custom logging functions can be written entirely using base R (i.e., without add
 #' 
 #' @export
 log_message <- function(message, log_file = "logs/app_log.txt", save = FALSE) {
-  
-  log_dir <- dirname(log_file) # <1>
-  
-  if (!dir.exists(log_dir)) { # <2>
-    dir.create(log_dir, recursive = TRUE)
-  } # <2>
-  
   timestamp <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
-  log_entry <- sprintf("[%s] %s", timestamp, message) # <3>
-  
+  # log entry
+  log_entry <- sprintf("[%s] %s", timestamp, message) # <1>
+  # save
   if (save) {
-    tryCatch({ # <4>
+    log_dir <- dirname(log_file) # <2>
+    if (!dir.exists(log_dir)) { # <3>
+      dir.create(log_dir, recursive = TRUE)
+    }# <3>
+    tryCatch( # <4>
+      {
         cat(log_entry, "\n", file = log_file, append = TRUE) # <5>
       },
       error = function(e) {
-        warning(sprintf("Failed to write to log file '%s': %s", log_file, e$message)) 
-      }) # <4>
+        warning(sprintf("Failed to write to log file '%s': %s", log_file, e$message))
+      }
+    )
   }
-  
+  # print
   message(log_entry) # <6>
 }
 ```
 
-1.  This function uses `dirname()` to dynamically extract the directory path from `log_file`.\
-2.  `dir.exists()` and `dir.create()` ensure the folder exists (`recursive = TRUE` is for nested directories).\
-3.  The `sprintf()` function is preferred over `cat()` or `paste0()` for clearer and faster string formatting.\
+1.  The `sprintf()` function is preferred over `cat()` or `paste0()` for clearer and faster string formatting.\ 
+2. This function uses `dirname()` to dynamically extract the directory path from `log_file`.\
+3.  `dir.exists()` and `dir.create()` ensure the folder exists (`recursive = TRUE` is for nested directories).\
 4.  The file-writing logic is wrapped in `tryCatch()` to gracefully handle errors (e.g., file permission issues), and we've added a `warning()` if writing to the log file fails.\
 5.  We explicitly add the newline (`\n`) directly in the `cat()` function, ensuring the log entry is written properly even if message lacks a newline.\
 6.  Finally, the `message()` is preferred here instead of `print()` for consistent output formatting.
