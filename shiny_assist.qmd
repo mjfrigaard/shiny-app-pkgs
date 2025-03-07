@@ -7,7 +7,385 @@
 source("_common.R")
 ```
 
+```{r}
+#| label: co_box_dev
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "y", 
+  look = "default",
+  header = "Caution",
+  contents = "The contents for this section are being developed. Thank you for your patience."
+)
+```
+
+```{=html}
+<!--
+
 https://shiny.posit.co/blog/posts/shiny-assistant/
 
 https://gallery.shinyapps.io/assistant/
+
+-->
+```
+
+The [Shiny Assistant](https://gallery.shinyapps.io/assistant/) is an AI-powered chat bot anyone can use to help them build a Shiny application.
+
+> "*you can ask it questions about Shiny, or to create a Shiny application from scratch, or ask it to make changes to an existing application.*" - [Shiny Assistant](https://shiny.posit.co/blog/posts/shiny-assistant/), Winston Chang
+
+If you're new to Shiny, or you have an app you'd like to add features to, I highly recommend using the Shiny Assistant.
+
+![Shiny Assist UI](images/shiny_assist_ui_landing.png){fig-align="center" width="100%"}
+
+The UI for Shiny Assistant looks like a standard chat, but if you ask it to "Open the editor", we see an interface with a script editor, console, and viewer pane:
+
+![Shiny Assist Editor](images/shiny_assist_open_editor.png){fig-align="center" width="100%"}
+
+Shiny Assistant is great for trying different UI components, layouts, and styling (color palettes, themes, fonts, etc.). We're going to walk through using the assistant for building an Shiny app-package, but we'll limit the number of prompts to five to keep this chapter brief. However, I still think you'll find the Assistant is a helpful tool to have in your Shiny toolbox.
+
+## Prompt 1: Build an app
+
+Let's start with trying to reproduce some of the applications we have in `sap`. I typically have data before I have an idea for a dashboard or app, so we'll pass the structure of the `movies` data to the Assistant with instructions on what we'd like to see:
+
+**Prompt**: <code>Create a shiny application that visualizes IMDB movie data using a scatter plot. Include inputs for x, y, color, size, and transparency.
+
+The column names are below:</code>
+
+````{=html}
+<pre>
+```
+Rows: 651
+Columns: 18
+$ title            <chr> …
+$ genre            <fct> …
+$ runtime          <dbl> …
+$ year             <dbl> …
+$ top200_box       <fct> …
+$ director         <chr> …
+$ mpaa_rating      <fct> …
+$ imdb_rating      <dbl> …
+$ critics_rating   <fct> …
+$ audience_rating  <fct> …
+$ imdb_num_votes   <int> …
+$ critics_score    <dbl> …
+$ audience_score   <dbl> …
+$ best_pic_nom     <fct> …
+$ best_pic_win     <fct> …
+$ best_actor_win   <fct> …
+$ best_actress_win <fct> …
+$ best_dir_win     <fct> …
+```
+</pre>
+````
+
+<code>Use the data stored in this URL:</code>
+
+```{=html}
+<pre>
+
+https://raw.githubusercontent.com/mjfrigaard/sap/refs/heads/23_llm-shiny-assist/inst/shiny-assist/movies/movies_sample.csv
+
+</pre>
+```
+
+```{r}
+#| label: co_box_url_data
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g", 
+  look = "default", hsize = "1.15", size = "1.10", fold = FALSE,
+  header = "Tip: Providing data",
+  contents = "I've found providing a data structure (from `str()` or `dplyr::glimpse()`) is incredibly helpful when guiding AI chat bots on building dashboards. [Shiny Assistant](https://gallery.shinyapps.io/assistant/) is great because we can even pass it a URL with a .csv data file."
+)
+```
+
+Below we can see the initial app:
+
+![Shiny Assistant: initial app](images/shiny_assist_prompt_01.png){fig-align="center" width="100%"}
+
+The initial application has nearly identical input, outputs, and layout. However, we can see an additional checkbox for **Show Movie Titles** and the **Size by** input has been mapped to a variable (not a numerical value).
+
+In our next prompt, we'll refine the app to more closely match what we have in our `sap` app-package.
+
+## Prompt 2: Refine
+
+**Prompt**: <code> Change the size to a numeric slider and include a text input for a plot title. </code>
+
+The application is updated with the changes and we can view the changes to `app.R` in the Shiny Assistant UI:
+
+![Shiny Assistant: initial app](images/shiny_assist_prompt_02.png){fig-align="center" width="100%"}
+
+```{r}
+#| label: co_box_aes_string
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "y", 
+  look = "default", hsize = "1.15", size = "1.10", fold = FALSE,
+  header = "Warning: `aes_string()`",
+  contents = "
+We can see the following warning regarding the `ggplot2` graph: 
+
+![Shiny Assistant: `ggplot2` warning](images/shiny_assist_aes_string_warning.png){fig-align='center' width='100%'}
+
+We avoided this warning with the `scatter_plot()` utility function in previous branches, but for now we will just note this is something we should return to and refactor after our application in a more complete state. 
+
+")
+```
+
+## Prompt 3: Functionalize
+
+Now that we have a UI with the correct inputs and outputs, we'll convert these into modules and separate the application into it's respective components.
+
+**Prompt**: <code> Convert the inputs and outputs into modules and create a standalone app function that calls separate UI and server functions. </code>
+
+This prompt doesn't change the app display, but we're given a summary of the changes in the chat:
+
+> I've modified the code to use a modular structure following these changes:
+>
+> 1.  Created separate modules for:
+>
+>     -   Controls (inputs) - `controlsUI` and `controlsServer`
+>
+>     -   Plot (output) - `plotOutputUI` and `plotOutputServer`
+>
+>     -   About data section - `aboutDataUI` (UI only as it's static)
+>
+> 2.  Created standalone UI and server functions:
+>
+>     -   `ui_function()` - assembles all UI components
+>
+>     -   `server_function()` - coordinates between modules
+>
+> 3.  Created an application function:
+>
+>     -   `movie_visualization_app()` - bundles everything together
+>
+> 4.  The communication between modules:
+>
+>     -   The controls module returns all inputs as a reactive list
+>
+>     -   The plot module takes two parameters: the data and controls reactives
+>
+> This modular approach makes the code more maintainable and easier to extend. Each component has a well-defined responsibility, and they communicate through clear interfaces.
+
+![Shiny Assistant: app functions and files](images/shiny_assist_prompt_03.png){fig-align="center" width="100%"}
+
+I've left the Shiny Assistant chat setting to **Verbose**, but this can be changed to return less descriptive details on the code being produced:
+
+![Shiny Assistant Chat setting](images/shiny_assist_verbose_setting.png)
+
+## Prompt 4: Structure
+
+Now we're reading to start structure the application as an R package. We'll attempt to create the files and documentation with a single prompt.
+
+**Prompt**: <code> Store the modules, UI, server, and standalone app functions in separate files and include roxygen2 documentation. </code>
+
+> I've reorganized the code into separate files with roxygen2 documentation:
+>
+> 1.  **controls_module.R**: Contains the UI and server functions for the controls module with full roxygen2 documentation including parameters, return values, and imported functions.
+>
+> 2.  **plot_module.R**: Contains the UI and server functions for the plot output module with documentation for both components.
+>
+> 3.  **about_module.R**: Contains the UI function for the about data section.
+>
+> 4.  **ui.R**: Contains the main UI function that assembles all UI components.
+>
+> 5.  **server.R**: Contains the main server function that coordinates between modules.
+>
+> 6.  **app.R**: Contains the standalone app function that sources all other files and runs the application.
+>
+> Each function includes proper roxygen2 documentation with:
+>
+> -   Function descriptions
+>
+> -   Parameter descriptions
+>
+> -   Return value descriptions
+>
+> -   \@importFrom tags for explicit dependencies
+>
+> -   \@export tags for functions that should be exported
+>
+> The app.R file also includes logic to run the app only if the file is being executed directly in an interactive session.
+
+This results in an error in the Shiny Assistant UI:
+
+![Shiny Assistant: error](images/shiny_assist_prompt_04.png){fig-align="center" width="100%"}
+
+## Prompt 5: Error
+
+The error above tells us the `bslib` package is not being loaded before `runApp()` is being called, so we'll give some direction on how to structure the file names and the call to `shinyApp()`:
+
+**Prompt**: <code> An error occurred because the `page_sidebar` function could not be found. The `app.R` file needs to contain the `source()` calls for the modules and the call to `shinyApp()`. Also, rename the `ui.R` and `server.R` to `app_ui.R` and `app_server.R`. </code>
+
+This results in the following changes to the app code structure:
+
+> I've made the following changes to fix the issues:
+>
+> 1.  Renamed the files:
+>
+>     -   Changed `ui.R` to `app_ui.R`
+>
+>     -   Changed `server.R` to `app_server.R`
+>
+> 2.  Modified the `app.R` file to:
+>
+>     -   Load all required libraries at the beginning of the file
+>
+>     -   Source all module and function files
+>
+>     -   Define the `movie_visualization_app()` function
+>
+>     -   Call the function directly (removed the `if (interactive())` check to ensure it runs)
+>
+> 3.  Maintained the same structure for all modules and functions
+>
+> These changes ensure that:
+>
+> 1.  All necessary files are sourced before using their functions
+>
+> 2.  The application will properly find all functions when running
+>
+> 3.  The organization follows a more standard Shiny module structure
+>
+> The application should now run without the "page_sidebar function could not be found" error since we're properly sourcing all the module files before they're used in the UI and server functions.
+
+But this alone will not remove the error. We need to explicitly run the calls to `library()` and `source()` in the `app.R` file:
+
+![Shiny Assistant: `library()` and `source()` calls](images/shiny_assist_library_source_calls.png){fig-align="center" width="100%"}
+
+However, we see the following error when trying to call our standalone app function: 
+
+![Shiny Assistant: `runApp()` error](images/shiny_assist_run_app_error.png){fig-align="center" width="100%"}
+
+Debugging in Shiny Assistant is a little tricky, but we can see this is happening because we're trying to explicitly call `shinyApp()` (and the UI works by call `runApp()`).
+
+We can fix this by clicking on the icon in the UI to run the app:
+
+![Shiny Assistant: run the app using the 'Run App' icon](images/shiny_assist_prompt_05.png){fig-align="center" width="100%"}
+
+## Bonus: Theme
+
+Now that we have our modules, app functions and documentation, we'll add a [`thematic` theme](https://rstudio.github.io/thematic/), confirm it works, then download the app files.
+
+**Prompt**: <code> Add a dark theme using the thematic package: https://rstudio.github.io/thematic/ </code>
+
+The summary of changes are below:
+
+> I've integrated the thematic package to add a dark theme to the application. Here are the changes I made:
+>
+> 1.  Added `library(thematic)` to the app.R file to load the thematic package.
+>
+> 2.  Added `thematic_shiny(font = "auto")` to automatically adjust plot themes to match the app theme. This automatically styles the ggplot2 visualizations to match the Shiny app's theme.
+>
+> 3.  Modified the UI function in app_ui.R to use a dark theme:
+>
+>     -   Created a dark theme using `bs_theme()` from bslib with dark background colors, light text, and appropriate accent colors
+>
+>     -   Applied the theme to the `page_sidebar()` using the `theme` parameter
+>
+> 4.  Updated the plot_module.R to work with thematic:
+>
+>     -   Removed the explicit `theme_minimal()` call since thematic will handle the base theming
+>
+>     -   Kept specific theme adjustments for title styling and legend positioning
+>
+> The thematic package now automatically coordinates the ggplot2 theme with the application's dark theme, creating a cohesive dark mode experience throughout the entire application. The plots will automatically inherit the dark background and appropriate colors for text and elements.
+
+The updated app includes a dark theme:
+
+![Shiny Assistant: `thematic` theme](images/shiny_assist_prompt_06.png){fig-align="center" width="100%"}
+
+Click on the cloud icon in the upper right corner to download the application files:
+
+![Download files](images/shiny_assist_download.png){fig-align="center" width="70%"}
+
+## Running locally
+
+I've placed the downloaded files in the `inst/shiny-assist/movies` folder in `sap`, and after some minor changes to the files/folder organization, we can see the app-package structure starting to take shape:
+
+```{verbatim}
+inst/shiny-assist/
+└── movies
+    ├── R
+    │   ├── about_module.R
+    │   ├── app_server.R
+    │   ├── app_ui.R
+    │   ├── controls_module.R
+    │   └── plot_module.R
+    ├── app.R
+    └── movies_sample.csv
+
+3 directories, 7 files
+```
+
+The `app.R` file no longer needs to `source()` the modules and app functions if they are placed in an `R/` folder.
+
+```{r}
+#| eval: false 
+#| code-fold: false
+# Load required libraries
+library(shiny)
+library(ggplot2)
+library(dplyr)
+library(readr)
+library(bslib)
+library(thematic)
+
+# Setup thematic to automatically adjust plot theme to match app theme
+thematic_shiny(font = "auto")
+
+#' IMDB Movie Visualization Shiny App
+#'
+#' A Shiny application for visualizing IMDB movie data with interactive controls
+#' for customizing scatter plots.
+#'
+#' @return A Shiny application object
+#'
+#' @importFrom shiny shinyApp
+#'
+#' @export
+movie_visualization_app <- function() {
+  # Create and return the Shiny app
+  shinyApp(ui = ui_function(), server = server_function)
+}
+
+# Run the application 
+movie_visualization_app()
+```
+
+In Positron, we can see the **Run App** icon is present at the top of `app.R`, and it's fully functional: 
+
+![Shiny Assistant app launced in Positron](images/shiny_assist_positron_launch.png){fig-align="center" width="100%"}
+
+## Recap {.unnumbered}
+
+This chapter covered building a Shiny app 'fit for a package' using the Shiny Assistant. As you can see, in just a few prompts, we can have a Shiny application that ~80% ready to be loaded, installed, and launched. The callout box below includes a few items to watch out for when using Shiny Assistant to build apps:
+
+```{r}
+#| label: co_box_recap
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g", 
+  fold = FALSE,
+  look = "default", hsize = "1.10", size = "1.05", 
+  header = "Recap: Shiny Assistant",
+    contents = "
+    
++ **`ggplot2` (`aes_string()`) warning**: as noted above, 
+
++ **`roxygen2` documentation**: the `@importFrom` and `@import` tags...
+
++ **module structure**: the Assistant came up with a different module structure than we have in our movies app in `sap`...
+  
+")
+```
+
 
