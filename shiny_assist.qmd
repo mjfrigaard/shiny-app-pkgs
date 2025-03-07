@@ -46,7 +46,9 @@ Shiny Assistant is great for trying different UI components, layouts, and stylin
 
 ## Prompt 1: Build an app
 
-Let's start with trying to reproduce some of the applications we have in `sap`. I typically have data before I have an idea for a dashboard or app, so we'll pass the structure of the `movies` data to the Assistant with instructions on what we'd like to see:
+Let's start with trying to reproduce some of the applications we have in `sap`. I typically have data before I have an idea for a dashboard or app, so we'll pass the structure of simplified version our `movies` data to the Assistant with some instructions on what we'd like to see:[^movies-sample]
+
+[^movies-sample]: I've included a .csv version of these data in the [`data-raw/` folder of this branch](https://raw.githubusercontent.com/mjfrigaard/sap/refs/heads/23_llm-shiny-assist/data-raw/movies_sample.csv).
 
 **Prompt**: <code>Create a shiny application that visualizes IMDB movie data using a scatter plot. Include inputs for x, y, color, size, and transparency.
 
@@ -84,7 +86,7 @@ $ best_dir_win     <fct> …
 ```{=html}
 <pre>
 
-https://raw.githubusercontent.com/mjfrigaard/sap/refs/heads/23_llm-shiny-assist/inst/shiny-assist/movies/movies_sample.csv
+https://raw.githubusercontent.com/mjfrigaard/sap/refs/heads/23_llm-shiny-assist/data-raw/movies_sample.csv
 
 </pre>
 ```
@@ -143,7 +145,9 @@ Now that we have a UI with the correct inputs and outputs, we'll convert these i
 
 **Prompt**: <code> Convert the inputs and outputs into modules and create a standalone app function that calls separate UI and server functions. </code>
 
-This prompt doesn't change the app display, but we're given a summary of the changes in the chat:
+The response to this prompt won't change the app, but we're given a summary of the changes in the chat:
+
+![Shiny Assistant: app functions and files](images/shiny_assist_prompt_03.png){fig-align="center" width="100%"}
 
 > I've modified the code to use a modular structure following these changes:
 >
@@ -173,8 +177,6 @@ This prompt doesn't change the app display, but we're given a summary of the cha
 >
 > This modular approach makes the code more maintainable and easier to extend. Each component has a well-defined responsibility, and they communicate through clear interfaces.
 
-![Shiny Assistant: app functions and files](images/shiny_assist_prompt_03.png){fig-align="center" width="100%"}
-
 I've left the Shiny Assistant chat setting to **Verbose**, but this can be changed to return less descriptive details on the code being produced:
 
 ![Shiny Assistant Chat setting](images/shiny_assist_verbose_setting.png)
@@ -184,6 +186,12 @@ I've left the Shiny Assistant chat setting to **Verbose**, but this can be chang
 Now we're reading to start structure the application as an R package. We'll attempt to create the files and documentation with a single prompt.
 
 **Prompt**: <code> Store the modules, UI, server, and standalone app functions in separate files and include roxygen2 documentation. </code>
+
+This results in an error when the Shiny Assistant tries to run our updates:
+
+![Shiny Assistant: error](images/shiny_assist_prompt_04.png){fig-align="center" width="100%"}
+
+The summary tells us what changed, but doesn't give us advice on (or even acknowledge) the error.
 
 > I've reorganized the code into separate files with roxygen2 documentation:
 >
@@ -213,15 +221,11 @@ Now we're reading to start structure the application as an R package. We'll atte
 >
 > The app.R file also includes logic to run the app only if the file is being executed directly in an interactive session.
 
-This results in an error in the Shiny Assistant UI:
-
-![Shiny Assistant: error](images/shiny_assist_prompt_04.png){fig-align="center" width="100%"}
-
 ## Prompt 5: Error
 
-The error above tells us the `bslib` package is not being loaded before `runApp()` is being called, so we'll give some direction on how to structure the file names and the call to `shinyApp()`:
+The error above tells us the `bslib::page_sidebar()` function isn't being loaded before `runApp()` is being called, but the call to `library(bslib)` is in the `app.R` file. We'll see if providing some direction on function/file names and where to call `shinyApp()` will resolve this error:
 
-**Prompt**: <code> An error occurred because the `page_sidebar` function could not be found. The `app.R` file needs to contain the `source()` calls for the modules and the call to `shinyApp()`. Also, rename the `ui.R` and `server.R` to `app_ui.R` and `app_server.R`. </code>
+**Prompt**: <code> An error occurred because the `page_sidebar` function could not be found. The `app.R` file needs to contain the `library()` and `source()` calls before the call to `shinyApp()`. Also, rename the `ui.R` and `server.R` to `app_ui.R` and `app_server.R`. </code>
 
 This results in the following changes to the app code structure:
 
@@ -255,15 +259,21 @@ This results in the following changes to the app code structure:
 >
 > The application should now run without the "page_sidebar function could not be found" error since we're properly sourcing all the module files before they're used in the UI and server functions.
 
-But this alone will not remove the error. We need to explicitly run the calls to `library()` and `source()` in the `app.R` file:
+In the `app.R` file, if we explicitly run the call to `library(bslib)` and then `source("app_ui.R")` (which contains the call to `page_sidebar()`), we see these are executed without errors in the **Console**:
 
 ![Shiny Assistant: `library()` and `source()` calls](images/shiny_assist_library_source_calls.png){fig-align="center" width="100%"}
 
-However, we see the following error when trying to call our standalone app function: 
+However, when we try to source and call the standalone app function, we see the following error: 
 
 ![Shiny Assistant: `runApp()` error](images/shiny_assist_run_app_error.png){fig-align="center" width="100%"}
 
-Debugging in Shiny Assistant is a little tricky, but we can see this is happening because we're trying to explicitly call `shinyApp()` (and the UI works by call `runApp()`).
+```{verbatim}
+Error in runApp(x) :
+  Can't call `runApp()` from within `runApp()`. If your application code contains
+  `runApp()`, please remove it.
+```
+
+This error is a little tricky, because we're calling `shinyApp()`, but this is happening because we're trying to explicitly call `shinyApp()` (and the UI works by call `runApp()`).
 
 We can fix this by clicking on the icon in the UI to run the app:
 
@@ -271,11 +281,16 @@ We can fix this by clicking on the icon in the UI to run the app:
 
 ## Bonus: Theme
 
-Now that we have our modules, app functions and documentation, we'll add a [`thematic` theme](https://rstudio.github.io/thematic/), confirm it works, then download the app files.
+Now that we have our modules, app functions and `roxygen2` documentation, we'll finish by adding a dark [`thematic` theme](https://rstudio.github.io/thematic/):
 
 **Prompt**: <code> Add a dark theme using the thematic package: https://rstudio.github.io/thematic/ </code>
 
-The summary of changes are below:
+The updated app includes a dark theme:
+
+![Shiny Assistant: `thematic` theme](images/shiny_assist_prompt_06.png){fig-align="center" width="100%"}
+
+
+And the summary of changes is below:
 
 > I've integrated the thematic package to add a dark theme to the application. Here are the changes I made:
 >
@@ -297,11 +312,8 @@ The summary of changes are below:
 >
 > The thematic package now automatically coordinates the ggplot2 theme with the application's dark theme, creating a cohesive dark mode experience throughout the entire application. The plots will automatically inherit the dark background and appropriate colors for text and elements.
 
-The updated app includes a dark theme:
 
-![Shiny Assistant: `thematic` theme](images/shiny_assist_prompt_06.png){fig-align="center" width="100%"}
-
-Click on the cloud icon in the upper right corner to download the application files:
+After confirming the new theme works, we'll download the app files by clicking on the cloud icon in the upper right corner:
 
 ![Download files](images/shiny_assist_download.png){fig-align="center" width="70%"}
 
@@ -317,14 +329,19 @@ inst/shiny-assist/
     │   ├── app_server.R
     │   ├── app_ui.R
     │   ├── controls_module.R
+    │   ├── movie_visualization_app.R
+    │   ├── movies_sample.rds
     │   └── plot_module.R
-    ├── app.R
-    └── movies_sample.csv
+    └── app.R
 
-3 directories, 7 files
+3 directories, 8 files
 ```
 
-The `app.R` file no longer needs to `source()` the modules and app functions if they are placed in an `R/` folder.
+The `app.R` file no longer needs to `source()` the modules and app functions if they are placed in an `R/` folder.[^shiny-assist-loadsupport]
+
+[^shiny-assist-loadsupport]: `loadSupport()` was covered back in @sec-shiny-folders.
+
+We can also move the standalone app function into it's own file in the `R/` folder, so `app.R` only loads the packages, theme, and launches the app:
 
 ```{r}
 #| eval: false 
@@ -340,21 +357,6 @@ library(thematic)
 # Setup thematic to automatically adjust plot theme to match app theme
 thematic_shiny(font = "auto")
 
-#' IMDB Movie Visualization Shiny App
-#'
-#' A Shiny application for visualizing IMDB movie data with interactive controls
-#' for customizing scatter plots.
-#'
-#' @return A Shiny application object
-#'
-#' @importFrom shiny shinyApp
-#'
-#' @export
-movie_visualization_app <- function() {
-  # Create and return the Shiny app
-  shinyApp(ui = ui_function(), server = server_function)
-}
-
 # Run the application 
 movie_visualization_app()
 ```
@@ -362,6 +364,103 @@ movie_visualization_app()
 In Positron, we can see the **Run App** icon is present at the top of `app.R`, and it's fully functional: 
 
 ![Shiny Assistant app launced in Positron](images/shiny_assist_positron_launch.png){fig-align="center" width="100%"}
+
+Finally, we'll add this app to our `launch_app()` function: 
+
+```{r}
+#| eval: false 
+#| code-fold: false
+#' Launch the Movies Review Application
+#'
+#' Starts the Movies Review Shiny application, which provides a customizable
+#' scatter plot interface for analyzing movie data.
+#'
+#' @param app which app to run. Options are:
+#'  * `NULL` = the default app (`"movies"`)
+#'  * `"bslib"` = alternative `bslib` layout
+#'  * `"ggp2"` = `ggplot2movies` (tidy) data app.
+#'  * `"quarto"` = Quarto movies app.
+#'  * `"assist"` = Application built with [Shiny Assistant](https://gallery.shinyapps.io/assistant/#).
+#' @param options arguments to pass to `options()`
+#' @param run where to launch app:
+#'  * `p` = launch in viewer pane
+#'  * `b` = launch in external browser
+#'  * `w` = launch in window
+#' @param ... arguments passed to UI
+#'
+#' @return A **Shiny application** object.
+#'
+#' @section Details:
+#' The application uses:
+#' - **UI**: Defined in [`movies_ui()`].
+#' - **Server Logic**: Defined in [`movies_server()`].
+#'
+#' @seealso
+#' - [`movies_ui()`] for the user interface.
+#' - [`movies_server()`] for the server logic.
+#'
+#' @family **Standalone Application**
+#'
+#' @details
+#' See the [ggplot2movies](https://github.com/hadley/ggplot2movies) package.
+#'
+#' @export
+#'
+#' @import shiny
+#'
+launch_app <- function(app = NULL, options = list(), run = "p", ...) {
+  if (interactive()) {
+    display_type(run = run)
+  }
+
+  if (is.null(app)) {
+    app <- "movies"
+  }
+
+  logr_msg(glue::glue("Launching app: {app}"),
+    level = "INFO"
+  )
+
+  tryCatch({
+      if (app == "bslib") {
+        shinyApp(
+          ui = movies_ui(bslib = TRUE),
+          server = movies_server,
+          options = options
+        )
+      } else if (app == "ggp2") {
+        shinyAppDir(
+          appDir = system.file("tidy-movies", package = "sap"),
+          options = options
+        )
+      } else if (app == "quarto") {
+        quarto::quarto_preview(
+          system.file("quarto", "index.qmd", package = "sap"),
+          render = "all"
+        )
+      } else if (app == "assist") {
+        shinyAppDir(
+          appDir = system.file("shiny-assist", package = "sap"),
+          options = options
+        )
+      } else {
+        shinyApp(
+          ui = movies_ui(...),
+          server = movies_server,
+          options = options
+        )
+      }
+    }, error = function(e) {
+      logr_msg(glue::glue("FATAL: Application failed to launch. Reason: {e$message}"),
+        level = "FATAL"
+      )
+
+      stop("Application launch failed. Check logs for details.")
+    }
+  )
+}
+```
+
 
 ## Recap {.unnumbered}
 
