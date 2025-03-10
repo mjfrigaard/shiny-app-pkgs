@@ -42,7 +42,10 @@ The UI for Shiny Assistant looks like a standard chat, but if you ask it to "Ope
 
 ![Shiny Assist Editor](images/shiny_assist_open_editor.png){fig-align="center" width="100%"}
 
-Shiny Assistant is great for trying different UI components, layouts, and styling (color palettes, themes, fonts, etc.). We're going to walk through using the assistant for building an Shiny app-package, but we'll limit the number of prompts to five to keep this chapter brief. However, I still think you'll find the Assistant is a helpful tool to have in your Shiny toolbox.
+Shiny Assistant is great for trying different UI components, layouts, and styling (color palettes, themes, fonts, etc.). We're going to walk through using the assistant for building an Shiny app-package, but we'll limit the number of prompts to five to keep this chapter brief. If you'd like to read a more comprehensive example of using Shiny Assistant to build an application, I recommend reading [this post on Appsilon's blog](https://www.appsilon.com/post/shiny-assistant).  
+
+
+However, I think five prompts is all we'll need to convince you that the Shiny Assistant is an impressively helpful tool to have in your Shiny toolbox.
 
 ## Prompt 1: Build an app
 
@@ -317,31 +320,36 @@ After confirming the new theme works, we'll download the app files by clicking o
 
 ![Download files](images/shiny_assist_download.png){fig-align="center" width="70%"}
 
-## Running locally
+## Finishing touches 
 
-I've placed the downloaded files in the `inst/shiny-assist/movies` folder in `sap`, and after some minor changes to the files/folder organization, we can see the app-package structure starting to take shape:
+We'll place the downloaded files in the `inst/shiny-assist/movies` folder in `sap`, and after some minor changes to the files/folder organization (we'll move the standalone app function into it's own file in the `R/` folder):
 
 ```{verbatim}
 inst/shiny-assist/
 └── movies
-    ├── R
+    ├── R # <1>
     │   ├── about_module.R
     │   ├── app_server.R
     │   ├── app_ui.R
     │   ├── controls_module.R
-    │   ├── movie_visualization_app.R
-    │   ├── movies_sample.rds
+    │   ├── movie_visualization_app.R # <2>
     │   └── plot_module.R
     └── app.R
 
-3 directories, 8 files
+3 directories, 7 files
 ```
+1. `R/` folder for modules and functions 
+2. Standalone app function 
+
+The app-package structure starting to take shape!
+
+### The `app.R` file
 
 The `app.R` file no longer needs to `source()` the modules and app functions if they are placed in an `R/` folder.[^shiny-assist-loadsupport]
 
 [^shiny-assist-loadsupport]: `loadSupport()` was covered back in @sec-shiny-folders.
 
-We can also move the standalone app function into it's own file in the `R/` folder, so `app.R` only loads the packages, theme, and launches the app:
+
 
 ```{r}
 #| eval: false 
@@ -361,15 +369,94 @@ thematic_shiny(font = "auto")
 movie_visualization_app()
 ```
 
+Now `app.R` only loads the packages, theme, and launches the app. 
+
 In Positron, we can see the **Run App** icon is present at the top of `app.R`, and it's fully functional: 
 
 ![Shiny Assistant app launced in Positron](images/shiny_assist_positron_launch.png){fig-align="center" width="100%"}
+
+### `ggplot2` warnings
+
+We have a persistent warning printed to the console about the use of `aes_string()` in our `plot_module.R`.
+
+![`ggplot2::aes_string()` warning](images/shiny_assist_aes_string_warning.png){fig-align='center' width='100%'}
+
+The solution is to convert the `aes_string()` to use `rlang::sym()` and `!!`.
+
+::: {layout="[50, 50]"  layout-valign="top"}
+
+##### [`aes_string()`]{style='font-weight: bold;'} {.unnumbered}
+
+```r
+# Create base plot
+p <- ggplot2::ggplot(data(), 
+        ggplot2::aes_string(
+        x = ctrl$x_var, 
+        y = ctrl$y_var)
+      )
+```
+
+##### [`rlang::sym()` & `!!`]{style='font-weight: bold;'} {.unnumbered}
+
+```r
+# convert to symbols 
+x_var <- rlang::sym(ctrl$x_var)
+y_var <- rlang::sym(ctrl$y_var)
+
+# Create base plot
+p <- ggplot2::ggplot(
+          data(), 
+        ggplot2::aes(
+          # use double bang!!
+            x = !!x_var, 
+            y = !!y_var
+            )
+          )
+```
+
+:::
+
+
+::: {layout="[50, 50]"  layout-valign="top"}
+
+##### [`aes_string()`]{style='font-weight: bold;'} {.unnumbered}
+
+```r
+# Add color if selected
+if (ctrl$color_var != "none") {
+
+  p <- p + aes_string(
+              color = ctrl$color_var
+              )
+  
+}
+```
+
+##### [`rlang::sym()` & `!!`]{style='font-weight: bold;'} {.unnumbered}
+
+```r
+# Add color if selected
+if (ctrl$color_var != "none") {
+
+  # convert to symbols 
+  color_var <- rlang::sym(ctrl$color_var)
+
+  p <- p + ggplot2::aes(
+              # use double bang!!
+              color = !!color_var
+              )
+}
+```
+
+::::
+
 
 Finally, we'll add this app to our `launch_app()` function: 
 
 ```{r}
 #| eval: false 
-#| code-fold: false
+#| code-fold: show 
+#| code-summary: 'show/hide updated launch_app() function'
 #' Launch the Movies Review Application
 #'
 #' Starts the Movies Review Shiny application, which provides a customizable
