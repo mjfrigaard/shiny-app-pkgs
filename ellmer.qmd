@@ -18,7 +18,7 @@ co_box(
   header = "WARNING",
   fold = FALSE,
   contents = "
-This chapter is being developed. Thank you for your patience. 
+  This chapter is being developed. Thank you for your patience. 
   "
 )
 ```
@@ -39,5 +39,424 @@ co_box(
 )
 ```
 
+I consider the [`ellmer` package](https://ellmer.tidyverse.org/) as the 'backbone' to using LLMs in R. The package has been thoughtfully developed, is easy to use, and has excellent documentation and examples. This chapter will cover using `ellmer`'s chat tools in app-package development, and how to use `ellmer` to create a package assistant for your app-package.
+
 <!-- https://ellmer.tidyverse.org/ -->
 
+## Installing ellmer {#sec-ellmer-install}
+
+Install `ellmer` like you would any other package: 
+
+```{r}
+#| eval: false 
+#| code-fold: false
+install.packages('ellmer')
+# or the dev version
+pak::pak('tidyverse/ellmer')
+```
+
+
+### LLM Provider
+
+After installing the package, we need to set up an LLM model provider. `ellmer` provides 10+ LLM provider options, but for this example, I'll use the [OpenAI](https://openai.com/) model. OpenAI requires an API key (`OPENAI_API_KEY`) which can be set using the `usethis::edit_r_environ()` function. 
+
+### Using the chat {#sec-ellmer-chat}
+
+To start a chat, we can call `ellmer::chat_openai()` and specify the `model` we want to use.[^openai-model] We should also be sure to record any [`system_prompts`](https://ellmer.tidyverse.org/reference/chat_openai.html#arg-system-prompt) and the number of [`turns`](https://ellmer.tidyverse.org/reference/chat_openai.html#arg-turns) we'll be using. 
+
+[^openai-model]: The [`chat_openai()` documentation](https://ellmer.tidyverse.org/reference/chat_openai.html#arg-model) recommends "*explicitly choosing a model for all but the most casual use.*"  
+
+```{r}
+#| eval: false
+#| code-fold: false
+library(ellmer)
+chat <- chat_openai(model = "o1-mini")
+```
+
+```{verbatim}
+Using model = "o1-mini".
+```
+
+The `chat` object can be used directly in the console to submit prompts and get responses.
+
+```{r}
+#| eval: false
+#| code-fold: false
+chat$chat("
+  What are the benefits of developing my Shiny application in an R package?
+  Answer in a markdown-formatted bulleted list.
+")
+```
+
+```{verbatim}
+- **Enhanced Code Organization**
+  - Structure your application with a standardized file hierarchy, making the codebase 
+easier to navigate and maintain.
+
+- **Reusable Components**
+  - Develop modular functions and components that can be easily reused across different
+projects or parts of the application.
+
+- **Dependency Management**
+  - Clearly specify and manage package dependencies, ensuring that all necessary 
+libraries are installed and up to date.
+
+- **Simplified Testing**
+  - Utilize built-in testing frameworks to implement unit tests and ensure the 
+reliability of your application.
+
+- **Comprehensive Documentation**
+  - Provide detailed documentation for functions and features using tools like 
+Roxygen2, improving understandability for users and contributors.
+
+- **Namespace Control**
+  - Avoid function name conflicts and manage the scope of your functions effectively 
+through namespaces.
+
+- **Ease of Distribution**
+  - Share your Shiny application effortlessly by distributing it as an R package 
+through platforms like CRAN or GitHub.
+
+- **Version Control Integration**
+  - Manage and track changes systematically with version control systems, facilitating 
+collaboration and rollback capabilities.
+
+- **Streamlined Deployment**
+  - Leverage package tools for easier deployment to servers or Shiny hosting services, 
+ensuring a smoother launch process.
+
+- **Community Contributions**
+  - Enable others to contribute to your application more easily by following standard 
+package development practices, fostering community growth.
+```
+
+We can copy and paste the output into any Markdown document (vignettes, README, etc.).
+
+### Prompts {#sec-ellmer-prompts}
+
+If we know we're going to interacting with an LLM, we should pick a location to store our prompts/responses. The `ellmer` authors recommend storing these in `inst/prompts`, with a sensible naming convention.[^inst-prompts] 
+
+[^inst-prompts]: "*If you have multiple prompts, give them informative names like `prompt-extract-metadata.md` or `prompt-summarize-text.md`. If you’re writing a package, put your prompt(s) in `inst/prompts`*" - [`ellmer` documentation](https://ellmer.tidyverse.org/articles/prompt-design.html)
+
+## Movie explorer redux {#sec-ellmer-shinydb}
+
+We're going to use `ellmer` to help us convert an existing Shiny app into a Shiny app-package. The application comes from the [Shiny Examples GitHub repo](https://github.com/rstudio/shiny-examples). The `README.md` from the original app is available below: 
+
+::: {.callout-tip title='051-movie-explorer app'}
+
+`README.md` from [rstudio/shiny-examples/051-movie-explorer](https://github.com/rstudio/shiny-examples/tree/main/051-movie-explorer):
+
+```{r}
+#| eval: true 
+#| echo: false
+download.file("https://raw.githubusercontent.com/rstudio/shiny-examples/refs/heads/main/051-movie-explorer/README.md", destfile = "_mov_exp.qmd")
+```
+
+<em>
+
+{{< include _ellmer_mov_exp.qmd >}}
+
+</em>
+
+:::
+
+The application files are also stored in the `inst/051-movie-explorer` folder of this branch:
+
+```{verbatim}
+inst/51-movies-explorer/
+├── DESCRIPTION
+├── README.md
+├── global.R
+├── movies.db
+├── server.R
+└── ui.R
+
+1 directory, 6 files
+```
+
+**Prompt 1**: Our first prompt will be [`inst/prompts/prompt-01-refactor-mods-functions.md`](https://github.com/mjfrigaard/sap/blob/24_llm-ellmer/inst/prompts/prompt-01-refactor-mods-functions.md), and we'll start by passing a `system_prompt` to `chat$chat()` that provides some context on the response:
+
+
+::: {.callout-warning title='Chat args 1' collapse='false'}
+
+<em>
+
+{{< include _ellmer_c1.qmd >}}
+
+</em>
+
+:::
+
+
+The prompt will focus on creating modules, UI and server functions, and a standalone app function. We'll provide the `ui.R` and `server.R` code, and some instructions for  module and function names. It's recommended to provide prompts using Markdown,[^prompt-md] and I'd used escape characters for the R code chunks.
+
+[^prompt-md]: Markdown is "*quite readable to LLMs (and humans), and it allows you to do things like use headers to divide up a prompt into sections and itemised lists to enumerate multiple options.*" [Best Practices, `ellmer`](https://ellmer.tidyverse.org/articles/prompt-design.html#best-practices)
+
+::: {.callout-caution title='Prompt text 1' collapse='false'}
+
+Expand the code chunk below to view the first prompt.
+
+<em>
+
+{{< include _ellmer_p1.qmd >}}
+
+</em>
+
+:::
+
+The response is generated in the Console: 
+
+![`ellmer` chat response](images/ellmer_prompt_01.gif){width='100%' fig-align='center'}
+
+We can see the response contains the modules and functions in separate code chunks. I've organized them into the callout box below:
+
+::: {.callout-important title='Response text 1' collapse='false'}
+
+<em>
+
+{{< include _ellmer_r1.qmd >}}
+
+</em>
+
+:::
+
+We'll create an app folder in [`inst/db_app`](https://github.com/mjfrigaard/sap/tree/24_llm-ellmer/inst/db_app), then structure the files like a 'mini' R package: 
+
+```{verbatim}
+inst/db_app/
+├── R
+│   ├── db_app_server.R
+│   ├── db_app_ui.R
+│   ├── global.R
+│   ├── mod_graph_inputs.R
+│   └── mod_graph_output.R
+├── app.R
+└── movies.db
+
+2 directories, 7 files
+```
+
+After organizing the files into the structure above, we can run the application using the `launch_db_app()` function (stored in `app.R`).
+
+![Initial application from `ellmer`](images/ellmer_db_app_v01.png){width='100%' fig-align='center'}
+
+**Prompt 2**: The second prompt is stored in [`inst/prompts/prompt-02-utility-functions.md`](https://github.com/mjfrigaard/sap/blob/24_llm-ellmer/inst/prompts/prompt-02-utility-functions.md). We'll use the same `system_prompt`, but adjust our prompt:
+
+
+::: {.callout-caution title='Prompt text 2' collapse='false'}
+
+This prompt will focus on creating utility functions for the database connection and joining/wrangling the data.
+
+<em>
+
+{{< include _ellmer_p2.qmd >}}
+
+</em>
+
+:::
+
+The response includes two new functions: `connect_database()` and `get_all_movies()`:
+
+::: {.callout-important title='Response text 2' collapse='false'}
+
+<em>
+
+{{< include _ellmer_r2.qmd >}}
+
+</em>
+
+:::
+
+
+To implement these changes, we'll need to add these functions to the `inst/db_app/R` folder:
+
+```{verbatim}
+inst/db_app/
+├── R
+│   ├── connect_database.R
+│   ├── db_app_server.R
+│   ├── db_app_ui.R
+│   ├── get_all_movies.R
+│   ├── global.R
+│   ├── mod_graph_inputs.R
+│   └── mod_graph_output.R
+├── app.R
+└── movies.db
+
+2 directories, 9 files
+```
+
+We should also address the following warning we're getting regarding `dplyr::src_sqlite()`: 
+
+```{verbatim}
+Warning: `src_sqlite()` was deprecated in dplyr 1.0.0.
+ℹ Please use `tbl()` directly with a database connection
+```
+
+Placing the `movies.db` file in `inst/extdata` and adjusting our `connect_database()` function will address this warning: 
+
+```{r}
+#| eval: false
+#| code-fold: false
+connect_database <- function(pkg, db) {
+  # Create a handle to the movies database
+  con <- DBI::dbConnect(RSQLite::SQLite(),
+              system.file("extdata", db, package = pkg))
+  con
+}
+```
+
+Now we can update our `db_app_server()` function to use the utility functions: 
+
+```{r}
+#| eval: false
+#| code-fold: false
+db_app_server <- function(input, output, session) {
+  
+  # Set up handles to database tables on app start
+  db <- connect_database(pkg = "sap", db = "movies.db") # <1>
+  
+  # Join tables, filter out those with <10 reviews, and select
+  all_movies <- get_all_movies(db = db) # <2>
+  
+  # Call module for inputs
+  inputs_reactive <- mod_graph_inputs_server(
+    id = "graph_inputs",
+    all_movies = all_movies
+  )
+  
+  # Call module for outputs
+  mod_graph_output_server(
+    id = "graph_outputs",
+    inputs_list = inputs_reactive
+  )
+}
+```
+1. Replaces the `dplyr::src_sqlite()` and `dplyr::tbl()` calls.  
+2. Replaces the `dplyr::inner_join()`, `dplyr::filter()`, and `dplyr::select()` functions.    
+
+
+
+**Prompt 3**: We'll get even more detailed in the third prompt (stored in [`inst/prompts/prompt-03-app-ast-design.md`](https://github.com/mjfrigaard/sap/blob/24_llm-ellmer/inst/prompts/prompt-03-app-ast-design.md)). In these instructions, we'll include an abstract syntax tree (courtesy of `lobstr::ast()`) of our proposed application and descriptions of each function/module:
+
+
+```{verbatim}
+█─launch_app 
+├─█─db_app_ui 
+│ ├─█─mod_select_input_ui 
+│ ├─█─mod_slider_input_ui 
+│ ├─█─mod_text_input_ui 
+│ ├─█─mod_points_plotly_ui 
+│ └─█─mod_table_ui 
+└─█─db_app_server 
+  ├─█─db_con 
+  │ └─█─join_movies_tbls 
+  ├─█─mod_slider_input_server 
+  ├─█─mod_select_input_server 
+  ├─█─mod_text_input_server 
+  ├─█─mod_table_server 
+  └─█─mod_points_plotly_server 
+    └─█─scatter_plotly 
+```
+
+
+
+::: {.callout-caution title='Prompt text 3' collapse='false'}
+
+Expand the code chunk below to view the entire prompt.
+
+<em>
+
+{{< include _ellmer_p3.qmd >}}
+
+</em>
+
+:::
+
+We'll also instruct the model to return the functions with `roxygen2` documentation. View the results in the callout box below (or in the [Response](https://github.com/mjfrigaard/sap/blob/24_llm-ellmer/inst/prompts/prompt-03-app-ast-design.md#response) section on GitHub).
+
+::: {.callout-important title='Response text 3' collapse='false'}
+
+Expand the code chunks below to view the entire response.
+
+<em>
+
+{{< include _ellmer_r3.qmd >}}
+
+</em>
+
+:::
+
+After creating the files in the `R/` folder, adding the `inst/shinydb` folder, and making some minor adjustments to the functions, we can add this application to our `launch_app()` function. 
+
+
+```{r}
+#| eval: false 
+#| code-fold: false
+launch_app <- function(app = NULL, options = list(), run = "p", ...) {
+  if (interactive()) {
+    display_type(run = run)
+  }
+
+  if (is.null(app)) {
+    app <- "movies"
+  }
+
+  logr_msg(glue::glue("Launching app: {app}"),
+    level = "INFO"
+  )
+
+  tryCatch(
+    {
+      if (app == "bslib") {
+        shinyApp(
+          ui = movies_ui(bslib = TRUE),
+          server = movies_server,
+          options = options
+        )
+      } else if (app == "ggp2") {
+        shinyAppDir(
+          appDir = system.file("tidy-movies", package = "sap"),
+          options = options
+        )
+      } else if (app == "quarto") {
+        quarto::quarto_preview(
+          system.file("quarto", "index.qmd", package = "sap"),
+          render = "all"
+        )
+      } else if (app == "assist") {
+        shinyAppDir(
+          appDir = system.file("shiny-assist/movies", package = "sap"),
+          options = options
+        )
+      } else if (app == "db") {
+        shinyAppDir(
+          appDir = system.file("shinydb", package = "sap"),
+          options = options
+        )
+      } else {
+        shinyApp(
+          ui = movies_ui(...),
+          server = movies_server,
+          options = options
+        )
+      }
+    },
+    error = function(e) {
+      logr_msg(glue::glue("FATAL: Application failed to launch. Reason: {e$message}"),
+        level = "FATAL"
+      )
+
+      stop("Application launch failed. Check logs for details.")
+    }
+  )
+}
+
+```
+
+
+<!-- ## Package assistant {#sec-ellmer-assistant} -->
+
+<!-- The [`ellmer` assistant](https://jcheng.shinyapps.io/ellmer-assistant/)... -->
+
+## Recap {.unnumbered}

@@ -1,0 +1,46 @@
+
+```{r}
+#| eval: false 
+#| code-fold: true 
+#| code-summary: 'show/hide connect_database.R'
+# connect_database.R
+connect_database <- function(db_path = "movies.db") {
+  # Create a handle to the movies database
+  db <- dplyr::src_sqlite(path = db_path)
+  db
+}
+```
+
+```{r}
+#| eval: false 
+#| code-fold: true 
+#| code-summary: 'show/hide get_all_movies.R'
+# get_all_movies.R
+get_all_movies <- function(db) {
+  # Join tables, filter out those with <10 reviews, and select columns
+  omdb <- dplyr::tbl(db, "omdb")
+  tomatoes <- dplyr::tbl(db, "tomatoes")
+  
+  all_movies <- dplyr::inner_join(
+    x = omdb,
+    y = tomatoes,
+    by = "ID"
+  ) |>
+    dplyr::filter(Reviews >= 10) |>
+    dplyr::select(
+      ID, imdbID, Title, Year, Rating_m = Rating.x, Runtime, Genre,
+      Released, Director, Writer, imdbRating, imdbVotes, Language,
+      Country, Oscars, Rating = Rating.y, Meter, Reviews,
+      Fresh, Rotten, userMeter, userRating, userReviews, BoxOffice,
+      Production, Cast
+    )
+  
+  all_movies
+}
+```
+
+Explanation  
+
+• `connect_database()` is a simple function that uses `dplyr::src_sqlite()` to connect to the `movies.db` SQLite database, returning the database connection object.  
+  
+• `get_all_movies()` pulls the `omdb` and `tomatoes` tables, joins them, filters for `Reviews ≥ 10`, and selects the required columns.
