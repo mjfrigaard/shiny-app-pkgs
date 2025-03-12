@@ -39,7 +39,7 @@ co_box(
 )
 ```
 
-I consider the [`ellmer` package](https://ellmer.tidyverse.org/) as the 'backbone' to using LLMs in R. The package has been thoughtfully developed, is easy to use, and has excellent documentation and examples. This chapter will cover using `ellmer`'s chat tools in app-package development, and how to use `ellmer` to create a package assistant for your app-package.
+The [`ellmer` package](https://ellmer.tidyverse.org/) servers as the 'backbone' to using LLMs in R (we used it to set up the `ensure` package for writing unit tests in @sec-test-tools-help). The package has been thoughtfully developed, is easy to use, and has excellent documentation and examples. This chapter will briefly cover using `ellmer`'s chat tool in app-package development.
 
 <!-- https://ellmer.tidyverse.org/ -->
 
@@ -134,7 +134,7 @@ We can copy and paste the output into any Markdown document (vignettes, README, 
 
 ### Prompts {#sec-ellmer-prompts}
 
-If we know we're going to interacting with an LLM, we should pick a location to store our prompts/responses. The `ellmer` authors recommend storing these in `inst/prompts`, with a sensible naming convention.[^inst-prompts] 
+If we know we're going to be interacting with an LLM, we should pick a location to store our prompts/responses. The `ellmer` authors recommend storing these in `inst/prompts`, with a sensible naming convention.[^inst-prompts] 
 
 [^inst-prompts]: "*If you have multiple prompts, give them informative names like `prompt-extract-metadata.md` or `prompt-summarize-text.md`. If you’re writing a package, put your prompt(s) in `inst/prompts`*" - [`ellmer` documentation](https://ellmer.tidyverse.org/articles/prompt-design.html)
 
@@ -160,7 +160,7 @@ download.file("https://raw.githubusercontent.com/rstudio/shiny-examples/refs/hea
 
 :::
 
-The application files are also stored in the `inst/051-movie-explorer` folder of this branch:
+The application files are also stored in the [`inst/51-movie-explorer`](https://github.com/mjfrigaard/sap/tree/24_llm-ellmer/inst/51-movies-explorer) folder of this branch:
 
 ```{verbatim}
 inst/51-movies-explorer/
@@ -174,10 +174,12 @@ inst/51-movies-explorer/
 1 directory, 6 files
 ```
 
-**Prompt 1**: Our first prompt will be [`inst/prompts/prompt-01-refactor-mods-functions.md`](https://github.com/mjfrigaard/sap/blob/24_llm-ellmer/inst/prompts/prompt-01-refactor-mods-functions.md), and we'll start by passing a `system_prompt` to `chat$chat()` that provides some context on the response:
+### System Prompt
+
+We'll start by passing a `system_prompt` to `chat$chat()` to provide some additional information on how the model should respond:
 
 
-::: {.callout-warning title='Chat args 1' collapse='false'}
+::: {.callout-warning title='System prompts' collapse='false'}
 
 <em>
 
@@ -187,10 +189,16 @@ inst/51-movies-explorer/
 
 :::
 
+I've modeled this `system_prompt` off the example in the `ellmer` documentation,[^system-prompts] but this can be used to specify expertise, coding style preferences (tidyverse/base R), etc.
 
-The prompt will focus on creating modules, UI and server functions, and a standalone app function. We'll provide the `ui.R` and `server.R` code, and some instructions for  module and function names. It's recommended to provide prompts using Markdown,[^prompt-md] and I'd used escape characters for the R code chunks.
+[^system-prompts]: Use `system_prompt`s to '*provide additional instructions to the model, shaping its responses to your needs*' - [What is a prompt? `ellmer` documentation](https://ellmer.tidyverse.org/articles/ellmer.html#what-is-a-prompt)
 
-[^prompt-md]: Markdown is "*quite readable to LLMs (and humans), and it allows you to do things like use headers to divide up a prompt into sections and itemised lists to enumerate multiple options.*" [Best Practices, `ellmer`](https://ellmer.tidyverse.org/articles/prompt-design.html#best-practices)
+### Prompt 1
+
+**Prompt 1**: The first prompt (stored in [`inst/prompts/prompt-01-refactor-mods-functions.md`](https://github.com/mjfrigaard/sap/blob/24_llm-ellmer/inst/prompts/prompt-01-refactor-mods-functions.md)) will focus on creating modules, UI and server functions, and a standalone app function. We'll provide the `ui.R` and `server.R` code, and some instructions for  module and function names. It's recommended to provide prompts using Markdown,[^prompt-md] and I'd used escape characters for the R code chunks.
+
+[^prompt-md]: Markdown is "*quite readable to LLMs (and humans), and it allows you to do things like use headers to divide up a prompt into sections and itemised lists to enumerate multiple options.*" [Best Practices, `ellmer` documentation](https://ellmer.tidyverse.org/articles/prompt-design.html#best-practices)
+
 
 ::: {.callout-caution title='Prompt text 1' collapse='false'}
 
@@ -204,13 +212,16 @@ Expand the code chunk below to view the first prompt.
 
 :::
 
+
+### Response 1
+
 The response is generated in the Console: 
 
 ![`ellmer` chat response](images/ellmer_prompt_01.gif){width='100%' fig-align='center'}
 
 We can see the response contains the modules and functions in separate code chunks. I've organized them into the callout box below:
 
-::: {.callout-important title='Response text 1' collapse='false'}
+::: {   .callout-note title='Response text 1' collapse='false'}
 
 <em>
 
@@ -240,12 +251,21 @@ After organizing the files into the structure above, we can run the application 
 
 ![Initial application from `ellmer`](images/ellmer_db_app_v01.png){width='100%' fig-align='center'}
 
-**Prompt 2**: The second prompt is stored in [`inst/prompts/prompt-02-utility-functions.md`](https://github.com/mjfrigaard/sap/blob/24_llm-ellmer/inst/prompts/prompt-02-utility-functions.md). We'll use the same `system_prompt`, but adjust our prompt:
+The application launches and we can see the plotly scatter plot renders successfully. The inputs in the sidebar are somewhat cramped and out of view, but we can adjust this with future prompts (or by manually editing the UI components).
+
+### Prompt 2
+
+**Prompt 2**: The second prompt will focus on creating utility functions for the database connection and joining/wrangling the data. I've stored the instructions in [`inst/prompts/prompt-02-utility-functions.md`](https://github.com/mjfrigaard/sap/blob/24_llm-ellmer/inst/prompts/prompt-02-utility-functions.md) (we'll use the same `system_prompt`).
+
+The goal with this prompt is to create testable utility functions and address the `dplyr::src_sqlite()` warning we're getting from our database connection: 
+
+```{verbatim}
+Warning: `src_sqlite()` was deprecated in dplyr 1.0.0.
+ℹ Please use `tbl()` directly with a database connection
+```
 
 
 ::: {.callout-caution title='Prompt text 2' collapse='false'}
-
-This prompt will focus on creating utility functions for the database connection and joining/wrangling the data.
 
 <em>
 
@@ -255,9 +275,11 @@ This prompt will focus on creating utility functions for the database connection
 
 :::
 
-The response includes two new functions: `connect_database()` and `get_all_movies()`:
+### Response 2
 
-::: {.callout-important title='Response text 2' collapse='false'}
+The response includes two new functions: `connect_database()` and `get_all_movies()`
+
+::: {   .callout-note title='Response text 2' collapse='false'}
 
 <em>
 
@@ -267,53 +289,29 @@ The response includes two new functions: `connect_database()` and `get_all_movie
 
 :::
 
+The `connect_database()` still uses `dplyr::src_sqlite()`, so we'll rewrite this function will address the warning and move the `movies.db` file into the  `inst/extdata`[^extdata] folder to access with `system.file()`:
 
-To implement these changes, we'll need to add these functions to the `inst/db_app/R` folder:
-
-```{verbatim}
-inst/db_app/
-├── R
-│   ├── connect_database.R
-│   ├── db_app_server.R
-│   ├── db_app_ui.R
-│   ├── get_all_movies.R
-│   ├── global.R
-│   ├── mod_graph_inputs.R
-│   └── mod_graph_output.R
-├── app.R
-└── movies.db
-
-2 directories, 9 files
-```
-
-We should also address the following warning we're getting regarding `dplyr::src_sqlite()`: 
-
-```{verbatim}
-Warning: `src_sqlite()` was deprecated in dplyr 1.0.0.
-ℹ Please use `tbl()` directly with a database connection
-```
-
-Placing the `movies.db` file in `inst/extdata` and adjusting our `connect_database()` function will address this warning: 
+[^extdata]: The `inst/extdata` folder is [covered in R Packages, 2nd ed.](https://r-pkgs.org/data.html#sec-data-extdata)
 
 ```{r}
 #| eval: false
 #| code-fold: false
 connect_database <- function(pkg, db) {
-  # Create a handle to the movies database
+  # Create connection to movies database
   con <- DBI::dbConnect(RSQLite::SQLite(),
               system.file("extdata", db, package = pkg))
   con
 }
 ```
 
-Now we can update our `db_app_server()` function to use the utility functions: 
+We'll also need to update the `db_app_server()` function to use the new utility functions: 
 
 ```{r}
 #| eval: false
 #| code-fold: false
 db_app_server <- function(input, output, session) {
   
-  # Set up handles to database tables on app start
+  # Set up connection to database tables on app start
   db <- connect_database(pkg = "sap", db = "movies.db") # <1>
   
   # Join tables, filter out those with <10 reviews, and select
@@ -336,9 +334,34 @@ db_app_server <- function(input, output, session) {
 2. Replaces the `dplyr::inner_join()`, `dplyr::filter()`, and `dplyr::select()` functions.    
 
 
+To implement these changes, we'll need to add the new function files to the `inst/db_app/R` folder:
 
-**Prompt 3**: We'll get even more detailed in the third prompt (stored in [`inst/prompts/prompt-03-app-ast-design.md`](https://github.com/mjfrigaard/sap/blob/24_llm-ellmer/inst/prompts/prompt-03-app-ast-design.md)). In these instructions, we'll include an abstract syntax tree (courtesy of `lobstr::ast()`) of our proposed application and descriptions of each function/module:
+```{verbatim}
+inst/db_app/
+├── R
+│   ├── connect_database.R
+│   ├── db_app_server.R
+│   ├── db_app_ui.R
+│   ├── get_all_movies.R
+│   ├── global.R
+│   ├── mod_graph_inputs.R
+│   └── mod_graph_output.R
+├── app.R
+└── movies.db
 
+2 directories, 9 files
+```
+
+This results in the following application: 
+
+![Updated `inst/db_app` app](images/ellmer_db_app_v02.png){fig-align='center' width='100%'}
+
+We can see the `dplyr::src_sqlite()` warning is gone and the data is correctly loaded in the application.
+
+
+### Prompt 3
+
+**Prompt 3**: We'll get even more detailed in the third prompt (stored in [`inst/prompts/prompt-03-app-ast-design.md`](https://github.com/mjfrigaard/sap/blob/24_llm-ellmer/inst/prompts/prompt-03-app-ast-design.md)). In these instructions, we'll include an abstract syntax tree (courtesy of `lobstr::ast()`) with proposed function names and descriptions:
 
 ```{verbatim}
 █─launch_app 
@@ -359,7 +382,7 @@ db_app_server <- function(input, output, session) {
     └─█─scatter_plotly 
 ```
 
-
+I've found this practice is helpful when writing prompts that request nested functions (like modules). We'll also instruct the model to return the functions with `roxygen2` documentation.
 
 ::: {.callout-caution title='Prompt text 3' collapse='false'}
 
@@ -373,9 +396,11 @@ Expand the code chunk below to view the entire prompt.
 
 :::
 
-We'll also instruct the model to return the functions with `roxygen2` documentation. View the results in the callout box below (or in the [Response](https://github.com/mjfrigaard/sap/blob/24_llm-ellmer/inst/prompts/prompt-03-app-ast-design.md#response) section on GitHub).
+### Response 3
 
-::: {.callout-important title='Response text 3' collapse='false'}
+View the results in the callout box below (or in the [Response](https://github.com/mjfrigaard/sap/blob/24_llm-ellmer/inst/prompts/prompt-03-app-ast-design.md#response) section on GitHub).
+
+::: {   .callout-note title='Response text 3' collapse='false'}
 
 Expand the code chunks below to view the entire response.
 
@@ -389,10 +414,10 @@ Expand the code chunks below to view the entire response.
 
 After creating the files in the `R/` folder, adding the `inst/shinydb` folder, and making some minor adjustments to the functions, we can add this application to our `launch_app()` function. 
 
-
 ```{r}
 #| eval: false 
-#| code-fold: false
+#| code-fold: true 
+#| code-summary: 'show/hide updated launch_app()'
 launch_app <- function(app = NULL, options = list(), run = "p", ...) {
   if (interactive()) {
     display_type(run = run)
@@ -454,9 +479,39 @@ launch_app <- function(app = NULL, options = list(), run = "p", ...) {
 
 ```
 
+Our updated `shinydb` application is below:
+
+```{r}
+#| eval: false
+#| code-fold: false
+launch_app(app = 'db')
+```
+
+
+![shinydb app](images/ellmer_shinydb_app_v03.png){fig-align='center' width='100%'}
+
+As we can see, the sidebar is less crowded, and with the information we provided, the chat was able to figure out where each utility function should be placed.
+
+From here, we can continue using `ellmer` or `ensure` (see @sec-test-tools-help) to write unit tests for these new functions. We should also make sure any new dependencies are properly managed (i.e., using `attachment::att_amend_desc()`)
+
+```{r}
+#| eval: false
+#| code-fold: false
+attachment::att_amend_desc()
+```
+
+```{verbatim}
+Updating sap documentation
+Writing NAMESPACE
+ℹ Loading sap
+[+] 5 package(s) added: DBI, dplyr, plotly, reactable, RSQLite.
+```
+
 
 <!-- ## Package assistant {#sec-ellmer-assistant} -->
 
 <!-- The [`ellmer` assistant](https://jcheng.shinyapps.io/ellmer-assistant/)... -->
 
 ## Recap {.unnumbered}
+
+The `ellmer` package simplifies using LLMs, making it easier to include them as a tool in regular app/package development. Storing prompts ensures your project is well documented (especially when converting back to previous versions). 
