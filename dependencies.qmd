@@ -172,19 +172,19 @@ The first step in managing dependencies is identifying which packages `sap` reli
 %%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
 flowchart TD
     subgraph Dir["<strong>App-Package Directory</strong>"]
-        Init(["<code>renv::init()</code>"])
-        Snap[["<code>renv::snapshot()</code>"]]
+        Init["<code>renv::init()</code>"]
+        Snap["<code>renv::snapshot()</code>"]
     end
     subgraph RepEnv["<strong>Reproducible Environment</strong>"]
-        Lock("<code>renv.lock</code>")
-        Lib("<code>renv/library</code>")
+        Lock["<code>renv.lock</code> file"]
+        Lib["<code>renv/</code> library"]
     end
-  Init --> Snap
-  Snap -->|Captures dependencies in lockfile|Lock
-  Snap -->|Stores packages in private library|Lib
-  
-  style Dir stroke:1px,rx:3,ry:3,font-size:13px
-  style RepEnv stroke:1px,rx:3,ry:3,font-size:13px
+    Init --> Snap
+    Snap -->|"<em>Captures dependencies<br>in lockfile</em>"| Lock
+    Snap -->|"<em>Stores packages<br>in private library</em>"| Lib
+
+    style Dir stroke:1px,rx:3,ry:3,font-size:13px
+    style RepEnv stroke:1px,rx:3,ry:3,font-size:13px
 ```
 
 
@@ -1149,7 +1149,7 @@ flowchart TD
         Imports("<code>Imports</code><br> in DESCRIPTION")
     end
     subgraph R["<strong>R/ Folder</strong>"]
-        Tag{{"Use <code>pkg::fun()</code><br>"}}
+        Tag("Use <code>pkg::fun()</code><br>")
         Import("Use <code>@import</code>")
         ImportFrom("Use <code>@importFrom</code>")
     end
@@ -1160,9 +1160,9 @@ flowchart TD
     Document(["<code>devtools::document()</code></strong>"])
 
   UsePkg -->|"Adds <code>pkg</code> to"|Imports
-  DESCRIPTION ==>|"Use <code>fun()</code> from <code>pkg</code>"|Tag
-  DESCRIPTION -.-> |"Everything from <code>pkg</code>"|Import 
-  DESCRIPTION -.-> |"Special cases from <code>pkg</code>"|ImportFrom
+  DESCRIPTION ==>|"To use <code>fun()</code><br>from <code>pkg</code>..."|Tag
+  DESCRIPTION -.-> |"To use everything<br>from <code>pkg</code>..."|Import 
+  DESCRIPTION -.-> |"For special cases<br>from <code>pkg</code>..."|ImportFrom
   Tag ==> Document
   Import -.-> Document -.-> |"Adds <code>pkg</code> to"|NSImport
   ImportFrom -.-> Document -.-> |"Adds <code>fun, pkg</code> to"|NSImportFrom
@@ -1261,47 +1261,47 @@ ggplot2::ggplot(data = mtcars,
 
 Below are handful of questions and answers I've encountered regarding package imports:
 
-***Question 1: How can I include an add-on package to my `DESCRIPTION` file?***
+**Question 1: How can I include an add-on package to my `DESCRIPTION` file?**
 
-Answer 1: `usethis::use_package()` automatically adds a package in the `Imports` section, and has options for specifying the minimum version.
+*Answer 1: `usethis::use_package()` automatically adds a package in the `Imports` section, and has options for specifying the minimum version.*
 
-***Question 2: Will users of my app-package have access to the packages listed in the `Imports` field of my `DESCRIPTION` file?***
+**Question 2: Will users of my app-package have access to the packages listed in the `Imports` field of my `DESCRIPTION` file?**
 
-Answer 3: `library(pkg)` loads the namespace of imported packages, but they are not attached to the `search()` path.[^desc-add-on-access] 
+*Answer 3: `library(pkg)` loads the namespace of imported packages, but they are not attached to the `search()` path.*[^desc-add-on-access] 
 
 [^desc-add-on-access]: Users can access functions from add-on packages with the `pkg::fun` syntax.
 
-***Question 4: How can I tell the difference between functions written by a package author and imported functions in the code below `R/`?***
+**Question 4: How can I tell the difference between functions written by a package author and imported functions in the code below `R/`?**
 
-Answer 4: using `pkg::fun()` makes calls to add-on packages explicit and easy to differentiate from the native functions developed in `sap`.[^rpks-pkg-fun-syntax]
+*Answer 4: using `pkg::fun()` makes calls to add-on packages explicit and easy to differentiate from the native functions developed in `sap`.*[^rpks-pkg-fun-syntax]
 
 [^rpks-pkg-fun-syntax]: "*Our recommended default is to call external functions using the `package::function()` syntax.*" - [R Packages, 2ed](https://r-pkgs.org/dependencies-in-practice.html#sec-dependencies-in-imports)
 
-***Question 5: What does the `NAMESPACE` do when my package is installed by a user?***
+**Question 5: What does the `NAMESPACE` do when my package is installed by a user?**
 
-Answer 5: managing the `NAMESPACE` ensures your app-package works when it's installed and loaded on another machine, because R will read your package namespace to find what it imports and exports.[^ns-lookup]
+*Answer 5: managing the `NAMESPACE` ensures your app-package works when it's installed and loaded on another machine, because R will read your package namespace to find what it imports and exports.*[^ns-lookup]
 
 [^ns-lookup]: *The namespace controls the search strategy for variables used by functions in the package. If not found locally, R searches the package namespace first, then the imports, then the base namespace and then the normal search path (so the base namespace precedes the normal search rather than being at the end of it).* - [Writing R Extensions](https://cran.r-project.org/doc/manuals/R-exts.html#Package-namespaces)
 
-***Question 6: Where should I place the `@importFrom` tag in the code below R/?***
+**Question 6: Where should I place the `@importFrom` tag in the code below R/?**
 
-Answer 6: place the `@importFrom pkg fun` tag directly above the code using the add-on function. You can also consolidate all `@import` and `@importFrom` tags into a single package doc file (i.e., `R/[sap]-package.R`) by calling `usethis::use_package_doc()`.
+*Answer 6: place the `@importFrom pkg fun` tag directly above the code using the add-on function. You can also consolidate all `@import` and `@importFrom` tags into a single package doc file (i.e., `R/[sap]-package.R`) by calling `usethis::use_package_doc()`.*
 
-***Question 7: Should I be using `@importFrom` or `@import` from?***
+**Question 7: Should I be using `@importFrom` or `@import` from?**
 
-Answer 7: prefer `@importFrom` over `@import`, but try to avoid using either.[^r-ext-imports] [^r-pkgs-imports]
+*Answer 7: prefer `@importFrom` over `@import`, but try to avoid using either.*[^r-ext-imports] [^r-pkgs-imports]
 
 [^r-ext-imports]: "*Using `importFrom` selectively rather than `Imports` is good practice and recommended notably [when importing from packages with more than a dozen exports and especially from those written by others (so what they export can change in future)]{style="font-weight: bold;"}.*" - [Specifying imports and exports](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Specifying-imports-and-exports). 
 
 [^r-pkgs-imports]: "*Specifically, we recommend that you [default to not importing anything from [add-on packages] into your namespace]{style="font-weight: bold;"}. This makes it very easy to identify which functions live outside of your package, which is especially useful when you read your code in the future. This also eliminates any concerns about name conflicts between [add-on packages] and your package.*" - [R Packages, 2ed](https://r-pkgs.org/dependencies-in-practice.html#sec-dependencies-in-imports)
 
-***Question 8: Where can I find more information about package namespaces and imports?***
+**Question 8: Where can I find more information about package namespaces and imports?**
 
-Answer 8a: Imports are described briefly in R Packages, 2ed[^r-pkgs-fun-lookup] and covered in-depth in Advanced R, 2ed.[^advr-imports] 
+*Answer 8a: Imports are described briefly in R Packages, 2ed*[^r-pkgs-fun-lookup] *and covered in-depth in Advanced R, 2ed.*[^advr-imports] 
 
-Answer 8b: *"Each namespace has an **imports** environment that can contain bindings to functions used by the package that are defined in another package."*  
+*Answer 8b: "Each namespace has an **imports** environment that can contain bindings to functions used by the package that are defined in another package."* 
 
-Answer 8c: *"The **imports** environment is controlled by the package developer with the `NAMESPACE` file. Specifically, directives such as `importFrom()` and `imports()` populate this environment."* 
+*Answer 8c: "The **imports** environment is controlled by the package developer with the `NAMESPACE` file. Specifically, directives such as `importFrom()` and `imports()` populate this environment."* 
     
 [^advr-imports]: See the [Package environments and the search path](https://adv-r.hadley.nz/environments.html#search-path) of [Advanced R, 2ed](https://adv-r.hadley.nz/index.html)
 
