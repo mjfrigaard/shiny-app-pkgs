@@ -9,14 +9,14 @@ library(shinypak)
 ```
 
 ```{r}
-#| label: co_box_dev
+#| label: co_box_caution
 #| echo: false
 #| results: asis
 #| eval: true
 co_box(
-  color = "r", 
-  header = "Warning",
-  contents = "The contents in this section are under development. Thank you for your patience."
+  color = "y", 
+  header = "Caution",
+  contents = "The contents in this section are still being reviewed. Thank you for your patience."
 )
 ```
 
@@ -104,7 +104,195 @@ In [Dependencies](dependencies.qmd), we walked through:
 ::::
 
 
-The chapters in this section will cover common methods for debugging R code and how to adapt these methods to use with a Shiny application.
+This section covers common methods for debugging R code and how we can adapt these methods to use within a Shiny app. So far this book has covered the contents of an R package when it contains a basic, functional Shiny application. Consider the diagram below that illustrates the reactive inputs in our application: 
+
+```{=html}
+
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+
+</style>
+```
+
+```{mermaid}
+%%| fig-cap: 'Reactive flow in Movies App'
+%%| fig-align: center
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"13px"}}}%%
+flowchart TD
+    subgraph Inputs["<strong>Inputs</strong>"]
+        subgraph Variables["Variables"]
+        var_input[/"<code>input$x</code><br><code>input$y</code><br><code>input$z</code>"/]
+        end
+        subgraph Aesthetics["Aesthetics"]
+        aes_input[/"<code>input$alpha</code><br><code>input$size</code>"/]
+        end
+        subgraph Title["Title"]
+        plot_title[/"<code>input$plot_title</code>"/]
+        end
+        
+    end
+    subgraph React["<strong>App Reactives</strong>"]
+        var_inputs>"<code>var_inputs()</code> "]
+        inputs>"<code>inputs()</code>"]
+    end
+    subgraph Output["<strong>Output</strong>"]
+        output[\"<code>output$scatterplot</code>"\]
+    end
+
+
+    var_input & aes_input <==> |"pre-selected values"|var_inputs 
+    plot_title <-.-> |"empty string"|var_inputs 
+    var_inputs <==> inputs
+    inputs <==> output
+    
+    style var_input stroke:#333,stroke-width:1px,rx:5,ry:5 
+    style aes_input stroke:#333,stroke-width:1px,rx:5,ry:5
+```
+
+The inputs are collected by the variable input module[^mod_var_input] and passed to the graph display module (as `var_inputs()`),[^mod_scatter_display] where they become the reactive `inputs()` for the graph utility function,[^scatter_plot] before finally being rendered.
+
+[^mod_var_input]: Our variable input model is in `R/mod_var_input.R`.
+
+[^mod_scatter_display]: The graph display module is in `R/mod_scatter_display.R`.
+
+[^scatter_plot]: The graph utility function is in `R/scatter_plot.R`
+
+![](images/debug_positron_launch_app.png){width='100%' fig-align='center'}
+
+As applications grow in complexity, it's highly likely you'll encounter bugs or errors during development. Fortunately, both RStudio ![](images/rstudio-icon.png){height=20} and Positron ![](images/positron.png){height=20} come with powerful interactive debuggers, which help us identify, analyze, and fix errors in our code.[^debug-define] 
+
+[^debug-define]: The definition in [this article from AWS](https://aws.amazon.com/what-is/debugging/#:~:text=Debugging) gives a great general overview of debugging. 
+
+Our application launches with pre-selected values for the `x`, `y` and `color` graph inputs, along with values for the `size` and opacity (`alpha`) of the points. Users can add a title or change the graph inputs, but by having pre-selected values, we guarantee the graph renders when the application launches.
+
+```{=html}
+
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+
+</style>
+```
+
+```{mermaid}
+%%| fig-cap: '*Updating the plot title*'
+%%| fig-align: center
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"13px"}}}%%
+flowchart TD
+    subgraph Inputs["<strong>Inputs</strong>"]
+        subgraph Variables["Variables"]
+        var_input[/"<code>input$x</code><br><code>input$y</code><br><code>input$z</code>"/]
+        end
+        subgraph Aesthetics["Aesthetics"]
+        aes_input[/"<code>input$alpha</code><br><code>input$size</code>"/]
+        end
+        subgraph Title["Title"]
+        plot_title[/"<code>input$plot_title</code>"/]
+        end
+        
+    end
+    subgraph React["<strong>App Reactives</strong>"]
+        var_inputs>"<code>var_inputs()</code> "]
+        inputs>"<code>inputs()</code>"]
+    end
+    subgraph Output["<strong>Output</strong>"]
+        output[\"<code>output$scatterplot</code>"\]
+    end
+
+
+    var_input & aes_input <==> |"pre-selected values"|var_inputs 
+    plot_title <-.-> |"*new plot title*"|var_inputs 
+    var_inputs <==>|"*New Plot Title*"|inputs
+    inputs <==> output
+    
+    style var_input stroke:#333,stroke-width:1px,rx:5,ry:5 
+    style aes_input stroke:#333,stroke-width:1px,rx:5,ry:5
+```
+
+Any text entered for the title is converted to title case when the variable inputs are passed to the scatter plot display module. The reactives in the application are all updated with the new output:
+
+![*The new title is passed with `var_inputs()` to `inputs()` and updates the graph to display the text.*](images/debug_positron_update_launch_app.png){width='100%' fig-align='center'}
+
+## Shiny bugs
+
+In Shiny apps, debugging can be challenging because the reactive model involves dynamic interactions and a non-linear flow of execution between inputs, reactive expressions, and outputs. Shiny is inherently asynchronous, so bugs can originate from reactive dependencies, execution order, utility functions, hidden states, lazy evaluation, and invalidation (i.e., `reactive()`, `observe()`, `isolate()`, etc.).
+
+For example, we could have an incorrectly defined `inputId`s or `outputId`s in the UI, which causes our graph utility function to fail. We could also have missing parentheses on reactive values in the server. Finally, the bug could be originating from the output/render point.
+
+
+```{=html}
+
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+
+</style>
+```
+
+```{mermaid}
+%%| fig-cap: '*Possible locations of bugs in a reactive model*'
+%%| fig-align: center
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
+flowchart TD
+    subgraph Inputs["<strong>Inputs</strong>"]
+        subgraph Variables["Variables"]
+        var_input[/"<code>input$x</code><br><code>input$y</code><br><code>input$z</code>"/]
+        end
+        subgraph Aesthetics["Aesthetics"]
+        aes_input[/"<code>input$alpha</code><br><code>input$size</code>"/]
+        end
+        subgraph Title["Title"]
+        plot_title[/"<code>input$plot_title</code>"/]
+        end
+    end
+    IDs("<code>inputId</code> or <code>outputId</code> errors") --x var_input & aes_input & plot_title
+    subgraph React["<strong>App Reactives</strong>"]
+        var_inputs>"<code>var_inputs()</code> "]
+        inputs>"<code>inputs()</code>"]
+    end
+    Obs("<code>observe</code> listener<br>errors") --x React
+    Rxt("Reactive context<br>errors") --x Inputs & React
+    subgraph Output["<strong>Output</strong>"]
+        output[\"<code>output$scatterplot</code>"\]
+    end
+    Rend("<code>render_*</code> function<br>errors") ----x Output
+
+    var_input & aes_input <==> var_inputs 
+    plot_title <-.-> var_inputs 
+    var_inputs <==> inputs
+    inputs <==> output
+    
+    style var_input stroke:#333,stroke-width:1px,rx:5,ry:5 
+    style aes_input stroke:#333,stroke-width:1px,rx:5,ry:5
+    style IDs stroke:#333,stroke-width:1px,rx:10,ry:10
+    style Obs stroke:#333,stroke-width:1px,rx:10,ry:10
+    style Rend stroke:#333,stroke-width:1px,rx:10,ry:10
+    style Rxt stroke:#333,stroke-width:1px,rx:10,ry:10
+```
+ 
+Understanding the interplay of reactivity, lazy evaluation, and asynchronous execution will help us diagnose and resolve bugs in our Shiny app. We have to employ specific strategies and tools to handle Shiny bugs effectively, and some of the traditional debugging approaches can fall short in reactive contexts. 
 
 ## Debuggers 
 
@@ -155,192 +343,3 @@ The chapters in this section will cover common methods for debugging R code and 
     - @sec-logging-arch-movies      
 - @sec-logging-pkg-startup-msg  
 
-So far this book has covered the contents of an R package when it contains a basic, functional Shiny application. However, as applications grow in complexity, it's highly likely you'll encounter bugs or errors during development. Fortunately, both RStudio ![](images/rstudio-icon.png){height=20} and Positron ![](images/positron.png){height=20} come with powerful interactive debuggers, which help us identify, analyze, and fix errors in our code.[^debug-define] Consider the diagram below that illustrates the reactive inputs in our application: 
-
-[^debug-define]: The definition in [this article from AWS](https://aws.amazon.com/what-is/debugging/#:~:text=Debugging) gives a great general overview of debugging. 
-
-```{=html}
-
-<style>
-
-.codeStyle span:not(.nodeLabel) {
-  font-family: monospace;
-  font-size: 1.5em;
-  font-weight: bold;
-  color: #9753b8 !important;
-  background-color: #f6f6f6;
-  padding: 0.2em;
-}
-
-</style>
-```
-
-```{mermaid}
-%%| fig-cap: 'Reactive flow in Movies App'
-%%| fig-align: center
-%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"13px"}}}%%
-flowchart TD
-    subgraph Inputs["UI Inputs"]
-        subgraph Variables["Variables"]
-        var_input[/"<code>input$x</code><br><code>input$y</code><br><code>input$z</code>"/]
-        end
-        subgraph Aesthetics["Aesthetics"]
-        aes_input[/"<code>input$alpha</code><br><code>input$size</code>"/]
-        end
-        subgraph Title["Title"]
-        plot_title[/"<code>input$plot_title</code>"/]
-        end
-        
-    end
-    subgraph React["App Reactives"]
-        var_inputs>"<code>var_inputs()</code> "]
-        inputs>"<code>inputs()</code>"]
-    end
-    subgraph Output["UI Output"]
-        output[\"<code>output$scatterplot</code>"\]
-    end
-
-
-    var_input & aes_input <==> |"pre-selected values"|var_inputs 
-    plot_title <-.-> |"empty string"|var_inputs 
-    var_inputs <==> inputs
-    inputs <==> output
-    
-    style var_input stroke:#333,stroke-width:1px,rx:5,ry:5 
-    style aes_input stroke:#333,stroke-width:1px,rx:5,ry:5
-```
-
-The inputs are collected by the variable input module[^mod_var_input] and passed to the graph display module (as `var_inputs()`),[^mod_scatter_display] where they become the reactive `inputs()` for the graph utility function,[^scatter_plot] before finally being rendered.
-
-[^mod_var_input]: Our variable input model is in `R/mod_var_input.R`.
-
-[^mod_scatter_display]: The graph display module is in `R/mod_scatter_display.R`.
-
-[^scatter_plot]: The graph utility function is in `R/scatter_plot.R`
-
-![](images/debug_positron_launch_app.png){width='100%' fig-align='center'}
-
-Our application launches with pre-selected values for the `x`, `y` and `color` graph inputs, along with values for the `size` and opacity (`alpha`) of the points. Users can add a title or change the graph inputs, but by having pre-selected values, we guarantee the graph renders when the application launches.
-
-Any text entered for the title is converted to title case when the variable inputs are passed to the scatter plot display module. The reactives in the application are all updated with the new output:
-
-```{=html}
-
-<style>
-
-.codeStyle span:not(.nodeLabel) {
-  font-family: monospace;
-  font-size: 1.5em;
-  font-weight: bold;
-  color: #9753b8 !important;
-  background-color: #f6f6f6;
-  padding: 0.2em;
-}
-
-</style>
-```
-
-```{mermaid}
-%%| fig-cap: '*Updating the plot title*'
-%%| fig-align: center
-%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"13px"}}}%%
-flowchart TD
-    subgraph Inputs["UI Inputs"]
-        subgraph Variables["Variables"]
-        var_input[/"<code>input$x</code><br><code>input$y</code><br><code>input$z</code>"/]
-        end
-        subgraph Aesthetics["Aesthetics"]
-        aes_input[/"<code>input$alpha</code><br><code>input$size</code>"/]
-        end
-        subgraph Title["Title"]
-        plot_title[/"<code>input$plot_title</code>"/]
-        end
-        
-    end
-    subgraph React["App Reactives"]
-        var_inputs>"<code>var_inputs()</code> "]
-        inputs>"<code>inputs()</code>"]
-    end
-    subgraph Output["UI Output"]
-        output[\"<code>output$scatterplot</code>"\]
-    end
-
-
-    var_input & aes_input <==> |"pre-selected values"|var_inputs 
-    plot_title <-.-> |"*new plot title*"|var_inputs 
-    var_inputs <==>|"*New Plot Title*"|inputs
-    inputs <==> output
-    
-    style var_input stroke:#333,stroke-width:1px,rx:5,ry:5 
-    style aes_input stroke:#333,stroke-width:1px,rx:5,ry:5
-```
-
-![*The new title is passed with `var_inputs()` to `inputs()` and updates the graph to display the text.*](images/debug_positron_update_launch_app.png){width='100%' fig-align='center'}
-
-## Shiny bugs
-
-In Shiny apps, debugging can be challenging because the reactive model involves dynamic interactions and a non-linear flow of execution between inputs, reactive expressions, and outputs. Shiny is inherently asynchronous, so bugs can originate from reactive dependencies, execution order, utility functions, hidden states, lazy evaluation, and invalidation (i.e., `reactive()`, `observe()`, `isolate()`, etc.).
-
-For example, we could have an incorrectly defined `inputId`s or `outputId`s in the UI, which causes our graph utility function to fail. We could also have missing parentheses on reactive values in the server. Finally, the bug could be originating from the output/render point.
-
-
-```{=html}
-
-<style>
-
-.codeStyle span:not(.nodeLabel) {
-  font-family: monospace;
-  font-size: 1.5em;
-  font-weight: bold;
-  color: #9753b8 !important;
-  background-color: #f6f6f6;
-  padding: 0.2em;
-}
-
-</style>
-```
-
-```{mermaid}
-%%| fig-cap: '*Possible locations of bugs in a reactive model*'
-%%| fig-align: center
-%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
-flowchart TD
-    subgraph Inputs["UI Inputs"]
-        subgraph Variables["Variables"]
-        var_input[/"<code>input$x</code><br><code>input$y</code><br><code>input$z</code>"/]
-        end
-        subgraph Aesthetics["Aesthetics"]
-        aes_input[/"<code>input$alpha</code><br><code>input$size</code>"/]
-        end
-        subgraph Title["Title"]
-        plot_title[/"<code>input$plot_title</code>"/]
-        end
-    end
-    IDs("<code>inputId</code> or <code>outputId</code> errors") --x var_input & aes_input & plot_title
-    subgraph React["App Reactives"]
-        var_inputs>"<code>var_inputs()</code> "]
-        inputs>"<code>inputs()</code>"]
-    end
-    Obs("<code>observe</code> listener<br>errors") --x React
-    Rxt("Reactive context<br>errors") --x Inputs & React
-    subgraph Output["UI Output"]
-        output[\"<code>output$scatterplot</code>"\]
-    end
-    Rend("<code>render_*</code> function<br>errors") ----x Output
-        
-    
-
-    var_input & aes_input <==> var_inputs 
-    plot_title <-.-> var_inputs 
-    var_inputs <==> inputs
-    inputs <==> output
-    
-    style var_input stroke:#333,stroke-width:1px,rx:5,ry:5 
-    style aes_input stroke:#333,stroke-width:1px,rx:5,ry:5
-    style IDs stroke:#333,stroke-width:1px,rx:10,ry:10
-    style Obs stroke:#333,stroke-width:1px,rx:10,ry:10
-    style Rend stroke:#333,stroke-width:1px,rx:10,ry:10
-    style Rxt stroke:#333,stroke-width:1px,rx:10,ry:10
-```
- 
-Understanding the interplay of reactivity, lazy evaluation, and asynchronous execution will help us diagnose and resolve bugs in our Shiny app. We have to employ specific strategies and tools to handle Shiny bugs effectively, and some of the traditional debugging approaches can fall short in reactive contexts. 
