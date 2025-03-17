@@ -95,9 +95,9 @@ flowchart LR
                 scatter_plot["scatter_plot()"]
         end
 
-        subgraph tidy_movies["<strong>tidy-movies/ folder</strong>"]
-            subgraph app["app.R file"]
-                subgraph SubR["<strong>R/ folder</strong>"]
+        subgraph tidy_movies["<strong>inst/tidy-movies/</strong>"]
+
+                subgraph SubR["<strong>inst/tidy-movies/R/</strong>"]
                 devUI["devUI()"]
                 dev_mod_vars_ui["dev_mod_vars_ui()"]
                 dev_mod_scatter_ui["dev_mod_scatter_ui()"]
@@ -106,20 +106,21 @@ flowchart LR
                 dev_mod_scatter_server["dev_mod_scatter_server()"]
                 devServer -->|"<em>Calls</em>"|dev_mod_scatter_server
                 end
-            end
-            data[("tidy_movies.fst")]
-            img[/"imdb.png"\]
+
+            data[("<code>tidy_movies.fst"</code>)]
+            img[/"<code>imdb.png</code>"\]
+            appdotr("<code>app.R</code> file")
         end
         
 
-        launch ==> |"<strong><code>shinyAppDir()</code></strong>"|app
+        launch ==> |"<strong><code>shinyAppDir()</code></strong>"|appdotr
         mod_aes_input_ui -.->|"<em>Called from</em>"|devUI
         mod_var_input_server & mod_aes_input_server -.->|"<em>Called from</em>"|devServer
         scatter_plot --> |"<em>Called from</em>"|dev_mod_scatter_server
         
         
     %% R/
-    style R fill:#e8f0f5,stroke:#333,stroke-width:1px,rx:3,ry:3
+    style R fill:#f3f3f3,stroke:#333,stroke-width:1px,rx:3,ry:3
     %% standalone app function
     style launch fill:#F6F6F6,color:#000,stroke:#333,stroke-width:1px,rx:10,ry:10
     %% modules 
@@ -131,9 +132,9 @@ flowchart LR
     style display_type fill:#595959,color:#FFF,stroke:#333,stroke-width:1px,rx:25,ry:25
     
     %% tidy-movies/ 
-    style tidy_movies fill:#e8f0f5,stroke:#333,stroke-width:1px,rx:3,ry:3
+    style tidy_movies fill:#f3f3f3,stroke:#333,stroke-width:1px,rx:3,ry:3
     %% tidy-movies/R
-    style SubR fill:#f7fafb,stroke:#333,stroke-width:1px,rx:3,ry:3
+    style SubR fill:#fcfcfc,stroke:#333,stroke-width:1px,rx:3,ry:3
     %% tidy-movies/R/ files
     style devUI stroke:#333,stroke-width:1px,rx:6,ry:6
     style devServer stroke:#333,stroke-width:1px,rx:6,ry:6
@@ -141,9 +142,9 @@ flowchart LR
     style dev_mod_scatter_ui font-size:14px,color:#000,fill:#f5f5f5,stroke:#333,stroke-width:1px,rx:12,ry:12
     style dev_mod_vars_ui font-size:14px,color:#000,fill:#f5f5f5,stroke:#333,stroke-width:1px,rx:12,ry:12
     %% files 
-    style app fill:#f8f6e7,color:#000
-    style data fill:#f8f6e7,color:#000
-    style img fill:#f8f6e7,color:#000
+    style data fill:#ffffff,color:#000,stroke:#333,stroke-width:1px,rx:6,ry:6
+    style img fill:#ffffff,color:#000,stroke:#333,stroke-width:1px,rx:6,ry:6
+    style appdotr fill:#ffffff,color:#000,stroke:#333,stroke-width:1px,rx:6,ry:6
 ```
 
 To launch the `inst/tidy-movies` app, load, document, and install `sap` and run:
@@ -763,7 +764,7 @@ Before adding our new custom `logger` function, we'll review the architecture of
 
 ### App architecture {#sec-logging-arch-movies}
 
-The diagram below illustrates the namespaces and module communication in our `movies` app. The 'variables' and 'aesthetics' input modules pass the user inputs into the 'scatter display' module namespace in the server and UI functions:
+The diagram below illustrates the namespaces and module communication in our `movies` app. The 'variables' and 'aesthetics' modules pass user inputs into the 'scatter display' module in `movies_server()`:
 
 ```{=html}
 
@@ -811,16 +812,17 @@ flowchart TD
             end
         end
 
-        VarInpuUI <==> VarInpuServer
-        AesInpuUI <==> AesInpuServer
-        DisplayServer <--> PlotUtil <==> DisplayUI
+        VarInpuUI <--> VarInpuServer
+        AesInpuUI <--> AesInpuServer
+        DisplayServer <--> PlotUtil <--> DisplayUI
     end
 
-    VarInpuServer <-.->|"Communicates<br><code>selected_vars</code><br>across modules"| DisplayServer
-    AesInpuServer <-.->|"Communicates<br><code>selected_aes</code><br>across modules"| DisplayServer
+    VarInpuServer <-.->|"<em>Communicates<br><code>selected_vars</code><br>across modules</em>"| DisplayServer
+    AesInpuServer <-.->|"<em>Communicates<br><code>selected_aes</code><br>across modules</em>"| DisplayServer
     
     %% standalone app function 
     style Launch fill:#F6F6F6,color:#000,stroke:#333
+    
     %% modules
     style VarInpuUI font-size:14px,color:#000,fill:#f5f5f5,stroke-width:2px,rx:3,ry:3
     style VarInpuServer font-size:14px,color:#000,fill:#f5f5f5,stroke-width:2px,rx:3,ry:3
@@ -828,18 +830,21 @@ flowchart TD
     style AesInpuUI font-size:14px,color:#000,fill:#f5f5f5,stroke-width:2px,rx:3,ry:3
     style DisplayServer font-size:12px,color:#000,fill:#f5f5f5,stroke-width:2px,rx:3,ry:3
     style DisplayUI font-size:14px,color:#000,fill:#f5f5f5,stroke-width:2px,rx:3,ry:3
+    
     %% Utility Functions
     style PlotUtil fill:#595959,color:#FFF,stroke:#333,stroke-width:1px,rx:25,ry:25
+    
     %% namespaces
-    style VarServerNS fill:#f8f6e7,stroke-width:1px,rx:6,ry:6
-    style VarUINS fill:#f8f6e7,stroke-width:1px,rx:6,ry:6
-    style AesServerNS fill:#f8f6e7,stroke-width:1px,rx:6,ry:6
-    style AesUINS fill:#f8f6e7,stroke-width:1px,rx:6,ry:6
-    style GraphServerNS fill:#f8f6e7,stroke-width:1px,rx:6,ry:6
-    style GraphUINS fill:#f8f6e7,stroke-width:1px,rx:6,ry:6
+    style VarServerNS fill:#fcfcfc,stroke:#000,stroke-width:1px,rx:6,ry:6
+    style VarUINS fill:#fcfcfc,stroke:#000,stroke-width:1px,rx:6,ry:6
+    style AesServerNS fill:#fcfcfc,stroke:#000,stroke-width:1px,rx:6,ry:6
+    style AesUINS fill:#fcfcfc,stroke:#000,stroke-width:1px,rx:6,ry:6
+    style GraphServerNS fill:#fcfcfc,stroke:#000,stroke-width:1px,rx:6,ry:6
+    style GraphUINS fill:#fcfcfc,stroke:#000,stroke-width:1px,rx:6,ry:6
+    
     %% UI and Server
-    style Server fill:#e8f0f5,stroke-width:1px,rx:12,ry:12
-    style UI fill:#e8f0f5,stroke-width:1px,rx:12,ry:12
+    style Server fill:#eaeaea,stroke-width:1px,rx:12,ry:12
+    style UI fill:#eaeaea,stroke-width:1px,rx:12,ry:12
 ```
 
 The diagram above gives us an idea of the critical events we'll want to log in the `movies` app. Below are examples of `TRACE`, `INFO`, `WARN`, `ERROR`, and `FATAL` log levels using `logr_msg()`.
