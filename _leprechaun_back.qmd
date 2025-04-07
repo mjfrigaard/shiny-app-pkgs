@@ -1,0 +1,232 @@
+
+
+
+
+**Code files**: the code files in new `leprechaun` apps include the following:
+
+-   `_disable_autoload.R`: Disables `shiny::loadSupport()` (covered in [Launch](launch.qmd))
+
+-   `assets.R`: includes `serveAssets()` for serving JavaScript files, `remove_modules()` and `get_modules()` for adding/removing modules, and the `collapse_files()` helper function for collapsing files.[^leprechaun-3]
+
+-   `input-handlers.R`: `leprechaun_handler_df()` and `leprechaun_handler_list()` are helper functions for including data and lists *"from Websocket"*.[^leprechaun-4]
+
+-   `leprechaun-utils.R`: includes a `make_send_message()` function for *"send custom messages to the front-end"* with the *"namespace carried along"*. Read below for demonstration of how this is used.[^leprechaun-5]
+
+-   `run.R`: the standalone app function for your leprechaun app (covered in [Launch](launch.qmd)). <br><br>
+
+-   `server.R` & `ui.R` are applications primary UI and server functions.
+
+    -   `ui`: contains the application UI and the `assets()` function (which calls `serveAssets()` covered above).[^leprechaun-6]
+    -   `server.R`: creates `send_message` from `make_send_message(session)` (covered below).[^leprechaun-7]
+
+-   `zzz.R` is a utility function file that holds the `.onLoad()` function for adding external resources (using methods covered in [Resources](resources.qmd)).[^leprechaun-8]
+
+[^leprechaun-3]: [Link to `R/assets.R`]((https://github.com/mjfrigaard/sap/blob/24_leprechaun/R/assets.R)) file.
+
+[^leprechaun-4]: [Link to `R/input-handlers.R`]((https://github.com/mjfrigaard/sap/blob/24_leprechaun/R/input-handlers.R)) file.
+
+[^leprechaun-5]: [Link to `R/leprechaun-utils.R`](https://github.com/mjfrigaard/sap/blob/24_leprechaun/R/leprechaun-utils.R) file.
+
+[^leprechaun-6]: [Link to `R/ui.R`]((https://github.com/mjfrigaard/sap/blob/24_leprechaun/R/ui.R)) file.
+
+[^leprechaun-7]: [Link to `R/server.R`]((https://github.com/mjfrigaard/sap/blob/24_leprechaun/R/server.R)) file.
+
+[^leprechaun-8]: [Link to `R/zzz.R`]((https://github.com/mjfrigaard/sap/blob/24_leprechaun/R/zzz.R)) file.
+
+```{bash}
+#| eval: false
+#| code-fold: false
+R
+├── _disable_autoload.R # <1>
+├── assets.R # <2>
+├── input-handlers.R # <3>
+├── leprechaun-utils.R # <4>
+├── run.R # <5>
+├── server.R # <6>
+├── ui.R # <7>
+└── zzz.R # <8>
+
+1 directory, 8 files
+```
+
+1.  Disables `shiny::loadSupport()`\
+2.  Includes functions for serving JavaScript files, adding/removing modules, and collapsing files.
+3.  Utility functions for handling `list`s and `data.frame`s\
+4.  Contains the `make_send_message()` function for 'send\[ing\] custom messages to the front-end'
+5.  Standalone app function\
+6.  App primary server function\
+7.  App primary ui function\
+8.  Includes wrapper for adding external files
+
+-   **Adding dependencies**: `shiny`, `bslib`, `htmltools` and `pkgload` should be added to the `DESCRIPTION` with `usethis::use_package()` (covered in the [Dependencies](dependencies.qmd) chapter).
+
+```{bash}
+#| eval: false
+#| code-fold: false
+Imports: 
+    bslib,
+    htmltools,
+    shiny
+Suggests: 
+    pkgload
+```
+
+The `lap` folder structure should look familiar if you've been following along with the previous chapters. The standard R package files (`DESCRIPTION`, `NAMESPACE`, and `.Rproj`) are accompanied by a `.leprechaun` lock file.
+
+```{bash}
+#| eval: false
+#| code-fold: false
+lap/
+├── .leprechaun
+├── DESCRIPTION
+├── NAMESPACE
+└── sap.Rproj
+
+```
+
+The initial call to `leprechaun::scaffold()` creates the following folders in the `inst/` folder (recall that `inst/` contents are available when the package is installed).
+
+```{bash}
+#| eval: false
+#| code-fold: false
+inst/
+├── assets
+├── dev
+├── img
+└── run
+    └── app.R
+
+5 directories, 1 file
+```
+
+`inst/run/app.R` contains a call to `leprechaun::build()`, `pkgload::load_all()`, then a call to the standalone app function, `run()`.[^leprechaun-9]
+
+[^leprechaun-9]: [Link to `inst/run/app.R`](https://github.com/mjfrigaard/sap/blob/24_leprechaun/inst/run/app.R) file.
+
+## Development {#sec-leprechaun-dev}
+
+**Code files**: new code files in `leprechaun` apps can be created with `usethis::use_r()` or with a helper function:
+
+-   Create modules with `add_module()`. Modules created with `add_module("name")` will have:[^leprechaun-10]
+    -   A module file with a `module_name` prefix (`R/module_name.R`)\
+    -   A module UI function: `nameUI()`\
+    -   A module server function: `name_server()`\
+        <br>
+-   Create an `app.R` file with `add_app_file()`. This includes a call to `pkgload::load_all()` and `run()`.[^leprechaun-11] <br><br>
+-   **App files**: `R/run.R` contains functions for running the app.[^leprechaun-12] <br><br>
+-   Add the modules to `R/ui.R` and `R/server.R`. <br>
+    -    `R/server.R` includes a call to `send_message` by default.[^leprechaun-13]
+    -    `R/ui.R` holds the `ui()` and `assets()` functions.[^leprechaun-14]
+
+[^leprechaun-10]: `leprechaun` modules do not have the same naming conventions as `golem` (or that I've recommended throughout this book).
+
+[^leprechaun-11]: `pkgload::load_all()` has `reset` set to `TRUE` and `helpers` set to `FALSE`.
+
+[^leprechaun-12]: `R/run.R` includes functions for running the production (`run()`) and development (`run_dev()`) version of the application.
+
+[^leprechaun-13]: `make_send_message()` is in `R/leprechaun-utils.R`.
+
+[^leprechaun-14]: `assets()` loads the resources called in the `R/assets.R` file with the `serveAssets()` function.
+
+-   **Utility function**: `R/utils_scatter_plot.R` holds the `scatter_plot()` utility function.[^leprechaun-15] <br> 
+-   **Adding files**: The `R/zzz.R` file contains the `.onLoad()` function, which wraps `system.file('img', package = 'lap')` and `addResourcePath()` for including external resources. <br><br>
+
+[^leprechaun-15]: The same `scatter_plot()` function from `sap` (i.e, imports `.data` from `rlang`)
+
+```{bash}
+#| eval: false
+#| code-fold: false
+R
+├── module_plot_display.R
+├── module_var_input.R
+├── run.R
+├── server.R
+├── ui.R
+└── utils_scatter_plot.R
+
+1 directory, 6 files
+```
+
+### Data files {#sec-leprechaun-data}
+
+-   **Including data files**: the `movies.RData` data was moved into `inst/extdata`, then loaded into `data/` with the script created with `usethis::use_data_raw('movies')` (similar to methods covered in the [Data](data.qmd) chapter):
+
+```{bash}
+#| eval: false
+#| code-fold: false
+data-raw/
+└── movies.R
+
+1 directory, 1 file
+```
+
+```{bash}
+#| eval: false
+#| code-fold: false
+└── extdata
+      └── movies.RData
+1 directory, 1 file
+```
+
+```{bash}
+#| eval: false
+#| code-fold: false
+data
+└── movies.rda
+
+1 directory, 1 file
+```
+
+
+## Tests
+
+`leprechaun` doesn't any specific support for testing (like the `golem` framework), but we can create tests using any combination of `testthat`, `testServer()`, and `shinytest2`.
+
+## `lap` dependencies
+
+It's also worth noting that using the `leprechaun` framework doesn't add itself as a dependency:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+# in the 24_leprechaun branch of sap
+pak::local_deps_explain(deps = 'leprechaun', root = ".")
+```
+
+```{verbatim}
+x leprechaun  
+```
+
+## Recap {.unnumbered}
+
+```{r}
+#| label: co_box_recap
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g", 
+  look = "default", hsize = "1.10", size = "1.05",
+  header = "RECAP &emsp; ![](images/leprechaun.png){width='8%'}",
+  fold = FALSE,
+  contents = "
+<br>
+
+[`leprechaun`](https://leprechaun.opifex.org/#/) apps are built using the same methods as app-packages (`devtools` and `usethis`), and are intended to be a 'leaner and smaller' version of `golem`.
+
+> *'it generates code and does not make itself a dependency of the application you build; this means applications are leaner, and smaller'*
+
+`leprechaun` is similar to `golem` in that it 'bundles' various app-package development functions into helper/utility functions. For example, the `.onLoad()` function saves some time (at the cost of making your app code less clear and explicit). 
+
+`leprechaun` also relies on external packages like [`packer`](https://packer.john-coene.com/#/) to integrate and bundle external code files, so becoming more familiar with these packages will extend what you can build with `leprechaun`.")
+```
+
+```{r}
+#| label: git_contrib_box
+#| echo: false
+#| results: asis
+#| eval: true
+git_contrib_box()
+```
+
+

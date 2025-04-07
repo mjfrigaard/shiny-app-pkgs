@@ -419,3 +419,48 @@ pkg_info <- function(pkgs, gt = FALSE) {
 
 # Example usage
 # pkg_info(c("golem", "leprechaun", "rhino", "randomNonexistentPackage"), gt = TRUE)
+
+dev_box <- function(text, italic = TRUE, bold = FALSE) {
+  tday <- Sys.Date()
+  if (isTRUE(italic) & isTRUE(bold)) {
+    cat(paste0(
+      ":::{.callout-important collapse='true' appearance='default' icon='false'}\n\n",
+      "## DEV BOX\n\n",
+      ":::{style='font-size: 1.20em; color: #ff0000; font-weight: bold; font-style: italic;'}\n\n",
+      glue::glue_collapse(text),
+      "\n\n", tday, "\n\n",
+      "\n\n:::\n\n",
+      ":::"
+    ))
+  } else if (isFALSE(italic) & isTRUE(bold)) {
+    cat(paste0(
+      ":::{.callout-important collapse='true' appearance='default' icon='false'}\n\n",
+      "## DEV BOX\n\n",
+      ":::{style='font-size: 1.20em; color: #ff0000; font-weight: bold;'}\n\n",
+      glue::glue_collapse(text),
+      "\n\n", tday, "\n\n",
+      "\n\n:::\n\n",
+      ":::"
+    ))
+  } else if (isTRUE(italic) & isFALSE(bold)) {
+    cat(paste0(
+      ":::{.callout-important collapse='true' appearance='default' icon='false'}\n\n",
+      "## DEV BOX\n\n",
+      ":::{style='font-size: 1.20em; color: #ff0000; font-style: italic;'}\n\n",
+      glue::glue_collapse(text),
+      "\n\n", tday, "\n\n",
+      "\n\n:::\n\n",
+      ":::"
+    ))
+  } else {
+    cat(paste0(
+      ":::{.callout-important collapse='true' appearance='default' icon='false'}\n\n",
+      "## DEV BOX\n\n",
+      ":::{style='font-size: 1.20em; color: #ff0000;'}\n\n",
+      glue::glue_collapse(text),
+      "\n\n", tday, "\n\n",
+      "\n\n:::\n\n",
+      ":::"
+    ))
+  }
+}
