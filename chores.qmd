@@ -41,49 +41,322 @@ co_box(
 
 <!-- https://simonpcouch.github.io/chores/ -->
 
-The [`chores` package](https://simonpcouch.github.io/chores/) was developed by Simon Couch (who is also the author of the [`ensure`](https://simonpcouch.github.io/ensure/) and [`gander`](https://simonpcouch.github.io/gander/) packages) to "*help you complete repetitive, hard-to-automate tasks quickly*". We previously covered the [`ellmer` package](https://ellmer.tidyverse.org/index.html) (see @sec-shiny-ellmer), which is required to configure your LLM of choice.
+The [`chores` package](https://simonpcouch.github.io/chores/) was developed by Simon Couch[^chores-1] to "*help you complete repetitive, hard-to-automate tasks quickly*". We previously covered the [`ellmer` package](https://ellmer.tidyverse.org/index.html) (see @sec-shiny-ellmer), which we’ll use to configure our chosen LLM.
+
+[^chores-1]: Simon Couch also the author of the [`ensure`](https://simonpcouch.github.io/ensure/) and [`gander`](https://simonpcouch.github.io/gander/) packages.
 
 ```{r}
 #| eval: false 
 #| code-fold: false
-install.packages('ellmer')
-# or the dev version
+install.packages(c('ellmer', 'chores'))
+# or the dev versions
 pak::pak('tidyverse/ellmer')
-```
-
-```{r}
-#| eval: false 
-#| code-fold: false
-install.packages('chores')
-# or the dev version
 pak::pak("simonpcouch/chores")
 ```
 
 ## Setting up `chores` {#sec-shiny-chores-setup}
 
-```{r}
-#| eval: false
-#| code-fold: false
-usethis::edit_r_profile()
-```
+We'll use the Anthropic’s Claude model for the `chores` add-in. This can be configured following the instructions on the [package website](https://simonpcouch.github.io/chores/articles/chores.html#choosing-a-model).
+
+Open `.Renviron` and add `ANTHROPIC_API_KEY`:
 
 ```{r}
 #| eval: false
 #| code-fold: false
-options(.chores_chat = ellmer::chat_openai(model = "gpt-4o"))
+# open .Rprofile
+usethis::edit_r_environ()
 ```
+
+Use the `.chores_chat` option to set the model:
 
 ```{r}
 #| eval: false
 #| code-fold: false
+options(.chores_chat = ellmer::chat_claude())
+```
 
+You should see:[^chores-2]
+
+[^chores-2]: At the time of this writing, this was the latest Claude model from [Anthropic.](https://www.anthropic.com/news/claude-3-7-sonnet)
+
+```{verbatim}
+Using model = "claude-3-7-sonnet-latest".
+```
+
+### Configure add-in {#sec-shiny-chores-addin}
+
+`chores` comes with an add-in (an interface to write prompts) which I'll be demonstrating in Positron ![](images/positron.png){height="25"}[^chores-3]
+
+[^chores-3]: You can see examples using RStudio ![](images/rstudio-icon.png){height="25"} on the [package website](https://simonpcouch.github.io/chores/index.html#example).
+
+After adding the JSON to `keybindings.json`, the `chores` add-in will pop-up in the **Viewer**:
+
+![Positron `chores` add-in](images/chores_addin_positron.png){width="100%" fig-align="center"}
+
+## Navbar App {#sec-chores-navbar-app}
+
+In this branch we'll use `chores` to add `roxygen2` documentation and `testthat` tests to our movie review application. The application includes the original scatter plot with inputs for variables, aesthetics, and a plot title. However, the app also includes `nav_panel()`s with graphs and tables for **Counts**, **Distributions**, and **Awards**.
+
+![](images/chores_movie_reviews.png){width="100%" fig-align="center"}
+
+### Modules {#sec-chores-navbar-modules}
+
+The modules in the application have the following naming convention:
+
+[`mod_` `<tab>` `_` `<type>` `_` `ui/server`]{style="font-size: 1.25em; font-weight: bold;"}    
+
+-   `<tab>` is the name of the tab (**Compare**, **Counts**, **Distributions**, **Awards**)
+-   **`<type>`**
+    -   `vars`: 'variable' collection modules to return inputs    
+    -   `tbl`: table display modules            
+    -   type of display in module (i.e., `point`, `bar`, `vbox`, etc.)     
+
+The modules for each tab are organized into abstract syntax trees[^ast] in the sections below. 
+
+[^ast]: Create abstract syntax trees with the [`lobstr::ast()` function](https://lobstr.r-lib.org/reference/ast.html). 
+
+#### Compare
+
+The **Compare** tab uses two modules:
+
+1. `mod_compare_vars` collects the variable and aesthetic inputs.   
+2.  `mod_compare_point` takes the inputs and builds the `plotly` point plot.    
+
+```{verbatim}
+█─ ─nav_ui  
+│ ├─█─mod_compare_vars_ui 
+│ └─█─mod_compare_point_ui 
+└─█─nav_server 
+  ├─█─mod_compare_vars_server 
+  └─█─mod_compare_point_server
+```
+
+#### Counts
+
+The **Counts** tab includes five modules: 
+
+1. `mod_counts_vars` collects a grouping variable and start and end dates for the theater release year    
+2. `mod_counts_vbox` displays the value box   
+3. `mod_counts_waffle` displays the waffle plot   
+4. `mod_counts_bar` displays the horizontal bar plot 
+
+:::{layout="[70,30]" layout-valign="top"}
+
+![Counts graphs](images/chores_counts_graphs.png){width=400 fig-align="left"}
+
+```{verbatim}
+█─ ─nav_ui  
+│ ├─█─mod_counts_vars_ui 
+│ ├─█─mod_counts_vbox_ui 
+│ ├─█─mod_counts_bar_ui 
+│ └─█─mod_counts_waffle_ui 
+└─█─nav_server 
+  ├─█─mod_compare_vars_server 
+  ├─█─mod_compare_point_server 
+  ├─█─mod_counts_vars_sever 
+  ├─█─mod_counts_vbox_server 
+  ├─█─mod_counts_bar_server 
+  └─█─mod_counts_waffle_server 
+```
+
+
+
+:::
+
+5. `mod_counts_tbl` *will* display the counts table, but it's still being developed (we'll cover this in the [`gander`](gander.qmd) chapter).
+
+:::{layout="[70,30]" layout-valign="top"}
+
+![Counts table](images/chores_counts_table.png){width=400 fig-align="left"}
+
+```{verbatim}
+█─ ─nav_ui  
+│ ├─█─mod_counts_vars_ui 
+│ └─█─mod_counts_tbl_ui 
+└─█─nav_server 
+  ├─█─mod_compare_vars_server
+  └─█─mod_counts_tbl_server 
+```
+
+:::
+
+
+#### Distributions
+
+The **Distributions** tab uses four modules: 
+
+1. `mod_dist_vars` collects a grouping y variable, a numeric x variable, and the alpha and size aesthetics.    
+2. `mod_dist_box` displays the horizontal box plot.      
+3. `mod_dist_raincloud` displays the rain cloud plot.      
+
+:::{layout="[70,30]" layout-valign="top"}
+
+![Distributions graphs](images/chores_dist_graphs.png){width=400 fig-align="left"}
+
+```{verbatim}
+█─ ─nav_ui  
+│ ├─█─mod_dist_vars_ui 
+│ ├─█─mod_dist_box_ui 
+│ └─█─mod_dist_raincloud_ui 
+└─█─nav_server 
+  ├─█─mod_dist_vars_server 
+  ├─█─mod_dist_box_server 
+  └─█─mod_dist_raincloud_server 
+```
+
+
+
+:::
+
+
+4. `mod_dist_tbl` displays a table of summary statistics for the numeric variable across the levels of the grouping variable. 
+
+:::{layout="[70,30]" layout-valign="top"}
+
+![Distributions table](images/chores_dist_table.png){width=400 fig-align="left"}
+
+```{verbatim}
+█─ ─nav_ui  
+│ ├─█─mod_dist_vars_ui 
+│ └─█─mod_dist_tbl_ui 
+└─█─nav_server 
+  ├─█─mod_dist_vars_server 
+  └─█─mod_dist_tbl_server 
+```
+
+:::
+
+
+#### Awards
+
+**Awards** has three modules: 
+
+1. `mod_awards_vars` returns the award type and start and end values for the theater release year.     
+2. `mod_awards_point` displays the point plot with labels for the movies or stars (actors).
+
+:::{layout="[70,30]" layout-valign="top"}
+
+![Awards graphs](images/chores_awards_graphs.png){width=400 fig-align="left"}
+
+```{verbatim}
+█─ ─nav_ui  
+│ ├─█─mod_awards_vars_ui 
+│ └─█─mod_awards_point_ui 
+└─█─nav_server 
+  ├─█─mod_awards_vars_server 
+  └─█─mod_awards_point_server 
+```
+
+:::
+
+3. `mod_awards_tbl` displays the data used in the point plot.
+
+:::{layout="[70,30]" layout-valign="top"}
+
+![Awards table](images/chores_awards_table.png){width=400 fig-align="left"}
+
+```{verbatim}
+█─ ─nav_ui  
+│ ├─█─mod_awards_vars_ui 
+│ └─█─mod_awards_tbl_ui 
+└─█─nav_server 
+  ├─█─mod_awards_vars_server 
+  └─█─mod_awards_tbl_server
+```
+
+:::
+
+### Utility functions {#sec-chores-navbar-utils}
+
+Three new utility functions have been added to the application. The `display_type()` (@sec-launch-display-type) and `test_logger()` (@sec-test-logger) functions from previous sections are also included. 
+
+1.  The `name_case()` function converts the column names to title case (and it's used in most of the module functions): 
+
+```{r}
+#| label: name_case
+#| include: false
+#| eval: true
+source("https://raw.githubusercontent.com/mjfrigaard/sap/refs/heads/28_llm-chores/R/name_case.R")
 ```
 
 ```{r}
-#| eval: false
-#| code-fold: false
+#| code-fold: false 
+#| collapse: true
+name_case(x = "critics_rating", case = "title")
+```
 
+```{r}
+#| code-fold: false 
+#| collapse: true
+name_case(x = "Critics Rating", case = "lower")
 ```
 
 
-### Using the add-in {#sec-shiny-chores-addin}
+2.  `dist_var_summary` creates the table in the **Distributions** tab and is used in the `mod_dist_tbl_server` function:
+
+
+```{r}
+#| label: dist_var_summary_and_name_case
+#| include: false
+#| eval: true
+source("https://raw.githubusercontent.com/mjfrigaard/sap/refs/heads/28_llm-chores/R/dist_var_summary.R")
+source("https://raw.githubusercontent.com/mjfrigaard/sap/refs/heads/28_llm-chores/R/name_case.R")
+movies <- fst::read_fst("_assets/movies.fst")
+```
+
+
+```{verbatim}
+█─ ─nav_ui  
+│ └─█─mod_dist_tbl_ui 
+└─█─nav_server 
+  └─█─mod_dist_tbl_server 
+    └─█─dist_var_summary
+```
+
+
+```{r}
+#| code-fold: false 
+#| collapse: true
+dist_var_summary(
+  data = movies, 
+  grp_var = 'critics_rating', 
+  num_var = 'audience_score')
+```
+
+
+3.  `create_movie_awards` creates the data for the graph and table the **Awards** tab:
+
+
+```{r}
+#| label: create_movie_awards
+#| include: false
+#| eval: true
+source("https://raw.githubusercontent.com/mjfrigaard/sap/refs/heads/28_llm-chores/R/filter_award_wins.R")
+source("https://raw.githubusercontent.com/mjfrigaard/sap/refs/heads/28_llm-chores/R/create_award_wins.R")
+source("https://raw.githubusercontent.com/mjfrigaard/sap/refs/heads/28_llm-chores/R/create_movie_awards.R")
+```
+
+
+```{verbatim}
+█─ ─nav_ui   
+│ ├─█─mod_awards_point_ui 
+└─█─nav_server 
+  └─█─mod_awards_point_server 
+    └─█─create_movie_awards 
+```
+
+```{r}
+#| code-fold: false 
+#| collapse: true
+#| eval: true 
+#| echo: true
+create_movie_awards(
+  df = movies,
+  award = "Films", 
+  start_year = 1990, 
+  end_year = 1995)
+```
+
+## Documentation {#sec-chores-navbar-docs}
+
+## Tests {#sec-chores-navbar-tests}
