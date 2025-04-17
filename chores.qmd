@@ -5,6 +5,10 @@
 #| echo: false 
 #| include: false
 source("_common.R")
+movies <- fst::read_fst("_assets/movies.fst")
+vroom::vroom_write(movies, 
+  file = "_assets/movies.csv", 
+  delim = ",")
 ```
 
 ```{r}
@@ -54,48 +58,9 @@ pak::pak('tidyverse/ellmer')
 pak::pak("simonpcouch/chores")
 ```
 
-## Setting up `chores` {#sec-shiny-chores-setup}
-
-We'll use the Anthropic’s Claude model for the `chores` add-in. This can be configured following the instructions on the [package website](https://simonpcouch.github.io/chores/articles/chores.html#choosing-a-model).
-
-Open `.Renviron` and add `ANTHROPIC_API_KEY`:
-
-```{r}
-#| eval: false
-#| code-fold: false
-# open .Rprofile
-usethis::edit_r_environ()
-```
-
-Use the `.chores_chat` option to set the model:
-
-```{r}
-#| eval: false
-#| code-fold: false
-options(.chores_chat = ellmer::chat_claude())
-```
-
-You should see:[^chores-2]
-
-[^chores-2]: At the time of this writing, this was the latest Claude model from [Anthropic.](https://www.anthropic.com/news/claude-3-7-sonnet)
-
-```{verbatim}
-Using model = "claude-3-7-sonnet-latest".
-```
-
-### Configure add-in {#sec-shiny-chores-addin}
-
-`chores` comes with an add-in (an interface to write prompts) which I'll be demonstrating in Positron ![](images/positron.png){height="25"}[^chores-3]
-
-[^chores-3]: You can see examples using RStudio ![](images/rstudio-icon.png){height="25"} on the [package website](https://simonpcouch.github.io/chores/index.html#example).
-
-After adding the JSON to `keybindings.json`, the `chores` add-in will pop-up in the **Viewer**:
-
-![Positron `chores` add-in](images/chores_addin_positron.png){width="100%" fig-align="center"}
-
 ## Navbar App {#sec-chores-navbar-app}
 
-In this branch we'll use `chores` to add `roxygen2` documentation and `testthat` tests to our movie review application. The application includes the original scatter plot with inputs for variables, aesthetics, and a plot title. However, the app also includes `nav_panel()`s with graphs and tables for **Counts**, **Distributions**, and **Awards**.
+In this branch we'll use `chores` to add `roxygen2` documentation to an updated version of the movie review application. The application still contains the original scatter plot with inputs for variables, aesthetics, and a plot title. However, the UI has been built around the [`page_navbar` layout from `bslib`](https://rstudio.github.io/bslib/reference/page_navbar.html), with `nav_panel()`s containing graphs and tables for **Counts**, **Distributions**, and **Awards**.
 
 ![](images/chores_movie_reviews.png){width="100%" fig-align="center"}
 
@@ -151,8 +116,6 @@ The **Counts** tab includes five modules:
 │ ├─█─mod_counts_bar_ui 
 │ └─█─mod_counts_waffle_ui 
 └─█─nav_server 
-  ├─█─mod_compare_vars_server 
-  ├─█─mod_compare_point_server 
   ├─█─mod_counts_vars_sever 
   ├─█─mod_counts_vbox_server 
   ├─█─mod_counts_bar_server 
@@ -270,7 +233,9 @@ The **Distributions** tab uses four modules:
 
 Three new utility functions have been added to the application. The `display_type()` (@sec-launch-display-type) and `test_logger()` (@sec-test-logger) functions from previous sections are also included. 
 
-1.  The `name_case()` function converts the column names to title case (and it's used in most of the module functions): 
+#### Name case  
+
+The `name_case()` function converts the column names to title case (and it's used in most of the module functions): 
 
 ```{r}
 #| label: name_case
@@ -291,8 +256,9 @@ name_case(x = "critics_rating", case = "title")
 name_case(x = "Critics Rating", case = "lower")
 ```
 
+#### Variable summary  
 
-2.  `dist_var_summary` creates the table in the **Distributions** tab and is used in the `mod_dist_tbl_server` function:
+The `dist_var_summary()` function creates the summary statistics table in the **Distributions** tab using the group and numerical variables.
 
 
 ```{r}
@@ -300,8 +266,6 @@ name_case(x = "Critics Rating", case = "lower")
 #| include: false
 #| eval: true
 source("https://raw.githubusercontent.com/mjfrigaard/sap/refs/heads/28_llm-chores/R/dist_var_summary.R")
-source("https://raw.githubusercontent.com/mjfrigaard/sap/refs/heads/28_llm-chores/R/name_case.R")
-movies <- fst::read_fst("_assets/movies.fst")
 ```
 
 
@@ -323,8 +287,9 @@ dist_var_summary(
   num_var = 'audience_score')
 ```
 
+#### Movie awards   
 
-3.  `create_movie_awards` creates the data for the graph and table the **Awards** tab:
+When provided an award type (Films or Stars) and start and end theater release dates, the `create_movie_awards` converts the `movies` data into the movie awards data for the graph and table the **Awards** tab:
 
 
 ```{r}
@@ -357,6 +322,434 @@ create_movie_awards(
   end_year = 1995)
 ```
 
-## Documentation {#sec-chores-navbar-docs}
+## Setting up `chores` {#sec-shiny-chores-setup}
 
-## Tests {#sec-chores-navbar-tests}
+We'll use the Anthropic’s Claude model for the `chores` add-in. This can be configured following the instructions on the [package website](https://simonpcouch.github.io/chores/articles/chores.html#choosing-a-model).
+
+Open `.Renviron` and add `ANTHROPIC_API_KEY`:
+
+```{r}
+#| eval: false
+#| code-fold: false
+# open .Rprofile
+usethis::edit_r_environ()
+```
+
+Use the `.chores_chat` option to set the model:
+
+```{r}
+#| eval: false
+#| code-fold: false
+options(.chores_chat = ellmer::chat_claude())
+```
+
+You should see:[^chores-2]
+
+[^chores-2]: At the time of this writing, this was the latest Claude model from [Anthropic.](https://www.anthropic.com/news/claude-3-7-sonnet)
+
+```{verbatim}
+Using model = "claude-3-7-sonnet-latest".
+```
+
+### Configure add-in {#sec-shiny-chores-addin}
+
+`chores` comes with an add-in (an interface to write prompts) which I'll be demonstrating in Positron ![](images/positron.png){height="25"}[^chores-3]
+
+[^chores-3]: You can see examples using RStudio ![](images/rstudio-icon.png){height="25"} on the [package website](https://simonpcouch.github.io/chores/index.html#example).
+
+After adding the JSON to `keybindings.json`, the `chores` add-in will pop-up in the **Viewer**:
+
+![Positron `chores` add-in](images/chores_addin_positron.png){width="100%" fig-align="center"}
+
+
+## Documentation helper {#sec-chores-navbar-docs}
+
+The `roxygen2` helper from `chores` doesn't write comprehensive documentation, but it will
+
+> "*generate a subset of a complete documentation entry, to be then completed by a developer:*"
+
+
+Specifically, it will write the `@title`, `@description`, any arguments (i.e., `@param`), and what the function `@returns`. The `chores` helper will also export the function by default.
+
+I'll demo this helper below on the `name_case()` function and a few modules in our application. 
+
+### Utility function
+
+Below is an example of the `chores` addin in Positron ![](images/positron.png){height=25}:
+
+![Click to enlarge](images/chores_name_case_roxygen2.gif){width='100%' fig-align="center"}
+
+The `chores` helper returned the following `roxygen2` documentation: 
+
+```{r}
+#| eval: false
+#| echo: true
+#| code-fold: false
+#' Change the case of text
+#'
+#' @param x A character vector.
+#' @param case One of `"title"` or `"lower"`. Optional.
+#'
+#' @returns
+#' A character vector with the case changed according to the specified format.
+#' Will error if input is not a character vector or if an unsupported case is specified.
+#'
+#' @export
+```
+
+### Module
+
+The `mod_compare_vars_ui()` function is demonstrated below: 
+
+
+```{r}
+#| label: co_box_chores_helper
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g", 
+  look = "default", 
+  hsize = "1.15",
+  size = "1.10",
+  header = "TIP: Padding",
+  fold = FALSE,
+  contents = "
+I recommend placing about 10 lines of extra padding above the function you're using `chores` to document. I've found this ensures the first few lines of the function aren't overwritten by the helper response."
+)
+```
+
+![Click to enlarge](images/chores_mod_compare_point_ui_roxygen2.gif){width='100%' fig-align="center"}
+
+
+
+The `roxygen2` documentation for the `mod_compare_vars_ui()` function is below: 
+
+```{r}
+#| eval: false
+#| code-fold: false
+#' UI module for comparing movie variables
+#'
+#' @param id A string. The module ID.
+#'
+#' @returns A UI element containing inputs for selecting variables to compare 
+#' in a scatter plot, including X and Y variables, color variable, and
+#' customization controls for alpha, size, and plot title.
+#'
+#' @export
+```
+
+So far, all of the documentation I've generated using `chores` has been correct, *and* it puts me in a better starting place that the standard `roxygen2` skeleton produced by RStudio. 
+
+Below we'll cover how to add custom helpers to the `chores` addin.
+
+## Custom helpers {#sec-chores-custom-helpers}
+
+`chores` also gives users the ability to add custom helpers (prompts) that can be used with the addin. Below is a [`shinymod` helper prompt](https://github.com/mjfrigaard/chorrrin/blob/main/inst/prompts/shinymod-prefix.md) with more specific instructions for documenting Shiny modules (see @sec-document-app-functions).
+
+```{r}
+#| label: co_box_chores_shinymods
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "y", 
+  look = "default", 
+  hsize = "1.15",
+  size = "1.10",
+  header = "`inst/prompts/shinymod-prefix.md`",
+  fold = TRUE,
+  contents = "
+  
+**[`inst/prompts/shinymod-prefix.md`](https://github.com/mjfrigaard/chorrrin/blob/main/inst/prompts/shinymod-prefix.md)**
+  
+You are an expert Shiny developer who loves providing detailed explanations of complex topics to non-technical audiences.
+
+Write `testthat` test for modules using Shiny's `testServer()` function.
+
+For example, the `mod_aes_input` and `mod_var_input` modules both return reactive lists.
+
+\`\`\`r
+# aesthetic inputs ----
+mod_aes_input_ui <- function(id) {
+  ns <- NS(id)
+  tagList(
+    sliderInput(
+      inputId = ns('alpha'),
+      label = 'Alpha:',
+      min = 0, max = 1, step = 0.1,
+      value = 0.5
+    ),
+    sliderInput(
+      inputId = ns('size'),
+      label = 'Size:',
+      min = 0, max = 5,
+      value = 2
+    ),
+    textInput(
+      inputId = ns('plot_title'),
+      label = 'Plot title',
+      placeholder = 'Enter plot title'
+    )
+  )
+}
+mod_aes_input_server <- function(id) {
+  moduleServer(id, function(input, output, session) {
+    return(
+      reactive({
+        list(
+          'alpha' = input$alpha,
+          'size' = input$size,
+          'plot_title' = input$plot_title
+        )
+      })
+    )
+  })
+}
+# variable inputs ----
+mod_var_input_ui <- function(id) {
+  ns <- NS(id)
+  tagList(
+    selectInput(
+      inputId = ns('y'),
+      label = 'Y-axis:',
+      choices = c(
+        'IMDB rating' = 'imdb_rating',
+        'IMDB number of votes' = 'imdb_num_votes',
+        'Critics Score' = 'critics_score',
+        'Audience Score' = 'audience_score',
+        'Runtime' = 'runtime'
+      ),
+      selected = 'audience_score'
+    ),
+    selectInput(
+      inputId = ns('x'),
+      label = 'X-axis:',
+      choices = c(
+        'IMDB rating' = 'imdb_rating',
+        'IMDB number of votes' = 'imdb_num_votes',
+        'Critics Score' = 'critics_score',
+        'Audience Score' = 'audience_score',
+        'Runtime' = 'runtime'
+      ),
+      selected = 'imdb_rating'
+    ),
+    selectInput(
+      inputId = ns('z'),
+      label = 'Color by:',
+      choices = c(
+        'Title Type' = 'title_type',
+        'Genre' = 'genre',
+        'MPAA Rating' = 'mpaa_rating',
+        'Critics Rating' = 'critics_rating',
+        'Audience Rating' = 'audience_rating'
+      ),
+      selected = 'mpaa_rating'
+    )
+  )
+}
+mod_var_input_server <- function(id) {
+  moduleServer(id, function(input, output, session) {
+    return(
+      reactive({
+        list(
+          'x' = input$x,
+          'y' = input$y,
+          'z' = input$z
+        )
+      })
+    )
+  })
+}
+\`\`\`
+
+The returned values from `mod_aes_input_server()` and `mod_var_input_server()` are passed to `mod_scatter_display_server()`: 
+
+\`\`\`r
+# display scatter plot ----
+mod_scatter_display_ui <- function(id) {
+  ns <- NS(id)
+  tagList(
+    tags$br(),
+    plotOutput(outputId = ns('scatterplot'))
+  )
+}
+mod_scatter_display_server <- function(id, var_inputs, aes_inputs) {
+  moduleServer(id, function(input, output, session) {
+
+    inputs <- reactive({
+      plot_title <- tools::toTitleCase(aes_inputs()$plot_title)
+        list(
+          x = var_inputs()$x,
+          y = var_inputs()$y,
+          z = var_inputs()$z,
+          alpha = aes_inputs()$alpha,
+          size = aes_inputs()$size,
+          plot_title = plot_title
+        
+        )
+    })
+    
+    output$scatterplot <- renderPlot({
+      tryCatch({
+        plot <- scatter_plot(
+          # data --------------------
+          df = movies,
+          x_var = inputs()$x,
+          y_var = inputs()$y,
+          col_var = inputs()$z,
+          alpha_var = inputs()$alpha,
+          size_var = inputs()$size
+        )
+        plot +
+          ggplot2::labs(
+            title = inputs()$plot_title,
+              x = stringr::str_replace_all(tools::toTitleCase(inputs()$x), '_', ' '),
+              y = stringr::str_replace_all(tools::toTitleCase(inputs()$y), '_', ' ')
+          ) +
+          ggplot2::theme_minimal() +
+          ggplot2::theme(legend.position = 'bottom')
+
+    }, error = function(e) {
+      message(glue::glue('ERROR: Failed to render scatterplot. Reason: {e$message}'))
+    })
+      
+    })
+  })
+}
+\`\`\`
+
+This results in the following `testServer()` test:
+
+\`\`\`r
+# test -----
+testthat::describe(
+  'Feature: Scatter Plot Configuration in Movie Review Application
+      As a user 
+      I want the initial graph pre-configured with variables and aesthetics,
+      So that I can immediately see a meaningful visualization.',
+  code = {
+    testthat::it(
+      'Scenario: Scatter plot initial x, y, color values 
+         Given the movie review application is loaded
+         When I view the initial scatter plot
+         Then the scatter plot should show 'IMDB Rating' on the x-axis
+         And the scatter plot should show 'Audience Score' on the y-axis
+         And the points on the scatter plot should be colored by 'MPAA Rating'
+         And the size of the points should be set to '2'
+         And the opacity of the points should be set to '0.5'
+         And the plot title should be 'New Plot Title'',
+      code = {
+        shiny::testServer(
+          app = mod_scatter_display_server,
+          args = list(
+            var_inputs =
+              reactive(
+                list( 
+                    x = 'critics_score',
+                    y = 'imdb_rating',
+                    z = 'mpaa_rating'
+                  )
+                ),
+              aes_inputs =
+                reactive(
+                  list( 
+                    alpha = 0.5,
+                    size = 2,
+                    plot_title = 'new plot title'
+                    )
+                  )
+          ),
+          expr = {
+            
+            expect_equal(
+              object = inputs(),
+              expected = list(
+                x = 'critics_score',
+                y = 'imdb_rating',
+                z = 'mpaa_rating',
+                alpha = 0.5,
+                size = 2,
+                plot_title = 'New Plot Title'
+              )
+            )
+            
+            expect_true(
+              object = is.list(output$scatterplot))
+            
+            expect_equal(
+              object = names(output$scatterplot),
+              expected = c('src', 'width', 'height', 'alt', 'coordmap'))
+            
+            expect_equal(
+              object = output$scatterplot[['alt']],
+              expected = 'Plot object')
+            
+            plot <- scatter_plot(movies,
+              x_var = inputs()$x,
+              y_var = inputs()$y,
+              col_var = inputs()$z,
+              alpha_var = inputs()$alpha,
+              size_var = inputs()$size) +
+            ggplot2::labs(
+              title = inputs()$plot_title,
+              x = stringr::str_replace_all(
+                      tools::toTitleCase(inputs()$x), '_', ' '),
+              y = stringr::str_replace_all(
+                      tools::toTitleCase(inputs()$y), '_', ' ')) +
+            ggplot2::theme_minimal() +
+            ggplot2::theme(legend.position = 'bottom')
+            
+            testthat::expect_true(ggplot2::is_ggplot(plot))
+            
+          })
+      })
+})
+\`\`\`
+
+-   When a module has return values, provide these in the `args` list and wrap them in the `shiny::reactive()` function.
+    -   For example, to test the `mod_scatter_display_server()` function, we provide the `aes_inputs` and `var_inputs` arguments (returned from `mod_aes_input_server()` and `mod_var_input_server()`) as:      
+        -   `args = list(var_inputs = reactive(list(<inputs>))`, `aes_inputs = reactive(list(<inputs>))`.       
+    -   Use `testthat`'s BDD functions (`describe()` and `it()`) to describe the feature and scenario being tested.
+
+Use the following style guide:      
+  
+-   Limit responses to 80 characters per line     
+-   Place a space before and after `=`      
+-   Only use a single empty line when needed to separate sections     
+-   Use base pipe `|>` (not `%>%`)      
+-   Do not return the response in markdown (only include R code)      
+-   Do not return the response in R code chunks              
+-   Do not return the responses using inline code             
+-   Add all explanations in comments (i.e. with `# comment/explanation`)    
+  
+")
+```
+
+There are multiple ways to add custom helpers to the `chores` addin. For example, you can provide the URL to a raw markdown file on GitHub using [`chores::prompt_new()`](https://simonpcouch.github.io/chores/reference/prompt.html): 
+
+```{r}
+#| eval: false
+#| code-fold: false
+chores::prompt_new(
+  "shinymod", 
+  "prefix", 
+  contents = "https://raw.githubusercontent.com/mjfrigaard/chorrrin/refs/heads/main/inst/prompts/shinymod-prefix.md"
+)
+```
+
+Or you can create and install a `chores` extension package and use all the prompts stored in `inst/prompts`:[^chores-ext]
+
+[^chores-ext]: Follow the [example `chores` extension package](https://github.com/simonpcouch/palpable) and instructions provided in the [`chores` documentation.](https://simonpcouch.github.io/chores/articles/custom.html#extension-packages) 
+
+```{r}
+#| eval: false
+#| code-fold: false
+# install.packages("pak")
+pak::pak("mjfrigaard/chorrrin")
+library(chorrrin)
+```
+
+Below is a [`modtest` helper](https://github.com/mjfrigaard/chorrrin/blob/main/inst/prompts/modtest-replace.md) for writing Shiny module tests with `testServer()` (we covered this in @sec-tests-mods).
+
+![Example `modtest` helper in Positron](https://raw.githubusercontent.com/mjfrigaard/chorrrin/main/inst/chorrrin-example.gif){width='100%' fig-align='center'}
