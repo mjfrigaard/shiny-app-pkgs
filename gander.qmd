@@ -1,4 +1,4 @@
-# gander {#sec-shiny-gander}
+# 🏗️ gander {#sec-shiny-gander}
 
 ```{r}
 #| eval: true 
@@ -27,6 +27,8 @@ The final LLM package we'll cover for Shiny app-package development is [`gander`
 
 "*talk[ing] to the objects in your R environment.*"[^gander]
 
+The previous LLM package we've covered required background information and conditions to be provided via prompts. `gander` is able to 'look around' in our current R environment to provide framing and context.
+
 [^gander]: `gander` is the third LLM R package we've covered by developer [Simon Couch](https://github.com/simonpcouch) (we also covered `ensure` in @sec-test-tools-help and `chores` @sec-shiny-chores). If you're interested in staying up on LLMs and their use in R package development, I highly recommend regularly checking [his blog](https://www.simonpcouch.com/blog/). 
 
 
@@ -50,7 +52,312 @@ install.packages('gander')
 pak::pak("simonpcouch/gander")
 ```
 
-Configuring the model can be done with a personal access token (PAT) your `.Renviron` file:
+Configuring the model can be done in the `.Renviron` and `.Rprofile` files (a personal access token (PAT) is required):
+
+```{r}
+#| eval: false 
+#| code-fold: false
+# configure ANTHROPIC_API_KEY, OPENAI_API_KEY, etc.
+usethis::edit_r_environ() 
+```
+
+```{r}
+#| eval: false 
+#| code-fold: false
+# configure .gander_chat
+usethis::edit_r_profile() 
+options(
+  .gander_chat = ellmer::chat_anthropic()
+)
+```
+
+### Keyboard shortcut 
+
+Configure the keyboard shortcut following the instructions on the [package website](https://simonpcouch.github.io/gander/index.html#installation) (RStudio ![](images/rstudio-icon.png){height=30} or Positron ![](images/positron.png){height=30}).
+
+I use the recommended [<kbd>Ctrl</kbd>+<kbd>Cmd</kbd>+<kbd>G</kbd>]{style='font-weight: bold;'} (or [<kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>G</kbd>]{style='font-weight: bold;'} on Windows).
+
+## Navbar App {#sec-gander-navbar-app} 
+
+We're going to continue the development of our navbar movie review from the previous branch.[^navbar-review] After loading, documenting, and installing sap, we'll perform a 'test launch': 
+
+![Initial launch](images/gander_initial_launch.png){width='100%' fig-align='center'}
+
+[^navbar-review]: This application uses the [`page_navbar` layout from `bslib`](https://rstudio.github.io/bslib/reference/page_navbar.html). Review it's structure in @sec-chores-navbar-app. 
+
+In the previous chapter we used the [`chores` package](https://simonpcouch.github.io/chores/index.html) to include log messages, but we can control the verbosity in the **Console** by adjusting the threshold in [`R/launch_app.R`.](https://github.com/mjfrigaard/sap/blob/7d74cdad8f8e6f1c013943d01ca22ad1934031d6/R/launch_app.R#L21) [^log-chores]
+
+[^log-chores]: See the @sec-chores-ext-pkg and previous @sec-logging-logger sections.
+
+```{r}
+#| eval: false 
+#| code-fold: false
+logger::log_threshold(level = "INFO")
+```
+
+## Developing with `gander`  {#sec-gander-dev-addin} 
+
+To develop with gander interactively, highlight the code you'd like to send to the model and use the keyboard shortcut:
+
+![<kbd>Ctrl</kbd>+<kbd>Cmd</kbd>+<kbd>G</kbd> or `gander::gander_addin()`](images/gander_addin.png){width='100%' fig-align='center'}
+
+The `gander` addin includes a text box and a select input with prefix, replace, and suffix.
+
+### Package functions {#sec-gander-suffix} 
+
+Lets assume we've made the decision to change the [`reactable` tables](https://glin.github.io/reactable/) to use the [`gt` package](https://gt.rstudio.com/). We'll start by converting a single `reactable` table output (in [`R/mod_counts_tbl.R`](https://github.com/mjfrigaard/sap/blob/29_llm-gander/R/mod_counts_tbl.R)) to use a `gt` table. 
+
+![**Suffix** responses to preserve orginal code ](images/gander_suffix_gt_tbl.gif){width='100%' fig-align='center'}
+
+```{r}
+#| label: co_box_suffix
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g", 
+  look = "default", hsize = "1.15", size = "1.10",
+  header = "TIP: Suffix",
+  fold = FALSE,
+  contents = "
+I recommend using **Suffix** instead of the default **Replace** for package functions. It won't replace the `roxygen2` documentation, and it gives you a chance to review/compare the reponse to the original code.
+"
+)
+```
+
+After loading the new `gt` table function, we can test the code by launching our app: 
+
+![`gt` table conversion error](images/gander_suffix_gt_tbl_error.png){width='100%' fig-align='center'}
+
+We can see the initial response throws an error, but we'll use this as a opportunity to explore how `gander` works.
+
+## Context  {#sec-gander-context} 
+
+We can view the background/context passed to the model using [`gander::peek()`](https://simonpcouch.github.io/gander/reference/gander_peek.html).  After giving us the model, [turns](https://ellmer.tidyverse.org/articles/ellmer.html#vocabulary), [tokens](https://ellmer.tidyverse.org/articles/ellmer.html#what-is-a-token) and cost, the results are separated into `system`, `user`, and `assistant`.
+
+```{verbatim}
+<Chat Anthropic/claude-3-7-sonnet-latest turns=3 tokens=1178/336 $0.01>
+```
+
+### System  {#sec-gander-context-system} 
+
+The `system` portion tells us how each response is framed and provides,  '*additional instructions to the model, shaping its responses to your needs*.'[^ellmer-sys-prompt]
+
+[^ellmer-sys-prompt]: Read more about this in the [*What is a prompt section?*](https://ellmer.tidyverse.org/articles/ellmer.html#what-is-a-prompt) of the `ellmer` documentation. 
+
+```{verbatim}
+
+── system [0] ────────────────────────────────────────────────────────────
+You are a helpful but terse R data scientist. Respond only with valid R code: 
+no exposition, no backticks. Always provide a minimal solution and refrain 
+from unnecessary additions. Use tidyverse style and, when relevant, tidyverse
+packages. For example, when asked to plot something, use ggplot2, or when 
+asked to transform data, using dplyr and/or tidyr unless explicitly 
+instructed otherwise. 
+```
+
+Think of this as the assistant's 'personality,' because it affects every response.
+
+### User {#sec-gander-context-user} 
+
+The user prompt section gives the model information on the R environment, file contents, etc. In this example we can see it provided the entire module (UI and server functions) and `roxygen2` documentation.
+
+Note the '*Up to this point, the contents of my r file reads: *' and '*Now, convert the reactable output to a gt table: *" delineation. 
+
+```{verbatim}
+── user [1178] ─────────────────────────────────────────────────────────────
+Up to this point, the contents of my r file reads: 
+
+\`\`\`r
+#' UI for counts table module
+#'
+#' Creates a reactive table displaying count data. This function is designed
+#' to work together with [mod_counts_tbl_server()].
+#'
+#' @param id A character string used to identify the namespace for the module.
+#'
+#' @return A `tagList` containing UI elements:
+#'   * A reactive table output that displays the count data
+#'
+#' @seealso [mod_counts_tbl_server()] for the server-side logic
+#'
+#' @examples
+#' # UI implementation
+#' ui <- fluidPage(
+#'   mod_counts_tbl_ui("counts1")
+#' )
+#'
+#' # Server implementation
+#' server <- function(input, output, session) {
+#'   mod_counts_tbl_server("counts1", counts_data = reactive(data))
+#' }
+#'
+mod_counts_tbl_ui <- function(id) {
+  ns <- NS(id)
+  tagList(
+    reactable::reactableOutput(
+      outputId = ns("counts_table")
+    )
+  )
+}
+
+#' Server function for the count table module
+#'
+#' Creates a reactive table showing movies based on selected filters. This 
+#' function is designed to work together with a corresponding UI function.
+#'
+#' @param id A character string used to identify the namespace for the module.
+#' @param vals A reactive expression that returns a list containing at least:
+#'   * `start_year`: numeric value for the earliest year to include
+#'   * `end_year`: numeric value for the latest year to include
+#'   * `chr_var`: symbol representing the variable to display alongside title
+#'
+#' @return Creates the following reactive elements within the module's namespace:
+#'   * `counts_table`: A reactive Reactable table with three columns:
+#'      - Title: The movie title
+#'      - The selected character variable from `vals()$chr_var`
+#'      - Thtr Rel Year: The theatrical release year
+#'
+#' The table includes styling with a dark background, white text, and features 
+#' such as highlighting, striping, and compact display.
+#'
+#' @details
+#' The function filters the global `movies` dataset based on the year range
+#' provided in `vals()`. Column names are normalized using the `name_case()` 
+#' function before displaying.
+#'
+#' @seealso [mod_counts_tbl_()] The corresponding UI function for this module
+#'
+#' @examples
+#' # Server implementation
+#' server <- function(input, output, session) {
+#'   # Create a reactive values list
+#'   selected_vals <- reactive({
+#'     list(
+#'       start_year = 2000,
+#'       end_year = 2010,
+#'       chr_var = sym("Critics Rating")
+#'     )
+#'   })
+#'   
+#'   # Call the module server
+#'   mod_counts_tbl_server("movie_table", selected_vals)
+#' }
+#'
+\`\`\`
+
+Now, convert the reactable output to a gt table: 
+
+\`\`\`r
+mod_counts_tbl_server <- function(id, vals) {
+  moduleServer(id, function(input, output, session) {
+    
+    output$counts_table <- reactable::renderReactable({
+      req(vals())
+      # subset
+      tbl_data <- subset(
+        movies,
+        thtr_rel_year >= vals()$start_year &
+        thtr_rel_year <= vals()$end_year
+      )
+      
+      # normalize names
+      tbl_names <- name_case(names(tbl_data))
+      tbl_data <- setNames(tbl_data, nm = tbl_names)
+      chr_var <- as.character(vals()$chr_var)
+      tbl_data <- tbl_data[c("Title", chr_var, "Thtr Rel Year")]
+      # reactable with dynamic row styling
+      reactable::reactable(tbl_data,
+        defaultPageSize = 25,
+        borderless = TRUE,
+        highlight = TRUE,
+        striped = TRUE,
+        compact = TRUE,
+        style = list(
+          backgroundColor = "#121212",
+          color = "#ffffff"
+        )
+      )
+    })
+  })
+}
+\`\`\`
+```
+
+### Assistant {#sec-gander-context-assistant} 
+
+Finally, the `assistant` is the response from the model (given the `system` and `user` prompts).
+
+```{verbatim}
+── assistant [336] ───────────────────────────────────────────────────────
+mod_counts_tbl_server <- function(id, vals) {
+  moduleServer(id, function(input, output, session) {
+    
+    output$counts_table <- gt::render_gt({
+      req(vals())
+      # subset
+      tbl_data <- subset(
+        movies,
+        thtr_rel_year >= vals()$start_year &
+        thtr_rel_year <= vals()$end_year
+      )
+      
+      # normalize names
+      tbl_names <- name_case(names(tbl_data))
+      tbl_data <- setNames(tbl_data, nm = tbl_names)
+      chr_var <- as.character(vals()$chr_var)
+      tbl_data <- tbl_data[c("Title", chr_var, "Thtr Rel Year")]
+      
+      # gt table with dark theme styling
+      gt::gt(tbl_data) %>%
+        gt::tab_options(
+          table.background.color = "#121212",
+          column.labels.background.color = "#1e1e1e",
+          table.font.color = "#ffffff",
+          column.labels.font.color = "#ffffff",
+          table.border.top.style = "hidden",
+          table.border.bottom.style = "hidden"
+        ) %>%
+        gt::opt_row_striping()
+    })
+  })
+}
+```
+
+### Debugging
+
+The context `gander` provides is enough information to 1) ensure the response is aware of the corresponding UI function, and 2) notice we're developing an R package (i.e., use explicit namespacing with `pkg::fun()`). 
+
+The errors we're encountering are due to incorrect arguments passed to [`gt::tab_options()`](https://gt.rstudio.com/reference/tab_options.html): 
+
+```{r}
+#| eval: false
+#| code-fold: false
+  gt::tab_options(
+    table.background.color = "#121212",
+    column.labels.background.color = "#1e1e1e",#<1>
+    table.font.color = "#ffffff",
+    column.labels.font.color = "#ffffff", #<2>
+    table.border.top.style = "hidden",
+    table.border.bottom.style = "hidden"
+  ) 
+```
+1. Should be `column_labels.background.color`   
+2. Doesn't exist (uses `table.font.color`)    
+
+After making the necessary changes to the server-side code, we also have to update the UI with the correct rendering function (recall that we didn't specify any changes to this function in the prompt).
+
+The updated `gt` table is below: 
+
+![Updated Counts `gt` table](images/gander_updated_counts_table.png){width='100%' fig-align='center'}
+
+## Tests  {#sec-gander-tests} 
+
+## External resources {#sec-gander-inst} 
+
+
+
+
 
 
 
