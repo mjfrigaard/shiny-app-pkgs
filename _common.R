@@ -58,7 +58,7 @@ co_box <- function(
   color = "b",
   header = "header",
   contents = "Your text",
-  size = "1.05",
+  size = "0.95",
   hsize = "1.05",
   fold = FALSE,
   look = "default") {
