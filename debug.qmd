@@ -104,7 +104,67 @@ In [Dependencies](dependencies.qmd), we walked through:
 ::::
 
 
-This section covers common methods for debugging R code and how we can adapt these methods to use within a Shiny app. So far this book has covered the contents of an R package when it contains a basic, functional Shiny application. Consider the diagram below that illustrates the reactive inputs in our application: 
+This section covers common methods for debugging R code and how we can adapt these methods to use within a Shiny app. So far this book has covered the contents of an R package containing a basic, functioning Shiny app. But as apps grow in complexity, it's highly likely you'll encounter bugs or errors during development.[^debug-define]
+
+Fortunately, both RStudio ![](images/rstudio-icon.png){height=20} and Positron ![](images/positron.png){height=20} come with powerful interactive debuggers, which help us identify, analyze, and fix errors in our code. Consider the diagram below that illustrates the reactive inputs in our application: 
+
+[^debug-define]: The definition in [this article from AWS](https://aws.amazon.com/what-is/debugging/#:~:text=Debugging) gives a great general overview of debugging. 
+
+
+
+```{=html}
+
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+
+</style>
+```
+
+```{mermaid}
+%%| fig-cap: 'Reactive flow in Movies App'
+%%| fig-align: center
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"13px"}}}%%
+flowchart TD
+    subgraph Inputs["<strong>Inputs</strong>"]
+        subgraph Variables["Variables"]
+        var_input[/"<code>input$x</code><br><code>input$y</code><br><code>input$z</code>"/]
+        end
+        subgraph Aesthetics["Aesthetics"]
+        aes_input[/"<code>input$alpha</code><br><code>input$size</code>"/]
+        end
+        subgraph Title["Title"]
+        plot_title[/"<code>input$plot_title</code>"/]
+        end
+        
+    end
+    subgraph React["<strong>App Reactives</strong>"]
+        var_inputs>"<code>var_inputs()</code> "]
+        inputs>"<code>inputs()</code>"]
+    end
+    subgraph Output["<strong>Output</strong>"]
+        output[\"<code>output$scatterplot</code>"\]
+    end
+
+
+    var_input & aes_input <==> |"pre-selected values"|var_inputs 
+    plot_title <-.-> |"*new plot title*"|var_inputs 
+    var_inputs <==>|"*New Plot Title*"|inputs
+    inputs <==> output
+    
+    style var_input stroke:#333,stroke-width:1px,rx:5,ry:5 
+    style aes_input stroke:#333,stroke-width:1px,rx:5,ry:5
+```
+
+<!-- 
+ 
 
 ```{=html}
 
@@ -157,6 +217,8 @@ flowchart TD
     style aes_input stroke:#333,stroke-width:1px,rx:5,ry:5
 ```
 
+-->
+
 The inputs are collected by the variable input module[^mod_var_input] and passed to the graph display module (as `var_inputs()`),[^mod_scatter_display] where they become the reactive `inputs()` for the graph utility function,[^scatter_plot] before finally being rendered.
 
 [^mod_var_input]: Our variable input model is in `R/mod_var_input.R`.
@@ -165,64 +227,9 @@ The inputs are collected by the variable input module[^mod_var_input] and passed
 
 [^scatter_plot]: The graph utility function is in `R/scatter_plot.R`
 
-![](images/debug_positron_launch_app.png){width='100%' fig-align='center'}
-
-As applications grow in complexity, it's highly likely you'll encounter bugs or errors during development. Fortunately, both RStudio ![](images/rstudio-icon.png){height=20} and Positron ![](images/positron.png){height=20} come with powerful interactive debuggers, which help us identify, analyze, and fix errors in our code.[^debug-define] 
-
-[^debug-define]: The definition in [this article from AWS](https://aws.amazon.com/what-is/debugging/#:~:text=Debugging) gives a great general overview of debugging. 
-
 Our application launches with pre-selected values for the `x`, `y` and `color` graph inputs, along with values for the `size` and opacity (`alpha`) of the points. Users can add a title or change the graph inputs, but by having pre-selected values, we guarantee the graph renders when the application launches.
 
-```{=html}
-
-<style>
-
-.codeStyle span:not(.nodeLabel) {
-  font-family: monospace;
-  font-size: 1.5em;
-  font-weight: bold;
-  color: #9753b8 !important;
-  background-color: #f6f6f6;
-  padding: 0.2em;
-}
-
-</style>
-```
-
-```{mermaid}
-%%| fig-cap: '*Updating the plot title*'
-%%| fig-align: center
-%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"13px"}}}%%
-flowchart TD
-    subgraph Inputs["<strong>Inputs</strong>"]
-        subgraph Variables["Variables"]
-        var_input[/"<code>input$x</code><br><code>input$y</code><br><code>input$z</code>"/]
-        end
-        subgraph Aesthetics["Aesthetics"]
-        aes_input[/"<code>input$alpha</code><br><code>input$size</code>"/]
-        end
-        subgraph Title["Title"]
-        plot_title[/"<code>input$plot_title</code>"/]
-        end
-        
-    end
-    subgraph React["<strong>App Reactives</strong>"]
-        var_inputs>"<code>var_inputs()</code> "]
-        inputs>"<code>inputs()</code>"]
-    end
-    subgraph Output["<strong>Output</strong>"]
-        output[\"<code>output$scatterplot</code>"\]
-    end
-
-
-    var_input & aes_input <==> |"pre-selected values"|var_inputs 
-    plot_title <-.-> |"*new plot title*"|var_inputs 
-    var_inputs <==>|"*New Plot Title*"|inputs
-    inputs <==> output
-    
-    style var_input stroke:#333,stroke-width:1px,rx:5,ry:5 
-    style aes_input stroke:#333,stroke-width:1px,rx:5,ry:5
-```
+![](images/debug_positron_launch_app.png){width='100%' fig-align='center'}
 
 Any text entered for the title is converted to title case when the variable inputs are passed to the scatter plot display module. The reactives in the application are all updated with the new output:
 
@@ -267,17 +274,17 @@ flowchart TD
         plot_title[/"<code>input$plot_title</code>"/]
         end
     end
-    IDs("<code>inputId</code> or <code>outputId</code> errors") --x var_input & aes_input & plot_title
+    IDs("🪲 <code>inputId</code> or <code>outputId</code> errors 🪲") --x var_input & aes_input & plot_title
     subgraph React["<strong>App Reactives</strong>"]
         var_inputs>"<code>var_inputs()</code> "]
         inputs>"<code>inputs()</code>"]
     end
-    Obs("<code>observe</code> listener<br>errors") --x React
-    Rxt("Reactive context<br>errors") --x Inputs & React
+    Obs("🪲 <code>observe</code> listener<br>errors 🪲") --x React
+    Rxt("🪲 Reactive context<br>errors 🪲") --x Inputs & React
     subgraph Output["<strong>Output</strong>"]
         output[\"<code>output$scatterplot</code>"\]
     end
-    Rend("<code>render_*</code> function<br>errors") ----x Output
+    Rend("🪲 <code>render_*</code> function<br>errors 🪲") ----x Output
 
     var_input & aes_input <==> var_inputs 
     plot_title <-.-> var_inputs 
