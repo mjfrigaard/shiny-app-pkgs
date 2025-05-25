@@ -5,6 +5,10 @@
 #| echo: false 
 #| include: false
 source("_common.R")
+source("https://raw.githubusercontent.com/mjfrigaard/sap/refs/heads/29_llm-gander/R/compare_plot.R")
+source("https://raw.githubusercontent.com/mjfrigaard/sap/refs/heads/29_llm-gander/R/name_case.R")
+movies <- vroom::vroom("_assets/movies.csv")
+clr_pal3 <- c("#FC5C64FF", "#2F8AC4FF", "#99C945FF")
 ```
 
 ```{r}
@@ -389,15 +393,108 @@ After updating the UI module function and loading the changes, we can see the **
 ![Updated Counts `gt` table](images/gander_updated_counts_table.png){width='100%' fig-align='center'}
 
 
-## Graph aesthetics  {#sec-gander-utils} 
+## Graph adjustments  {#sec-gander-utils} 
 
-`gander` is incredibly helpful for making small adjustments to `ggplot2` graphs. I noticed the text size was too small in the graphs on the **Distribution** tabs:
+I've found the `gander` addin to be incredibly helpful when developing visualizations in Shiny app-packages. For example, the **Compare** tab displays a `plotly` scatter plot.  I asked `gander` to convert the plotly code in the module server function into a utility function (`R/compare_plot.R`):
+
+> **Prompt:** ***"Convert the plotly code inside renderPlotly() into a separate utility function (compare_plot())."***
+
+![Compare plot revision](images/gander_compare_prompt.png){width='100%' fig-align='center'}
+
+This resulted in the utility function below:  
+
+```{r}
+#| label: compare_plot
+#| eval: false 
+#| code-fold: true 
+#| code-summary: 'show/hide R/compare_plot.R'
+#' Create an Interactive Scatter Plot for Comparing Variables
+#'
+#' This function creates an interactive scatter plot using plotly to compare two
+#' variables with points colored by a third variable.
+#'
+#' @param data A data frame containing the variables to plot
+#' @param x Character string with the name of the variable to plot on the x-axis
+#' @param y Character string with the name of the variable to plot on the y-axis
+#' @param color Character string with the name of the variable to use for 
+#'    coloring points
+#' @param size Numeric value for the size of the points (default: 5)
+#' @param alpha Numeric value for the transparency of the points (default: 0.7)
+#' @param title Character string for the plot title. If NULL, a default title is
+#'     generated
+#'
+#' @return a plotly interactive scatter plot object
+#'
+#' @examples
+#' require(webshot)
+#' compare_plot(movies, 
+#'              "imdb_rating", "critics_score", "genre", 
+#'               size = 7, alpha = 0.75, "Plot Title")
+#'
+#' @export
+#' 
+compare_plot <- function(data, x, y, color, size = 5, alpha = 0.7, title = NULL) {
+  # title if not provided
+  if (is.null(title)) {
+    title <- paste(name_case(x), "vs.", name_case(y))
+  }
+
+  # plot
+  plot <- plotly::plot_ly(
+    data = data,
+    x = ~get(x),
+    y = ~get(y),
+    color = ~get(color),
+    text = ~title,
+    type = "scatter",
+    mode = "markers",
+    colors = clr_pal3,
+    marker = list(
+      size = size,
+      opacity = alpha
+    )
+  ) |>
+    # title 
+    plotly::layout(
+      title = list(
+        text = title,
+        font = list(color = "#e0e0e0")
+      ),
+      # x-label 
+      xaxis = list(
+        title = name_case(x),
+        titlefont = list(color = "#e0e0e0"),
+        tickfont = list(color = "#e0e0e0")
+      ),
+      # y-label 
+      yaxis = list(
+        title = name_case(y),
+        titlefont = list(color = "#e0e0e0"),
+        tickfont = list(color = "#e0e0e0")
+      ),
+      # legend 
+      legend = list(
+        font = list(color = "#e0e0e0")
+      ),
+      # background color
+      plot_bgcolor = "#121212",
+      paper_bgcolor = "#121212"
+    )
+  return(plot)
+}
+```
+
+Having graph code in a separate utility function makes it easier to debug/write tests. Examples in the `roxygen2` documentation also make it easier to make minor changes to graph without worrying about the reactivity inside the application:
+
+![](images/gander_examples_compare_plot.png){width='100%' fig-align='center'}
+
+I also asked `gander` to make a small adjustments to the `ggplot2` graphs. I noticed the text size was too small in the graphs on the **Distribution** tabs:
 
 ![Text size on **Distribution** tab](images/gander_dist_text_small.png){width='100%' fig-align='center'}
 
 I asked the chatbot to make the font size in the graph adjust with the display. 
 
-> **Prompt:** ***"I want the font in the ggplot2 graph to adjust with the screen size"***
+> **Prompt:** ***"Make the font in the ggplot2 graphs adjust to the screen size"***
 
 `gander` only made a few changes to the `ggplot2` code in the modules, but these changes definitely reduced a lot of time because the `ggplot2::theme()` arguments can be difficult to remember, and usually take multiple iterations to get correct: 
 
@@ -424,9 +521,206 @@ ggplot2::theme(
 
 Small changes like these can take up significant time to read through documentation/examples, although a foundational understanding of `ggplot2` makes it easier to debug any errors the generated code produces.  
 
-## External resources {#sec-gander-inst} 
+## Downloadable report {#sec-gander-rmd-report} 
 
-To full test the functionality of gander, I asked it 
+I wanted to stretch the functionality of `gander`, so I asked the chatbot to create a downloadable report module. This required a series of prompts to get working, but I think it serves as a great example of using the `gander` addin to iterate through a solution/feature. 
+
+First, I created the report template file (`inst/rmd/report_template.Rmd`) with the following YAML: 
+
+```YAML
+---
+title: "Movie Analysis Report"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 2
+    theme: united
+params:
+  compare_values: NA
+  count_values: NA
+  dist_values: NA
+  award_values: NA
+---
+```
+
+The `params` in the report will be passed from the new `mod_download_report` module, which we can ask gander to assist with by highlighting the contents of app's server function (`nav_server()`)
+
+> **Prompt**: ***Create a module for downloading an R Markdown HTML report using the `_values` as parameters.***
+
+The resulting module is below:
+
+```{r}
+#| label: mod_report
+#| include: true
+#| code-fold: show 
+#| code-summary: 'show/hide mod_report module'
+#| eval: false
+#' Report download UI
+#'
+#' @param id Module ID
+#'
+#' @return UI elements for downloading report
+#' 
+#' @export
+mod_report_ui <- function(id) {
+  ns <- NS(id)
+  tagList(
+    downloadButton(ns("download_report"), "Download Report")
+  )
+}
+#' Generate and download R Markdown report
+#'
+#' @param id Module ID
+#' @param scatter_values Scatter plot reactive values
+#' @param count_values Count data reactive values
+#' @param dist_values Distribution reactive values
+#' @param award_values Awards reactive values
+#'
+#' @return None
+#' 
+#' @export
+mod_report_server <- function(id, scatter_values, count_values, dist_values, award_values) {
+  moduleServer(id, function(input, output, session) {
+    
+    output$download_report <- downloadHandler(
+      filename = function() {
+        paste("report-", Sys.Date(), ".html", sep = "")
+      },
+      content = function(file) {
+        # Create a temporary directory for report generation
+        tempDir <- tempdir()
+        tempReport <- file.path(tempDir, "report.Rmd")
+        
+        # Copy the report template to the temp directory
+        file.copy(system.file("rmd", "report_template.Rmd", package = "sap"), 
+          tempReport, overwrite = TRUE)
+        
+        # Set up parameters to pass to Rmd
+        params <- list(
+          compare_values = scatter_values(),
+          count_values = count_values(),
+          dist_values = dist_values(),
+          award_values = award_values()
+        )
+        
+        # Render the report
+        rmarkdown::render(
+          input = tempReport, 
+          output_file = file,
+          params = params,
+          envir = new.env(parent = globalenv()))
+      }
+    )
+  })
+}
+```
+
+As we can see, this module conforms to our naming convention and follows the guidance from the official [generating reports](https://shiny.posit.co/r/articles/build/generating-reports/) documentation (i.e., it has a `downloadHandler()` with  `filename` and `content`, and passes the `params` to `rmarkdown::render()`).
+
+After implementing this module in the UI and the server, I can see the `params` have been passed to the `.Rmd` file by printing it's structure: 
+
+![Report params](images/gander_report_params_str.png){width='100%' fig-align='center'}
+
+To convert the symbols to characters in `params`, I created an empty `.R` script (`R/desym.R`), pasted and highlighted the `params` structure output from the report, and asked `gander` to write a utility function: 
+
+> **Prompt**: ***Write a `desym` function that will convert the symbols to characters in `params`.***
+
+![De-symbolize utlity function](images/gander_report_desym_fun.png){width='100%' fig-align='center'}
+
+```{r}
+#| label: desym
+#| include: true
+#| code-fold: show 
+#| code-summary: 'show/hide desym() utility function'
+#| eval: false
+#' Convert symbols to character
+#'
+#' @param params_list 
+#'
+#' @returns list of params with character values
+#' 
+#' @export
+#'
+desym <- function(params_list) {
+  convert_symbol <- function(x) {
+    if (is.symbol(x)) {
+      return(as.character(x))
+    } else if (is.list(x)) {
+      return(lapply(x, convert_symbol))
+    } else {
+      return(x)
+    }
+  }
+  lapply(params_list, convert_symbol)
+}
+```
+
+We'll add the `desym()` function to the `mod_report_server()` function to ensure only character values are passed to the report. 
+```{r}
+#| label: updated_mod_report_server
+#| include: true
+#| eval: false
+#| code-fold: show 
+#| code-summary: 'show/hide mod_report_server() with dsym()'
+# Set up parameters to pass to Rmd
+params <- list(
+  compare_values = scatter_values(),
+  count_values = count_values(),
+  dist_values = dist_values(),
+  award_values = award_values()
+)
+# remove the symbols
+clean_params <-  desym(params)
+
+# Render the report
+rmarkdown::render(
+  input = tempReport, 
+  output_file = file,
+  params = clean_params,
+  envir = new.env(parent = globalenv()))
+```
+
+Now we have parameter values we can use with our new custom plotting function (`compare_plot()`). We can include the following in a R code block in `inst/report_template.Rmd`:
+
+```{r}
+#| label: compare_plot_report
+#| include: true
+#| eval: false
+#| code-fold: show 
+#| code-summary: 'show/hide compare_plot() in inst/report_template.Rmd'
+tryCatch({
+  # extract variable names
+  x_var <- name_case(params$compare_values$x, case = "lower") # <1>
+  y_var <- name_case(params$compare_values$y, case = "lower")
+  color_var <- name_case(params$compare_values$color, case = "lower") #<1>
+  # create data 
+  compare_data <- sap::movies
+  # create plot
+  compare_plot(data = compare_data, 
+               x = x_var, 
+               y = y_var, 
+               color = color_var, 
+               size =  params$compare_values$size, #<2>
+               alpha = params$compare_values$alpha, 
+               title = params$compare_values$title) #<2>
+  },
+    error = function(e) {
+    cat("\n\n**Error creating plot:**\n\n", e$message)
+    }
+)
+```
+1. Convert these to `lower_snake_case` to match the names in `movies`   
+2. Can pass the original `params` values unchanged.    
+
+Our downloaded HTML report contains the following: 
+
+![Downloaded report](images/gander_report_download.png){width='100%' fig-align='center'}
+
+
+I stopped here, but as you can see, `gander` can be used to continue developing utility functions for each graph and table in the application to use in the report (or we could build the outputs manually using the `params` in the `isnt/report_template.Rmd` file).
+
+## Recap
 
 
 
