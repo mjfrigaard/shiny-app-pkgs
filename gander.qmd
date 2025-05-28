@@ -1,4 +1,4 @@
-# 🏗️ gander {#sec-shiny-gander}
+# gander {#sec-shiny-gander}
 
 ```{r}
 #| eval: true 
@@ -27,6 +27,7 @@ This chapter is being developed. Thank you for your patience.
 )
 ```
 
+
 ```{r}
 #| label: co_box_tldr
 #| echo: false
@@ -38,12 +39,18 @@ co_box(
   header = "TLDR &emsp; ![](images/gander.png){width='8%'}",
   fold = TRUE,
   contents = "
-  
+Unlike the previous packages, `gander`:
+
+1. Can detect what's in your R environment, including functions, data frames, variables, etc.
+
+2. Reads from the open file you're working in and injects that context automatically into your prompt.
+
+`gander`'s thoughtful design is helpful when writing server logic or UI layouts because it lets us ask questions 'in-place', making our development workflow smoother and faster.
   "
 )
 ```
 
-[`gander`](https://simonpcouch.github.io/gander/index.html) goes beyond chores by extending the use of `ellmer` models to, 
+[`gander`](https://simonpcouch.github.io/gander/index.html) goes beyond `ellmer` and `chores` by extending the use of `ellmer` models to, 
 
 "*talk[ing] to the objects in your R environment.*"[^gander]
 
@@ -60,7 +67,7 @@ shinypak_apps(regex = "^29", branch = "29_llm-gander")
 ```
 
 
-## Configuration 
+## Configuration {#sec-gander-config}
 
 First we'll install the [`ellmer`](https://ellmer.tidyverse.org/) and [`gander`](https://simonpcouch.github.io/gander/index.html) packages:
 
@@ -99,7 +106,7 @@ options(
 )
 ```
 
-### Keyboard shortcut 
+### Keyboard shortcut {#sec-gander-shortcut}
 
 Configure the keyboard shortcut following the instructions on the [package website](https://simonpcouch.github.io/gander/index.html#installation) (RStudio ![](images/rstudio-icon.png){height=30} or Positron ![](images/positron.png){height=30}).
 
@@ -159,7 +166,7 @@ After loading the new `gt` table function, we can test the code by launching our
 
 We can see the initial response throws an error, but we'll use this as a opportunity to explore how `gander` works.
 
-## Context  {#sec-gander-context} 
+## Context {#sec-gander-context} 
 
 We can view the background/context passed to the model using [`gander::peek()`](https://simonpcouch.github.io/gander/reference/gander_peek.html).  After giving us the model, [turns](https://ellmer.tidyverse.org/articles/ellmer.html#vocabulary), [tokens](https://ellmer.tidyverse.org/articles/ellmer.html#what-is-a-token) and cost, the results are separated into `system`, `user`, and `assistant`.
 
@@ -167,7 +174,7 @@ We can view the background/context passed to the model using [`gander::peek()`](
 <Chat Anthropic/claude-3-7-sonnet-latest turns=3 tokens=1178/336 $0.01>
 ```
 
-### System  {#sec-gander-context-system} 
+### System {#sec-gander-context-system} 
 
 The `system` portion tells us how each response is framed and provides,  '*additional instructions to the model, shaping its responses to your needs*.'[^ellmer-sys-prompt]
 
@@ -393,9 +400,9 @@ After updating the UI module function and loading the changes, we can see the **
 ![Updated Counts `gt` table](images/gander_updated_counts_table.png){width='100%' fig-align='center'}
 
 
-## Graph adjustments  {#sec-gander-utils} 
+## Graph adjustments  {#sec-gander-visualizations} 
 
-I've found the `gander` addin to be incredibly helpful when developing visualizations in Shiny app-packages. For example, the **Compare** tab displays a `plotly` scatter plot.  I asked `gander` to convert the plotly code in the module server function into a utility function (`R/compare_plot.R`):
+I've found the `gander` addin to be incredibly helpful for visualization development in Shiny modules. In the **Compare** tab, we display a `plotly` scatter plot. I've asked `gander` to convert the `plotly` code in the module server function into a utility function (`R/compare_plot.R`):
 
 > **Prompt:** ***"Convert the plotly code inside renderPlotly() into a separate utility function (compare_plot())."***
 
@@ -484,19 +491,17 @@ compare_plot <- function(data, x, y, color, size = 5, alpha = 0.7, title = NULL)
 }
 ```
 
-Having graph code in a separate utility function makes it easier to debug/write tests. Examples in the `roxygen2` documentation also make it easier to make minor changes to graph without worrying about the reactivity inside the application:
+Having graph code in a separate utility function makes it easier to debug/write tests. Writing examples in the `roxygen2` documentation also makes it possible to view minor changes to the graph without dealing with the reactivity inside the application:
 
 ![](images/gander_examples_compare_plot.png){width='100%' fig-align='center'}
 
-I also asked `gander` to make a small adjustments to the `ggplot2` graphs. I noticed the text size was too small in the graphs on the **Distribution** tabs:
-
-![Text size on **Distribution** tab](images/gander_dist_text_small.png){width='100%' fig-align='center'}
-
-I asked the chatbot to make the font size in the graph adjust with the display. 
+I also noticed the text size was too small in the graphs on the **Distribution** tabs, so I also asked `gander` to make the font size in the graph adjust with the display:
 
 > **Prompt:** ***"Make the font in the ggplot2 graphs adjust to the screen size"***
 
-`gander` only made a few changes to the `ggplot2` code in the modules, but these changes definitely reduced a lot of time because the `ggplot2::theme()` arguments can be difficult to remember, and usually take multiple iterations to get correct: 
+![Text size on **Distribution** tab](images/gander_dist_text_small.png){width='100%' fig-align='center'}
+
+`gander` only returned a few changes to the `ggplot2` code, but these changes reduced a lot of time because the `ggplot2::theme()` arguments are be difficult to remember, and usually take multiple iterations to get correct: 
 
 ```{r}
 #| eval: false
@@ -519,13 +524,13 @@ ggplot2::theme(
 
 ![Updated text on **Distribution** tab](images/gander_dist_text_updated.png){width='100%' fig-align='center'}
 
-Small changes like these can take up significant time to read through documentation/examples, although a foundational understanding of `ggplot2` makes it easier to debug any errors the generated code produces.  
+Visualization changes like these can take up a lot of time if we're reading through package documentation (or Stack Overflow/Posit Community). But `gander` can handle tasks like this quickly, although a foundational understanding of `plotly` and `ggplot2` makes it easier to debug any errors the generated code produces.  
 
 ## Downloadable report {#sec-gander-rmd-report} 
 
 I wanted to stretch the functionality of `gander`, so I asked the chatbot to create a downloadable report module. This required a series of prompts to get working, but I think it serves as a great example of using the `gander` addin to iterate through a solution/feature. 
 
-First, I created the report template file (`inst/rmd/report_template.Rmd`) with the following YAML: 
+First, I created the report template file ([`inst/rmd/report_template.Rmd`](https://github.com/mjfrigaard/sap/blob/29_llm-gander/inst/rmd/report_template.Rmd)) with the following YAML: 
 
 ```YAML
 ---
@@ -544,7 +549,7 @@ params:
 ---
 ```
 
-The `params` in the report will be passed from the new `mod_download_report` module, which we can ask gander to assist with by highlighting the contents of app's server function (`nav_server()`)
+The `params` in the report will be passed from the new [`R/mod_report.R`](https://github.com/mjfrigaard/sap/blob/29_llm-gander/R/mod_report.R) module, which we can ask `gander` to generate by highlighting the contents of app's server function (`nav_server()`) and entering the following prompt:
 
 > **Prompt**: ***Create a module for downloading an R Markdown HTML report using the `_values` as parameters.***
 
@@ -588,15 +593,15 @@ mod_report_server <- function(id, scatter_values, count_values, dist_values, awa
         paste("report-", Sys.Date(), ".html", sep = "")
       },
       content = function(file) {
-        # Create a temporary directory for report generation
+        # create a temporary directory for report generation
         tempDir <- tempdir()
         tempReport <- file.path(tempDir, "report.Rmd")
         
-        # Copy the report template to the temp directory
+        # copy the report template to the temp directory
         file.copy(system.file("rmd", "report_template.Rmd", package = "sap"), 
           tempReport, overwrite = TRUE)
         
-        # Set up parameters to pass to Rmd
+        # set up parameters to pass to Rmd
         params <- list(
           compare_values = scatter_values(),
           count_values = count_values(),
@@ -604,7 +609,7 @@ mod_report_server <- function(id, scatter_values, count_values, dist_values, awa
           award_values = award_values()
         )
         
-        # Render the report
+        # render the report
         rmarkdown::render(
           input = tempReport, 
           output_file = file,
@@ -616,13 +621,13 @@ mod_report_server <- function(id, scatter_values, count_values, dist_values, awa
 }
 ```
 
-As we can see, this module conforms to our naming convention and follows the guidance from the official [generating reports](https://shiny.posit.co/r/articles/build/generating-reports/) documentation (i.e., it has a `downloadHandler()` with  `filename` and `content`, and passes the `params` to `rmarkdown::render()`).
+As we can see, the new module conforms to our naming convention and follows the guidance from the official [generating reports](https://shiny.posit.co/r/articles/build/generating-reports/) documentation (i.e., it has a `downloadHandler()` with  `filename` and `content`, and passes the `params` to `rmarkdown::render()`).
 
 After implementing this module in the UI and the server, I can see the `params` have been passed to the `.Rmd` file by printing it's structure: 
 
 ![Report params](images/gander_report_params_str.png){width='100%' fig-align='center'}
 
-To convert the symbols to characters in `params`, I created an empty `.R` script (`R/desym.R`), pasted and highlighted the `params` structure output from the report, and asked `gander` to write a utility function: 
+To convert the symbols to characters in `params`, I created an empty `.R` script ([`R/desym.R`](https://github.com/mjfrigaard/sap/blob/29_llm-gander/R/mod_report.R)), pasted and highlighted the `params` structure output from the report, and asked `gander` to write a utility function: 
 
 > **Prompt**: ***Write a `desym` function that will convert the symbols to characters in `params`.***
 
@@ -656,7 +661,8 @@ desym <- function(params_list) {
 }
 ```
 
-We'll add the `desym()` function to the `mod_report_server()` function to ensure only character values are passed to the report. 
+We'll [add the `desym()` function](https://github.com/mjfrigaard/sap/blob/c3327e2636d8d9fdbf6d79b67e8ddc0110a54495/R/mod_report.R#L56) to the `mod_report_server()` function to ensure only character values are passed to the report.
+
 ```{r}
 #| label: updated_mod_report_server
 #| include: true
@@ -681,7 +687,8 @@ rmarkdown::render(
   envir = new.env(parent = globalenv()))
 ```
 
-Now we have parameter values we can use with our new custom plotting function (`compare_plot()`). We can include the following in a R code block in `inst/report_template.Rmd`:
+Now we have parameter values we can use with our new custom plotting function (`compare_plot()`). We can include the following in a R code block in [`inst/report_template.Rmd`](https://github.com/mjfrigaard/sap/blob/29_llm-gander/inst/rmd/report_template.Rmd):
+
 
 ```{r}
 #| label: compare_plot_report
@@ -718,10 +725,35 @@ Our downloaded HTML report contains the following:
 ![Downloaded report](images/gander_report_download.png){width='100%' fig-align='center'}
 
 
-I stopped here, but as you can see, `gander` can be used to continue developing utility functions for each graph and table in the application to use in the report (or we could build the outputs manually using the `params` in the `isnt/report_template.Rmd` file).
+I stopped developing the downloadable report here, but as you can see, the `gander` addin is incredibly helpful for editing modules, developing utility functions, and creating content for our downloadable R markdown report.
 
 ## Recap
 
+
+
+```{r}
+#| label: co_box_recap
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g", 
+  fold = FALSE,
+  look = "default", hsize = "1.15", size = "1.05",  
+  header = "Recap: ![](images/gander.png){width='8%'}",
+    contents = "
+Creating app-packages requires developing modular components across folders, writing tests and documentation, all while respecting the R package structure. `gander` offers suggestions that respect how packages are organized *and* how Shiny modules and functions are typically used.
+
+| Feature               | How It Helps                                         |
+| --------------------- | ---------------------------------------------------- |
+| Context-aware chat    | Faster, smarter help specific to codebase            |
+| Environment-aware     | Ask about objects and get meaningful answers         |
+| Fits dev workflow     | Works as an addin with keyboard shortcuts            |
+| Package-smart         | Useful for modular, namespaced Shiny development     |
+| Great for writing     | Assists with `roxygen2` docs, tests, and refactoring |
+
+  ")
+```
 
 
 <!-- https://posit-dev.github.io/shinychat/ -->
