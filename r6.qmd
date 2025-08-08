@@ -1,0 +1,214 @@
+# 🏗 R6 {#sec-shiny-r6}
+
+```{r}
+#| eval: true 
+#| echo: false 
+#| include: false
+source("_common.R")
+```
+
+```{r}
+#| label: co_box_dev
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "r", 
+  look = "default", hsize = "1.15", size = "0.95",
+  header = "WARNING",
+  fold = FALSE,
+  contents = "
+This chapter is being developed. Thank you for your patience. 
+  "
+)
+```
+
+As your Shiny application grows in complexity, organizing code in a modular and object-oriented way becomes crucial. While Shiny is inherently reactive and functional, **R6 classes** provide a powerful tool for encapsulating state, behavior, and logic — particularly useful in large-scale apps or when designing reusable components inside an R package.
+
+In this chapter, we’ll explore:
+
+* What R6 is and why it's useful in Shiny
+* How to define and use R6 classes in a Shiny app-package
+* Best practices for integrating R6 with reactivity
+* A practical example within a package structure
+
+---
+
+## What is R6?
+
+R6 is an object-oriented system in R that enables the creation of **reference-based** objects. Unlike S3 or S4 objects, R6 objects maintain state and support encapsulation, inheritance, and private/public members — much like objects in other OOP languages (e.g., Python, Java).
+
+This makes R6 especially useful for:
+
+* Managing mutable state (e.g., counters, user sessions)
+* Bundling business logic with data
+* Reusing logic across modules or apps
+
+In an app packaged as an R package, R6 classes help you separate concerns and avoid global state.
+
+---
+
+### Defining an R6 Class
+
+You define R6 classes using the `R6` package. Here's a simple example of an R6 class for a counter:
+
+```r
+# In R/counter.R
+Counter <- R6::R6Class(
+  "Counter",
+  public = list(
+    value = 0,
+    initialize = function(start = 0) {
+      self$value <- start
+    },
+    increment = function() {
+      self$value <- self$value + 1
+    },
+    reset = function() {
+      self$value <- 0
+    },
+    get = function() {
+      self$value
+    }
+  )
+)
+```
+
+Place this class definition inside your `R/` directory so it is loaded with the rest of your package code.
+
+### Using R6 in the Shiny Server Function
+
+To use the class in your app, instantiate it inside the `server` function and wrap its methods in `reactive` or `observe` blocks where needed:
+
+```r
+# In inst/app/server.R
+
+server <- function(input, output, session) {
+  counter <- Counter$new()
+
+  observeEvent(input$increment_btn, {
+    counter$increment()
+  })
+
+  observeEvent(input$reset_btn, {
+    counter$reset()
+  })
+
+  output$counter_text <- renderText({
+    paste("Current count:", counter$get())
+  })
+}
+```
+
+And in the UI:
+
+```r
+# In inst/app/ui.R
+
+ui <- fluidPage(
+  actionButton("increment_btn", "Increment"),
+  actionButton("reset_btn", "Reset"),
+  textOutput("counter_text")
+)
+```
+
+---
+
+## Reactivity and R6
+
+R6 objects aren't inherently reactive. If you want your app to respond to changes in an R6 object's state, you need to wrap getters in reactive expressions or use `reactiveVal`/`reactiveValues` internally.
+
+## Strategy 1: Wrap method calls in `render*` functions
+
+This is the simplest method, shown above with `renderText()`.
+
+## Strategy 2: Use reactive triggers
+
+You can also use `reactiveVal` to track state and trigger UI updates:
+
+```r
+server <- function(input, output, session) {
+  counter <- Counter$new()
+  trigger <- reactiveVal(0)
+
+  observeEvent(input$increment_btn, {
+    counter$increment()
+    trigger(trigger() + 1)
+  })
+
+  output$counter_text <- renderText({
+    trigger()
+    paste("Current count:", counter$get())
+  })
+}
+```
+
+## Organizing R6 Classes in a Package
+
+To integrate smoothly with your app-package:
+
+* Place class definitions in `R/` with clear, modular file names (e.g., `R/counter.R`)
+* Use `@export` roxygen tags if you want to make classes available to users
+* Test classes with `testthat` as you would with functions
+* Avoid instantiating R6 objects at the package level (e.g., outside of functions); do so inside `server()` or module server functions
+
+
+## Example: Session-Aware Logger
+
+Suppose we want an R6 class that logs user actions with session tracking:
+
+```r
+# In R/logger.R
+Logger <- R6::R6Class("Logger",
+  public = list(
+    session_id = NULL,
+    logs = character(),
+    
+    initialize = function(session_id) {
+      self$session_id <- session_id
+    },
+    
+    log = function(message) {
+      timestamp <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
+      entry <- paste0("[", self$session_id, " @ ", timestamp, "] ", message)
+      self$logs <- c(self$logs, entry)
+    },
+    
+    get_logs = function() {
+      self$logs
+    }
+  )
+)
+```
+
+In the server:
+
+```r
+server <- function(input, output, session) {
+  logger <- Logger$new(session$token)
+
+  observeEvent(input$do_something, {
+    logger$log("Button clicked")
+  })
+
+  output$log_output <- renderPrint({
+    logger$get_logs()
+  })
+}
+```
+
+
+
+## Recap
+
+Using R6 in Shiny app-packages gives you a scalable, maintainable approach to organizing business logic and managing state. It shines when:
+
+* You want object-oriented abstractions
+* You need mutable objects tied to user sessions
+* You're building reusable modules within or across apps
+
+While not every Shiny app needs R6, mastering this tool adds a robust pattern to your Shiny developer toolkit — particularly when packaging your app for production or distribution.
+
+
+
+In the next chapter, we'll explore how to use **Shiny modules** in combination with R6 objects to further encapsulate functionality within your package structure.
