@@ -25,13 +25,13 @@ In this  chapter we'll focus on the [`btw` package](https://posit-dev.github.io/
 
 > "*provides a number of utilities for describing R objects and package documentation in plain text. For interactive use, this is especially powerful for describing relevant pieces of context to large language models.  When used programmatically, these utilities can be registered with 'ellmer' chats as tool calls, enabling language models to peruse package documentation and explore your computational environment.*"[^btw-desc] 
 
-I'll use `btw` to add more functionality to the downloadable report in our [`sap` application.](https://github.com/mjfrigaard/sap/tree/30_llm-btw)
+I'll use `btw` to add documentation and more functionality to the downloadable report in our [`sap` application.](https://github.com/mjfrigaard/sap/tree/30_llm-btw)
 
 [^btw-desc]: Read more about `btw` in the [source code](https://github.com/posit-dev/btw/blob/main/DESCRIPTION).
 
 ## Configuration {#sec-btw-config}
 
-Place the `btw` configuration options in the `.Rprofile` (similar to other `ellmer` configurations).[^rprof] Recall that the `.Rprofile` file can exist at the user and/or the project-level. For example, a project-level `.Rprofile` for the `sap` package might include the following: 
+We can place the `btw` configuration options in the `.Rprofile` (similar to other [`ellmer` configurations](https://ellmer.tidyverse.org/reference/chat_anthropic.html)).[^rprof] Recall that the `.Rprofile` file can exist at the user and/or the project-level. For example, a project-level `.Rprofile` for the `sap` package might include the following: 
 
 [^rprof]: You can easily open this file with [`usethis::edit_r_profile()`.](https://usethis.r-lib.org/reference/edit.html) 
 
@@ -45,30 +45,25 @@ if (interactive()) { # <2>
   require(btw, quietly = TRUE)
 } # <2>
 options(
-  btw.chat_client = ellmer::chat_anthropic(), # <3>
-  width = 50L, # <4>
-  pillar.width = 50L,
-  width = 80,
-  str = utils::strOptions(strict.width = 'cut'), # <4>
-  repos = c(pm = "https://packagemanager.posit.co/cran/latest", # <5>
-            CRAN = "https://cloud.r-project.org") # <5>
+  btw.client = ellmer::chat_anthropic( #<3>
+    system_prompt = "You are an expert R/Python programmer who loves explaining complex topics to non-technical audiences.
+    - When it's appropriate, you create mermaid diagrams to illustrate concepts. 
+    - When you use mermaid diagrams, create nodes using `CamelCase` abbreviations (i.e., not simply `A`, `B`, `C`,  etc.).
+    - When you write R code, you use base R functions, but follow the tidyverse style guide. You avoid using `for` loops and prefer functional programming patterns like `apply()` or `purrr`.
+    - When creating graphs/plots, you use `ggplot2`. 
+    - If writing R Shiny code, use `bslib` for all layout functions (unless explicitly  instructed otherwise).
+    - If writing Python Shiny code, use shiny core (not express) to build apps and include explanations in comments. ", #<4>
+    model = "claude-sonnet-4-5-20250929" #<5>
+    ) #<3>
 )
 ```
-1. `ellmer` llm package   
-2. `btw` llm package    
+1. Ensure `ellmer` package   
+2. Ensure `btw` package    
 3. `btw` config   
-4. printing configs   
-5. repos configs  
+4. System prompt for all conversations with chat      
+5. `model` argument for most current Claude model    
 
-After restarting Positron ![](images/positron.png){height=25} (or RStudio ![](images/rstudio-icon.png){height=25}), the **Console** should display the model we're using: 
-
-```{verbatim}
-R 4.5.0 exited (preparing for restart)
-R 4.5.0 restarted.
-Using model = "claude-sonnet-4-20250514".
-```
-
-We can confirm `btw` is configured by viewing the R version: 
+We can confirm `btw` is configured by viewing the `@platform_info`: 
 
 ```{r}
 #| eval: false 
@@ -99,4 +94,57 @@ Other useful functions for session info include `btw("@attached_packages")`, `bt
 
 ## Interactive use
 
-`btw` is designed to work interactively in Positron ![](images/positron.png){height=25} (or RStudio ![](images/rstudio-icon.png){height=25}). The application we'll be continuing to develop is in the [30_llm-btw](https://github.com/mjfrigaard/sap/tree/30_llm-btw) branch of the `sap` package. 
+```{r}
+#| label: git_box_30_llm-btw
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  fig_pw = '65%', 
+  branch = "30_llm-btw", 
+  repo = 'sap')
+```
+
+
+
+`btw` is designed to work interactively in the Positron ![](images/positron.png){height=25} (or RStudio ![](images/rstudio-icon.png){height=25}) console by creating a [`btw`-enhanced](https://posit-dev.github.io/btw/reference/btw_client.html) chat client[^ellmer-chat] and passing messages directly. Below is an example from the [documentation](https://posit-dev.github.io/btw/reference/btw_client.html#ref-examples):
+
+[^ellmer-chat]: An [`ellmer::Chat` client](https://ellmer.tidyverse.org/reference/Chat.html) which provides a "*sequence of user and assistant [Turns](https://ellmer.tidyverse.org/reference/Turn.html) sent to a specific [Provider.](https://ellmer.tidyverse.org/reference/Provider.html)*" 
+
+![Click to enlarge image](images/btw_chat_interactive_01.png){width='100%' fig-align='center'}
+
+Expand the callout boxes below to review the system prompt, the prompt text sent to the server, and the response from the model:
+
+::: {.callout-warning title='System prompt' collapse='true'}
+
+<em>
+
+{{< include _btw_c1.qmd >}}
+
+</em>
+
+:::
+
+::: {.callout-caution title='Prompt text 1' collapse='true'}
+
+<em>
+
+{{< include _btw_p1.qmd >}}
+
+</em>
+
+:::
+
+
+::: {   .callout-note title='Response text 1' collapse='true'}
+
+<em>
+
+{{< include _btw_r1.qmd >}}
+
+</em>
+
+:::
+
+
