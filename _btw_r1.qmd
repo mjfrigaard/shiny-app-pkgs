@@ -1,0 +1,101 @@
+
+The `cli` package provides excellent alternatives to base R's `stop()` function that offer better formatting, color, and user experience. Here are the main approaches:
+
+
+### Main Replacement: `cli_abort()` {.unnumbered}
+
+The primary replacement for `stop()` is `cli_abort()`:
+
+```r
+# Base R
+stop("Something went wrong")
+
+# cli package
+cli::cli_abort("Something went wrong")
+```
+
+### Key Advantages {.unnumbered}
+
+1. **Better formatting with inline markup**:
+
+```r
+cli::cli_abort("Invalid value for {.arg x}: must be positive, not {.val {x}}")
+```
+
+2. **Bullet points for clarity**:
+
+```r
+cli::cli_abort(c(
+  "Cannot process file",
+  "x" = "File not found: {.file {path}}",
+  "i" = "Did you mean {.file data/file.csv}?"
+))
+```
+
+3. **Error classes for programmatic handling**:
+
+```r
+cli::cli_abort(
+  "Invalid input",
+  class = "my_package_invalid_input"
+)
+```
+
+### Common Patterns {.unnumbered}
+
+#### Input validation {.unnumbered}
+
+```r
+# Instead of:
+if (!is.numeric(x)) stop("x must be numeric")
+
+# Use:
+if (!is.numeric(x)) {
+  cli::cli_abort("{.arg x} must be numeric, not {.cls {class(x)}}")
+}
+```
+
+#### Multiple error conditions {.unnumbered}
+
+```r
+cli::cli_abort(c(
+  "Failed to connect to database",
+  "x" = "Connection timeout after 30 seconds",
+  "i" = "Check your network connection",
+  "i" = "Use {.arg timeout} to increase wait time"
+))
+```
+
+#### With rlang integration {.unnumbered}
+
+```r
+# For package development, combine with rlang
+cli::cli_abort(
+  "{.arg n} must be a single positive integer",
+  call = rlang::caller_env()
+)
+```
+
+### Special Formatting Options {.unnumbered}
+
+- `{.arg var}` - function arguments (blue)
+- `{.val value}` - values (yellow/orange)  
+- `{.fn func}` - function names (blue)
+- `{.file path}` - file paths (green)
+- `{.cls class}` - class names (blue)
+- `{.code code}` - inline code (monospace)
+
+### Conditional vs Immediate Errors {.unnumbered}
+
+```r
+# Check multiple conditions before aborting
+errors <- character()
+if (!is.numeric(x)) errors <- c(errors, "{.arg x} must be numeric")
+if (x <= 0) errors <- c(errors, "{.arg x} must be positive")
+
+if (length(errors) > 0) {
+  cli::cli_abort(c("Invalid input:", "x" = errors))
+}
+```
+
+Would you like to see more specific examples for your use case, or learn about `cli_warn()` and `cli_inform()` as well?
