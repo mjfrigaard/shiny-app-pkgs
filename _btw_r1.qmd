@@ -1,101 +1,111 @@
+The `cli` package provides several functions that can replace `stop()` calls 
+with more informative and user-friendly error messages. Let me show you the 
+main options:
 
-The `cli` package provides excellent alternatives to base R's `stop()` function that offer better formatting, color, and user experience. Here are the main approaches:
+### Main Replacement Functions {.unnumbered}
 
-
-### Main Replacement: `cli_abort()` {.unnumbered}
-
-The primary replacement for `stop()` is `cli_abort()`:
-
-```r
-# Base R
-stop("Something went wrong")
-
-# cli package
-cli::cli_abort("Something went wrong")
-```
-
-### Key Advantages {.unnumbered}
-
-1. **Better formatting with inline markup**:
-
-```r
-cli::cli_abort("Invalid value for {.arg x}: must be positive, not {.val {x}}")
-```
-
-2. **Bullet points for clarity**:
-
-```r
-cli::cli_abort(c(
-  "Cannot process file",
-  "x" = "File not found: {.file {path}}",
-  "i" = "Did you mean {.file data/file.csv}?"
-))
-```
-
-3. **Error classes for programmatic handling**:
-
-```r
-cli::cli_abort(
-  "Invalid input",
-  class = "my_package_invalid_input"
-)
-```
-
-### Common Patterns {.unnumbered}
-
-#### Input validation {.unnumbered}
+#### 1. **`cli_abort()`** - The primary replacement for `stop()` {.unnumbered}
 
 ```r
 # Instead of:
-if (!is.numeric(x)) stop("x must be numeric")
+stop("Invalid input")
 
 # Use:
-if (!is.numeric(x)) {
-  cli::cli_abort("{.arg x} must be numeric, not {.cls {class(x)}}")
-}
+cli::cli_abort("Invalid input")
 ```
 
-#### Multiple error conditions {.unnumbered}
+#### 2. **`cli_alert_danger()`** - For non-fatal error messages {.unnumbered}
+
+This displays an error-style message but doesn't stop execution:
 
 ```r
-cli::cli_abort(c(
-  "Failed to connect to database",
-  "x" = "Connection timeout after 30 seconds",
-  "i" = "Check your network connection",
-  "i" = "Use {.arg timeout} to increase wait time"
+cli::cli_alert_danger("Something went wrong, but continuing...")
+```
+
+### Key Advantages of `cli_abort()` {.unnumbered}
+
+Here are the benefits over base `stop()`:
+
+```r
+library(cli)
+
+# 1. Better formatting with inline markup
+cli_abort("The file {.file mydata.csv} was not found")
+
+# 2. Styled text elements
+cli_abort("Invalid value for {.arg x}: expected {.cls numeric}, got {.cls character}")
+
+# 3. Bullet lists for multiple issues
+cli_abort(c(
+  "Input validation failed:",
+  "x" = "Value must be positive, not {-5}",
+  "x" = "Value must be less than 100, not {150}",
+  "i" = "See {.help mean} for examples"
 ))
-```
 
-#### With rlang integration {.unnumbered}
-
-```r
-# For package development, combine with rlang
-cli::cli_abort(
-  "{.arg n} must be a single positive integer",
-  call = rlang::caller_env()
-)
-```
-
-### Special Formatting Options {.unnumbered}
-
-- `{.arg var}` - function arguments (blue)
-- `{.val value}` - values (yellow/orange)  
-- `{.fn func}` - function names (blue)
-- `{.file path}` - file paths (green)
-- `{.cls class}` - class names (blue)
-- `{.code code}` - inline code (monospace)
-
-### Conditional vs Immediate Errors {.unnumbered}
-
-```r
-# Check multiple conditions before aborting
-errors <- character()
-if (!is.numeric(x)) errors <- c(errors, "{.arg x} must be numeric")
-if (x <= 0) errors <- c(errors, "{.arg x} must be positive")
-
-if (length(errors) > 0) {
-  cli::cli_abort(c("Invalid input:", "x" = errors))
+# 4. Conditional formatting
+validate_input <- function(x) {
+  if (!is.numeric(x)) {
+    cli_abort("{.arg x} must be numeric, not {.type {x}}")
+  }
+  if (any(x < 0)) {
+    cli_abort("{.arg x} must contain only positive values")
+  }
 }
 ```
 
-Would you like to see more specific examples for your use case, or learn about `cli_warn()` and `cli_inform()` as well?
+### Common Inline Markup Styles {.unnumbered}
+
+- `{.arg name}` - function arguments
+- `{.fn function}` - function names
+- `{.file path}` - file paths
+- `{.pkg package}` - package names
+- `{.cls class}` - class names
+- `{.field field}` - field/column names
+- `{.code text}` - inline code
+- `{.var variable}` - variable names
+- `{.val value}` - values
+- `{.strong text}` - bold text
+- `{.emph text}` - emphasized text
+
+### Message Prefixes in Bullet Lists {.unnumbered}
+
+- `"x"` - error/problem (red X)
+- `"i"` - information (blue i)
+- `"v"` - success (green checkmark)
+- `"!"` - warning (yellow !)
+- `"*"` - bullet point
+- `">"` - arrow
+
+### Example: Refactoring a Function {.unnumbered}
+
+```r
+# Before (base R):
+calculate_mean <- function(x, na.rm = FALSE) {
+  if (!is.numeric(x)) {
+    stop("'x' must be numeric")
+  }
+  if (length(x) == 0) {
+    stop("'x' must have length > 0")
+  }
+  mean(x, na.rm = na.rm)
+}
+
+# After (cli):
+calculate_mean <- function(x, na.rm = FALSE) {
+  if (!is.numeric(x)) {
+    cli_abort("{.arg x} must be {.cls numeric}, not {.cls {class(x)}}")
+  }
+  if (length(x) == 0) {
+    cli_abort(c(
+      "{.arg x} must have length > 0",
+      "i" = "You supplied an empty vector"
+    ))
+  }
+  mean(x, na.rm = na.rm)
+}
+```
+
+Would you like me to help you refactor specific `stop()` calls in your code, 
+or would you like to see more advanced features like custom error classes 
+with `cli_abort()`?
