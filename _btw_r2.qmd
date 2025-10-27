@@ -1,0 +1,330 @@
+## SAP Package Architecture {.unnumbered}
+
+The **sap** package is a modular Shiny application built as an R package that displays movie review data with multiple visualization options. Here's a comprehensive breakdown of its architecture:
+
+### 1. High-Level Application Structure {.unnumbered}
+
+```mermaid
+graph TB
+    AppR[app.R Entry Point] --> LaunchApp[launch_app Function]
+    LaunchApp --> DisplayType[display_type Helper]
+    LaunchApp --> NavUI[nav_ui Main UI]
+    LaunchApp --> NavServer[nav_server Main Server]
+    LaunchApp --> Config[App Configuration<br/>Themes, Logger, ggplot2]
+    
+    NavUI --> BSLib[bslib Layout Components]
+    NavUI --> Modules[Shiny Modules]
+    NavServer --> ModServers[Module Servers]
+    
+    Data[(movies dataset<br/>clr_pal colors)] -.->|provides data| Modules
+    Data -.->|provides data| ModServers
+    
+    style AppR fill:#2979ff,stroke:#fff,color:#fff
+    style LaunchApp fill:#2979ff,stroke:#fff,color:#fff
+    style NavUI fill:#00897b,stroke:#fff,color:#fff
+    style NavServer fill:#00897b,stroke:#fff,color:#fff
+    style Data fill:#f57c00,stroke:#fff,color:#fff
+```
+
+### 2. Module Organization by Feature {.unnumbered}
+
+```mermaid
+graph LR
+    subgraph Compare["Compare Section"]
+        CVarsUI[mod_compare_vars_ui<br/>Input Controls]
+        CVarsServer[mod_compare_vars_server<br/>Reactive Values]
+        CPointUI[mod_compare_point_ui<br/>Plotly Output]
+        CPointServer[mod_compare_point_server<br/>Render Plot]
+        
+        CVarsUI -.->|user inputs| CVarsServer
+        CVarsServer -->|reactive values| CPointServer
+        CPointServer -->|renders to| CPointUI
+    end
+    
+    subgraph Counts["Counts Section"]
+        CtVarsUI[mod_counts_vars_ui<br/>Year Range Input]
+        CtVarsServer[mod_counts_vars_server<br/>Filter Data]
+        CtBarUI[mod_counts_bar_ui<br/>Bar Chart]
+        CtWaffleUI[mod_counts_waffle_ui<br/>Waffle Chart]
+        CtVboxUI[mod_counts_vbox_ui<br/>Value Box]
+        CtTblUI[mod_counts_tbl_ui<br/>Table Output]
+        CtBarServer[mod_counts_bar_server]
+        CtWaffleServer[mod_counts_waffle_server]
+        CtVboxServer[mod_counts_vbox_server]
+        CtTblServer[mod_counts_tbl_server]
+        
+        CtVarsUI -.->|user inputs| CtVarsServer
+        CtVarsServer -->|filtered data| CtBarServer
+        CtVarsServer -->|filtered data| CtWaffleServer
+        CtVarsServer -->|filtered data| CtVboxServer
+        CtVarsServer -->|filtered data| CtTblServer
+    end
+    
+    subgraph Dist["Distributions Section"]
+        DstVarsUI[mod_dist_vars_ui<br/>Variable Selection]
+        DstVarsServer[mod_dist_vars_server<br/>Prepare Data]
+        DstBoxUI[mod_dist_box_ui<br/>Box Plot]
+        DstCloudUI[mod_dist_raincloud_ui<br/>Raincloud Plot]
+        DstTblUI[mod_dist_tbl_ui<br/>Summary Table]
+        DstBoxServer[mod_dist_box_server]
+        DstCloudServer[mod_dist_raincloud_server]
+        DstTblServer[mod_dist_tbl_server]
+        
+        DstVarsUI -.->|user inputs| DstVarsServer
+        DstVarsServer -->|reactive values| DstBoxServer
+        DstVarsServer -->|reactive values| DstCloudServer
+        DstVarsServer -->|reactive values| DstTblServer
+    end
+    
+    subgraph Awards["Awards Section"]
+        AwdVarsUI[mod_awards_vars_ui<br/>Awards Selection]
+        AwdVarsServer[mod_awards_vars_server<br/>Filter Winners]
+        AwdPointUI[mod_awards_point_ui<br/>Scatter Plot]
+        AwdTblUI[mod_awards_tbl_ui<br/>Awards Table]
+        AwdPointServer[mod_awards_point_server]
+        AwdTblServer[mod_awards_tbl_server]
+        
+        AwdVarsUI -.->|user inputs| AwdVarsServer
+        AwdVarsServer -->|filtered data| AwdPointServer
+        AwdVarsServer -->|filtered data| AwdTblServer
+    end
+    
+    style CVarsServer fill:#2979ff,stroke:#fff,color:#fff
+    style CtVarsServer fill:#2979ff,stroke:#fff,color:#fff
+    style DstVarsServer fill:#2979ff,stroke:#fff,color:#fff
+    style AwdVarsServer fill:#2979ff,stroke:#fff,color:#fff
+```
+
+### 3. Navigation & Main Server Flow {.unnumbered}
+
+```mermaid
+graph TB
+    NavUI[nav_ui Function] --> PageNav[bslib::page_navbar]
+    
+    PageNav --> ComparePanel[Compare Panel]
+    PageNav --> CountsPanel[Counts Panel]
+    PageNav --> DistPanel[Distributions Panel]
+    PageNav --> AwardsPanel[Awards Panel]
+    PageNav --> ReportSidebar[Report Sidebar]
+    
+    ComparePanel --> CModUI[Compare Modules UI]
+    CountsPanel --> CtModUI[Counts Modules UI]
+    DistPanel --> DModUI[Dist Modules UI]
+    AwardsPanel --> AModUI[Awards Modules UI]
+    ReportSidebar --> RptModUI[mod_report_ui]
+    
+    NavServer[nav_server Function] --> ScatterVals[scatter_values<br/>from compare_vars]
+    NavServer --> CountVals[count_values<br/>from counts_vars]
+    NavServer --> DistVals[dist_values<br/>from dist_vars]
+    NavServer --> AwardVals[award_values<br/>from awards_vars]
+    
+    ScatterVals --> CmpPointSrv[mod_compare_point_server]
+    CountVals --> CntBarSrv[mod_counts_bar_server]
+    CountVals --> CntWaffleSrv[mod_counts_waffle_server]
+    CountVals --> CntVboxSrv[mod_counts_vbox_server]
+    CountVals --> CntTblSrv[mod_counts_tbl_server]
+    DistVals --> DistBoxSrv[mod_dist_box_server]
+    DistVals --> DistCloudSrv[mod_dist_raincloud_server]
+    DistVals --> DistTblSrv[mod_dist_tbl_server]
+    AwardVals --> AwdPointSrv[mod_awards_point_server]
+    AwardVals --> AwdTblSrv[mod_awards_tbl_server]
+    
+    ScatterVals --> RptServer[mod_report_server]
+    CountVals --> RptServer
+    DistVals --> RptServer
+    AwardVals --> RptServer
+    
+    style NavUI fill:#00897b,stroke:#fff,color:#fff
+    style NavServer fill:#00897b,stroke:#fff,color:#fff
+    style ScatterVals fill:#2979ff,stroke:#fff,color:#fff
+    style CountVals fill:#2979ff,stroke:#fff,color:#fff
+    style DistVals fill:#2979ff,stroke:#fff,color:#fff
+    style AwardVals fill:#2979ff,stroke:#fff,color:#fff
+```
+
+### 4. Utility Functions & Data Flow {.unnumbered}
+
+```mermaid
+graph LR
+    subgraph Data["Data Layer"]
+        Movies[(movies.rda<br/>651 movies)]
+        Colors[(color palettes<br/>clr_pal3, clr_pal12)]
+    end
+    
+    subgraph Utilities["Utility Functions"]
+        NameCase[name_case<br/>Format Variable Names]
+        Desym[desym<br/>Convert Symbols]
+        ExtractVar[extract_var_name<br/>Get Variable Names]
+        GetCol[get_column_name<br/>Extract Columns]
+        GetAwards[get_award_recipients<br/>Filter Award Winners]
+        DistSummary[dist_var_summary<br/>Summary Statistics]
+    end
+    
+    subgraph PlotUtils["Plotting Utilities"]
+        ComparePlot[compare_plot<br/>Plotly Scatter]
+        CountBarPlot[count_bar_plot<br/>ggplot2 Bar Chart]
+    end
+    
+    subgraph Support["Support Functions"]
+        LogrMsg[logr_msg<br/>Logging System]
+        DisplayType[display_type<br/>Launch Configuration]
+    end
+    
+    Movies -->|provides data| Utilities
+    Movies -->|provides data| PlotUtils
+    Colors -->|color schemes| PlotUtils
+    
+    Utilities -->|formatted labels| PlotUtils
+    LogrMsg -.->|tracks execution| Utilities
+    LogrMsg -.->|tracks execution| PlotUtils
+    
+    style Movies fill:#f57c00,stroke:#fff,color:#fff
+    style Colors fill:#f57c00,stroke:#fff,color:#fff
+    style NameCase fill:#7cb342,stroke:#fff,color:#fff
+    style ComparePlot fill:#5e35b1,stroke:#fff,color:#fff
+    style CountBarPlot fill:#5e35b1,stroke:#fff,color:#fff
+```
+
+### 5. Module Communication Pattern {.unnumbered}
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant VarsUI as Vars Module UI<br/>(Input Controls)
+    participant VarsServer as Vars Module Server<br/>(Data Processing)
+    participant NavServer as nav_server<br/>(Coordinator)
+    participant DisplayServer as Display Module Server<br/>(Visualization)
+    participant DisplayUI as Display Module UI<br/>(Output)
+    
+    User->>VarsUI: Selects variables/filters
+    VarsUI->>VarsServer: Input values
+    VarsServer->>VarsServer: Process & validate inputs
+    VarsServer->>NavServer: Return reactive values
+    NavServer->>DisplayServer: Pass reactive values
+    DisplayServer->>DisplayServer: Generate plot/table
+    DisplayServer->>DisplayUI: Render output
+    DisplayUI->>User: Display visualization
+    
+    Note over VarsServer,DisplayServer: Reactive values flow through nav_server
+```
+
+### 6. File Organization Structure {.unnumbered}
+
+```mermaid
+graph TB
+    Root[sap Package Root]
+    
+    Root --> RDir[R/<br/>Source Code]
+    Root --> DataDir[data/<br/>Package Data]
+    Root --> DataRaw[data-raw/<br/>Data Processing Scripts]
+    Root --> InstDir[inst/<br/>Installation Files]
+    Root --> TestDir[tests/<br/>Test Suite]
+    Root --> VigDir[vignettes/<br/>Documentation]
+    Root --> ManDir[man/<br/>Help Files]
+    
+    RDir --> Modules[Module Files<br/>mod_*.R]
+    RDir --> NavFiles[Navigation Files<br/>nav_ui.R, nav_server.R]
+    RDir --> UtilFiles[Utility Files<br/>helpers & functions]
+    RDir --> DataDoc[data.R<br/>Data Documentation]
+    RDir --> LaunchFile[launch_app.R<br/>App Entry Point]
+    
+    DataDir --> MoviesData[movies.rda]
+    DataDir --> ColorData[clr_pal*.rda]
+    
+    InstDir --> ExtData[extdata/<br/>movies.csv, movies.fst]
+    InstDir --> WWW[www/<br/>static assets]
+    InstDir --> RmdDir[rmd/<br/>report templates]
+    InstDir --> Prompts[prompts/<br/>LLM prompts]
+    
+    TestDir --> TestThat[testthat/<br/>test files]
+    TestDir --> Fixtures[fixtures/<br/>test data]
+    
+    VigDir --> StructVig[structure.qmd]
+    VigDir --> GraphsVig[graphs.qmd]
+    VigDir --> TablesVig[tables.qmd]
+    VigDir --> SpecsVig[specs.qmd]
+    
+    style Root fill:#2979ff,stroke:#fff,color:#fff
+    style RDir fill:#00897b,stroke:#fff,color:#fff
+    style Modules fill:#7cb342,stroke:#fff,color:#fff
+    style NavFiles fill:#7cb342,stroke:#fff,color:#fff
+```
+
+### 7. Technology Stack {.unnumbered}
+
+```mermaid
+graph TB
+    subgraph Frontend["Frontend Layer"]
+        BSLib[bslib<br/>Layout & Theming]
+        Shiny[shiny<br/>Reactive Framework]
+        BSIcons[bsicons<br/>Icons]
+    end
+    
+    subgraph Visualization["Visualization Layer"]
+        GGPlot[ggplot2<br/>Static Plots]
+        Plotly[plotly<br/>Interactive Plots]
+        GGDist[ggdist<br/>Distribution Plots]
+        GGWaffle[ggwaffle<br/>Waffle Charts]
+        GGRepel[ggrepel<br/>Label Positioning]
+        GT[gt<br/>Tables]
+        Thematic[thematic<br/>Plot Theming]
+    end
+    
+    subgraph DataProc["Data Processing Layer"]
+        Dplyr[dplyr<br/>Data Manipulation]
+        Tidyr[tidyr<br/>Data Tidying]
+        Forcats[forcats<br/>Factor Handling]
+        Scales[scales<br/>Scale Functions]
+    end
+    
+    subgraph Support["Support Layer"]
+        Logger[logger<br/>Logging]
+        CLI[cli<br/>Console Messages]
+        Glue[glue<br/>String Interpolation]
+        Quarto[quarto<br/>Report Generation]
+    end
+    
+    Frontend --> Visualization
+    Visualization --> DataProc
+    DataProc --> Support
+    
+    style BSLib fill:#2979ff,stroke:#fff,color:#fff
+    style Shiny fill:#2979ff,stroke:#fff,color:#fff
+    style GGPlot fill:#5e35b1,stroke:#fff,color:#fff
+    style Plotly fill:#5e35b1,stroke:#fff,color:#fff
+```
+
+### Key Architectural Patterns {.unnumbered}
+
+#### 1. **Modular Design** {.unnumbered}
+
+- Each feature area (Compare, Counts, Distributions, Awards) has its own set of modules
+- Modules follow the pattern: `mod_<feature>_<type>_<ui/server>`
+- Vars modules handle inputs, display modules handle outputs
+
+#### 2. **Separation of Concerns** {.unnumbered}
+
+- **UI Layer**: `nav_ui()` and module UI functions define the interface
+- **Server Layer**: `nav_server()` coordinates module servers
+- **Data Layer**: Package data objects (`movies`, color palettes)
+- **Utility Layer**: Helper functions for formatting, filtering, and plotting
+
+#### 3. **Reactive Value Flow** {.unnumbered}
+
+- Vars modules collect user inputs and return reactive values
+- `nav_server()` acts as a coordinator, passing reactive values to display modules
+- Display modules render visualizations based on reactive inputs
+
+#### 4. **Theming & Configuration** {.unnumbered}
+
+- Centralized theme configuration in `launch_app()`
+- Dark theme with custom colors (#121212 background, #ffffff text, #2979ff primary)
+- `thematic` package ensures ggplot2 plots match Shiny theme
+
+#### 5. **Testing Strategy** {.unnumbered}
+
+- Each module server has corresponding test file
+- Test fixtures provide consistent test data
+- Uses `shinytest2` for testing module behavior
+
+This architecture provides a clean, maintainable structure that separates concerns, promotes reusability, and follows R package best practices while building a sophisticated Shiny application.
