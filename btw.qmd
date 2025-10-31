@@ -20,14 +20,32 @@ co_box(
 )
 ```
 
+In the previous chapters, we used the [`chores` package](https://simonpcouch.github.io/chores/index.html) to develop helpers—pre-written prompts—for repetitive tasks such as creating `roxygen2` documentation and updating `testthat` tests.[^chores] In the [`gander` chapter](https://simonpcouch.github.io/gander/index.html), we used the addin to send code and environment context to the LLM.[^gander]
 
-In this  chapter we'll focus on the [`btw` package](https://posit-dev.github.io/btw/index.html), which, 
+`chores` and `gander` assist us in automating or enhancing the prompts we submit to the LLM. The addins and shortcuts streamline our interactions with the model, allowing for a more intuitive and efficient experience that resembles a browser interface (like ChatGPT).
 
-> "*provides a number of utilities for describing R objects and package documentation in plain text. For interactive use, this is especially powerful for describing relevant pieces of context to large language models.  When used programmatically, these utilities can be registered with 'ellmer' chats as tool calls, enabling language models to peruse package documentation and explore your computational environment.*"[^btw-desc] 
+[^gander]: This is explained in [What is gander actually doing?](https://simonpcouch.github.io/gander/articles/gander.html#what-is-gander-actually-doing)
+
+[^chores]: The [prompt directory](https://simonpcouch.github.io/chores/articles/custom.html#the-prompt-directory) is where `chores` stores the helpers used in the addin. 
+
+
+```{r}
+#| label: shinypak_apps
+#| echo: false
+#| results: asis
+#| eval: true
+shinypak_apps(regex = "^30", branch = "30_llm-btw")
+```
+
+
+In this  chapter we'll focus on the [`btw` package](https://posit-dev.github.io/btw/index.html), which is fundamentally different than `chores` and `gander` because it, 
+
+> "*provides a default set of tools to to peruse the documentation of packages you have installed, check out the objects in your global environment, and retrieve metadata about your session and platform.*"[^btw-desc] 
 
 I'll cover using `btw` to add documentation and improve the contents of the downloadable report in our [`sap` application.](https://github.com/mjfrigaard/sap/tree/30_llm-btw)
 
-[^btw-desc]: Read more about `btw` in the [source code](https://github.com/posit-dev/btw/blob/main/DESCRIPTION).
+[^btw-desc]: This description of `btw` actually comes from the [`mcptools` documentation. ](https://posit-dev.github.io/mcptools/index.html)
+
 
 ## Configuration {#sec-btw-config}
 
@@ -65,36 +83,6 @@ options(
 4. System prompt for all conversations with chat      
 5. `model` argument for most current Claude model    
 
-We can confirm `btw` is configured by viewing the `@platform_info`: 
-
-```{r}
-#| eval: false 
-#| code-fold: false
-btw("@platform_info")
-# ✔ btw copied to the clipboard!
-```
-
-
-```{verbatim}
-## Context
-
-"@platform_info"
-<system_info>
-R_VERSION: R version 4.5.1 (2025-06-13)
-OS: macOS Tahoe 26.0.1
-SYSTEM: x86_64, darwin20
-UI: Positron (a VS Code equivalent)
-LANGUAGE: (EN)
-LOCALE: en_US.UTF-8
-ENCODING: en_US.UTF-8
-TIMEZONE: America/Phoenix
-DATE: Monday, October 27, 2025 (2025-10-27)
-</system_info>
-```
-
-Other useful functions for session info include `btw("@attached_packages")`, `btw("@loaded_packages")`, and `btw("@installed_packages")`. 
-
-## Interactive use {#sec-shiny-btw-chat}
 
 ```{r}
 #| label: git_box_30_llm-btw
@@ -108,50 +96,65 @@ git_margin_box(
   repo = 'sap')
 ```
 
+## `btw` tools {#sec-shiny-btw-tools}
 
-`btw` is designed to work interactively in the Positron ![](images/positron.png){height=25} (or RStudio ![](images/rstudio-icon.png){height=25}) console by creating a [`btw`-enhanced](https://posit-dev.github.io/btw/reference/btw_client.html) chat client[^ellmer-chat] and passing messages directly. Below is an example from the [documentation](https://posit-dev.github.io/btw/reference/btw_client.html#ref-examples):
+`btw` comes with a set of pre-defined tools for examining package documentation, environments, directories and files, git and GitHub, our development environment, CRAN packages, R sessions, and general web searches.[^btw-tools]  
 
+[^btw-tools]: Read a complete list of available tools from `btw` in the [package documentation.](https://posit-dev.github.io/btw/reference/btw_tools.html)
+
+We can use `btw` to work interactively in the Positron ![](images/positron.png){height=25} (or RStudio ![](images/rstudio-icon.png){height=25}) console by creating a [`btw`-enhanced](https://posit-dev.github.io/btw/reference/btw_client.html) chat client and passing messages directly.[^ellmer-chat]
 
 [^ellmer-chat]: An [`ellmer::Chat` client](https://ellmer.tidyverse.org/reference/Chat.html) which provides a "*sequence of user and assistant [Turns](https://ellmer.tidyverse.org/reference/Turn.html) sent to a specific [Provider.](https://ellmer.tidyverse.org/reference/Provider.html)*" 
 
-![Click to enlarge image](images/btw_chat_interactive_01.png){width='100%' fig-align='center'}
+```{r}
+#| eval: false 
+#| code-fold: false
+chat <- btw_client()
+```
 
-Expand the callout boxes below to review the system prompt, the prompt text sent to the server, and the response from the model:
+We can view the `btw` enhancements by examining the chat object in the console: 
 
-::: {.callout-warning title='System prompt' collapse='true'}
+```{r}
+#| eval: false 
+#| code-fold: false
+chat
+```
 
-<em>
+`btw` has added 'System and Session Context' and 'Tools' sections to the `chat` client.  
 
-{{< include _btw_c1.qmd >}}
+```markdown
+# System and Session Context
 
-</em>
+Please account for the following R session and system settings in all 
+responses.
 
-:::
+<system_info>
+R_VERSION: R version 4.5.1 (2025-06-13)
+OS: macOS Tahoe 26.0.1
+SYSTEM: x86_64, darwin20
+UI: Positron (a VS Code equivalent)
+LANGUAGE: (EN)
+LOCALE: en_US.UTF-8
+ENCODING: en_US.UTF-8
+TIMEZONE: America/Phoenix
+DATE: Tuesday, October 28, 2025 (2025-10-28)
+</system_info>
 
-::: {.callout-caution title='Prompt text 1' collapse='true'}
 
-<em>
+# Tools
 
-{{< include _btw_p1.qmd >}}
+You have access to tools that help you interact with the user's R session and
+workspace. Use these tools when they are helpful and appropriate to complete 
+the user's request. These tools are available to augment your ability to help
+the user, but you are smart and capable and can answer many things on your 
+own. It is okay to answer the user without relying on these tools.
+```
 
-</em>
-
-:::
-
-
-::: {   .callout-note title='Response text 1' collapse='true'}
-
-<em>
-
-{{< include _btw_r1.qmd >}}
-
-</em>
-
-:::
+We can see the model will have some additional instructions/methods at it's disposal (beyond what we've provided in the `system_prompt` argument of `ellmer::chat_anthropic()`). 
 
 ## Project context {#sec-shiny-btw-md}
 
-As we learned in the [`ellmer` chapter](ellmer.qmd), we should store our prompts in `inst/prompts/`, or we can call [`use_btw_md()`](https://posit-dev.github.io/btw/reference/use_btw_md.html) to create a 'context file' for our project.
+As we learned in the [`ellmer` chapter](ellmer.qmd), project prompts should be stored in `inst/prompts/`. `btw` also provides the [`use_btw_md()` function](https://posit-dev.github.io/btw/reference/use_btw_md.html), which creates a project 'context file.'
 
 ```{r}
 #| eval: false 
@@ -159,78 +162,13 @@ As we learned in the [`ellmer` chapter](ellmer.qmd), we should store our prompts
 use_btw_md(scope = "project")
 ```
 
-```{verbatim}
-✔ Created btw.md
-✔ Setting active project to "/path/to/projects/apps/R/sap".
-✔ Adding "^btw\\.md$" to .Rbuildignore.
-ℹ See btw::btw_client for format details
-ℹ See btw::btw_tools for available tools
-ℹ Call `btw::btw_task_create_btw_md()` to use an LLM to help you initialize 
-  the project context.
-```
-
 The `btw.md` file comes with some default content for project context:
 
 > "*Use `btw.md` to inform the LLM of your preferred code style, to provide domain-specific terminology or definitions, to establish project documentation, goals and constraints, to include reference materials such or technical specifications, or more. Storing this kind of information in `btw.md` may help you avoid repeating yourself and can be used to maintain coherence across many chat sessions.*"
 
-The default values and code style preferences are below:
+### [`client`]{style="font-size: 1.10em; font-weight: bold;"} {.unnumbered}
 
-```{verbatim}
----
-client: claude/claude-4-5-sonnet-latest
-tools:
-  - docs
-  - env
-  - files
-  - git
-  - github
-  - ide
-  - search
-  - session
-  - web
----
-
-
-Follow these important style rules when writing R code:
-
-* Prefer solutions that use {tidyverse}
-* Always use `<-` for assignment
-* Always use the native base-R pipe `|>` for piped expressions
-```
-
-### [`client`]{style="font-size: 1.15em; font-weight: bold;"} {.unnumbered}
-
-The YAML header in our newly created `btw.md` is where can specify the `client`, specifically the `provider`, and `model`:
-
-```yaml
----
-client:
-  provider: anthropic
-  model: "claude-sonnet-4-5-20250929"
----
-```
-
-The YAML values above is similar to using `ellmer`'s `chat_*` functions: 
-
-```{r}
-#| eval: false 
-#| code-fold: false
-ellmer::chat_anthropic(model = "claude-sonnet-4-5-20250929")
-```
-
-The default values in `btw.md` will automatically use the latest Claude model from Anthropic: 
-
-:::{layout="[70,30]" layout-valign="top"}
-
-This...
-
-
-
-...is identical to this...
-
-:::
-
-:::{layout="[50,50]" layout-valign="top"}
+The YAML header in our newly created `btw.md` is where can specify the `client` (along with the `provider` and `model`).
 
 ```yaml
 ---
@@ -238,20 +176,12 @@ client: claude/claude-4-5-sonnet-latest
 ---
 ```
 
-```yaml
----
-client:
-  provider: anthropic
-  model: claude-4-5-sonnet-latest
----
-```
+The default values in `btw.md` will automatically use the latest Claude model from Anthropic. The YAML values above are similar to using `ellmer`'s `chat_*` functions.[^client-btw-md]
 
-:::
+[^client-btw-md]: For more information on `client` values, read the [Chat Settings documentation](https://posit-dev.github.io/btw/reference/use_btw_md.html#chat-settings).
 
 
-For more information on `client` values, read the [Chat Settings documentation](https://posit-dev.github.io/btw/reference/use_btw_md.html#chat-settings). 
-
-### [`tools`]{style="font-size: 1.15em; font-weight: bold;"} {.unnumbered}
+### [`tools`]{style="font-size: 1.10em; font-weight: bold;"} {.unnumbered}
 
 The `tools` section of the YAML header contains a list of the groups from  [`btw_tools()`](https://posit-dev.github.io/btw/reference/btw_tools.html). Each of these groups contains a collection of functions "*that allow the chat to interface with your computational environment.*"
 
@@ -270,181 +200,143 @@ tools:
 ---
 ```
 
-We'll keep all the `btw_tools()` groups in `btw.md`, but update the context to provide additional background and style preferences: 
+Now that we have a `btw.md` file for project context, we'll start an interactive chat session to help us write our context file.  
 
-```{verbatim}
-Follow these important style rules when writing R code:
+## Console chat: context file {#sec-console-btw-task-create-btw-md}
 
-* You are an expert R/Python programmer who loves explaining complex topics to non-technical audiences. 
-  * When appropriate, create mermaid diagrams to illustrate concepts.  
-  * When using mermaid diagrams, create nodes using `CamelCase` abbreviations (i.e., not simply `A`, `B`, `C`,  etc.).   
-  * When writing R code, use base R functions, but follow the `tidyverse` style guide. 
-  * Avoid using `for` loops and prefer functional programming patterns like `apply()` or `purrr`.   
-  * When creating graphs/plots, use `ggplot2`. 
-  * When writing R Shiny code, use `bslib` for all layout functions (unless explicitly  instructed otherwise).   
-  * When writing Python Shiny code, use shiny core (not express) to build apps and include explanations in comments. 
+We can use the `btw` tools to add more project context to the `btw.md` by calling [`btw_task_create_btw_md()`](https://posit-dev.github.io/btw/reference/btw_task_create_btw_md.html) and setting the `mode` to `"console"`. 
 
+```{r}
+#| eval: false 
+#| code-fold: false
+btw_task_create_btw_md(mode = "console", client = "anthropic")
 ```
 
-::: {.callout-caution title='Prompt text 2' collapse='false'}
+This opens an interactive chat in the console:
 
-<em>
+![](images/btw-btw-task-create-btw-md.png){width='100%' fig-align='center'}
 
-{{< include _btw_p2.qmd >}}
+## How tool calling works {#sec-how-tool-calls-work}
 
-</em>
+LLMs can't execute R code, but if we've registered tools (i.e., R functions) with the model, they can be used to help provide additional information. 
 
-:::
+As mentioned above, `btw` has a collection of tools at our disposal, so when we start the interactive chat, the model informs us it will be examining the `sap` package contents for more information.  
 
-Now that we've specified the `tools` in the `btw.md` file, we'll use Claude to help us create some diagrams for the application architecture. 
-
-
-## Tool calls
-
-After passing the prompt to `chat$chat()`--but before we get a response--we can see a detailed output of the `btw` tool called and the intention behind it's use. I've provided a few examples of the console output in the sections below.
-
-### File tools
-
-The model starts by getting a 'getting a 30,000ft view' by viewing `sap`s files and folders. 
-
-> "*I’ll explore the structure of the sap package and create mermaid diagrams to illustrate its architecture.*"
-
-The `_intent` argument in the `btw` tool provides an "*explain[ation] why it called the tool*". In this case, [`btw_tool_files_list_files()`](https://posit-dev.github.io/btw/reference/btw_tool_files_list_files.html) is called on the root (`.`) and `R/` directories, and we can see the model was looking to '*Explore the root directory structure*' and '*List R source files"*' and returns the following:[^list-files] 
-
-```{verbatim}
-◯ [tool call] btw_tool_files_list_files(path = ".", type = "any", #<1>
-`_intent` = "Explore the root directory structure") #<2>
-
-● #> | path | type | size | modification_time | #<3>
-  #> |------|------|------|-------------------|
-  #> | DESCRIPTION | file | 736 | 2025-10-20 14:04:24 |
-  #> | NAMESPACE | file | 932 | 2025-10-22 08:01:23 |
-  #> | R | directory | 1K | 2025-10-22 08:01:23 |
-  #> … #<3>
-```
-1. `btw` tool called  
-2. Tool intended use by model  
-3. Response from `btw` tool read by the model  
-
-```{verbatim}
-◯ [tool call] btw_tool_files_list_files(path = "R", type = "file", #<1>
-`_intent` = "List R source files") #<2>
-
-● #> | path | type | size | modification_time | #<3>
-  #> |------|------|------|-------------------|
-  #> | R/compare_plot.R | file | 2.08K | 2025-10-20 14:04:01 |
-  #> | R/count_bar_plot.R | file | 1.46K | 2025-10-20 14:04:01 |
-  #> | R/data.R | file | 2.56K | 2025-10-20 13:35:52 |
-  #> … #<3>
-```
-1. `type` has been changed to `"file"`  
-2. Refined intention for subfolder.  
-3. Response from `btw` tool read by the model  
-
-
-[^list-files]: The output is produced by [`fs::dir_info()`](https://fs.r-lib.org/reference/dir_ls.html).
-
-#### Architecture {.unnumbered}
-
-After viewing the files and folders, the model digs deeper into the 'key files' in the project. 
-
-> "*Now let me read key files to understand the architecture better:*"
-
-The model determines the `DESCRIPTION`, `README.md`, `app.R`, `R/nav_ui.R`, and `R/nav_server.R` are 'key files', then reads them with [`btw_tool_files_read_text_file()`](https://posit-dev.github.io/btw/reference/btw_tool_files_read_text_file.html).
-
-```{verbatim}
-◯ [tool call] btw_tool_files_read_text_file(path = "DESCRIPTION", #<1> 
-`_intent` = "Read DESCRIPTION file to understand package purpose") #<2>
-
-● #> ``` #<3>
-  #> Package: sap
-  #> Title: movies app
-  #> Version: 0.0.0.9000
-  #> Author: John Smith <John.Smith@email.io> [aut, cre]
-  #> … #<3>
-```
-1. File to be read by the model  
-2. Intention sent to the model for reading the file   
-3. Top lines of file sent to model  
-
-
-
-#### Module patterns {.unnumbered}
-
-After looking through `sap` directories and key files, the model reviews a few of the modules in the `R/` folder to identify patterns. 
-
-> "*Let me look at a few module files to understand the pattern.*"
-
-The following modules files are read with [`btw_tool_files_read_text_file()`](https://posit-dev.github.io/btw/reference/btw_tool_files_read_text_file.html).
-
-```{verbatim}
-◯ [tool call] btw_tool_files_read_text_file(path = "R/mod_compare_vars.R", 
-...)
+```{bash}
+#| eval: false 
+#| code-fold: false
+>>> "Let's get started."
 ```
 
-```{verbatim}
-◯ [tool call] btw_tool_files_read_text_file(path = "R/mod_compare_point.R", 
-...)
+```markdown
+I'll help you create a comprehensive project summary. Let me start by 
+exploring your project structure to understand what we're working with.
+```
+
+### Registered tools
+
+When a tool is registered with the LLM, we include the name of the function, a description of what the function does, a list of function arguments and their type (boolean, integer, number, string, etc.). [^ellmer-register] 
+
+[^ellmer-register]: We can register tools using `ellmer`'s [`create_tool_def()` and `tool()` functions](https://ellmer.tidyverse.org/articles/tool-calling.html#registering-and-using-tools).
+
+We can view all the tools registered with the LLM using: 
+
+```{r}
+#| eval: false 
+#| code-fold: false
+chat$get_tools()
 ```
 
 
-The `launch_app()` function is also read by the model, which isn't a module, but does provide important information on how the application is launched (and the various versions).  
+```{r}
+#| label: co_box_btw_tools_vs_get_tools
+#| echo: false
+#| results: asis
+#| eval: false
+co_box(
+  color = "b", 
+  look = "minimal",
+  header = "Note",
+  contents = "The `btw_tools()` function lists all the tools we *could register*, but `chat$get_tools()` returns the tools that *are registered* with the model. "
+)
+```
+
+:::: {.callout-note collapse=true appearance='minimal' icon=false}
+
+## [Note]{style='font-weight: bold; font-size: 1.15em;'}
+
+::: {style='font-size: 1.10em; color: #282b2d;'}
+
+The `btw_tools()` function lists all the tools we *could register*, but `chat$get_tools()` returns the tools that *are registered* with the model. 
+
+::: 
+
+::::
+
+
+### Tool descriptions
+
+The output from `chat$get_tools()` is rather lengthy, but we can use <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> + <kbd>F</kbd> to locate `btw_tool_files_list_files()`, the first tool called by the LLM. 
+
+Recall the model was going to start by ***'`exploring your project structure`'***, and we can see this aligns with the' `@description`:
+
+```markdown
+List files or directories in the project.
+
+WHEN TO USE:
+* Use this tool to discover the file structure of a project.
+* When you want to understand the project structure, use `type = "directory"` to list all directories.
+* When you want to find a specific file, use `type = "file"` and `regexp` to filter files by name or extension.
+
+CAUTION: Do not list all files in a project, instead prefer listing files in a specific directory with a `regexp` to
+filter to files of interest.
+```
+
+### Tool calls 
+
+The tool calls and a preview of their results are printed in the console. Below is the first call to `btw_tool_files_list_files()`: 
 
 ```{verbatim}
-◯ [tool call] btw_tool_files_read_text_file(path = "R/launch_app.R", 
-`_intent` = "Read launch_app function")
+◯ [tool call] btw_tool_files_list_files(path = ".", `_intent` = "Get initial 
+overview of project structure")
+```
+
+The function includes an `_intent` argument, where the model, "*explain[s] why it called the tool.*"[^tool-intent]
+
+[^tool-intent]: The [`_intent` argument](https://posit-dev.github.io/btw/reference/btw_tool_files_list_files.html#arg--intent) is "*An optional string describing the intent of the tool use. When the tool is used by an LLM, the model will use this argument to explain why it called the tool.*"
+
+### Tool results 
+
+The results are a markdown formatted table of the project contents (file/folder names, their size, and when they were last changed):[^md-output]
+
+```{verbatim}
+● #> | path        | type      | size | modification_time   |
+  #> |-------------|-----------|------|---------------------|
+  #> | DESCRIPTION | file      | 736  | 2025-10-20 14:04:24 |
+  #> | NAMESPACE   | file      | 932  | 2025-10-22 08:01:23 |
+  #> | R           | directory | 1K   | 2025-10-22 08:01:23 |
+  #> …
+```
+
+[^md-output]: I've cleaned up the formatting on this markdown table so it's easier to read. 
+
+### Model response
+
+The table output is sent to the LLM, which them provides a summary of the contents: 
+
+```markdown
+Perfect! I can see this is an **R package** with a Shiny application. The structure shows:
+
+- `DESCRIPTION` and `NAMESPACE` files (R package essentials)
+- Extensive `R/` directory with many Shiny modules (`mod_*.R` files)
+- `app.R` file (Shiny app entry point)
+- `data/` directory with datasets
+- `tests/testthat/` (comprehensive testing)
+- `vignettes/` (package documentation)
+- `renv.lock` (dependency management)
 ```
 
 
-#### Utilities {.unnumbered}
-
-Next the model reviewed the plotting utility functions and the data documentation. 
-
-> "*Now let me examine some utility functions and plotting functions*"
-
-```{verbatim}
-◯ [tool call] btw_tool_files_read_text_file(path = "R/compare_plot.R", 
-`_intent` = "Read compare_plot utility function")
-```
-
-```{verbatim}
-◯ [tool call] btw_tool_files_read_text_file(path = "R/count_bar_plot.R", 
-`_intent` = "Read count_bar_plot utility function")
-```
-
-```{verbatim}
-◯ [tool call] btw_tool_files_read_text_file(path = "R/data.R", 
-`_intent` = "Read data documentation")
-```
-
-#### Package files {.unnumbered}
-
-Finally, the model read the package vignette (`vignettes/structure.qmd`) to '*understand the architecture better.*"
-
-> "*Now let me check the structure vignette to understand the architecture better.*"
-
-```{verbatim}
-◯ [tool call] btw_tool_files_read_text_file(path = "vignettes/structure.qmd", ...)
-```
 
 
-::: {.callout-important title='Tool Calls 2' collapse='true'}
 
-<em>
-
-{{< include _btw_t2.qmd >}}
-
-</em>
-
-:::
-
-
-::: {   .callout-note title='Response text 2' collapse='true'}
-
-<em>
-
-{{< include _btw_r2.qmd >}}
-
-</em>
-
-:::
