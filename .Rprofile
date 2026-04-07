@@ -1,19 +1,3 @@
-# usethis package ----
-if (interactive()) {
-  require(usethis, quietly = TRUE)
-}
-# ellmer llm package ----
-# if (interactive()) {
-#   require(ellmer, quietly = TRUE)
-# }
-# btw llm package ----
-# if (interactive()) {
-#   require(btw, quietly = TRUE)
-# }
-# pak package ----
-if (interactive()) {
-  require(pak, quietly = TRUE)
-}
 # renv ----
 source("renv/activate.R")
 Sys.setenv(RENV.CONFIG.PAK.ENABLED = TRUE)
@@ -36,7 +20,21 @@ options(
   ),
   # repos configs ----
     repos = c(pm = "https://packagemanager.posit.co/cran/latest",
-            CRAN = "https://cloud.r-project.org")
+              CRAN = "https://cloud.r-project.org")
 )
-
-
+# usethis package ----
+if (interactive()) {
+  require(usethis, quietly = TRUE)
+}
+# ellmer llm package ----
+# if (interactive()) {
+#   require(ellmer, quietly = TRUE)
+# }
+# btw llm package ----
+# if (interactive()) {
+#   require(btw, quietly = TRUE)
+# }
+# pak package ----
+if (interactive()) {
+  require(pak, quietly = TRUE)
+}
