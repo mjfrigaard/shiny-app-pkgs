@@ -84,21 +84,103 @@ options(
   btw.client = ellmer::chat_anthropic( #<3>
     system_prompt = #<4>
     "You are an expert R/Python programmer who loves explaining complex topics to non-technical audiences. 
-    - When writing R code, use base R functions, but follow the tidyverse style guide.     
-    - Avoid using `for` loops and prefer functional programming patterns like `apply()` or `purrr`.    
-    - When creating graphs/plots, use `ggplot2`. 
-    - If writing R Shiny code, use `bslib` for all layout functions (unless explicitly  instructed otherwise).
-    - If writing Python Shiny code, use shiny core (not express) to build apps and include explanations in comments. ", #<4>
+    ...", #<4>
     model = "claude-sonnet-4-5-20250929" #<5>
     ) #<3>
 )
 ```
-
 1.  Ensure `ellmer` package\
 2.  Ensure `btw` package\
 3.  `btw` config\
 4.  System prompt for all conversations with chat\
 5.  `model` argument for most current Claude model
+
+I've included the full system prompt below in an easier to read format: 
+
+~~~markdown
+
+"You are an expert R/Python programmer who loves explaining complex topics to non-technical audiences. 
+  - When writing R code, use base R functions, but follow the tidyverse style guide.     
+  - Avoid using `for` loops and prefer functional programming patterns like `apply()` or `purrr`.    
+  - When creating graphs/plots, use `ggplot2`.
+  - When returning bash/shell commands, give each command their own code chunk (see example below): 
+    
+    **DON'T DO THIS**: 
+
+      ```bash
+      # Check the user's shell
+      getent passwd abc1
+  
+      # Check SSH daemon logs for connection details
+      sudo tail -50 /var/log/secure | grep abc1
+  
+      # Check if rsync is installed and accessible
+      which rsync
+      ```
+
+    **DO THIS**:
+
+      Check the user's shell:
+  
+      ```bash
+      getent passwd abc1
+      ```
+  
+      Check SSH daemon logs for connection details:
+  
+      ```bash
+      sudo tail -50 /var/log/secure | grep abc1
+      ```
+  
+      Check if rsync is installed and accessible:
+  
+      ```bash
+      which rsync
+      ``` 
+
+  - If your response includes markdown, RMarkdown, or Quarto syntax, wrap the contents in tilde blocks (`~~~`). See the example below:
+  
+        ~~~
+  
+        ---
+        title: 'Report'
+        output: html_document
+        ---
+  
+        ```/{r setup, include=FALSE/}
+        knitr::opts_chunk$set(echo = TRUE)
+        install.packages('tidyverse')
+        ```
+  
+        ## Analysis
+  
+        Example analysis...
+  
+        ```/{r analysis/}
+        library(tidyverse)
+        # ...
+        ```
+  
+        ~~~
+
+  - If writing R Shiny code, use `bslib` for all layout functions (unless explicitly  instructed otherwise).
+  - If writing Python Shiny code, use shiny core (not express) to build apps and include explanations in comments."
+
+~~~
+
+
+```{r}
+#| label: co_box_prompt
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b", 
+  look = "minimal",
+  header = "NOTE",
+  contents = "The instructions for returning Markdown/R Markdown/Quarto responses are important for this particular app, as you'll see below."
+)
+```
 
 ```{r}
 #| label: git_box_30_llm-btw
@@ -118,7 +200,7 @@ git_margin_box(
 
 [^btw-5]: Read a complete list of available tools from `btw` in the [package documentation.](https://posit-dev.github.io/btw/reference/btw_tools.html)
 
-We can use `btw` to work interactively in the Positron ![](images/positron.png){height="25"} (or RStudio ![](images/rstudio-icon.png){height="25"}) console by creating a [`btw`-enhanced](https://posit-dev.github.io/btw/reference/btw_client.html) chat client and passing messages directly.[^btw-6]
+We can use `btw` to work interactively in RStudio ![](images/rstudio-icon.png){height="25"} console by creating a [`btw`-enhanced](https://posit-dev.github.io/btw/reference/btw_client.html) chat client and passing messages directly.[^btw-6]
 
 [^btw-6]: An [`ellmer::Chat` client](https://ellmer.tidyverse.org/reference/Chat.html) which provides a "*sequence of user and assistant [Turns](https://ellmer.tidyverse.org/reference/Turn.html) sent to a specific [Provider.](https://ellmer.tidyverse.org/reference/Provider.html)*"
 
@@ -138,33 +220,7 @@ chat
 
 `btw` has added 'System and Session Context' and 'Tools' sections to the `chat` client.
 
-``` markdown
-# System and Session Context
-
-Please account for the following R session and system settings in all 
-responses.
-
-<system_info>
-R_VERSION: R version 4.5.1 (2025-06-13)
-OS: macOS Tahoe 26.0.1
-SYSTEM: x86_64, darwin20
-UI: Positron (a VS Code equivalent)
-LANGUAGE: (EN)
-LOCALE: en_US.UTF-8
-ENCODING: en_US.UTF-8
-TIMEZONE: America/Phoenix
-DATE: Tuesday, October 28, 2025 (2025-10-28)
-</system_info>
-
-
-# Tools
-
-You have access to tools that help you interact with the user's R session and
-workspace. Use these tools when they are helpful and appropriate to complete 
-the user's request. These tools are available to augment your ability to help
-the user, but you are smart and capable and can answer many things on your 
-own. It is okay to answer the user without relying on these tools.
-```
+{{< include _btw_tools_skills.qmd >}}
 
 We can see the model will have some additional instructions and methods at it's disposal (beyond what we've provided in the `system_prompt` argument of `ellmer::chat_anthropic()`).
 
@@ -189,7 +245,7 @@ The **Group** can be one of `docs`, `env`, `git`, `github`, `ide`, `search`, `se
 
 ::::
 
-## Project context {#sec-shiny-btw-md}
+## The [`btw.md`]{style="font-weight: bold; font-size: 1.15em;"} context file {#sec-shiny-btw-md}
 
 As we learned in the [`ellmer` chapter](ellmer.qmd), project prompts should be stored in `inst/prompts/`. `btw` also provides the [`use_btw_md()` function](https://posit-dev.github.io/btw/reference/use_btw_md.html), which creates a project 'context file.'
 
@@ -198,6 +254,13 @@ As we learned in the [`ellmer` chapter](ellmer.qmd), project prompts should be s
 #| code-fold: false
 use_btw_md(scope = "project")
 ```
+
+```{verbatim}
+ℹ See btw::btw_client for format details
+ℹ See btw::btw_tools for available tools
+ℹ Call `btw::btw_task_create_btw_md()` to use an LLM to help you initialize the project context.
+```
+
 
 The `btw.md` file comes with some default content for project context:
 
@@ -236,9 +299,19 @@ tools:
 ---
 ```
 
+Additional instructions are also provided on code style: 
+
+~~~ markdown
+Follow these important style rules when writing R code:
+
+* Prefer solutions that use {tidyverse}
+* Always use `<-` for assignment
+* Always use the native base-R pipe `|>` for piped expressions
+~~~
+
 Now that we have a `btw.md` file for project context, we'll start an interactive chat session to help us write our context file.
 
-## Console chat: *`btw.md` context file* {#sec-console-btw-task-create-btw-md}
+## Console chat {#sec-console-btw-task-create-btw-md}
 
 We can use the `btw` tools to add more project context to the `btw.md` by calling [`btw_task_create_btw_md()`](https://posit-dev.github.io/btw/reference/btw_task_create_btw_md.html) and setting the `mode` to `"console"`.
 
@@ -267,8 +340,8 @@ As mentioned above, `btw` has a collection of tools at our disposal, so when we 
 The model tells us it's intentions for the `btw.md` file:
 
 ``` markdown
-I'll help you create a comprehensive project summary. Let me start by 
-exploring your project structure to understand what we're working with.
+I'll begin by exploring the project structure to understand 
+what we're working with.
 ```
 
 To perform this exploration, the model will use the registered tools from `btw`.
@@ -312,29 +385,34 @@ The `btw_tools()` function lists all the tools we *could register*, but `chat$ge
 
 ::::
 
-The output from `chat$get_tools()` is rather lengthy, but we can use <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> + <kbd>F</kbd> to locate `btw_tool_files_list_files()`, which is the first tool called by the LLM.
+The output from `chat$get_tools()` is rather lengthy, but we can use <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> + <kbd>F</kbd> to locate `btw_tool_files_list()`, which is the first tool called by the LLM.
 
-``` markdown
-List files or directories in the project.
+```{verbatim}
+$btw_tool_files_list
+# <ellmer::ToolDef> btw_tool_files_list(path, type, regexp, `_intent`)
+# @name: btw_tool_files_list
+# @description: List files or directories in the project.
 
 WHEN TO USE:
 * Use this tool to discover the file structure of a project.
 * When you want to understand the project structure, use `type = "directory"` to list all directories.
 * When you want to find a specific file, use `type = "file"` and `regexp` to filter files by name or extension.
 
-CAUTION: Do not list all files in a project, instead prefer listing files in a specific directory with a `regexp` to
-filter to files of interest.
+CAUTION: Do not list all files in a project, instead prefer listing files in a specific directory with a `regexp` to filter to files
+of interest.
 ```
+
+View the entire output from `chat$get_tools()` in 
 
 ### Tool calls
 
-Recall the model was going to start by ***'`exploring your project structure`'***, and we can see this aligns with the' `@description` for `btw_tool_files_list_files()`.
+Recall the model was going to start by ***'`exploring your project structure`'***, and we can see this aligns with the' `@description` for `btw_tool_files_list()`.
 
-In the console, the tool call and a preview of it's results are printed. Below is the first call to `btw_tool_files_list_files()`:
+In the console, the tool call and a preview of it's results are printed. Below is the first call to `btw_tool_files_list()`:
 
 ```{verbatim}
-◯ [tool call] btw_tool_files_list_files(path = ".", `_intent` = "Get initial 
-overview of project structure")
+◯ [tool call] btw_tool_files_list(path = ".", 
+`_intent` = "List root directory to identify project type and structure")
 ```
 
 The function includes an `_intent` argument, where the model, "*explain\[s\] why it called the tool.*"[^btw-9]
@@ -348,11 +426,11 @@ The results are a markdown formatted table of the project contents (file/folder 
 [^btw-10]: I've cleaned up the formatting on this markdown table so it's easier to read.
 
 ```{verbatim}
-● #> | path        | type      | size | modification_time   |
-  #> |-------------|-----------|------|---------------------|
-  #> | DESCRIPTION | file      | 736  | 2025-10-20 14:04:24 |
-  #> | NAMESPACE   | file      | 932  | 2025-10-22 08:01:23 |
-  #> | R           | directory | 1K   | 2025-10-22 08:01:23 |
+● #> | path        | type      | size  | modification_time   |
+  #> |-------------|-----------|-------|---------------------|
+  #> | DESCRIPTION | file      | 533   | 2026-04-01 08:47:33 |
+  #> | NAMESPACE   | file      | 977   | 2026-04-01 08:47:33 |
+  #> | R           | directory | 1.03K | 2026-04-01 08:47:33 |
   #> …
 ```
 
@@ -360,17 +438,9 @@ The results are a markdown formatted table of the project contents (file/folder 
 
 The table output is sent to the LLM, which them provides a summary of the contents:
 
-``` markdown
-Perfect! I can see this is an **R package** with a Shiny application. The structure shows:
-
-- `DESCRIPTION` and `NAMESPACE` files (R package essentials)
-- Extensive `R/` directory with many Shiny modules (`mod_*.R` files)
-- `app.R` file (Shiny app entry point)
-- `data/` directory with datasets
-- `tests/testthat/` (comprehensive testing)
-- `vignettes/` (package documentation)
-- `renv.lock` (dependency management)
-```
+~~~ markdown
+Great! This is clearly an **R package** for building a Shiny application. 
+~~~
 
 I've created an overview of this tool call in the diagram below.[^btw-11]
 
@@ -380,7 +450,7 @@ I've created an overview of this tool call in the diagram below.[^btw-11]
 
 The model is equipped with the supplemented system prompt--which informs it of the tools at it's disposal--and when we begin, it starts by attempting to understand the project structure.
 
-This objective matches the `btw` registered tool description for the `btw_tool_files_list_files()` function, which returns a markdown-formatted table of the project contents. The results from the tool are sent to the LLM, which provides a summary in the console.
+This objective matches the `btw` registered tool description for the `btw_tool_files_list()` function, which returns a markdown-formatted table of the project contents. The results from the tool are sent to the LLM, which provides a summary in the console.
 
 The entire [**PHASE 1: PROJECT EXPLORATION**](https://github.com/mjfrigaard/sap/blob/30_llm-btw/inst/prompts/btw-md-conversation.md#phase-1-project-exploration) is in the callout box below (expand the callout box to view).
 
@@ -388,259 +458,53 @@ The entire [**PHASE 1: PROJECT EXPLORATION**](https://github.com/mjfrigaard/sap/
 ## [PHASE 1: PROJECT EXPLORATION (TOOL CALLS)]{style="font-weight: bold; font-size: 1.15em;"}
 
 ::: {style="font-size: 1.10em; font-style: italic; color: #282b2d;"}
-I'll help you create a comprehensive project summary. Let me start by exploring your project structure to understand what we're working with.
 
-```{verbatim}
-◯ [tool call] btw_tool_files_list_files(path = ".", `_intent` = "Get initial overview of project
-structure")
-● #> | path | type | size | modification_time |
-  #> |------|------|------|-------------------|
-  #> | DESCRIPTION | file | 736 | 2025-10-20 14:04:24 |
-  #> | NAMESPACE | file | 932 | 2025-10-22 08:01:23 |
-  #> | R | directory | 1K | 2025-10-22 08:01:23 |
-  #> …
-```
+{{< include _btw_project_exploration.qmd >}}
 
-Perfect! I can see this is an **R package** with a Shiny application. The structure shows:
-
--   `DESCRIPTION` and `NAMESPACE` files (R package essentials)
--   Extensive `R/` directory with many Shiny modules (`mod_*.R` files)
--   `app.R` file (Shiny app entry point)
--   `data/` directory with datasets
--   `tests/testthat/` (comprehensive testing)
--   `vignettes/` (package documentation)
--   `renv.lock` (dependency management)
-
-Let me read the key files to understand this project better.
-
-```{verbatim}
-◯ [tool call] btw_tool_files_read_text_file(path = "DESCRIPTION", `_intent` = "Read package metadata and
-dependencies")
-● #> ```
-  #> Package: sap
-  #> Title: movies app
-  #> Version: 0.0.0.9000
-  #> Author: John Smith <John.Smith@email.io> [aut, cre]
-  #> …
-```
-
-```{verbatim}
-◯ [tool call] btw_tool_files_read_text_file(path = "README.md", `_intent` = "Understand project purpose
-and usage")
-● #> ````md
-  #> <h1 align="center"> <code><strong>sap</strong></code> </h1>
-  #> <h3 align="center"> Code examples for <a href="https://mjfrigaard.github.io/shiny-app-pkgs/"> Shiny
-App-Packages </a> </h3>
-  #> <hr>
-  #>
-  #> …
-```
-
-```{verbatim}
-◯ [tool call] btw_tool_files_read_text_file(path = "btw.md", `_intent` = "Check existing btw.md to see
-if I should preserve anything")
-● #> ```md
-  #> ---
-  #> client: claude/claude-4-5-sonnet-latest
-  #> tools:
-  #>  - docs
-  #> …
-```
-
-```{verbatim}
-◯ [tool call] btw_tool_files_read_text_file(path = "app.R", `_intent` = "Understand the Shiny
-application structure")
-● #> ```R
-  #> # set option to turn off loadSupport() ----
-  #> withr::with_options(new = list(shiny.autoload.r = FALSE), code = {
-  #>  if (!interactive()) {
-  #>  sink(stderr(), type = "output")
-  #> …
-```
-
-```{verbatim}
-◯ [tool call] btw_tool_files_read_text_file(path = "R/launch_app.R", `_intent` = "Understand the
-launch_app function")
-● #> ```R
-  #> #' Launch the Shiny Application
-  #> #'
-  #> #' This function initializes and launches the Shiny application with specified
-  #> #' options and settings.
-  #> …
-```
-
-```{verbatim}
-◯ [tool call] btw_tool_files_read_text_file(path = "R/nav_ui.R", line_end = 50L, ...)
-● #> ```R
-  #> #' User Interface for the Shiny Application
-  #> #'
-  #> #' This function defines the user interface for the Shiny application,
-  #> #' integrating Bootstrap and a custom JavaScript file.
-  #> …
-```
-
-```{verbatim}
-◯ [tool call] btw_tool_files_read_text_file(path = "R/data.R", `_intent` = "Look at data structure to
-understand what this app analyzes")
-● #> ```R
-  #> #' @title IMDB movies data
-  #> #'
-  #> #' @description
-  #> #' Movie review data. Note: these data come from the [Building Web Applications with shiny
-course](https://rstudio-education.github.io/shiny-course/).
-  #> …
-```
-
-```{verbatim}
-◯ [tool call] btw_tool_files_list_files(path = "vignettes", `_intent` = "Look at one vignette to
-understand the app's purpose")
-● #> | path | type | size | modification_time |
-  #> |------|------|------|-------------------|
-  #> | vignettes/graphs.qmd | file | 18.58K | 2025-10-20 14:04:01 |
-  #> | vignettes/report.qmd | file | 18.22K | 2025-10-20 14:04:01 |
-  #> | vignettes/specs.qmd | file | 5.92K | 2025-10-20 13:35:52 |
-  #> …
-```
-
-```{verbatim}
-◯ [tool call] btw_tool_files_read_text_file(path = "vignettes/specs.qmd", line_end = 50L, ...)
-● #> ````qmd
-  #> ---
-  #> title: "Specifications"
-  #> format:
-  #>  html:
-  #> …
-```
 :::
 ::::
 
-As we can see, the model called `btw_tool_files_list_files()` and `btw_tool_files_read_text_file()` to gather context on the project. The [**PHASE 1: SUMMARY**](https://github.com/mjfrigaard/sap/blob/30_llm-btw/inst/prompts/btw-md-conversation.md#phase-1-summary) is what the model learned about the `sap` package using the `btw` tools (expand the callout box to view):
+As we can see, the model called `btw_tool_files_read()` and `btw_tool_docs_available_vignettes()` to gather context on the project. 
+
+The [**PHASE 1: SUMMARY**](https://github.com/mjfrigaard/sap/blob/30_llm-btw/inst/prompts/btw-md-conversation.md#phase-1-summary) is what the model learned about the `sap` package using the `btw` tools (expand the callout box to view):
 
 :::: {.callout-caution collapse="true" appearance="minimal" icon="false"}
-## [PHASE 1: SUMMARY (TOOL CALLS)]{style="font-weight: bold; font-size: 1.15em;"}
+## [PHASE 1 COMPLETE - Summary of Findings]{style="font-weight: bold; font-size: 1.15em;"}
 
 ::: {style="font-size: 1.10em; font-style: italic; color: #282b2d;"}
-Based on my exploration, here's what I've learned about this project:
 
-**Project Type:** R Package with integrated Shiny application
-
-**Primary Purpose:** This is `sap` (Shiny App-Packages), which serves as a **comprehensive code example** for the book "Shiny App-Packages" and workshops on developing/testing Shiny applications. It demonstrates how to structure a Shiny app as an R package.
-
-**Technology Stack:**
-
--   **R Package structure** (DESCRIPTION, NAMESPACE, man/, tests/)\
--   **Shiny** for the web application with modular design\
--   **Bootstrap/bslib** for modern UI theming\
--   **ggplot2** + extensions (ggdist, ggwaffle, plotly) for visualizations\
--   **tidyverse** (dplyr, tidyr, forcats) for data manipulation\
--   **testthat** for comprehensive testing\
--   **renv** for dependency management\
--   **Quarto** for vignettes/documentation
-
-**Key Architecture Insights:**
-
--   **Modular Shiny design:** Extensive use of Shiny modules (`mod_*.R` files) for different app sections\
--   **Multi-branch educational repo:** Different branches show progressive development stages\
--   **Theme integration:** Dark theme with custom CSS and thematic integration\
--   **Data-focused:** Built around IMDB movie review dataset with 34 variables\
--   **Production-ready structure:** Complete with testing, documentation, and dependency management
-
-**Main Components:**
-
--   **Data visualization modules:** Compare plots, distribution plots, count plots (bar/waffle)\
--   **Award analysis:** Special modules for Oscar/award winner analysis\
--   **Tabular displays:** Data tables with custom styling\
--   **Report generation:** Quarto-based reporting functionality
-
-The app appears to provide multiple ways to explore and visualize movie review data through an interactive interface, while serving as a teaching tool for Shiny app development best practices.
+{{< include _btw_phase_01.qmd >}}
+   
 :::
 ::::
 
 After the project summary, the model starts [**Phase 2: Narrative Construction**](https://github.com/mjfrigaard/sap/blob/30_llm-btw/inst/prompts/btw-md-conversation.md#phase-2-narrative-construction), which includes a series of questions from the LLM regarding the context of the package/project (expand the callout box to view).
 
 :::: {.callout-caution collapse="true" appearance="minimal" icon="false"}
-## [PHASE 2: NARRATIVE CONSTRUCTION]{style="font-weight: bold; font-size: 1.15em;"}
+## [PHASE 2: QUESTIONS FOR CONTEXT]{style="font-weight: bold; font-size: 1.15em;"}
 
 ::: {style="font-size: 1.10em; font-style: italic; color: #282b2d;"}
-Now moving to **Phase 2: Narrative Construction**. I need to gather context that would help developers understand the "why" behind decisions and architectural choices.
 
-**Question 1:** What's the main learning objective for developers using this codebase--is it primarily about demonstrating Shiny package structure, modular Shiny development patterns, or both equally?
+{{< include _btw_phase_02.qmd >}}
 
-> "The learning objectives for developers using the codebase are to demonstrate Shiny package structure and modular Shiny development patterns, specifically using modules to add a downloadable html report. Be sure to also create `mermaid` diagrams to illustrate concepts. When creating mermaid diagrams, list the nodes using `CamelCase` abbreviations (i.e., not simply `A`, `B`, `C`, etc.), and keep the diagrams small enough to fit on a single presentation slide."
-
-**Question 2:** I noticed the app uses a dark theme with custom CSS and thematic integration. Was this theming choice made primarily for visual appeal, or does it serve as an example of a specific theming pattern that developers should learn from when building their own Shiny app-packages?
-
-> "The theme is just for visual appeal, not as an example of a specific theming pattern."
-
-**Question 3:** I see the project has multiple branches representing different development stages, and the main branch appears to be a mature version with full testing and documentation. For developers working with this codebase, which components or modules would you recommend they examine first to understand the core patterns--are there particular modules that best demonstrate the key architectural principles?
-
-> "The code files for each chapter are stored in Git repository. Major code changes are stored in branches. The branches are named sequentially with a prefix and a name of the topic covered: 01_whole-app-game, 02.1_shiny-app, 02.2_movies-app, 02.3_proj-app, 03.1_description, 03.2_rproj, 03.3_create-package, 04_devtools, 05_roxygen2, 06.1_exports, 06.2_imports, 07_data, 08_launch, 09_inst, etc. Developers should review the three `mod_compare_`\* to understand the core patterns (these best demonstrate the key architectural principles)."
-
-**Question 4:** The modular structure shows three `mod_compare_*` modules (vars, point, and presumably the UI/server pairs). These modules appear to handle variable selection, point plotting, and the overall comparison interface. Are there specific patterns in how these three modules communicate with each other--like how data flows between variable selection and plotting--that represent key principles developers should understand about module interaction in Shiny app-packages?
-
-> "Developers should understand that using modules enhances the clarity of the application by providing a structured way to organize its components. This approach allows us to write, analyze, and test each element independently, making it easier to understand its unique functionality and how it interacts within the overall app server."
-
-**Question 5:** I see the app integrates Quarto for report generation and has a dedicated `mod_report` module. Given that downloadable HTML reports are a key learning objective, is the report functionality designed to demonstrate a specific pattern for integrating external document generation tools (like Quarto) within Shiny modules, or does it showcase something else important about report generation in app-packages?
-
-> "The only learning objective is using Shiny modules to integrate external document generation tools (like Quarto). This is a general pattern, not a specific pattern."
-
-Perfect! I now have enough context to create the documentation. Let me summarize what I understand:
 :::
 ::::
 
-I included some instructions to the model on building `mermaid` diagrams for the `btw.md` file. The [**PHASE 2: SUMMARY**](https://github.com/mjfrigaard/sap/blob/30_llm-btw/inst/prompts/btw-md-conversation.md#phase-2-summary) returned after the questions and answers is below (expand the callout box to view).
+I included some instructions to the model on building `mermaid` diagrams for the `btw.md` file. The [**PHASE 2: NARRATIVE CONSTRUCTION**](https://github.com/mjfrigaard/sap/blob/30_llm-btw/inst/prompts/btw-md-conversation.md#phase-2-summary) returned after the questions and answers is below (expand the callout box to view).
 
 :::: {.callout-caution collapse="true" appearance="minimal" icon="false"}
-## [PHASE 2: SUMMARY]{style="font-weight: bold; font-size: 1.15em;"}
+## [PHASE 2: NARRATIVE CONSTRUCTION]{style="font-weight: bold; font-size: 1.15em;"}
 
 ::: {style="font-size: 1.10em; font-style: italic; color: #282b2d;"}
-**Learning Objectives:** Demonstrate both Shiny package structure and modular Shiny development patterns, with special focus on using modules to integrate external document generation (Quarto for HTML reports).
 
-**Key Architectural Principles:**
+{{< include _btw_phase_02_narrative_construction.qmd >}}
 
--   Modular design enhances application clarity through structured component organization\
--   Each module can be written, analyzed, and tested independently\
--   Focus on the three `mod_compare_*` modules as the best examples of core patterns\
--   General pattern for integrating external tools (like Quarto) within Shiny modules
-
-**Development Progression:** Sequential git branches show evolution from basic app to full package structure, following a clear learning path through the book chapters.
-
-**Theme Choice:** Visual appeal only, not a teaching pattern.
 :::
 ::::
 
 ### Updated `bwd.md` file
 
 When **Phase 2** is complete, we're told we have a "*comprehensive `btw.md` file that captures the essential information about \[our\] Shiny App-Packages project*." The full conversation with the model is stored in [`inst/prompts/btw-md-conversation.md`](https://github.com/mjfrigaard/sap/blob/30_llm-btw/inst/prompts/btw-md-conversation.md).
-
-:::: {.callout-caution collapse="true" appearance="minimal" icon="false"}
-## [Key Features of the Documentation]{style="font-weight: bold; font-size: 1.15em;"}
-
-::: {style="font-size: 1.10em; font-style: italic; color: #282b2d;"}
-**📋 Learning-Focused Structure:** Emphasizes the dual educational objectives (package structure + modular patterns) right at the top
-
-**🎯 Clear Architecture Diagrams:** Two mermaid diagrams showing:
-
--   Overall module architecture with CamelCase node names\
--   Core module communication pattern (CompareVars → ComparePoint → Report)
-
-**📚 Sequential Learning Path:** Explains the git branch progression from basic app to full package
-
-**🔧 Practical Developer Guidance:**
-
--   Points developers to the three `mod_compare_*` modules as the best starting examples\
--   Includes actual commands for exploring different development stages\
--   Testing patterns for module independence
-
-**📊 Data Context:** Clear explanation of the movie dataset structure and its role in demonstrating patterns
-
-**🚀 Integration Patterns:** Specific focus on how Quarto integration demonstrates external tool patterns
-
-The documentation serves both as an introduction for newcomers and a reference for developers working with the codebase. It maintains the existing front matter you had while providing comprehensive context that helps developers understand not just *what* the code does, but *why* it's structured this way for learning purposes.
-
-The file should help other AI assistants and developers quickly understand that this is an educational codebase with specific learning objectives, rather than a production movie analysis application.
-:::
-::::
 
 View the complete [updated `btw.md` file on GitHub.](https://github.com/mjfrigaard/sap/blob/30_llm-btw/btw.md#sap-shiny-app-packages)
 
@@ -656,16 +520,16 @@ Now that we have a project context file, we will use `btw` to improve our downlo
 btw_app()
 ```
 
-![](images/btw_btw_app_default.gif){width='100%' fig-align="center"}
+![](images/btw_btw_app_ide.png){width='100%' fig-align="center"}
 
 If we expand the sidebar, we can see the registered tools provided by `btw`:
 
 ![](images/btw_btw_app_default_tools.gif){width='100%' fig-align="center"}
 
 
-By default, the app includes all of the tools available from `btw` (with the exception of **Code Search**).[^btw-code-search]
+By default, the app includes all of the tools available from `btw` (with the exception of **Subagent**, **Load skill**, and **Package Tools**).[^btw-non-defaults]
 
-[^btw-code-search]: **Code Search** uses the [`btw_tool_files_code_search()`](https://posit-dev.github.io/btw/reference/btw_tool_files_code_search.html) function.
+[^btw-non-defaults]: **Subagent** uses [SOURCE](https://posit-dev.github.io/btw/reference/btw_tool_files_code_search.html), **Load skill** uses [SOURCE](https://posit-dev.github.io/btw/reference/btw_tool_files_code_search.html), **Package Tools** uses [SOURCE](https://posit-dev.github.io/btw/reference/btw_tool_files_code_search.html)
 
 We can also specify specific tools, or categories of tools. Below are some groups of tools we might use exploring an app-package:
 
