@@ -42,7 +42,7 @@ In this chapter we'll focus on the [`btw` package](https://posit-dev.github.io/b
 
 [^btw-3]: This description of `btw` actually comes from the [`mcptools` documentation.](https://posit-dev.github.io/mcptools/index.html)
 
-I'll cover using `btw` to add documentation and improve the contents of the downloadable report in our [`sap` application.](https://github.com/mjfrigaard/sap/tree/30_llm-btw)
+I'll cover using `btw` to improve the documentation and contents of the downloadable report in our [`sap` application.](https://github.com/mjfrigaard/sap/tree/30_llm-btw)
 
 ## Configuration {#sec-btw-config}
 
@@ -65,11 +65,11 @@ install.packages("btw")
 pak::pak("posit-dev/btw")
 ```
 
-We can place the `btw` configuration options in the `.Rprofile` (similar to other [`ellmer` configurations](https://ellmer.tidyverse.org/reference/chat_anthropic.html)).[^btw-4] Recall that the `.Rprofile` file can exist at the user and/or the project-level.
+We can place the `btw` configuration options in the `.Rprofile` (similar to other [`ellmer` configurations](https://ellmer.tidyverse.org/reference/chat_anthropic.html)).[^btw-4] 
 
-[^btw-4]: You can easily open this file with [`usethis::edit_r_profile()`.](https://usethis.r-lib.org/reference/edit.html)
+[^btw-4]: Recall that the `.Rprofile` file can exist at the user and/or the project-level. You can easily open this file with [`usethis::edit_r_profile()`.](https://usethis.r-lib.org/reference/edit.html)
 
-For example, I've added a project-level [`.Rprofile` file](https://github.com/mjfrigaard/sap/blob/30_llm-btw/.Rprofile) this branch of the `sap` package and included a `system_prompt` and `model`:
+I've added a project-level [`.Rprofile` file](https://github.com/mjfrigaard/sap/blob/30_llm-btw/.Rprofile) this branch of the `sap` package and included a `system_prompt` and `model`:
 
 ```{r}
 #| eval: false 
@@ -98,7 +98,7 @@ options(
 
 I've included the full system prompt below in an easier to read format:
 
-:::: {.callout-note collapse='true' appearance='minimal' icon=false}
+::: {.callout-note collapse='true' appearance='minimal' icon=false}
 
 ## [Full system prompt]{style='font-weight: bold; font-size: 1.05em;'}
 
@@ -107,10 +107,10 @@ I've included the full system prompt below in an easier to read format:
 The instructions for returning Markdown/R Markdown/Quarto responses are important for this particular app, as you'll see below.
   
 {{< include _btw_prompt.qmd >}}
-  
+
 ::: 
 
-::::
+:::
 
 
 ```{r}
@@ -125,13 +125,38 @@ git_margin_box(
   repo = 'sap')
 ```
 
-## `btw` tools {#sec-shiny-btw-tools}
+## Context files
 
-`btw` comes with a set of pre-defined tools for examining package documentation, environments, directories and files, git and GitHub, our development environment, CRAN packages, R sessions, and general web searches.[^btw-5]
+Along with a system prompt, we'll want to introduce a comprehensive context file.[^standardize-context] Context files are markdown documents located in the root directory (similar to` README.md` files) that agents read automatically before doing work. Generally speaking, these files answer the question, "*What do I need to know to be productive?*"
 
-[^btw-5]: Read a complete list of available tools from `btw` in the [package documentation.](https://posit-dev.github.io/btw/reference/btw_tools.html)
+Think of these docs as the LLM's analogue of an onboarding document for a new developer on your team. Good things to include are the project's purpose, audience, conventions and constraints (i.e., gotchas, "*don't touch X*", etc.). Without any context, the LLM has to "rediscover" the project on every session, which wastes tokens because the model has to spend at least a few turns exploring the project's files. `btw` comes with it's own context file, [`btw.md`](https://posit-dev.github.io/btw/reference/btw_client.html#project-context).[^previous-context-file] 
 
-We can use `btw` to work interactively in RStudio ![](images/rstudio-icon.png){height="25"} console by creating a [`btw`-enhanced](https://posit-dev.github.io/btw/reference/btw_client.html) chat client and passing messages directly.[^btw-6]
+::: {.callout-tip collapse="false" appearance="minimal" icon="false"}
+
+### [Context files across the ecosystem]{style="font-weight: bold; font-size: 1.15em;"}
+
+::: {style="font-size: 1.10em; color: #282b2d;"}
+
+Context files have different names depending on the tool, but the role is the same:
+
+| **Tool**         | **Filename**                        |
+| ---------------- | ----------------------------------- |
+| Claude Code      | `CLAUDE.md`                         |
+| Cursor           | `.cursorrules / .cursor/rules/*.md` |
+| OpenAI Codex CLI | `AGENTS.md`                         |
+| GitHub Copilot   | `.github/copilot-instructions.md`   |
+| `btw`            | `btw.md`                            |
+
+:::
+
+:::
+
+
+Let's view the system and session context *without* a `btw.md` (or other context file). In the RStudio ![](images/rstudio-icon.png){height="25"} **Console**, we'll use `btw_client()` to create a  [`btw`-enhanced](https://posit-dev.github.io/btw/reference/btw_client.html) chat client.[^btw-6]
+
+[^standardize-context]: There is a push to [standardize these files](https://llmstxt.org/) across platforms. 
+
+[^previous-context-file]: If you're already using a context file (i.e., `AGENTS.md` or `llms.txt`), these can be configured with in `btw_client()`. 
 
 [^btw-6]: An [`ellmer::Chat` client](https://ellmer.tidyverse.org/reference/Chat.html) which provides a "*sequence of user and assistant [Turns](https://ellmer.tidyverse.org/reference/Turn.html) sent to a specific [Provider.](https://ellmer.tidyverse.org/reference/Provider.html)*"
 
@@ -141,7 +166,7 @@ We can use `btw` to work interactively in RStudio ![](images/rstudio-icon.png){h
 chat <- btw_client()
 ```
 
-We can view the `btw` enhancements by examining the chat object in the console:
+We can view the `btw` enhancements by examining the `chat` object in the console:
 
 ```{r}
 #| eval: false 
@@ -149,17 +174,34 @@ We can view the `btw` enhancements by examining the chat object in the console:
 chat
 ```
 
-`btw` has added 'System and Session Context' and 'Tools' sections to the `chat` client.
+::: {.callout-note collapse="true" appearance="minimal" icon="false"}
+
+### [Expand to view `chat`]{style="font-weight: bold; font-size: 1.15em;"}
 
 {{< include _btw_tools_skills.qmd >}}
 
-We can see the model will have some additional instructions and methods at it's disposal (beyond what we've provided in the `system_prompt` argument of `ellmer::chat_anthropic()`).
+:::
 
-:::: {.callout-note collapse="true" appearance="minimal" icon="false"}
+We can see `btw` has added sections for tools and skills *before* the system prompt we provided in [`ellmer::chat_anthropic()`](https://ellmer.tidyverse.org/reference/chat_anthropic.html) (we will cover tools and skills in more depth below). We can already see the benefit of having the system prompt loaded in the context because the model already has our instructions on the first turn (and we've spent `$0`). 
+
+## Tools & skills {#sec-tools-skills}
+
+I've found a good way to think about the differences between tools and skills is, 
+
+> "*Tools pay rent, skills pay only when you visit.*"
+
+Broadly speaking, **tools** are functions a model can call. Tools have a name, schema, and will run code that returns a result (i.e., list files and folders, read a file, execute R). Tools always present in the model's context — the model sees the full list and picks one when needed.
+
+`btw` comes with a set of pre-defined tools for examining package documentation, environments, directories and files, git and GitHub, our development environment, CRAN packages, R sessions, and general web searches.[^btw-5]
+
+[^btw-5]: Read a complete list of available tools from `btw` in the [package documentation.](https://posit-dev.github.io/btw/reference/btw_tools.html)
+
+::: {.callout-note collapse="true" appearance="minimal" icon="false"}
 
 ### [`btw` tool functions]{style="font-weight: bold; font-size: 1.15em;"}
 
 ::: {style="font-size: 1.10em; color: #282b2d;"}
+
 All `btw` functions follow the name convention below:
 
 | Prefix | Group | Name |
@@ -169,14 +211,18 @@ All `btw` functions follow the name convention below:
 | `btw_tool_` | `files_` | [read_text_file()](https://posit-dev.github.io/btw/reference/btw_tool_files_read_text_file.html) |
 | `btw_tool_` | `files_` | [write_text_file()](https://posit-dev.github.io/btw/reference/btw_tool_files_write_text_file.html) |
 
-The **Group** can be one of `docs`, `env`, `git`, `github`, `ide`, `search`, `session` or `web`. This is important to remember below in @sec-btw-app
+The **Group** can be one of `docs`, `env`, `git`, `github`, `ide`, `search`, `session` or `web`. 
+
 :::
 
-::::
+:::
 
-## The [`btw.md`]{style="font-weight: bold; font-size: 1.15em;"} context file {#sec-shiny-btw-md}
 
-As we learned in the [`ellmer` chapter](ellmer.qmd), project prompts should be stored in `inst/prompts/`. `btw` also provides the [`use_btw_md()` function](https://posit-dev.github.io/btw/reference/use_btw_md.html), which creates a project 'context file.'
+On the other hand, **skills** are markdown files with instructions for the model on how to approach a task (*domain-specific expertise*). Skills are loaded "on demand"--and don't execute anything--so they don't consume context until they're needed. This aligns with the skills section in the `chat` client--it has instructions and the location of `skill-creator/SKILL.md` to "*provide detailed guidance for specific tasks.*" 
+
+## [`btw.md`]{style="font-weight: bold; font-size: 1.15em;"} {#sec-shiny-btw-md}
+
+[`use_btw_md()` function](https://posit-dev.github.io/btw/reference/use_btw_md.html) will create a boilerplate `btw.md` file.
 
 ```{r}
 #| eval: false 
@@ -190,25 +236,23 @@ use_btw_md(scope = "project")
 ℹ Call `btw::btw_task_create_btw_md()` to use an LLM to help you initialize the project context.
 ```
 
-The `btw.md` file comes with some default content for project context:
+This includes some default content for the project context:
 
 > "*Use `btw.md` to inform the LLM of your preferred code style, to provide domain-specific terminology or definitions, to establish project documentation, goals and constraints, to include reference materials such or technical specifications, or more. Storing this kind of information in `btw.md` may help you avoid repeating yourself and can be used to maintain coherence across many chat sessions.*"
-
-### [`client`]{style="font-size: 1.10em; font-weight: bold;"} {.unnumbered}
 
 The YAML header in our newly created `btw.md` is where can specify the `client` (along with the `provider` and `model`).
 
 ``` yaml
+
 ---
 client: claude/claude-sonnet-4-5-20250929
 ---
+
 ```
 
 The default values in `btw.md` will automatically use the latest Claude model from Anthropic. The YAML values above are similar to using `ellmer`'s `chat_*` functions.[^btw-7]
 
 [^btw-7]: For more information on `client` values, read the [Chat Settings documentation](https://posit-dev.github.io/btw/reference/use_btw_md.html#chat-settings).
-
-### [`tools`]{style="font-size: 1.10em; font-weight: bold;"} {.unnumbered}
 
 The `tools` section of the YAML header contains a list of the groups from [`btw_tools()`](https://posit-dev.github.io/btw/reference/btw_tools.html). Each of these groups contains a collection of functions "*that allow the chat to interface with your computational environment.*"
 
@@ -237,11 +281,11 @@ Follow these important style rules when writing R code:
 * Always use the native base-R pipe `|>` for piped expressions
 ```
 
-Now that we have a `btw.md` file for project context, we'll start an interactive chat session to help us write our context file.
+## Creating `btw.md` {#sec-create-btw-md}
 
-## Create `btw.md` {#sec-create-btw-md}
+We'll want to improve our generic `btw.md` context file. As the output above mentioned, we can call [`btw_task_create_btw_md()`](https://posit-dev.github.io/btw/reference/btw_task_create_btw_md.html) to start an interactive chat session to help us write our context file.[^storing-prompts]
 
-We can use the `btw` tools to add more project context to the `btw.md` by calling [`btw_task_create_btw_md()`](https://posit-dev.github.io/btw/reference/btw_task_create_btw_md.html).
+[^storing-prompts]: The prompts used in this project are stored in `inst/prompts/` (as we learned in the [`ellmer` chapter](ellmer.qmd)). 
 
 ```{r}
 #| eval: false 
@@ -253,30 +297,37 @@ This opens an interactive chat in the **Viewer** pane:
 
 ![](images/btw-btw-task-create-btw-md.png){width="100%" fig-align="center"}
 
+
 ## How tool calling works {#sec-how-tool-calls-work}
 
-LLMs can't execute R code, but if we've registered tools (i.e., R functions) with the model, they can be used to help provide additional information.
-
-As mentioned above, `btw` has a collection of tools at our disposal, so when we start the interactive chat, the model informs us it will be examining the `sap` package contents for more information.
-
-```{bash}
-#| eval: false 
-#| code-fold: false
->>> "Let's get started."
-```
-
-The model tells us it's intentions for the `btw.md` file:
+When we start the interactive chat, the model informs us it will be examining the `sap` package contents for more information.
 
 ``` markdown
 I'll begin by exploring the project structure to understand 
 what we're working with.
 ```
 
-To perform this exploration, the model will use the registered tools from `btw`.
+The model can't execute R code, but `btw` has "registered" a collection of tools (i.e., R functions) with the model, these can be used to help provide additional information. In other words, the `btw_task_create_btw_md()` function uses the tools in `btw` to add more project context to the `btw.md` file. 
+
+::: {.callout-note collapse="true" appearance="minimal" icon="false"}
+
+### [Registered vs. registering tools]{style="font-weight: bold; font-size: 1.15em;"}
+
+::: {style="font-size: 1.10em; color: #282b2d;"}
+
+The `btw_tools()` function lists all the tools we *could register*, but `chat$get_tools()` returns the tools that *are registered* with the model.
+
+If we want to register a tool, we include the name of the function, a description of what the function does, and a list of function arguments with their type (boolean, integer, number, etc.). [^btw-8]
+
+[^btw-8]: We can register tools using `ellmer`'s [`create_tool_def()` and `tool()` functions](https://ellmer.tidyverse.org/articles/tool-calling.html#registering-and-using-tools).
+
+:::
+
+:::
 
 ### Registered tools
 
-We can view all the tools registered by the `btw` package with the LLM using:
+Let's back up and take a look at the tools `btw` has registered with `get_tools()`:
 
 ```{r}
 #| eval: false 
@@ -284,7 +335,9 @@ We can view all the tools registered by the `btw` package with the LLM using:
 chat$get_tools()
 ```
 
-The output from `chat$get_tools()` is rather lengthy, but we can use <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> + <kbd>F</kbd> to locate `btw_tool_files_list()`, which is the first tool called by the LLM.
+Each registered tool has a `@name` and `@description` parameter, with `WHEN TO USE` instructions written in markdown. 
+
+Recall the model was going to start by "*exploring your project structure*", and we can see this aligns with the `WHEN TO USE` section of `btw_tool_files_list()`:
 
 ```{verbatim}
 $btw_tool_files_list
@@ -303,35 +356,19 @@ CAUTION: Do not list all files in a project, instead prefer listing files in
 a specific directory with a `regexp` to filter to files of interest.
 ```
 
+::: {.callout-tip collapse="true" appearance="minimal" icon="false"}
+
+### [`get_tools()` output]{style="font-weight: bold; font-size: 1.15em;"}
+
+The output from `chat$get_tools()` is rather lengthy, but we can use <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> + <kbd>F</kbd> to locate `btw_tool_files_list()`, which is the first tool called by the LLM.
+
 View the entire output from `chat$get_tools()` in [`inst/prompts/btw-chat-get-tools.md`](https://github.com/mjfrigaard/sap/blob/f46492454c28bbb915df949a76a89cde1a48ddad/inst/prompts/btw-chat-get-tools.md?plain=1#L358).
 
-:::: {.callout-note collapse="true" appearance="minimal" icon="false"}
-
-### [Note]{style="font-weight: bold; font-size: 1.15em;"}
-
-::: {style="font-size: 1.10em; color: #282b2d;"}
-The `btw_tools()` function lists all the tools we *could register*, but `chat$get_tools()` returns the tools that *are registered* with the model.
 :::
-
-::::
-
-If we want to register a tool, we include the name of the function, a description of what the function does, and a list of function arguments with their type (boolean, integer, number, etc.). [^btw-8]
-
-[^btw-8]: We can register tools using `ellmer`'s [`create_tool_def()` and `tool()` functions](https://ellmer.tidyverse.org/articles/tool-calling.html#registering-and-using-tools).
 
 ### Tool calls
 
-Recall the model was going to start by ***'`exploring your project structure`'***, and we can see this aligns with the' `WHEN TO USE` section of `btw_tool_files_list()`.
-
-> WHEN TO USE:
->
-> -   Use this tool to discover the file structure of a project.
->
-> -   When you want to understand the project structure, use `type = "directory"` to list all directories.
->
-> -   When you want to find a specific file, use `type = "file"` and `regexp` to filter files by name or extension.
-
-In the **Viewer** pane, we can review the tool call and it's results. Below is the first call to `btw_tool_files_list()`:
+In the **Viewer** pane, we can review each tool call and the results. Below is the first call to `btw_tool_files_list()`:
 
 ```{r}
 #| eval: false 
@@ -345,9 +382,9 @@ The function includes an `_intent` argument, where the model, "*explain\[s\] why
 
 ### Tool results
 
-The results are a markdown formatted table of the project contents (file/folder names, their size, and when they were last changed):[^btw-10]
+The tool returns a markdown-formatted table of the project contents (file/folder names, their size, and when they were last changed):[^btw-10]
 
-[^btw-10]: I've cleaned up the formatting on this markdown table so it's easier to read.
+[^btw-10]: I've cleaned up the formatting on this markdown table so it's easier to read, but it's an output you might expect from the [`fs` package](https://fs.r-lib.org/). 
 
 ```{verbatim}
 | path              | type      | size    | modification_time   |
@@ -363,11 +400,14 @@ The results are a markdown formatted table of the project contents (file/folder 
 
 ### Model response
 
-The table output is sent to the LLM, which then provides a summary of the contents:
+The table result is sent to the model, which provides a summary of it's contents:
 
 ``` markdown
-Perfect! This is clearly an R Package with a Shiny application. Let me read the key files to understand the project.
+Perfect! This is clearly an R Package with a Shiny application. 
+Let me read the key files to understand the project.
 ```
+
+### Recap
 
 I've created an overview of this tool call in the diagram below.[^btw-11]
 
@@ -375,34 +415,47 @@ I've created an overview of this tool call in the diagram below.[^btw-11]
 
 ![Tool calls with `btw`](images/btw_tool_call_diagram.png){width="100%" fig-align="center"}
 
-The model is equipped with the supplemented system prompt--which informs it of the tools at it's disposal--and when we begin, it starts by attempting to understand the project structure.
+The model context begins with our supplemented system prompt--which now includes the tools and skills at it's disposal. When we begin, the model beings by *exploring the project structure*--matching the registered tool description for the `btw_tool_files_list()` function, which returns a table of the project contents. These tool results are sent to the model, and we see the overall summary.
 
-This objective matches the `btw` registered tool description for the `btw_tool_files_list()` function, which returns a markdown-formatted table of the project contents. The results from the tool are sent to the LLM, which provides a summary in the console.
+## Building the `btw.md` file
 
-The `btw` prompt for the [**PHASE 1: PROJECT EXPLORATION**](https://github.com/posit-dev/btw/blob/main/inst/prompts/btw-init.md#phase-1-strategic-exploration) provides the instructions for the model in this phase. 
+I strongly recommend reading the documentation on creating the `btw.md`.[^btw-init-docs] The instructions are broken into three phases: 
+
+1. Phase 1: Strategic Exploration (Research & Discovery)    
+2. Phase 2: Narrative Construction (User Collaboration)   
+3. Phase 3: Documentation (File Writing)    
+
+[^btw-init-docs]: Read the entire `btw-init.md` prompt [here](https://github.com/posit-dev/btw/blob/main/inst/prompts/btw-init.md). 
+
+### Phase 1: Strategic Exploration {.unnumbered}
+
+The first phase is the [**Strategic Exploration**](https://github.com/posit-dev/btw/blob/main/inst/prompts/btw-init.md#phase-1-strategic-exploration), and it's goal is to efficiently understand the project's structure, purpose, and technical architecture without overwhelming the context window. This includes using tools to identify key files, review documentation, and tailor the approach to the project type.
 
 The [phase 1 summary](https://github.com/mjfrigaard/sap/blob/30_llm-btw/inst/prompts/setup.md#phase-1-project-exploration) is what the model learned about the `sap` package using the `btw` tools (expand the callout box to view).
 
-:::: {.callout-caution collapse="true" appearance="minimal" icon="false"}
+::: {.callout-caution collapse="true" appearance="minimal" icon="false"}
 
-## [Phase 1 Summary: Project Understanding]{style="font-weight: bold; font-size: 1.15em;"} {.unnumbered}
+### [Phase 1 Summary: Project Understanding]{style="font-weight: bold; font-size: 1.15em;"} {.unnumbered}
 
 ::: {style="font-size: 1.10em; font-style: italic; color: #282b2d;"}
 
 {{< include _btw_phase_01.qmd >}}
 
 :::
-::::
+
+:::
 
 The model primarily relied on `btw_tool_files_read()` and `btw_tool_docs_available_vignettes()` to gather context on the project.
 
-After the project summary, the model starts [**PHASE 2: NARRATIVE CONSTRUCTION**](https://github.com/posit-dev/btw/blob/main/inst/prompts/btw-init.md#phase-2-narrative-construction), which includes a series of questions from the LLM regarding the context of the package/project. 
+### Phase 2: Narrative Construction {.unnumbered}
 
-I've included the phase 2 questions and answers below (expand the callout box to view):
+After the project summary, the model starts with the [**Narrative Construction**](https://github.com/posit-dev/btw/blob/main/inst/prompts/btw-init.md#phase-2-narrative-construction). The overall goal of phase 2 is to collaborate with the user to provide key architectural context and the reasoning behind important design decisions, using brief, developer-focused explanations that aren’t in the existing documentation. 
 
-:::: {.callout-caution collapse="true" appearance="minimal" icon="false"}
+I've included the [phase 2 questions and answers](https://github.com/mjfrigaard/sap/blob/30_llm-btw/inst/prompts/setup.md#phase-2-gathering-context) below (expand the callout box to view):
 
-## [Phase 2: Gathering Context]{style="font-weight: bold; font-size: 1.15em;"} {.unnumbered}
+::: {.callout-caution collapse="true" appearance="minimal" icon="false"}
+
+### [Phase 2: Gathering Context]{style="font-weight: bold; font-size: 1.15em;"} {.unnumbered}
 
 ::: {style="font-size: 1.10em; font-style: italic; color: #282b2d;"}
 
@@ -410,17 +463,17 @@ I've included the phase 2 questions and answers below (expand the callout box to
 
 :::
 
-::::
+:::
 
-After completing the [Phase 2: Questions for Context](https://github.com/mjfrigaard/sap/blob/30_llm-btw/setup.md#phase-2-questions-for-context), `btw` gives us a chance to review various sections of our `btw.md`. You can review the entire conversation in the [`inst/prompts/setup.md` file](https://github.com/mjfrigaard/sap/blob/30_llm-btw/inst/prompts/setup.md).
+### Phase 3: Documentation {.unnumbered}
 
-### Updated `btw.md` file
+After completing the phase 2, `btw` gives us a chance to review each section of our `btw.md`. You can review the entire conversation in the [`inst/prompts/setup.md` file](https://github.com/mjfrigaard/sap/blob/30_llm-btw/inst/prompts/setup.md#phase-3-documentation).
 
 When **Phase 2** is complete, we're told we have a "*comprehensive `btw.md` file*" that is "*structured from narrative (purpose and architecture) to reference material (technical details and workflows), making it easy for new developers to get oriented quickly while also serving as a practical guide for working with the project*".
 
-:::: {.callout-caution collapse="true" appearance="minimal" icon="false"}
+::: {.callout-caution collapse="true" appearance="minimal" icon="false"}
 
-## [Comprehensive `btw.md`]{style="font-weight: bold; font-size: 1.15em;"} {.unnumbered}
+### [Phase 3: Write Comprehensive `btw.md`]{style="font-weight: bold; font-size: 1.15em;"} {.unnumbered}
 
 ::: {style="font-size: 1.10em; font-style: italic; color: #282b2d;"}
 
@@ -428,13 +481,24 @@ When **Phase 2** is complete, we're told we have a "*comprehensive `btw.md` file
 
 :::
 
-::::
+:::
 
 View the complete [updated `btw.md` file on GitHub.](https://github.com/mjfrigaard/sap/blob/30_llm-btw/btw.md)
 
+To make sure `btw` reads the project context file, we'll restart R, load, and install the `sap` package, then create another `chat` object with `btw_client()`: 
+
+```{r}
+#| eval: false 
+#| code-fold: false
+chat <- btw_client()
+chat
+```
+
+Now we can see the chat object includes the system and session info, the tool access description, the **entire `btw.md` file**, *and* our system prompt.  
+
 ## [`btw`]{style="font-weight: bold; font-size: 1.15em;"} App {#sec-btw-app}
 
-To make sure `btw` reads the project context file, we'll restart R, load, and install the `sap` package, then launch the `btw` app:[^btw-12]
+We're now ready to launch the `btw` app:[^btw-12]
 
 [^btw-12]: To run the `btw_app()`, make sure you have the latest version of [`shinychat`](https://posit-dev.github.io/shinychat/r/index.html).
 
@@ -454,11 +518,15 @@ By default, the app includes all of the tools available from `btw` (with the exc
 
 [^btw-13]: **Subagent** uses [SOURCE](https://posit-dev.github.io/btw/reference/btw_tool_files_code_search.html), **Load skill** uses [SOURCE](https://posit-dev.github.io/btw/reference/btw_tool_files_code_search.html), **Package Tools** uses [SOURCE](https://posit-dev.github.io/btw/reference/btw_tool_files_code_search.html)
 
-### Agents 
+### Subagents 
 
-If you're new to LLMs, `btw` can feel a bit like you've been dropped into the deep end of the pool. As we can see from the App interface, we're able to add a **Subagent** to the available tools.
+If you're new to LLMs, `btw` can feel a bit like you've been dropped into the deep end of the pool. As we can see from the App interface, we're able to add a **Subagent** to the available tools.[^btw-subagent]
 
 ![Agents in `btw_app()`](images/btw_app_agents.png){width=80% fig-align="center"}
+
+
+
+[^btw-subagent]: I recommend reading the documentation from [`btw` on subagents](https://posit-dev.github.io/btw/reference/btw_tool_agent_subagent.html?q=subagent#how-subagents-work).
 
 #### *What is the difference between an agent and a subagent?* {.unnumbered}
 
@@ -491,11 +559,32 @@ flowchart TD
     
 ```
 
-The documentation for the subagent is available in the `btw` documentation,[^btw-subagent] but at a high level, it's instructed to "*work efficiently; deliver complete, actionable answers; use available tools effectively; handle problems clearly; and build on previous work*." The icons indicate **Subagent**s are **Not Read-Only** and **Open World Tools**, which means they can write to files and access the internet. 
+In `btw`, subagents are separately-configured chat sessions — with their own model, system prompt, and toolset — that can be invoked from the main session. 
 
-In `btw`, we can define a subagent with a markdown file with YAML frontmatter — not in an .R file. The file's frontmatter configures the agent (`name`, `tools`, `model`), and the markdown body becomes its *system prompt*. 
+Subagents are defined in a markdown file with YAML frontmatter — not in an `.R` file. The frontmatter configures the agent, and the markdown body becomes the *system prompt*. `btw` auto-discovers these files and exposes them as tools to the main agent. We'll create a subagent file in [`.btw/agent-code_reviewer.md`](https://github.com/mjfrigaard/sap/blob/30_llm-btw/.btw/agent-code_reviewer.md) and give it some instructions for reviewing code. 
 
-`btw` auto-discovers these files and exposes them as tools to your main agent. We'll create a subagent file in [`.btw/agent-code_reviewer.md`](https://github.com/mjfrigaard/sap/blob/30_llm-btw/.btw/agent-code_reviewer.md) and give it some instructions for reviewing code:
+Below is the frontmatter for the `code_reviewer` subagent:
+
+```yaml
+---
+name: code_reviewer                               # <1>
+description: Reviews R code for best practices... # <2>
+title: Code Reviewer                              # <3>
+icon: magnifying-glass                            # <4>
+client: anthropic/claude-sonnet-4-20250514        # <5> 
+tools:                                            # <6> 
+  - files
+  - docs
+---
+```
+1. How the subagent is invoked    
+2. Advertised to the parent   
+3. Subagent display name    
+4. UI hint    
+5. Which model runs it    
+6. Tool groups it can call    
+
+We'll also include some instructions and examples for how to style the code that differs from the standard `tidyverse` conventions. Expand the callout box below to view the entire description.  
 
 ::: {.callout-note collapse="true" appearance="default" icon="false"}
 
@@ -518,7 +607,6 @@ options(
 )
 ```
 
-
 Now when we launch the `btw_app()`, we can see our **Code Reviewer** subagent.
 
 ![Agents in `btw_app()`](images/btw_app_subagents.png){width=80% fig-align="center"}
@@ -531,7 +619,7 @@ After selecting our subagent in the app UI, we'll ask the model to review the co
 
 ![`code_reviewer` subagent in `btw_app()`](images/btw_subagent_btw_app.gif){width=80% fig-align="center"}
 
-[^btw-subagent]: See the [`btw-subagent.md`](https://github.com/posit-dev/btw/blob/main/inst/prompts/btw-subagent.md) file for the full set of instructions. 
+See the [`btw-subagent.md`](https://github.com/posit-dev/btw/blob/main/inst/prompts/btw-subagent.md) file for the full set of instructions. 
 
 ### Skills 
 
