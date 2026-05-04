@@ -133,7 +133,7 @@ Think of these docs as the LLM's analogue of an onboarding document for a new de
 
 ::: {.callout-tip collapse="false" appearance="minimal" icon="false"}
 
-### [Context files across the ecosystem]{style="font-weight: bold; font-size: 1.15em;"}
+### [Various context files]{style="font-weight: bold; font-size: 1.15em;"}
 
 ::: {style="font-size: 1.10em; color: #282b2d;"}
 
@@ -184,13 +184,9 @@ chat
 
 We can see `btw` has added sections for tools and skills *before* the system prompt we provided in [`ellmer::chat_anthropic()`](https://ellmer.tidyverse.org/reference/chat_anthropic.html) (we will cover tools and skills in more depth below). We can already see the benefit of having the system prompt loaded in the context because the model already has our instructions on the first turn (and we've spent `$0`). 
 
-## Tools & skills {#sec-tools-skills}
+## [`btw`]{style="font-weight: bold; font-size: 1.15em;"} tools {#sec-btw-tools}
 
-I've found a good way to think about the differences between tools and skills is, 
-
-> "*Tools pay rent, skills pay only when you visit.*"
-
-Broadly speaking, **tools** are functions a model can call. Tools have a name, schema, and will run code that returns a result (i.e., list files and folders, read a file, execute R). Tools always present in the model's context — the model sees the full list and picks one when needed.
+Broadly speaking, **tools** are functions a model can call. Tools have a name, description, and will run code that returns a result (i.e., list files and folders, read a file, execute R). Tools are always present in the model's context — the model sees the full list and picks one when needed.
 
 `btw` comes with a set of pre-defined tools for examining package documentation, environments, directories and files, git and GitHub, our development environment, CRAN packages, R sessions, and general web searches.[^btw-5]
 
@@ -216,9 +212,6 @@ The **Group** can be one of `docs`, `env`, `git`, `github`, `ide`, `search`, `se
 :::
 
 :::
-
-
-On the other hand, **skills** are markdown files with instructions for the model on how to approach a task (*domain-specific expertise*). Skills are loaded "on demand"--and don't execute anything--so they don't consume context until they're needed. This aligns with the skills section in the `chat` client--it has instructions and the location of `skill-creator/SKILL.md` to "*provide detailed guidance for specific tasks.*" 
 
 ## [`btw.md`]{style="font-weight: bold; font-size: 1.15em;"} {#sec-shiny-btw-md}
 
@@ -494,7 +487,7 @@ chat <- btw_client()
 chat
 ```
 
-Now we can see the chat object includes the system and session info, the tool access description, the **entire `btw.md` file**, *and* our system prompt.  
+Now we can see the chat object includes 1) the system and session info, 2) the tool access description, 3) the **entire `btw.md` file**, and 4) our system prompt.  
 
 ## [`btw`]{style="font-weight: bold; font-size: 1.15em;"} App {#sec-btw-app}
 
@@ -516,21 +509,21 @@ If we expand the sidebar, we can see the registered tools provided by `btw`:
 
 By default, the app includes all of the tools available from `btw` (with the exception of **Subagent**, **Load skill**, and **Package Tools**).[^btw-13]
 
-[^btw-13]: **Subagent** uses [SOURCE](https://posit-dev.github.io/btw/reference/btw_tool_files_code_search.html), **Load skill** uses [SOURCE](https://posit-dev.github.io/btw/reference/btw_tool_files_code_search.html), **Package Tools** uses [SOURCE](https://posit-dev.github.io/btw/reference/btw_tool_files_code_search.html)
+[^btw-13]: **Subagents** are defined with [`btw_tool_agent_subagent()`](https://posit-dev.github.io/btw/reference/btw_tool_agent_subagent.html), **Load skill** uses [`btw_tool_skill()`](https://posit-dev.github.io/btw/reference/btw_tool_skill.html), and the **Package Tools** include functions for [loading code](https://posit-dev.github.io/btw/reference/btw_tool_pkg_load_all.html), running [R CMD check](https://posit-dev.github.io/btw/reference/btw_tool_pkg_check.html), [generating documentation](https://posit-dev.github.io/btw/reference/btw_tool_pkg_document.html), [running package tests](https://posit-dev.github.io/btw/reference/btw_tool_pkg_test.html), and [computing test coverage](https://posit-dev.github.io/btw/reference/btw_tool_pkg_coverage.html). 
 
 ### Subagents 
 
-If you're new to LLMs, `btw` can feel a bit like you've been dropped into the deep end of the pool. As we can see from the App interface, we're able to add a **Subagent** to the available tools.[^btw-subagent]
+When I started using `btw`, I was somewhat new to LLMs, so it felt a bit like I'd been dropped into the deep end of the pool. Below I've tried to give some background on the questions I had when I started building subagents and skills. 
 
-![Agents in `btw_app()`](images/btw_app_agents.png){width=80% fig-align="center"}
-
-
-
-[^btw-subagent]: I recommend reading the documentation from [`btw` on subagents](https://posit-dev.github.io/btw/reference/btw_tool_agent_subagent.html?q=subagent#how-subagents-work).
+![Agents in `btw_app()`](images/btw_app_agents.png){width=100% fig-align="center"}
 
 #### *What is the difference between an agent and a subagent?* {.unnumbered}
 
-Generally speaking, an **agent** is an LLM chat session that uses tools autonomously to complete tasks. A **subagent** is a specialized tool the Agent can delegate subtasks to—like a manager (*Agent*) assigning work to a specialist (*Subagent*).
+As we can see from the App interface, we're able to add a **Subagent** to the available tools.[^btw-subagent]
+
+[^btw-subagent]: I recommend reading the documentation from [`btw` on subagents](https://posit-dev.github.io/btw/reference/btw_tool_agent_subagent.html?q=subagent#how-subagents-work).
+
+Generally speaking, an **agent** is an LLM chat session that uses tools autonomously to complete tasks. A **subagent** is a specialized tool the agent can delegate subtasks to—like a manager (the *Agent*) assigning work to a specialist (the *Subagent*).
 
 ```{=html}
 <style>
@@ -559,9 +552,9 @@ flowchart TD
     
 ```
 
-In `btw`, subagents are separately-configured chat sessions — with their own model, system prompt, and toolset — that can be invoked from the main session. 
+In `btw`, subagents are separately configured chat sessions — with their own models, system prompts, and toolsets — that can be invoked from the main session. 
 
-Subagents are defined in a markdown file with YAML frontmatter — not in an `.R` file. The frontmatter configures the agent, and the markdown body becomes the *system prompt*. `btw` auto-discovers these files and exposes them as tools to the main agent. We'll create a subagent file in [`.btw/agent-code_reviewer.md`](https://github.com/mjfrigaard/sap/blob/30_llm-btw/.btw/agent-code_reviewer.md) and give it some instructions for reviewing code. 
+Subagents are defined in a markdown file with YAML frontmatter — not in an `.R` file. The frontmatter configures the agent, and the markdown body becomes it's *system prompt*. `btw` auto-discovers these files and exposes them as tools to the main agent. We'll create a subagent file in [`.btw/agent-code_reviewer.md`](https://github.com/mjfrigaard/sap/blob/30_llm-btw/.btw/agent-code_reviewer.md) and give it some instructions for reviewing code. 
 
 Below is the frontmatter for the `code_reviewer` subagent:
 
@@ -574,7 +567,7 @@ icon: magnifying-glass                            # <4>
 client: anthropic/claude-sonnet-4-20250514        # <5> 
 tools:                                            # <6> 
   - files
-  - docs
+  - docs                                          # <6> 
 ---
 ```
 1. How the subagent is invoked    
@@ -594,40 +587,109 @@ We'll also include some instructions and examples for how to style the code that
 
 :::
 
-In our `.Rprofile`, we'll add the following option: 
-
-```{r}
-#| eval: false 
-#| code-fold: false
-options(
-  # default toolset when the orchestrator doesn't specify
-  btw.subagent.tools_default = c("agent", "cran", "docs", "env", "files", 
-                                 "git", "github", "ide", "pkg", "run", 
-                                 "skills")
-)
-```
-
 Now when we launch the `btw_app()`, we can see our **Code Reviewer** subagent.
 
-![Agents in `btw_app()`](images/btw_app_subagents.png){width=80% fig-align="center"}
+![Agents in `btw_app()`](images/btw_app_subagents.png){width=100% fig-align="center"}
 
-#### *How do I know if my subagent is working?* {.unnumbered}
+#### *Using the subagent* {.unnumbered}
 
 After selecting our subagent in the app UI, we'll ask the model to review the code using `code_reviewer`: 
 
 > 'Review the code using the code_reviewer subagent.'
 
-![`code_reviewer` subagent in `btw_app()`](images/btw_subagent_btw_app.gif){width=80% fig-align="center"}
+![`code_reviewer` subagent in `btw_app()`](images/btw_subagent_btw_app.png){width=100% fig-align="center"}
 
-See the [`btw-subagent.md`](https://github.com/posit-dev/btw/blob/main/inst/prompts/btw-subagent.md) file for the full set of instructions. 
+This prompt is sent from the parent chat, which sees the `code_reviewer` subagent as a single tool call. After sending the prompt, the `code_reviewer` subagent runs its own multi-turn loop using its own tools. 
+
+If we expand the *Running __Code Reviewer__* box, we can see the session ID (`stable_sparrow`) for the subagent context window and the prompt sent to the subagent: 
+
+::: {.callout-note collapse="true" appearance="default" icon="false"}
+
+### [`code_reviewer` subagent prompt]{style="font-weight: bold; font-size: 1.15em;"}
+
+{{< include _btw_code_reviewer_prompt.qmd >}}
+
+:::
+
+```{mermaid}
+%%| fig-cap: 'Subagent call'
+%%| fig-align: center
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
+
+flowchart TD
+    User[User in main chat] --> ParentChat["Parent<br><code>btw_client</code>"]
+    ParentChat -->|btw_tool_agent| Subagent["<code>code_reviewer</code><br>subagent"]
+    Subagent -->|reads YAML + body| Spec["<code>agent-code_reviewer.md</code>"]
+    Subagent -->|calls files/docs tools| Project["Project files & R docs"]
+    Subagent -->|returns review text| ParentChat
+    ParentChat --> User
+    
+```
+
+The `code_reviewer` subagent invocation starts with a fresh context window. This keeps the parent chat's history from leaking in, and the intermediate work performed by the `code_reviewer` doesn't leak out. When used this way, the `code_reviewer` can read all the project's files without bloating the parent chat's context. 
+
+#### *What is the subagent doing?* {.unnumbered}
+
+I've stored the tool calls from the `code_reviewer` subagent on GitHub,[^subagents-github] but the image below captures what's happening: 
+
+[^subagents-github]: Both the comprehensive review from the subagent and the tool calls are in the [inst/prompts/ folder.](https://github.com/mjfrigaard/sap/tree/30_llm-btw/inst/prompts) 
+
+![How the subagent works](images/btw_subagent_diagram.png){width=100% fig-align="center"}
+
+The parent chat never sees the intermediate tool calls — only the final summary (which it summarizes again before returning a response).
+
+![`code_reviewer` subagent response in `btw_app()`](images/btw_subagent_btw_app.gif){width=100% fig-align="center"}
+
+See the [`full-code_review-2026-04-29.md`](https://github.com/mjfrigaard/sap/blob/30_llm-btw/inst/prompts/full-code_review-2026-04-29.md) file for the prompt, tool calls, and summary from the subagent.  
+
+::: {.callout-tip collapse="true" appearance="default" icon="false"}
+
+### [`btw.subagent` options]{style="font-weight: bold; font-size: 1.15em;"}
+
+In our `.Rprofile`, we'll can add the following option for the default toolset if the orchestrator doesn't specify: 
+
+```{r}
+#| eval: false 
+#| code-fold: false
+options(
+  btw.subagent.tools_default = c("agent", "cran", "docs", 
+                                 "env", "files",  "git", 
+                                 "github", "ide", "pkg",
+                                 "run", "skills")
+)
+```
+
+:::
 
 ### Skills 
 
-![Skills in `btw_app()`](images/btw_app_skills.png){width=75% fig-align="center"}
+In the `btw_app()`, we can see we have an option to load a skill and it's "bundled resources."
 
-#### *What are skills (and how do I bundle resources)?* {.unnumbered}
+![Skills in `btw_app()`](images/btw_app_skills.png){width=100% fig-align="center"}
 
-### Package Tools
+If you recall, the initial `btw.md` referenced how skills can be used/accessed: 
+
+::: {.callout-note collapse="true" appearance="default" icon="false"}
+
+## [Skill creation and use]{style="font-weight: bold; font-size: 1.15em;"}
+
+{{< include _btw_skills_description.qmd >}}
+
+:::
+
+Below we'll cover what skills are, how they compare to tools and subagents, and how to create them. 
+
+#### *What are skills?* {.unnumbered}
+
+**Skills** are markdown files with instructions for the model on how to approach a task (i.e., *domain-specific expertise*). Skills are loaded "on demand"--and don't execute anything--so they don't consume context until they're needed. 
+
+This aligns with the skills section in the `chat` client--it has instructions and the location of `skill-creator/SKILL.md` to "*provide detailed guidance for specific tasks.*" 
+
+#### *How are skills different than tools and subagents?* {.unnumbered}
+
+I've found a good way to think about the differences between tools and skills is, 
+
+> "*Tools pay rent, skills pay only when you visit.*"
 
 
 
