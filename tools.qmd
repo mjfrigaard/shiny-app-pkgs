@@ -175,11 +175,13 @@ Given the rapidly evolving landscape and nature of these tools, I expect these c
 
 ## LLM concepts
 
-Below I'll cover some LLM concepts to know before diving into the following chapters. These descriptions come from a variety of resources (which I've also included below).
+Below I'll cover some LLM concepts that might be good to know before diving into the following chapters. These descriptions come from a variety of resources (which I've also included).
 
 ### Context Windows
 
-A **context window** is the amount of information (measured in tokens, roughly equivalent to word fragments) that an LLM can "see" at one time. This includes the conversation history, any documents you've shared, tool outputs, and the model's own responses. 
+A [context window](https://en.wikipedia.org/wiki/Context_window) is the amount of information that an LLM can "see" at one time.[^cont-wndw-tokens] This includes the conversation history, any documents we've shared, tool outputs, and the model's own responses.
+
+[^cont-wndw-tokens]: Measured in tokens, roughly equivalent to word fragments
 
 ```{=html}
 <style>
@@ -198,35 +200,32 @@ A **context window** is the amount of information (measured in tokens, roughly e
 ```{mermaid}
 %%| fig-cap: 'Agents vs. Chatbots'
 %%| fig-align: center
-%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#e3f2fd', 'primaryBorderColor': '#1976d2', 'primaryTextColor': '#000000', 'secondaryColor': '#ffebee', 'secondaryBorderColor': '#c62828', 'tertiaryColor': '#e8f5e9', 'tertiaryBorderColor': '#2e7d32'}}}%%
 
-flowchart LR
-    ContextSize["📏 Context Window Size<br/>tokens used"]
-
-    ContextSize --> Cost["💰 Cost<br/>↑ increases linearly<br/>billed per token"]
-    ContextSize --> Latency["⏱️ Latency<br/>↑ increases<br/>slower responses"]
-    ContextSize --> Reasoning["🧠 Reasoning Quality<br/>↓ often degrades<br/>'lost in the middle'"]
-    ContextSize --> Recall["🔍 Recall Accuracy<br/>↓ decreases<br/>misses buried details"]
-
-    Cost --> Impact["⚖️ Net Impact<br/>on Performance"]
-    Latency --> Impact
-    Reasoning --> Impact
-    Recall --> Impact
-
-    Impact --> Strategy["✅ Best Practice<br/>Keep context lean:<br/>• Use skills & subagents<br/>• Summarize history<br/>• Retrieve only what's needed"]
-
-
-    %% style ContextSize fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
-    %% style Cost fill:#ffebee,stroke:#c62828
-    %% style Latency fill:#ffebee,stroke:#c62828
-    %% style Reasoning fill:#ffebee,stroke:#c62828
-    %% style Recall fill:#ffebee,stroke:#c62828
-    %% style Impact fill:#fff9c4,stroke:#f9a825,stroke-width:2px
-    %% style Strategy fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+mindmap
+  root(("📏 Context Window<br>Size"))
+    💰 Cost
+      ↑ More tokens = more $
+      Billed per token
+    ⏱️ Latency
+      ↑ Slower to respond
+      More to process
+    🧠 Reasoning Quality
+      ↓ Lost in the middle
+      Harder to attend to details
+    🔍 Recall Accuracy
+      ↓ Misses buried details
+      Degrades with length
+    ✅ Best Practices
+      Keep context lean
+      Use skills and subagents
+      Retrieve only what is needed
     
 ```
 
-Once the window fills up, older content gets pushed out and effectively forgotten. Larger context windows let the model reason over more material at once, but they're not free — they cost more, run slower, and models often struggle to attend carefully to information buried deep in a long context.
+Larger context windows let the model reason over more material at once, but not for free — larger context windows cost more, tend to run slower, and the model often struggles to attend carefully to information buried in the middle of the window.[^cont-wndw-forget]
+
+[^cont-wndw-forget]: Once the window fills up, content in the middle gets pushed out and effectively forgotten. Similar to the [Serial-Position Effect.](https://en.wikipedia.org/wiki/Serial-position_effect)
 
 **Resources:**    
   * [Anthropic: Long context tips](https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/long-context-tips)    
@@ -236,7 +235,7 @@ Once the window fills up, older content gets pushed out and effectively forgotte
 
 ### Agents
 
-An **agent** is an LLM that's been given the ability to take actions on its own behalf, rather than just responding with text, like a chatbot. The chatbot's workflow is a straight line: question in, answer out. On the other hand, agentic workflow contains a loop — they can take actions, see what happened, and adjust course before responding. 
+An [agent](https://en.wikipedia.org/wiki/AI_agent) is an LLM that's been given the ability to take actions on its own behalf, rather than just responding with text, like a [chatbot.](https://en.wikipedia.org/wiki/Chatbot) The chatbot's workflow is a straight line: question in, answer out.  
 
 ```{=html}
 <style>
@@ -253,14 +252,33 @@ An **agent** is an LLM that's been given the ability to take actions on its own 
 ```
 
 ```{mermaid}
-%%| fig-cap: 'Agents vs. Chatbots'
+%%| fig-cap: 'Chatbots'
 %%| fig-align: center
-%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
-flowchart TB
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"14px"}}}%%
 
-    subgraph Agent["🤖 Agent"]
-        direction TB
-        UserAg["User assigns<br>task"] --> LlmAg["LLM plans<br>next step"]
+flowchart TD
+    subgraph Chatbot[" Chatbot"]
+        direction LR
+        UserCB(["User asks<br>question"]) --> LlmCB("LLM generates<br>response")
+        LlmCB --> ReplyCB[Text reply]
+        ReplyCB --> UserCB
+    end
+
+    style Chatbot stroke:#1976d2
+
+```
+
+On the other hand, agentic workflow contains a loop — take actions, see what happened, and adjust course before responding. This loop is what lets it accomplish multi-step tasks autonomously. 
+
+```{mermaid}
+%%| fig-cap: 'Agents'
+%%| fig-align: center
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"14px"}}}%%
+
+flowchart TD
+    subgraph Agent["Agent"]
+        direction LR
+        UserAg(["User assigns<br>task"]) --> LlmAg("LLM plans<br>next step")
         LlmAg --> Decide{Task<br/>complete?}
         Decide -.->|No| ToolCall("Call tool <br>(run code,<br> query DB,<br> read file)")
         ToolCall -.-> Observe(Observe<br>result)
@@ -268,21 +286,13 @@ flowchart TB
         Decide -->|Yes| FinalAg[Final<br>answer]
         FinalAg --> UserAg
     end
-    
-    subgraph Chatbot["🗨️ Chatbot"]
-        direction TB
-        UserCB[User asks<br>question] --> LlmCB[LLM generates<br>response]
-        LlmCB --> ReplyCB[Text reply]
-        ReplyCB --> UserCB
-    end
 
-    %% style Chatbot fill:#e3f2fd,stroke:#1976d2
-    %% style Agent fill:#f3e5f5,stroke:#7b1fa2
-    %% style ToolCall fill:#fff3e0,stroke:#f57c00
-    %% style Decide fill:#fff9c4,stroke:#f9a825
+    style Agent stroke:#7b1fa2
+    style ToolCall fill:#fff3e0,stroke:#f57c00
+    style Decide fill:#fff9c4,stroke:#f9a825
 ```
 
-The loop is what lets it accomplish multi-step tasks autonomously. Instead of simply answering "*here's how you'd check the server logs,*" an agent can actually run the command, read the output, decide what to do next, and keep iterating until the task is complete. 
+Instead of simply answering the question, the agent can run commands, read the outputs, decide what to do next, and keep iterating until a task is complete. 
 
 
 **Resources:**  
@@ -292,7 +302,38 @@ The loop is what lets it accomplish multi-step tasks autonomously. Instead of si
 
 ### Tools
 
-**Tools** are functions that an LLM can call to interact with the outside world — things like running R code, querying a database, reading a file, or hitting a web API. The model doesn't execute the tool itself; instead, it requests a tool call, your software runs it, and the result is fed back into the conversation. Tools are what transform a chatbot into something that can actually *do* things, and they're the foundation that makes agents possible.
+**Tools** are functions that an LLM can call to interact with the outside world — running code, querying databases, reading files, or hitting web APIs. Model don't execute tools; they request tool calls, the system software executes the tool, and the results are fed back into the conversation. 
+
+```{mermaid}
+%%| fig-cap: 'Tools'
+%%| fig-align: center
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"14px"}}}%%
+
+sequenceDiagram
+    actor Usr as User
+    participant LLM as LLM
+    participant Host as Host App
+    participant Tool as Tool
+
+    Usr->>LLM: "What were average sales this quarter?"
+
+    LLM->>LLM: Reason — tool needed
+
+    loop Until task is complete
+        LLM->>Host: Tool call request + parameters
+        Note right of LLM: LLM can't run<br/>tools directly
+        Host->>Tool: Execute tool
+        Note right of Host: e.g. run code,<br/>query a DB,<br/>call an API
+        Tool-->>Host: Raw result
+        Host-->>LLM: Tool result injected into context
+        LLM->>LLM: Reason about result —<br/>another tool needed?
+    end
+
+    LLM->>Usr: Final response
+    
+```
+
+Tools are what transform chatbots into something that can actually *do* things, and they're the foundation that makes agents possible.
 
 **Resources:**    
 * [ellmer: Tool/function calling](https://ellmer.tidyverse.org/articles/tool-calling.html)    
@@ -302,25 +343,85 @@ The loop is what lets it accomplish multi-step tasks autonomously. Instead of si
 
 ### Skills
 
-**Skills** are reusable, packaged instructions that teach an LLM how to perform a specific task well — for example, "how to write a tidyverse-style data analysis" or "how to triage a Posit Connect support ticket." Rather than re-explaining your preferences and workflows every time, you bundle them into a skill that the model can load on demand. Skills keep the main context window clean while still letting the model draw on detailed, task-specific guidance when it's relevant.
+[Skills](https://github.com/anthropics/skills) are reusable, packaged instructions that teach an LLM how to perform a specific task well. Rather than re-explaining preferences and workflows every time, they get bundled into a skill that the model can load on demand. 
+
+```{mermaid}
+%%| fig-cap: 'Skills'
+%%| fig-align: center
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"14px"}}}%%
+
+sequenceDiagram
+    actor Usr as User
+    participant LLM as LLM
+    participant SkillLib as Skill Library
+    participant Ctx as Context Window
+
+    Usr->>LLM: "Review my R code"
+
+    LLM->>SkillLib: Identify relevant skill
+    Note right of SkillLib: Skills stored<br/>as reusable<br/>instruction<br/>sets
+
+    SkillLib-->>Ctx: Load skill instructions on demand
+    Note right of Ctx: Keeps context<br/>lean — only<br/>loaded when<br/>needed
+
+    Ctx-->>LLM: Skill instructions now available
+    Note right of LLM: No external<br/>execution — <br/>shapes<br/>reasoning only
+
+    LLM->>LLM: Apply skill guidance to task
+
+    LLM->>Usr: Response shaped by skill
+```
+
+
+Skills keep the main context window clean while still letting the model draw on detailed, task-specific guidance when it's relevant.
 
 **Resources:**    
-* [Anthropic: Agent Skills](https://www.anthropic.com/news/skills)    
-* [chores: A library of LLM helpers](https://simonpcouch.github.io/chores/)   
-* [Simon Couch: On the chores package](https://www.simonpcouch.com/blog/2025-01-08-chores/)   
+* [Anthropic: Agent Skills](https://claude.com/blog/skills)         
+* [chores: A library of LLM helpers](https://simonpcouch.github.io/chores/)      
+* [Simon Couch: On the chores package](https://simonpcouch.com/blog/2025-04-11-chores/index.html)      
 
 ### Subagents
 
-A **subagent** is a separate agent spawned by a parent agent to handle a focused piece of work, with its own fresh context window. The parent delegates a task ("go investigate these 50 log files and report back what you find"), the subagent does the heavy lifting in isolation, and only the summarized result returns to the parent. This pattern keeps the parent's context from getting cluttered with intermediate details and lets complex jobs be broken into parallel, manageable chunks — similar to how you might delegate a research task to a junior colleague rather than doing it all yourself.
+A subagent is a *separate agent* spawned by a parent agent to handle a focused task, with its own fresh context window. The parent agent delegates the task, and the subagent does the heavy lifting in isolation, returning only the summarized result. 
+
+```{mermaid}
+%%| fig-cap: 'Skills'
+%%| fig-align: center
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"14px"}}}%%
+
+sequenceDiagram
+    actor Usr as User
+    participant PAgent as Parent Agent
+    participant SAgent as Subagent
+    participant Tool as Tool
+
+    Usr->>PAgent: "Analyze Q1–Q4 sales reports"
+    PAgent->>PAgent: Identify delegatable subtask
+
+    PAgent->>SAgent: "Summarize all four reports"
+    Note right of SAgent: Fresh isolated<br/>context window
+    SAgent->>Tool: Call tool — read files
+    Tool-->>SAgent: File contents
+    SAgent->>SAgent: Analyze & summarize
+    SAgent-->>PAgent: Combined summary
+    Note left of PAgent: Only summary<br/>returns —<br/>parent context<br/>stays lean
+
+    PAgent->>PAgent: Reason over summary
+    PAgent->>Usr: Final response
+    
+```
+
+
+This pattern keeps the parent's context from getting cluttered with intermediate details and lets complex jobs be broken into parallel, manageable chunks.
 
 **Resources:**    
-* [Anthropic: How we built our multi-agent research system](https://www.anthropic.com/engineering/built-multi-agent-research-system)    
-* [Claude Code: Subagents documentation](https://docs.claude.com/en/docs/claude-code/sub-agents)    
-* [LangGraph: Multi-agent systems](https://langchain-ai.github.io/langgraph/concepts/multi_agent/)    
+* [Anthropic: How we built our multi-agent research system](https://www.anthropic.com/engineering/multi-agent-research-system)    
+* [Claude Code: Subagents documentation](https://code.claude.com/docs/en/sub-agents)    
+* [Subagents: When and How to Use Them](https://www.builder.io/blog/subagents)    
 
-## Resources 
+## More Resources 
 
-I highly recommend checking out the resources below if you're new to LLMs in R:
+I also highly recommend checking out the resources in the callout boxes below:
 
 ::: {.callout-note collapse='true' appearance='minimal' icon=false}
 
