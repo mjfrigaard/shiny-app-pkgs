@@ -47,9 +47,7 @@ This package was recently updated to version
 
 <!-- https://simonpcouch.github.io/chores/ -->
 
-The [`chores` package](https://simonpcouch.github.io/chores/) was developed to "*help you complete repetitive, hard-to-automate tasks quickly*".[^chores-1] We previously covered the [`ellmer` package](https://ellmer.tidyverse.org/index.html) (see @sec-shiny-ellmer), which we’ll use to configure the LLM we'll use with `chores`.
-
-[^chores-1]: Simon Couch also the author of the [`ensure`](https://simonpcouch.github.io/ensure/) and [`gander`](https://simonpcouch.github.io/gander/) packages.
+The [`chores` package](https://simonpcouch.github.io/chores/) was developed to "*help you complete repetitive, hard-to-automate tasks quickly*". We previously covered the [`ellmer` package](https://ellmer.tidyverse.org/index.html) (see @sec-shiny-ellmer), which we’ll use to configure an LLM to use with `chores`.
 
 ```{r}
 #| eval: false 
@@ -60,7 +58,9 @@ pak::pak('tidyverse/ellmer')
 pak::pak("simonpcouch/chores")
 ```
 
-In this chapter we'll use the `chores` addin to help write `roxygen2` documentation and `testthat` tests in an updated version of the movie review application. 
+In this chapter we'll use the `chores` addin to help write `roxygen2` documentation and `testthat` tests in an updated version of the movie review application.[^chores-1]
+
+[^chores-1]: Simon Couch also the author of the [`ensure`](https://simonpcouch.github.io/ensure/) and [`gander`](https://simonpcouch.github.io/gander/) packages.
 
 ```{r}
 #| label: shinypak_apps
@@ -70,13 +70,15 @@ In this chapter we'll use the `chores` addin to help write `roxygen2` documentat
 shinypak_apps(regex = "^28", branch = "28_llm-chores")
 ```
 
-## Navbar App {#sec-chores-navbar-app}
+We're going to start this chapter by going over the structure of the application, then dive into configuring chores (@sec-shiny-chores-setup), creating keyboard shortcuts (@sec-chores-helper-addin), and writing custom helpers (@sec-chores-custom-helpers). We will conclude with an example `chores` extension package (@sec-chores-ext-pkg). 
+
+## Navbar App overview {#sec-chores-navbar-app}
 
 The application in this branch has been built around the [`page_navbar` layout from `bslib`](https://rstudio.github.io/bslib/reference/page_navbar.html), with `nav_panel()`s containing graphs and tables for **Counts**, **Distributions**, and **Awards**.
 
 ![](images/chores_movie_reviews.png){width="100%" fig-align="center"}
 
-### App modules {#sec-chores-navbar-modules}
+### App modules {.unnumbered}
 
 The modules in the application have the following naming convention:
 
@@ -92,7 +94,7 @@ Each tab's modules are organized into abstract syntax trees[^ast] in the section
 
 [^ast]: Create abstract syntax trees with the [`lobstr::ast()` function](https://lobstr.r-lib.org/reference/ast.html). 
 
-#### Compare {#sec-chores-compare-module}
+#### Compare {.unnumbered}
 
 The **Compare** tab uses two modules:
 
@@ -108,7 +110,7 @@ The **Compare** tab uses two modules:
   └─█─mod_compare_point_server
 ```
 
-#### Counts {#sec-chores-counts-module}
+#### Counts {.unnumbered}
 
 The **Counts** tab includes five modules: 
 
@@ -156,7 +158,7 @@ The **Counts** tab includes five modules:
 :::
 
 
-#### Distributions {#sec-chores-dist-module}
+#### Distributions {.unnumbered}
 
 The **Distributions** tab uses four modules: 
 
@@ -202,7 +204,7 @@ The **Distributions** tab uses four modules:
 :::
 
 
-#### Awards {#sec-chores-awards-module}
+#### Awards {.unnumbered}
 
 **Awards** has three modules: 
 
@@ -241,11 +243,11 @@ The **Distributions** tab uses four modules:
 
 :::
 
-### Utility functions {#sec-chores-navbar-utils}
+### Utility functions {.unnumbered}
 
 Three new utility functions have been added to the application. The `display_type()` (@sec-launch-display-type) and `test_logger()` (@sec-test-logger) functions from previous sections are also included. 
 
-#### Name case  {#sec-chores-utils-name-case}
+#### Name case {.unnumbered}
 
 The `name_case()` function converts the column names to title case (and it's used in most of the module functions): 
 
@@ -268,7 +270,7 @@ name_case(x = "critics_rating", case = "title")
 name_case(x = "Critics Rating", case = "lower")
 ```
 
-#### Variable summary  {#sec-chores-utils-dist-var-summary}
+#### Variable summary {.unnumbered}
 
 The `dist_var_summary()` function creates the summary statistics table in the **Distributions** tab using the group and numerical variables.
 
@@ -299,7 +301,7 @@ dist_var_summary(
   num_var = 'audience_score')
 ```
 
-#### Movie awards   {#sec-chores-utils-create-movie-awards}
+#### Movie awards {.unnumbered}
 
 When provided an award type (Films or Stars) and start and end theater release dates, the `create_movie_awards` converts the `movies` data into the movie awards data for the graph and table the **Awards** tab:
 
@@ -452,11 +454,11 @@ Below we'll cover how to add custom helper prompts that can be used with the `ch
 
 `chores` gives users the ability to add custom helpers (prompts). These prompts can be written in markdown and must be named either `replace`, `prefix`, or `suffix`. 
 
-`replace`: removes the highlighted text and replaces it with a response. 
+* `replace`: removes the highlighted text and replaces it with a response. 
 
-`prefix`: inserts a response above the highlighted text. 
+* `prefix`: inserts a response above the highlighted text. 
 
-`suffix`: places the response below the highlighted text. 
+* `suffix`: places the response below the highlighted text. 
 
 Below is a [`shinymod-prefix` helper prompt](https://github.com/mjfrigaard/chorrrin/blob/main/inst/prompts/shinymod-prefix.md) that has some specific instructions for documenting Shiny modules (see @sec-document-app-functions).
 
@@ -588,7 +590,11 @@ chores::prompt_new(
 )
 ```
 
-### Extension packages {#sec-chores-ext-pkg}
+### What _are_ chores helpers? 
+
+`chores` helpers have a skill-style interface (prompt-based, non-agentic) — but they are packaged for a narrow coding chore. They don't call tools or have autonomy (like agents/subagents). When code is highlighted, The *pre-written prompt* + *selected text* is sent to the LMM, and the *replacement text* is returned. 
+
+## Extension packages {#sec-chores-ext-pkg}
 
 If you have a collection of repetitive tasks you'd like to include in the `chores` addin, you can create and install a small extension package. For example, I've created the [`chorrrin` extension package](https://github.com/mjfrigaard/chorrrin).[^chores-ext]
 
