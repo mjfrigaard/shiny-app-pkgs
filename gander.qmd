@@ -15,7 +15,7 @@ clr_pal3 <- c("#FC5C64FF", "#2F8AC4FF", "#99C945FF")
 #| label: co_box_review
 #| echo: false
 #| results: asis
-#| eval: true
+#| eval: false
 co_box(
   color = "y", 
   look = "default", hsize = "1.15", size = "0.95",
@@ -190,16 +190,17 @@ The `system` portion tells us how each response is framed and provides,  '*addit
 
 [^ellmer-sys-prompt]: Read more about this in the [*What is a prompt?*](https://ellmer.tidyverse.org/articles/ellmer.html#what-is-a-prompt) section of the `ellmer` documentation. 
 
-```{verbatim}
+::: {.callout-note collapse="true" appearance="minimal" icon="false"}
 
-── system [0] ────────────────────────────────────────────────────────────
-You are a helpful but terse R data scientist. Respond only with valid R code: 
-no exposition, no backticks. Always provide a minimal solution and refrain 
-from unnecessary additions. Use tidyverse style and, when relevant, tidyverse
-packages. For example, when asked to plot something, use ggplot2, or when 
-asked to transform data, using dplyr and/or tidyr unless explicitly 
-instructed otherwise. 
-```
+### [`system`]{style="font-weight: bold; font-size: 1.15em;"}
+
+::: {style="font-size: 1.10em; color: #282b2d;"}
+
+{{< include _gander_system.qmd >}}
+
+:::
+
+:::
 
 I like to think of system prompts as an assistant's 'personality,' because it affects every response.
 
@@ -207,182 +208,55 @@ I like to think of system prompts as an assistant's 'personality,' because it af
 
 The user prompt section gives the model information on the R environment, file contents, etc. In this example we can see it provided the entire module (UI and server functions) and `roxygen2` documentation.
 
+::: {.callout-note collapse="true" appearance="minimal" icon="false"}
+
+### [`user`]{style="font-weight: bold; font-size: 1.15em;"}
+
+::: {style="font-size: 1.10em; color: #282b2d;"}
+
+{{< include _gander_user.qmd >}}
+
+:::
+
+:::
+
+
 Note the '*Up to this point, the contents of my r file reads: *' and '*Now, convert the reactable output to a gt table: *" delineation. 
 
-```{verbatim}
-── user [1178] ─────────────────────────────────────────────────────────────
-Up to this point, the contents of my r file reads: 
-
-\`\`\`r
-#' UI for counts table module
-#'
-#' Creates a reactive table displaying count data. This function is designed
-#' to work together with [mod_counts_tbl_server()].
-#'
-#' @param id A character string used to identify the namespace for the module.
-#'
-#' @return A `tagList` containing UI elements:
-#'   * A reactive table output that displays the count data
-#'
-#' @seealso [mod_counts_tbl_server()] for the server-side logic
-#'
-#' @examples
-#' # UI implementation
-#' ui <- fluidPage(
-#'   mod_counts_tbl_ui("counts1")
-#' )
-#'
-#' # Server implementation
-#' server <- function(input, output, session) {
-#'   mod_counts_tbl_server("counts1", counts_data = reactive(data))
-#' }
-#'
-mod_counts_tbl_ui <- function(id) {
-  ns <- NS(id)
-  tagList(
-    reactable::reactableOutput(
-      outputId = ns("counts_table")
-    )
-  )
-}
-
-#' Server function for the count table module
-#'
-#' Creates a reactive table showing movies based on selected filters. This 
-#' function is designed to work together with a corresponding UI function.
-#'
-#' @param id A character string used to identify the namespace for the module.
-#' @param vals A reactive expression that returns a list containing at least:
-#'   * `start_year`: numeric value for the earliest year to include
-#'   * `end_year`: numeric value for the latest year to include
-#'   * `chr_var`: symbol representing the variable to display alongside title
-#'
-#' @return Creates the following reactive elements within the module's namespace:
-#'   * `counts_table`: A reactive Reactable table with three columns:
-#'      - Title: The movie title
-#'      - The selected character variable from `vals()$chr_var`
-#'      - Thtr Rel Year: The theatrical release year
-#'
-#' The table includes styling with a dark background, white text, and features 
-#' such as highlighting, striping, and compact display.
-#'
-#' @details
-#' The function filters the global `movies` dataset based on the year range
-#' provided in `vals()`. Column names are normalized using the `name_case()` 
-#' function before displaying.
-#'
-#' @seealso [mod_counts_tbl_()] The corresponding UI function for this module
-#'
-#' @examples
-#' # Server implementation
-#' server <- function(input, output, session) {
-#'   # Create a reactive values list
-#'   selected_vals <- reactive({
-#'     list(
-#'       start_year = 2000,
-#'       end_year = 2010,
-#'       chr_var = sym("Critics Rating")
-#'     )
-#'   })
-#'   
-#'   # Call the module server
-#'   mod_counts_tbl_server("movie_table", selected_vals)
-#' }
-#'
-\`\`\`
-
-Now, convert the reactable output to a gt table: 
-
-\`\`\`r
-mod_counts_tbl_server <- function(id, vals) {
-  moduleServer(id, function(input, output, session) {
-    
-    output$counts_table <- reactable::renderReactable({
-      req(vals())
-      # subset
-      count_data <- subset(
-        movies,
-        thtr_rel_year >= vals()$start_year &
-        thtr_rel_year <= vals()$end_year
-      )
-      
-      # Convert selected variable to snake_case
-      group_var <- name_case(as.character(vals()$chr_var), case = "lower")
-
-      # Count per group using tidy evaluation
-      tbl_data <- count_data |>
-        dplyr::group_by(.data[[group_var]]) |>
-        dplyr::summarise(n = dplyr::n(), .groups = "drop") |>
-        dplyr::arrange(dplyr::desc(n))
-      
-      # Normalize column names in the data
-      names(tbl_data) <- name_case(names(tbl_data))
-      
-      # reactable with dynamic row styling
-      reactable::reactable(tbl_data,
-        defaultPageSize = 25,
-        borderless = TRUE,
-        highlight = TRUE,
-        striped = TRUE,
-        compact = TRUE,
-        style = list(
-          backgroundColor = "#121212",
-          color = "#ffffff"
-        )
-      )
-    })
-  })
-}
-\`\`\`
-```
 
 ### Assistant {#sec-gander-context-assistant} 
 
 Finally, the `assistant` is the response from the model (given the `system` and `user` prompts).
 
-```{verbatim}
-── assistant [336] ───────────────────────────────────────────────────────
-mod_counts_tbl_server <- function(id, vals) {
-  moduleServer(id, function(input, output, session) {
+::: {.callout-note collapse="true" appearance="minimal" icon="false"}
+
+### [`assistant`]{style="font-weight: bold; font-size: 1.15em;"}
+
+::: {style="font-size: 1.10em; color: #282b2d;"}
+
+{{< include _gander_assistant.qmd >}}
+
+:::
+
+:::
+
+## In practice {#sec-gander-in-practice} 
+
+```{mermaid}
+%%| fig-cap: 'gander development'
+%%| eval: true 
+%%| echo: false
+%%| fig-align: center
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"14px"}}}%%
+
+flowchart TD
+    User["User prompt"] --> Gander["gander<br>assembles context"]
+    Selection["Selected code"] --> Gander
+    EnvSnapshot["R environment<br>data frames, objects"] --> Gander
+    Gander --> LLM["LLM via ellmer"]
+    LLM --> Insert["Streams into source file"]
     
-    output$counts_table <- gt::render_gt({
-      req(vals())
-      # subset
-      count_data <- subset(
-        movies,
-        thtr_rel_year >= vals()$start_year &
-        thtr_rel_year <= vals()$end_year
-      )
-      
-      # Convert selected variable to snake_case
-      group_var <- name_case(as.character(vals()$chr_var), case = "lower")
-
-      # Count per group using tidy evaluation
-      tbl_data <- count_data |>
-        dplyr::group_by(.data[[group_var]]) |>
-        dplyr::summarise(n = dplyr::n(), .groups = "drop") |>
-        dplyr::arrange(dplyr::desc(n))
-      
-      # Normalize column names in the data
-      names(tbl_data) <- name_case(names(tbl_data))
-      
-      # gt table with dark theme styling
-      gt::gt(tbl_data) %>%
-        gt::tab_options(
-          table.background.color = "#121212",
-          column.labels.background.color = "#1e1e1e",
-          table.font.color = "#ffffff",
-          column.labels.font.color = "#ffffff",
-          table.border.top.style = "hidden",
-          table.border.bottom.style = "hidden"
-        ) %>%
-        gt::opt_row_striping()
-    })
-  })
-}
 ```
-
-### In practice
 
 The context `gander` provides is enough information to 1) ensure the response is aware of the corresponding UI function, and 2) notice we're developing an R package (i.e., use explicit namespacing with `pkg::fun()`). 
 
@@ -410,7 +284,7 @@ After updating the UI module function and loading the changes, we can see the **
 ![Updated Counts `gt` table](images/gander_updated_counts_table.png){width='100%' fig-align='center'}
 
 
-## Graph adjustments  {#sec-gander-visualizations} 
+### Graph adjustments  {#sec-gander-visualizations} 
 
 I've found the `gander` addin to be incredibly helpful for visualization development in Shiny modules. In the **Compare** tab, we display a `plotly` scatter plot. I've asked `gander` to convert the `plotly` code in the module server function into a utility function (`R/compare_plot.R`):
 
@@ -537,7 +411,7 @@ ggplot2::theme(
 
 Graph changes like these can take up a lot of time if we're reading through package documentation (or Stack Overflow/Posit Community). But `gander` can handle tasks like this quickly, although a foundational understanding of `plotly` and `ggplot2` makes it easier to debug any errors the generated code produces.  
 
-## Downloadable reports {#sec-gander-rmd-report} 
+### Downloadable reports {#sec-gander-rmd-report} 
 
 I wanted to stretch the functionality of `gander`, so I asked the chatbot to create a downloadable report module. This required a series of prompts to get working, but I think it serves as a great example of using the `gander` addin to iterate through a solution/feature. 
 

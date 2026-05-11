@@ -1,0 +1,43 @@
+
+
+```{verbatim}
+── assistant [336] ───────────────────────────────────────────────────────
+mod_counts_tbl_server <- function(id, vals) {
+  moduleServer(id, function(input, output, session) {
+    
+    output$counts_table <- gt::render_gt({
+      req(vals())
+      # subset
+      count_data <- subset(
+        movies,
+        thtr_rel_year >= vals()$start_year &
+        thtr_rel_year <= vals()$end_year
+      )
+      
+      # Convert selected variable to snake_case
+      group_var <- name_case(as.character(vals()$chr_var), case = "lower")
+
+      # Count per group using tidy evaluation
+      tbl_data <- count_data |>
+        dplyr::group_by(.data[[group_var]]) |>
+        dplyr::summarise(n = dplyr::n(), .groups = "drop") |>
+        dplyr::arrange(dplyr::desc(n))
+      
+      # Normalize column names in the data
+      names(tbl_data) <- name_case(names(tbl_data))
+      
+      # gt table with dark theme styling
+      gt::gt(tbl_data) %>%
+        gt::tab_options(
+          table.background.color = "#121212",
+          column.labels.background.color = "#1e1e1e",
+          table.font.color = "#ffffff",
+          column.labels.font.color = "#ffffff",
+          table.border.top.style = "hidden",
+          table.border.bottom.style = "hidden"
+        ) %>%
+        gt::opt_row_striping()
+    })
+  })
+}
+```
