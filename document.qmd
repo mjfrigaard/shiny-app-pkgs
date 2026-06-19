@@ -8,23 +8,6 @@ source("_common.R")
 ```
 
 ```{r}
-#| label: co_box_todo
-#| echo: false
-#| results: asis
-#| eval: true
-co_box(
-  color = "y", 
-  look = "default", 
-  hsize = "1.05", 
-  size = "0.95",
-  header = "To-Do", 
-  fold = FALSE,
-  contents = "Update this chapter with latest `roxygen2` updates:
-  <https://opensource.posit.co/blog/2026-05-01_roxygen2-8-0-0/>
-  ")
-```
-
-```{r}
 #| label: co_box_tldr
 #| echo: false
 #| results: asis
@@ -36,19 +19,25 @@ co_box(
   fold = TRUE,
   contents = "
 Documenting app-package functions:
-  
+
   1. Make sure each function has documentation for the `@title`, `@description`, `@param`(s), `@return`, and `@examples` (if applicable)\n
-  
+
   2. Use Markdown for code, emphasis, hyperlinks, etc.\n
-  
+
   3. Regularly load and document to preview the help files:\n
 
 &emsp; &emsp; [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd> / <kbd>D</kbd>]{style='font-weight: bold; font-size: 0.75em;'}
-  
+
   4. Link modules with `@seealso` and group functions with `@family`\n
-  
+
   5. Include any additional information in a new `@section`\n
-  
+
+  6. Use `@inheritParams` to avoid repeating shared parameter docs across module functions; filter with an explicit list or `-param` to exclude server-only arguments\n
+
+  7. Start tag values on the same line as the tag -- roxygen2 8.0.0 warns when the value begins on the next line\n
+
+  8. Run `roxygen2::needs_roxygenize('.')` to check whether `.Rd` files are out of date before committing\n
+
   "
 )
 ```
@@ -197,10 +186,10 @@ For a deep dive on `R/utils.R` files in R packages, I recommend reading [Dissect
 
 ### Markdown support {#sec-roxygen2-md-support}
 
-When we created our app-package with `create_package()`, support for markdown formatting in our package help files was automatically included by adding `Roxygen: list(markdown = TRUE)` to the `DESCRIPTION` file: 
+When we created our app-package with `create_package()`, support for markdown formatting in our package help files was automatically included by adding `Config/roxygen2/markdown: TRUE` to the `DESCRIPTION` file:
 
 ```{bash}
-#| eval: false 
+#| eval: false
 #| code-fold: false
 Package: sap
 Version: 0.0.0.9500 #<1>
@@ -210,15 +199,13 @@ Description: An R package with a collection of Shiny applications.
 Author: John Smith [aut, cre]
 Maintainer: John Smith <John.Smith@email.io>
 License: GPL-3
-RoxygenNote: 7.3.2
 Encoding: UTF-8
-Roxygen: list(markdown = TRUE) #<2>
-                                                    
+Config/roxygen2/markdown: TRUE #<2>
 ```
-1. Updated package version  
-2. Markdown support  
+1. Updated package version
+2. Markdown support (`Config/roxygen2/` replaces the older `Roxygen: list(markdown = TRUE)` field)
 
-If this field is not in your `DESCRIPTION` file, follow the instructions in the [`roxygen2` documentation](https://roxygen2.r-lib.org/articles/markdown.html#turning-on-markdown-support) for enabling markdown.
+If you have an existing package with the legacy `Roxygen:` and `RoxygenNote:` fields, running `devtools::document()` will migrate them to the `Config/roxygen2/` format automatically. If the field is missing entirely, follow the instructions in the [`roxygen2` documentation](https://roxygen2.r-lib.org/articles/markdown.html#turning-on-markdown-support) for enabling markdown.
 
 ### Title & description {#sec-roxygen2-title}
 
@@ -318,20 +305,83 @@ Document function arguments and outputs with `@param` and `@return`:
 Below are examples for `@param` and `@return` in the `scatter_plot()` function stored in `R/utils.R`:
     
 ```{r}
-#| eval: false 
+#| eval: false
 #| code-fold: false
-#' 
+#'
 #' @param df `data.frame` or `tibble`
 #' @param x_var string variable mapped to `x` axis
 #' @param y_var string variable mapped to `y` axis
 #' @param col_var string variable mapped to `color`
 #' @param alpha_var number for point `alpha`
-#' @param size_var number for point `size` 
-#' 
+#' @param size_var number for point `size`
+#'
 #' @return A `ggplot2` plot object
 ```
 
+```{r}
+#| label: co_box_multiline_tags
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "r",
+  look = "default", hsize = "1.05", size = "0.95",
+  header = "Multi-line tag values (roxygen2 8.0.0)",
+  fold = TRUE,
+  contents = "
+Starting a tag value on the line *below* the tag now triggers a warning:
 
+\`\`\`r
+#' @return
+#' A ggplot2 plot object   # <-- warning: value starts on next line
+\`\`\`
+
+Put the value on the same line as the tag:
+
+\`\`\`r
+#' @return A ggplot2 plot object
+\`\`\`
+
+Continuation lines (indented text that wraps a long description) are still fine and do not trigger a warning.
+  "
+)
+```
+
+### Inheriting parameters {#sec-roxygen2-inheritparams}
+
+When multiple functions share parameters, `@inheritParams` pulls the documentation from a source function so you only have to write it once:
+
+```{r}
+#| eval: false
+#| code-fold: false
+#' @inheritParams source_function
+```
+
+In `sap`, every module UI and server function accepts an `id` parameter. Rather than copying the same `@param id` line into each function, document it once on `mod_var_input_ui()` and inherit it everywhere else:
+
+```{r}
+#| eval: false
+#| code-fold: false
+#' @inheritParams mod_var_input_ui
+```
+
+**Filtering inherited parameters** is new in `roxygen2` 8.0.0. If you only need a subset of the source function's parameters, list them explicitly:
+
+```{r}
+#| eval: false
+#| code-fold: false
+#' @inheritParams mod_var_input_ui id
+```
+
+To inherit everything *except* specific parameters, prefix them with `-`:
+
+```{r}
+#| eval: false
+#| code-fold: false
+#' @inheritParams mod_var_input_ui -var_inputs
+```
+
+This filtering is especially useful in Shiny modules, where the server function shares `id` with the UI function but not the reactive arguments (like `var_inputs`) that are server-side only.
 
 To view how the `roxygen2` syntax will appear in the `.Rd` file, we'll need to document `sap`:
 
@@ -425,7 +475,43 @@ To view the help file, I can enter `?scatter_plot` in the console:
 
 ![Help file](images/doc_scatter_plot_rd.png){width='100%' fig-align='center'}
 
-Previewing the development versions of our documentation is a great way to verify the content in each `.Rd` file meets our expectations. 
+Previewing the development versions of our documentation is a great way to verify the content in each `.Rd` file meets our expectations.
+
+### Checking documentation status {#sec-roxygen2-needs-roxygenize}
+
+`roxygen2` 8.0.0 introduced [`needs_roxygenize()`](https://roxygen2.r-lib.org/reference/needs_roxygenize.html), which checks whether the `.Rd` files in `man/` are out of date relative to the source files in `R/` (without running a full `devtools::document()` pass):
+
+```{r}
+#| eval: false
+#| code-fold: false
+roxygen2::needs_roxygenize(".")
+```
+
+This will return `TRUE` if any `.Rd` file needs regeneration and `FALSE` if everything is current, which makes it useful in two places:
+
+1. **Pre-commit hooks** will fail fast if documentation was forgotten:
+
+```{r}
+#| eval: false
+#| code-fold: false
+if (roxygen2::needs_roxygenize(".")) {
+  stop("Documentation is out of date. Run devtools::document() before committing.")
+}
+```
+
+2. **CI checks** will verify that committed docs match their source:
+
+```{r}
+#| eval: false
+#| code-fold: false
+if (roxygen2::needs_roxygenize(".")) {
+  stop("man/ is out of sync with R/. Re-run devtools::document() and commit the result.")
+}
+```
+
+Because `needs_roxygenize()` compares file modification times rather than regenerating output, it's much faster than running `devtools::document()` and adds no meaningful overhead to either hook.[^hooks]
+
+[^hooks]: Git hooks are scripts that run automatically at specific points in the Git workflow (e.g., before a commit with `pre-commit`, or before a push with `pre-push`). They live in `.git/hooks/` and can be used to enforce checks — like ensuring documentation is current — before changes are recorded or shared. Read more about [Git hooks](https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks).
 
 ### Examples {#sec-roxygen2-examples}
 
@@ -1121,7 +1207,7 @@ It's the right choice any time the signature itself is uninformative and the pro
 
 ```{r}
 #| eval: false 
-#| code-fold: true 
+#| code-fold: show 
 #| code-summary: 'show/hide launch_app documentation'
 #' Launch the Movies Review Application
 #'
@@ -1193,23 +1279,31 @@ co_box(
   look = "default", hsize = "1.05", size = "0.95",
   header = "&emsp; ![](images/roxygen2.png){width='45' height='50'} Documentation Recap",
   contents = "
-  This chapter covered: 
-  
+  This chapter covered:
+
+  - **DESCRIPTION format**: Markdown support is now declared as `Config/roxygen2/markdown: TRUE`; the older `Roxygen: list(markdown = TRUE)` and `RoxygenNote:` fields are migrated automatically on the next `devtools::document()` run.
+
   - **Function `@title` and `@description`**: The `@title` should be a short one-line description of the function, followed by a more detailed paragraph `@description`. These tags should give users an idea of what the function does (you can also use `@details`)
-  
+
   - **Arguments (`@param`) and outputs (`@return`)**: List all function arguments with `@param`. Include the argument type (e.g., integer, character, etc.) and a brief description of what the argument does. Be sure to mention any default or optional arguments. Function outputs should be listed with `@return` and describe the type or class of the object, whether or not it's reactive, and mention any related functions.
-  
+
+  - **Tag values on the same line**: roxygen2 8.0.0 warns when a tag value starts on the line below the tag. Put values on the same line as the tag; continuation lines that wrap a long description are still fine.
+
+  - **Inheriting parameters (`@inheritParams`)**: Use `@inheritParams source_fun` to pull parameter docs from another function instead of duplicating them. Filter with an explicit argument list (`@inheritParams source_fun id`) or exclude specific params with a `-` prefix (`@inheritParams source_fun -var_inputs`).
+
   - **Examples**: `@examples` provide executable R code that captures how the function is used in your app-package. These are incredibly valuable for new users trying to understand how a function (and your app-package) works.
-  
-  App-package specific considerations: 
-  
-  - **Connect functions with`@seealso` and `@family`**: Use `@seealso` to provide links to related functions (i.e., modules) so users can click through a 'guided tour' of your application's code--group similar functions using  `@family {description}`.
-  
-  - **Give more info with `@section`**s: Use `@section` to give in-depth explanations and specific details about how a function works, including any information about the `@usage` or its `@param`s.
-  
+
+  - **Checking documentation status**: `roxygen2::needs_roxygenize('.')` returns `TRUE` if any `.Rd` file is out of date, making it useful in pre-commit hooks and CI checks without the overhead of a full `devtools::document()` run.
+
+  App-package specific considerations:
+
+  - **Connect functions with `@seealso` and `@family`**: Use `@seealso` to provide links to related functions (i.e., modules) so users can click through a 'guided tour' of your application's code; group similar functions using `@family {description}`.
+
+  - **Give more info with `@section`s**: Use `@section` to give in-depth explanations and specific details about how a function works, including any information about the `@usage` or its `@param`s.
+
   - **`@usage`**: This field will be automatically generated by `roxygen2`, but in some circumstances, it makes sense to set it to `NULL` and describe a function's use explicitly.
-  
-  ", 
+
+  ",
   fold = FALSE
 )
 ```
