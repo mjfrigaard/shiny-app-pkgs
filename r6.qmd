@@ -23,192 +23,603 @@ This chapter is being developed. Thank you for your patience.
 )
 ```
 
-As your Shiny application grows in complexity, organizing code in a modular and object-oriented way becomes crucial. While Shiny is inherently reactive and functional, **R6 classes** provide a powerful tool for encapsulating state, behavior, and logic — particularly useful in large-scale apps or when designing reusable components inside an R package.
 
-In this chapter, we’ll explore:
+Shiny apps accumulate complexity in two places: the UI tends to get wide; the server tends to get deep. In large apps the server can become a tangled of reactive values, observers, and helper functions all sharing mutable state through reactive value objects passed around as implicit globals. 
 
-* What R6 is and why it's useful in Shiny
-* How to define and use R6 classes in a Shiny app-package
-* Best practices for integrating R6 with reactivity
-* A practical example within a package structure
+Packaging apps as an R package helps us with tooling, but `R6` classes can help us with architecture. Together they let us draw a clean line between "*things that change at runtime*" and "*things that handle reactivity.*" As a bonus, we can test each side independently.
 
----
+In this chapter, we'll walk through `movexplR6`, a Shiny app-package that lets users explore movie ratings from a SQLite database.[^movies-explorer] 
 
-## What is R6?
+We'll cover:
 
-R6 is an object-oriented system in R that enables the creation of **reference-based** objects. Unlike S3 or S4 objects, R6 objects maintain state and support encapsulation, inheritance, and private/public members — much like objects in other OOP languages (e.g., Python, Java).
+- What R6 is and why reference semantics matter for Shiny state   
+- The `MovieData` R6 class: database access, filtering, and cleanup   
+- Package structure and where R6 classes live   
+- How `movies_server()` wires `MovieData` into the reactive graph   
+- Module composition with `mod_filters` and `mod_plot`    
+- Testing `MovieData` independently of Shiny    
 
-This makes R6 especially useful for:
+[^movies-explorer]: This app comes from the [shiny-examples GitHub repo](https://github.com/rstudio/shiny-examples/tree/main/051-movie-explorer). 
 
-* Managing mutable state (e.g., counters, user sessions)
-* Bundling business logic with data
-* Reusing logic across modules or apps
+## What Is R6?
 
-In an app packaged as an R package, R6 classes help you separate concerns and avoid global state.
+R has several object-oriented systems. 
 
----
+1. S3 and S4 use *copy-on-modify* semantics: when you pass an object to a function and modify it inside, you modify a copy and the original is unchanged. 
 
-### Defining an R6 Class
+2. R6 uses *reference semantics*: all variables that point to the same R6 object share the same underlying data. Modifying the object through one variable is immediately visible through all other variables that reference it.
 
-You define R6 classes using the `R6` package. Here's a simple example of an R6 class for a counter:
+Reference semantics are exactly what you want for mutable state in a Shiny server. A database connection, a cached dataset, a log buffer; these all need to change in place rather than produce modified copies. R6 is also faster than R5 (Reference Classes), has a cleaner API, and integrates well with `testthat`.
 
-```r
-# In R/counter.R
-Counter <- R6::R6Class(
-  "Counter",
+```{r}
+#| label: r6-install
+#| code-fold: false 
+#| eval: false
+install.packages("R6")
+library(R6)
+```
+
+## The App at a Glance
+
+`movexplR6` has one R6 class, two Shiny modules, and a thin server/UI layer that connects them. The diagram below shows how the pieces fit together.
+
+```{mermaid}
+%%| fig-cap: 'movexplR6 at a glance'
+%%| fig-align: center
+%%| eval: true 
+%%| echo: false 
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
+
+flowchart TD
+  subgraph Pkg["movexplR6 package"]
+    MovData["MovieData<br>(R6 class)<br>R/MovieData.R"]
+    FilMod["mod_filters<br>R/mod_filters.R"]
+    PltMod["mod_plot<br>R/mod_plot.R"]
+    MovServ["movies_server()<br>R/movies_server.R"]
+    MovUI["movies_ui()<br>R/movies_ui.R"]
+  end
+
+  DB[("SQLite<br>movies.db")]
+
+  MovData -- "DBI::dbConnect()" --> DB
+  MovServ -- "MovieData$new()" --> MovData
+  MovServ -- "mod_filters_server()" --> FilMod
+  MovServ -- "mod_plot_server()" --> PltMod
+  FilMod -- "filters() reactive" --> MovServ
+  MovServ -- "movies() reactive" --> PltMod
+  MovUI -- "mod_filters_ui()" --> FilMod
+  MovUI -- "mod_plot_ui()" --> PltMod
+```
+
+R6 manages the database connection and filtering logic; Shiny modules handle the UI and reactive wiring.
+
+The key insight is that `MovieData` sits *outside* the reactive graph entirely. It knows nothing about Shiny; it just connects to the SQL database, holds the data, and filters it on demand. The server function is the adapter between R6 and reactivity.
+
+## The `MovieData` R6 Class
+
+`MovieData` is the heart of `movexplR6`. It owns the database connection, loads the full joined dataset into memory on initialization, and exposes a single `filter()` method that returns a filtered data frame on demand.
+
+Below is the definition of the `MovieData` object:
+
+```{r}
+#| label: moviedata-class
+#| code-fold: show
+#| code-summary: 'MovieData class definition (R/MovieData.R)'
+# location: R/MovieData.R
+MovieData <- R6::R6Class(#<1>
+  "MovieData",
   public = list(
-    value = 0,
-    initialize = function(start = 0) {
-      self$value <- start
-    },
-    increment = function() {
-      self$value <- self$value + 1
-    },
-    reset = function() {
-      self$value <- 0
-    },
-    get = function() {
-      self$value
-    }
+    con        = NULL,
+    all_movies = NULL,#<1>
+
+    initialize = function(db_path) {#<2>
+      self$con <- DBI::dbConnect(
+        RSQLite::SQLite(),
+        db_path
+      )
+      logger::log_info("Connected to {db_path}")
+      tryCatch(
+        private$load_data(),
+        error = function(e) {
+          logger::log_error("load_data() failed: {e$message}")
+          stop(e)
+        }
+      )
+    },#<2>
+
+    filter = function(#<3>
+      reviews   = 10,
+      oscars    = 0,
+      year      = c(1940, 2014),
+      boxoffice = c(0, 800),
+      genre     = "All",
+      director  = "",
+      cast      = ""
+    ) {
+      df <- self$all_movies
+      df <- df[df$Reviews >= reviews & df$Oscars >= oscars, ]
+      df <- df[df$Year >= year[1] & df$Year <= year[2], ]
+      df <- df[
+        df$BoxOffice >= boxoffice[1] * 1e6 &
+        df$BoxOffice <= boxoffice[2] * 1e6, ]
+      if (genre != "All") df <- df[df$Genre == genre, ]
+      if (nchar(director) > 0)
+        df <- df[grepl(director, df$Director, ignore.case = TRUE), ]
+      if (nchar(cast) > 0)
+        df <- df[grepl(cast, df$Cast, ignore.case = TRUE), ]
+      df$has_oscar <- ifelse(df$Oscars >= 1, "Yes", "No")
+      logger::log_debug("{nrow(df)} rows after filter")
+      df
+    },#<3>
+
+    disconnect = function() { #<4>
+      if (DBI::dbIsValid(self$con)) {
+        DBI::dbDisconnect(self$con)
+        logger::log_info("Database disconnected")
+      }
+    } #<4>
+  ),
+
+  private = list(
+    finalize = function() self$disconnect(), #<5>
+
+    load_data = function() { #<6>
+      omdb     <- dplyr::tbl(self$con, "omdb")
+      tomatoes <- dplyr::tbl(self$con, "tomatoes")
+      self$all_movies <- omdb |>
+        dplyr::inner_join(tomatoes, by = "ID") |>
+        dplyr::filter(Reviews >= 10) |>
+        dplyr::select(
+          ID, Title, Year, Runtime, Genre, Director, Cast,
+          BoxOffice, Oscars, imdbRating, imdbVotes,
+          Meter, Rating = Rating.y, Reviews, Fresh, Rotten,
+          userMeter, userRating, userReviews
+        ) |>
+        dplyr::collect()
+      logger::log_info("{nrow(self$all_movies)} movies loaded")
+    } #<6>
   )
 )
 ```
+1. `R6::R6Class()` takes the class name as its first argument; this name is used by `inherits()` checks and in error messages.
+2. `initialize()` runs when you call `MovieData$new(db_path)`. It opens the connection and immediately loads data; any error during `load_data()` is logged and re-thrown so the caller knows construction failed.
+3. `filter()` operates on `all_movies` in memory; no additional database queries happen after initialization. `boxoffice` is in millions in the UI but raw dollars in the data, so the method scales before filtering.
+4. `disconnect()` guards against calling `DBI::dbDisconnect()` on an already-closed connection — important because `finalize()` and `shiny::onStop()` may both attempt cleanup.
+5. `finalize()` is R6's garbage-collection hook; it is called when the object is garbage-collected. In practice `onStop()` disconnects first, but `finalize()` is a safety net.
+6. `load_data()` is private; callers cannot invoke it directly. It joins two SQLite tables with `dbplyr`, applies a minimum-reviews pre-filter, then collects the result into a plain data frame that lives in memory for the lifetime of the session.
 
-Place this class definition inside your `R/` directory so it is loaded with the rest of your package code.
+The class diagram below shows its public interface and private internals.
 
-### Using R6 in the Shiny Server Function
+```{mermaid}
+%%| fig-cap: 'movexplR6 at a glance'
+%%| fig-align: center
+%%| eval: true 
+%%| echo: false 
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"13px"}}}%%
 
-To use the class in your app, instantiate it inside the `server` function and wrap its methods in `reactive` or `observe` blocks where needed:
-
-```r
-# In inst/app/server.R
-
-server <- function(input, output, session) {
-  counter <- Counter$new()
-
-  observeEvent(input$increment_btn, {
-    counter$increment()
-  })
-
-  observeEvent(input$reset_btn, {
-    counter$reset()
-  })
-
-  output$counter_text <- renderText({
-    paste("Current count:", counter$get())
-  })
-}
+classDiagram
+  class MovieData {
+    +DBIConnection con
+    +data.frame all_movies
+    +initialize(db_path)
+    +filter(reviews, oscars, year, boxoffice, genre, director, cast)
+    +disconnect()
+    -load_data()
+    -finalize()
+  }
+  
 ```
 
-And in the UI:
+### `initialize()`: connecting and loading
 
-```r
-# In inst/app/ui.R
 
-ui <- fluidPage(
-  actionButton("increment_btn", "Increment"),
-  actionButton("reset_btn", "Reset"),
-  textOutput("counter_text")
+```{r}
+#| label: co_box_private
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b",
+  header = "Public vs. private",
+  contents = "Put everything callers need in `public`. Put implementation details in `private`. Private members are inaccessible outside the class (attempting `md$load_data()` throws an error), which prevents callers from accidentally corrupting internal state."
 )
 ```
 
----
+### A note on `filter()` returning plain data
 
-## Reactivity and R6
+`filter()` returns an ordinary `data.frame`, not a reactive. This is intentional; keeping `MovieData` free of Shiny dependencies means you can call `filter()` in unit tests, in a script, or in a plumber API without loading Shiny at all. The reactive wrapper lives one layer up in `movies_server()`.
 
-R6 objects aren't inherently reactive. If you want your app to respond to changes in an R6 object's state, you need to wrap getters in reactive expressions or use `reactiveVal`/`reactiveValues` internally.
+## Package Structure
 
-## Strategy 1: Wrap method calls in `render*` functions
+Place each R6 class definition in `R/` with a descriptive file name. One class per file keeps things easy to navigate.
 
-This is the simplest method, shown above with `renderText()`.
+```{bash}
+#| eval: false 
+#| code-fold: false 
+movexplR6/
+  R/
+    MovieData.R      # R6 class
+    mod_filters.R    # filters UI + server module
+    mod_plot.R       # plot UI + server module
+    movies_ui.R      # top-level UI
+    movies_server.R  # top-level server
+    launch_app.R     # shinyApp() wrapper
+    utils.R          # axis_vars vector
+  inst/
+    extdata/
+      movies.db      # SQLite database
+  tests/
+    testthat/
+      helper.R
+      test-MovieData.R
+      test-mod_filters.R
+      test-mod_plot.R
+```
 
-## Strategy 2: Use reactive triggers
+Add a roxygen2 `@export` tag so the class is available to users of the package:
 
-You can also use `reactiveVal` to track state and trigger UI updates:
+```{r}
+#| label: export-tag
+#| eval: false 
+#| code-fold: false
+#' MovieData R6 class
+#'
+#' Manages the SQLite connection and filtered movie dataset.
+#'
+#' @export
+MovieData <- R6::R6Class("MovieData", ...)
+```
 
-```r
-server <- function(input, output, session) {
-  counter <- Counter$new()
-  trigger <- reactiveVal(0)
+One rule that matters: never instantiate R6 objects at the package level (outside a function). Writing `movie_data <- MovieData$new(db_path)` at the top of an `R/` file creates one shared object loaded for every session. Always instantiate inside `server()` or a module server function, where the object is scoped to a single user session.
 
-  observeEvent(input$increment_btn, {
-    counter$increment()
-    trigger(trigger() + 1)
+## Wiring `MovieData` to the Reactive Graph
+
+`movies_server()` is the adapter between `MovieData` and Shiny. It creates the R6 instance once, registers cleanup, and wraps `filter()` in a reactive so that the UI can trigger re-filtering when inputs change.
+
+```{r}
+#| label: movies-server
+#| eval: false 
+#| code-fold: false
+movies_server <- function(input, output, session) {
+
+  db_path    <- system.file(                          #<1>
+    "extdata/movies.db",
+    package = "movexplR6"
+  )
+  movie_data <- MovieData$new(db_path)                #<2>
+
+  shiny::onStop(function() movie_data$disconnect())   #<3>
+
+  filters <- mod_filters_server("filters")            #<4>
+
+  movies <- shiny::reactive({                         #<5>
+    f <- filters()
+    movie_data$filter(
+      reviews   = f$reviews,
+      oscars    = f$oscars,
+      year      = f$year,
+      boxoffice = f$boxoffice,
+      genre     = f$genre,
+      director  = f$director,
+      cast      = f$cast
+    )
   })
 
-  output$counter_text <- renderText({
-    trigger()
-    paste("Current count:", counter$get())
+  mod_plot_server("plot", movies, filters)            #<6>
+}
+```
+1. `system.file()` resolves the path to the bundled SQLite database inside the installed package.
+2. `MovieData$new()` runs `initialize()`: opens the connection and loads all movies into `all_movies`. This happens once per session.
+3. `shiny::onStop()` registers a callback that fires when the session ends (browser closes, user disconnects). This is the primary cleanup path; the private `finalize()` is a backstop in case the session ends unexpectedly.
+4. `mod_filters_server()` returns a reactive list of the current filter values; it re-evaluates whenever any input changes.
+5. The `movies` reactive calls `movie_data$filter()` with the current filter values whenever `filters()` invalidates. Notice that `movie_data` is captured by reference — R6's reference semantics mean no copying happens here.
+6. Both reactives (`movies` and `filters`) are passed into the plot module so it can display the filtered count and render axes from `filters()$xvar` and `filters()$yvar`.
+
+The reactive data flow looks like this:
+
+```{mermaid}
+%%| fig-cap: 'Reactive data flow'
+%%| fig-align: center
+%%| eval: true 
+%%| echo: false 
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
+
+flowchart TD
+  UIIn["UI Inputs<br>(sliders, selects,<br>text boxes)"]
+  FilServ["mod_filters_server()<br>returns reactive list"]
+  FilReact["filters()<br>{reviews, oscars, year,<br>boxoffice, genre,<br>director, cast,<br>xvar, yvar}"]
+  MovReact["movies()<br>reactive"]
+  MovData["movie_data$filter()<br>R6 method"]
+  PltServ["mod_plot_server()"]
+  Scatter["renderPlotly()<br>output$scatter"]
+  Count["renderText()<br>output$n_movies"]
+
+  UIIn --> FilServ
+  FilServ --> FilReact
+  FilReact --> MovReact
+  MovData --> MovReact
+  MovReact --> PltServ
+  FilReact --> PltServ
+  PltServ --> Scatter
+  PltServ --> Count
+```
+
+```{r}
+#| label: co_box_reactive_pattern
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b",
+  header = "The adapter pattern",
+  contents = "The `movies` reactive is the adapter between R6 and Shiny. Above the adapter: plain R6 methods that return data frames and know nothing about reactivity. Below the adapter: Shiny renders and observers that know nothing about the database. This boundary makes both sides independently testable."
+)
+```
+
+## Module Composition
+
+### `mod_filters`: returning a reactive list
+
+`mod_filters_server()` does one thing: collect all filter inputs and return them as a single reactive list. Bundling the outputs into one reactive means downstream consumers call `filters()` once rather than taking individual dependencies on seven separate inputs.
+
+```{r}
+#| label: mod-filters-server
+#| eval: false 
+#| code-fold: false
+mod_filters_server <- function(id) {
+  shiny::moduleServer(id, function(input, output, session) {
+    shiny::reactive({                                  #<1>
+      list(
+        reviews   = input$reviews,
+        oscars    = input$oscars,
+        year      = input$year,
+        boxoffice = input$boxoffice,
+        genre     = input$genre,
+        director  = input$director,
+        cast      = input$cast,
+        xvar      = input$xvar,
+        yvar      = input$yvar
+      )
+    })
   })
 }
 ```
+1. The entire return value is one `reactive()`; every element re-evaluates together whenever any input changes. This is simpler than returning a `reactiveValues()` object and avoids partial-update race conditions.
 
-## Organizing R6 Classes in a Package
+### `mod_plot`: consuming movies and filters
 
-To integrate smoothly with your app-package:
+`mod_plot_server()` receives two reactives and owns both outputs. Accepting `movies` as a reactive argument (rather than calling `movie_data$filter()` directly) keeps the module decoupled from the data source; you can pass any reactive data frame in tests.
 
-* Place class definitions in `R/` with clear, modular file names (e.g., `R/counter.R`)
-* Use `@export` roxygen tags if you want to make classes available to users
-* Test classes with `testthat` as you would with functions
-* Avoid instantiating R6 objects at the package level (e.g., outside of functions); do so inside `server()` or module server functions
+```{r}
+#| label: mod-plot-server
+#| eval: false 
+#| code-fold: false
+mod_plot_server <- function(id, movies, filters) {
+  shiny::moduleServer(id, function(input, output, session) {
 
+    output$scatter <- plotly::renderPlotly({           #<1>
+      f <- filters()
+      p <- ggplot2::ggplot(
+        movies(),
+        ggplot2::aes(
+          x    = .data[[f$xvar]],
+          y    = .data[[f$yvar]],
+          color = has_oscar,
+          text  = paste0(
+            Title, " (", Year, ")\n$",
+            scales::comma(BoxOffice)
+          )
+        )
+      ) +
+        ggplot2::geom_point(alpha = 0.4, size = 2) +
+        ggplot2::scale_color_manual(
+          values = c("Yes" = "orange", "No" = "#aaaaaa")
+        ) +
+        ggplot2::theme_minimal()
+      plotly::ggplotly(p, tooltip = "text")
+    })
 
-## Example: Session-Aware Logger
+    output$n_movies <- shiny::renderText({             #<2>
+      paste("Movies selected:", nrow(movies()))
+    })
+  })
+}
+```
+1. `.data[[f$xvar]]` uses tidy evaluation's `.data` pronoun to select columns by name at runtime; `f$xvar` and `f$yvar` come from the `filters()` reactive so the axes update whenever the user changes the axis selectors.
+2. `movies()` is called again here; because it is the same reactive, Shiny caches the result and does not re-run `movie_data$filter()` a second time within a single reactive flush.
 
-Suppose we want an R6 class that logs user actions with session tracking:
+### Module wiring in the UI
 
-```r
-# In R/logger.R
-Logger <- R6::R6Class("Logger",
-  public = list(
-    session_id = NULL,
-    logs = character(),
-    
-    initialize = function(session_id) {
-      self$session_id <- session_id
-    },
-    
-    log = function(message) {
-      timestamp <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
-      entry <- paste0("[", self$session_id, " @ ", timestamp, "] ", message)
-      self$logs <- c(self$logs, entry)
-    },
-    
-    get_logs = function() {
-      self$logs
+`movies_ui()` uses `bslib::page_sidebar()` with the filter module in the sidebar and the plot module in the main content area.
+
+```{r}
+#| label: movies-ui
+#| eval: false 
+#| code-fold: false
+movies_ui <- function() {
+  bslib::page_sidebar(
+    title   = "Movie Explorer",
+    sidebar = bslib::sidebar(
+      mod_filters_ui("filters")                        #<1>
+    ),
+    mod_plot_ui("plot")                                #<2>
+  )
+}
+```
+1. The `"filters"` ID here must match the `"filters"` ID passed to `mod_filters_server()` in `movies_server()`.
+2. `mod_plot_ui("plot")` likewise pairs with `mod_plot_server("plot", ...)`.
+
+## The Session Lifecycle
+
+The sequence below traces a complete user session from browser open to browser close.
+
+```{mermaid}
+%%| fig-cap: 'Session Lifecycle'
+%%| fig-align: center
+%%| eval: true 
+%%| echo: false 
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
+
+sequenceDiagram
+  participant Usr as Browser
+  participant Srv as movies_server()
+  participant R6 as MovieData
+  participant DB as SQLite DB
+
+  Usr->>Srv: session starts
+  Srv->>R6: MovieData$new(db_path)
+  R6->>DB: DBI::dbConnect()
+  R6->>DB: load_data() — join omdb + tomatoes
+  DB-->>R6: all_movies (data frame in memory)
+  R6-->>Srv: movie_data instance
+
+  loop User changes filters
+    Usr->>Srv: input changes
+    Srv->>R6: movie_data$filter(...)
+    R6-->>Srv: filtered data frame
+    Srv-->>Usr: updated plot + count
+  end
+
+  Usr->>Srv: browser closes / session ends
+  Srv->>R6: onStop fires → movie_data$disconnect()
+  R6->>DB: DBI::dbDisconnect()
+```
+
+The important observation is that `MovieData$new()` runs once per session and `filter()` runs many times. Keeping `load_data()` in `initialize()` means the expensive join happens once; every filter call is an in-memory operation on an already-collected data frame.
+
+## Testing `MovieData` Without Shiny
+
+Because `MovieData` has no reactive internals, you test it with plain `testthat` — no `shinytest2`, no `testServer()`, no running app required.
+
+```{r}
+#| label: test-moviedata-connect
+#| eval: false 
+#| code-fold: false
+# tests/testthat/test-MovieData.R
+
+db_path <- system.file("extdata/movies.db", package = "movexplR6")
+
+test_that("MovieData initializes and loads data", {
+  md <- MovieData$new(db_path)
+  on.exit(md$disconnect())                             #<1>
+
+  expect_true(R6::is.R6(md))
+  expect_s3_class(md$all_movies, "data.frame")
+  expect_true(nrow(md$all_movies) > 0)
+})
+```
+1. `on.exit()` guarantees `disconnect()` runs even if a test assertion fails; this prevents leaked database connections across test files.
+
+```{r}
+#| label: test-moviedata-filter
+#| eval: false 
+#| code-fold: false
+test_that("filter() respects reviews threshold", {
+  md <- MovieData$new(db_path)
+  on.exit(md$disconnect())
+
+  n_low  <- nrow(md$filter(reviews = 10))
+  n_high <- nrow(md$filter(reviews = 200))
+  expect_gt(n_low, n_high)
+})
+
+test_that("filter() adds has_oscar column", {
+  md <- MovieData$new(db_path)
+  on.exit(md$disconnect())
+
+  result <- md$filter(oscars = 1)
+  expect_true("has_oscar" %in% names(result))
+  expect_true(all(result$has_oscar == "Yes"))          #<1>
+})
+
+test_that("disconnect() closes the connection", {
+  md <- MovieData$new(db_path)
+  md$disconnect()
+  expect_false(DBI::dbIsValid(md$con))
+})
+
+test_that("disconnect() is idempotent", {
+  md <- MovieData$new(db_path)
+  expect_no_error({
+    md$disconnect()
+    md$disconnect()                                    #<2>
+  })
+})
+```
+1. When `oscars = 1` every returned row must have won at least one Oscar, so `has_oscar` should be `"Yes"` for all.
+2. Calling `disconnect()` twice must not throw; the internal `DBI::dbIsValid()` guard handles this.
+
+Module tests use `shiny::testServer()`, which provides a lightweight reactive context without a running browser:
+
+```{r}
+#| label: test-mod-filters
+#| eval: false 
+#| code-fold: false
+# tests/testthat/test-mod_filters.R
+
+test_that("mod_filters_server returns a reactive list", {
+  shiny::testServer(mod_filters_server, {
+    session$setInputs(
+      reviews = 120, oscars = 2,
+      year = c(2000, 2010), boxoffice = c(100, 400),
+      genre = "Action", director = "Nolan",
+      cast = "", xvar = "BoxOffice", yvar = "Year"
+    )
+    f <- session$returned()
+    expect_equal(f$reviews, 120)
+    expect_equal(f$genre,   "Action")
+    expect_equal(f$xvar,    "BoxOffice")
+  })
+})
+```
+
+```{r}
+#| label: test-mod-plot
+#| eval: false 
+#| code-fold: false
+# tests/testthat/test-mod_plot.R
+
+test_that("mod_plot_server renders movie count", {
+  md       <- MovieData$new(db_path)
+  on.exit(md$disconnect())
+  filtered <- md$filter(genre = "Drama")
+  movies   <- shiny::reactive(filtered)
+  filters  <- shiny::reactive(list(xvar = "Meter", yvar = "Reviews"))
+
+  shiny::testServer(
+    mod_plot_server,
+    args = list(movies = movies, filters = filters),
+    {
+      expect_match(output$n_movies, "^Movies selected: [0-9]+$")
+      expect_equal(
+        as.integer(sub("Movies selected: ", "", output$n_movies)),
+        nrow(filtered)
+      )
     }
   )
+})
+```
+
+```{r}
+#| label: co_box_testing
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g",
+  header = "Testing at two levels",
+  contents = "Test the R6 class with plain `testthat` (no Shiny needed). Test the modules with `shiny::testServer()` (no browser needed). Reserve `shinytest2` for end-to-end flows that require a real browser."
 )
 ```
-
-In the server:
-
-```r
-server <- function(input, output, session) {
-  logger <- Logger$new(session$token)
-
-  observeEvent(input$do_something, {
-    logger$log("Button clicked")
-  })
-
-  output$log_output <- renderPrint({
-    logger$get_logs()
-  })
-}
-```
-
-
 
 ## Recap
 
-Using R6 in Shiny app-packages gives you a scalable, maintainable approach to organizing business logic and managing state. It shines when:
+`movexplR6` demonstrates a clean division of labor between R6 and Shiny:
 
-* You want object-oriented abstractions
-* You need mutable objects tied to user sessions
-* You're building reusable modules within or across apps
+- **`MovieData`** owns the database connection and all filtering logic. It is framework-agnostic and fully testable with plain `testthat`. Keep R6 classes like this: one responsibility, no reactive internals.
+- **`movies_server()`** is the adapter. It creates `MovieData` once per session, wraps `filter()` in a `reactive()` so the rest of the app can depend on it, and registers cleanup with `shiny::onStop()`.
+- **Modules** (`mod_filters`, `mod_plot`) communicate through reactive arguments passed by the server. Neither module knows about `MovieData` directly; they only see a reactive data frame. This decoupling is what makes them independently testable.
+- **Never instantiate R6 objects at the package level.** Any object created in `R/` outside a function is shared across all sessions. Create instances inside `server()` or module server functions.
+- **`finalize()` is a backstop, not the primary cleanup.** Register `disconnect()` with `shiny::onStop()`; let `finalize()` catch anything that slips through.
 
-While not every Shiny app needs R6, mastering this tool adds a robust pattern to your Shiny developer toolkit — particularly when packaging your app for production or distribution.
-
-
-
-In the next chapter, we'll explore how to use **Shiny modules** in combination with R6 objects to further encapsulate functionality within your package structure.
+The pattern scales naturally: add more R6 classes for additional data sources or domain logic, keep each one free of Shiny dependencies, and wire them into the reactive graph through thin adapter reactives in the server.
