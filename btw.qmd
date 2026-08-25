@@ -689,10 +689,164 @@ This aligns with the skills section in the `chat` client--it has instructions an
 
 #### *How are skills different than tools and subagents?* {.unnumbered}
 
-I've found a good way to think about the differences between tools and skills is, 
+I've found a good way to think about the differences between tools and skills in `btw` is,
 
 > "*Tools pay rent, skills pay only when you visit.*"
 
+In the `btw` ecosystem, this distinction matters because tools and skills are registered with your `btw_client()` in different ways. **Tools** are capabilities that `btw` loads by default—they're integrated into your chat session and available whenever you invoke `btw_client()`. Examples include file operations, shell commands, and environment inspection. **Skills**, by contrast, are bundled markdown instructions that load on demand. You invoke a skill by name (`/skill-name`), and the model reads those instructions only when needed, without consuming context the rest of the time.
 
+Here's how they compare:
 
+```{mermaid}
+%%| fig-cap: 'Skills vs. Tools vs. Subagents in btw'
+%%| fig-align: center
+%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'monospace', "darkMode":true}}}}%%
 
+flowchart TB
+    subgraph Skills["<strong>Skills</strong>"]
+        S1["Invoked by<br>name"]
+        S2["Domain-specific<br>guidance"]
+        S3["Markdown<br>instructions"]
+        S4["Loaded on<br>demand"]
+        S5["Low context<br>cost"]
+    end
+    subgraph Tools["<strong>Tools</strong>"]
+        T1["Always<br>registered"]
+        T2["Executable<br>operations"]
+        T3["Read/Write/Compute"]
+        T4["Ready<br>immediately"]
+        T5["Medium context<br>cost"]
+    end
+    subgraph Subagents["<strong>Subagents</strong>"]
+        A1["Spawned<br>explicitly"]
+        A2["Independent<br>context"]
+        A3["Solve scoped<br>problems"]
+        A4["Fresh agent<br>each time"]
+        A5["High resource<br>cost"]
+    end
+
+    style Skills fill:#E8F5E9,color:#1B5E20,stroke:#4CAF50,stroke-width:2px
+    style Tools fill:#E3F2FD,color:#1565C0,stroke:#2196F3,stroke-width:2px
+    style Subagents fill:#F3E5F5,color:#6A1B9A,stroke:#9C27B0,stroke-width:2px
+    style S1 fill:#FFFFFF,color:#000000,stroke:#CCCCCC,stroke-width:1px
+    style S2 fill:#FFFFFF,color:#000000,stroke:#CCCCCC,stroke-width:1px
+    style S3 fill:#FFFFFF,color:#000000,stroke:#CCCCCC,stroke-width:1px
+    style S4 fill:#FFFFFF,color:#000000,stroke:#CCCCCC,stroke-width:1px
+    style S5 fill:#FFFFFF,color:#000000,stroke:#CCCCCC,stroke-width:1px
+    style T1 fill:#FFFFFF,color:#000000,stroke:#CCCCCC,stroke-width:1px
+    style T2 fill:#FFFFFF,color:#000000,stroke:#CCCCCC,stroke-width:1px
+    style T3 fill:#FFFFFF,color:#000000,stroke:#CCCCCC,stroke-width:1px
+    style T4 fill:#FFFFFF,color:#000000,stroke:#CCCCCC,stroke-width:1px
+    style T5 fill:#FFFFFF,color:#000000,stroke:#CCCCCC,stroke-width:1px
+    style A1 fill:#FFFFFF,color:#000000,stroke:#CCCCCC,stroke-width:1px
+    style A2 fill:#FFFFFF,color:#000000,stroke:#CCCCCC,stroke-width:1px
+    style A3 fill:#FFFFFF,color:#000000,stroke:#CCCCCC,stroke-width:1px
+    style A4 fill:#FFFFFF,color:#000000,stroke:#CCCCCC,stroke-width:1px
+    style A5 fill:#FFFFFF,color:#000000,stroke:#CCCCCC,stroke-width:1px
+
+```
+
+In `btw`, **tools** are what you see listed when you examine the `chat` object (like environment inspection, file reading, and git operations). They're baked into the client and ready whenever you need them. The model can call them directly during conversation.
+
+**Skills** are lighter. They're markdown files with instructions for how to approach specific tasks. When you invoke a skill with `/skill-name`, `btw` loads that instruction file and shows it to the model only for that conversation turn. This is efficient—you can have many skills without bloating your context.
+
+**Subagents** exist outside the `btw` client. They're separate agent instances spawned when you need isolated reasoning or parallel work. Unlike tools and skills, which live within your chat session, subagents are external workers. Use them when you need to farm out a scoped task to a fresh agent.
+
+I recommend this ordering when designing your `btw` workflow: start with skills (invoke them by name as needed), then add tools (register them in your `btw_client()` configuration), then consider subagents only when you need parallelism or complete isolation. This keeps your chat session focused and your token usage efficient.
+
+#### *Creating skills* {.unnumbered}
+
+A skill is just a markdown file with instructions. The structure is simple: a filename (like `documentation-review.md`) and prose that teaches the model how to approach the task. I've found the best skills combine three elements: the task context (what are we doing?), the step-by-step approach (how do we do it?), and the success criteria (how do we know it worked?).
+
+Here's a minimal skill for our `sap` app—a guide for reviewing app documentation:
+
+```Markdown
+# Documentation Review Skill
+
+## Task
+
+Review the README, vignette, or user guide for clarity, completeness, and accuracy.
+
+## Approach
+
+1. **Read the document** - Understand the audience and purpose
+2. **Check for gaps** - Are all features explained? Are examples provided?
+3. **Verify accuracy** - Does the documentation match the current code?
+4. **Assess clarity** - Would someone unfamiliar with the code understand this?
+
+## Success looks like
+
+- Reader can follow the guide start-to-finish without confusion
+- All major features are documented with examples
+- No contradictions between docs and code
+
+## Output
+
+Provide your feedback as: (1) overall assessment, (2) specific gaps or errors, (3) priority fixes
+```
+
+Once you've written your skill markdown, register it with `btw_client()` by passing a `skills` argument:
+
+```{r}
+#| eval: false
+#| code-fold: false
+chat <- btw_client(
+  skills = list(
+    "documentation-review" = "path/to/documentation-review.md"
+  )
+)
+```
+
+The model can then load it with `/documentation-review` during your chat session. You can register multiple skills at once, and they'll all be available without loading into context until you need them.
+
+#### *Registering tools* {.unnumbered}
+
+Tools are different from skills because they're always registered and ready to execute. If you recall the `.Rprofile` configuration we set up, the `btw_client()` already comes with a default set of tools: environment inspection, file reading, git operations, and R code execution.
+
+To add custom tools or replace the default set, pass a `tools` argument. I recommend starting with `btw`'s defaults and adding only what you need for your specific workflow. Here's an example that keeps the defaults and adds a custom R function for generating summary statistics:
+
+```{r}
+#| eval: false
+#| code-fold: false
+options(
+  btw.client = ellmer::chat_anthropic(
+    system_prompt = "You are an expert R programmer...",
+    model = "claude-sonnet-4-5-20250929",
+    tools = list(
+      # btw's default tools (environment, files, git, code execution)
+      btw::btw_default_tools(),
+      # Custom tool: summary statistics helper
+      btw::btw_tool_function(
+        name = "generate_summary",
+        description = "Generate summary statistics for numeric columns",
+        fn = function(data, columns = NULL) {
+          # Custom function logic
+          summary(data[, columns, drop = FALSE])
+        }
+      )
+    )
+  )
+)
+```
+
+Tools are heavier than skills because they're always available and consume context. Use them for operations you'll call frequently, not for one-off tasks. For occasional tasks, a skill is more efficient.
+
+#### *Spawning subagents* {.unnumbered}
+
+Subagents are spawned explicitly when you need them, outside of your main `btw` chat session. Unlike tools and skills, which live within one conversation, subagents are independent workers. Use them when you need to parallelize work (e.g., "analyze these 10 files in parallel") or isolate a task completely from your chat history.
+
+To spawn a subagent, use the `Agent` tool in Claude Code (or equivalent in your environment):
+
+```{r}
+#| eval: false
+#| code-fold: false
+# Spawn a subagent to review a specific file in parallel
+Agent(
+  description = "Review sap app documentation for security issues",
+  prompt = "Read this file and check for security vulnerabilities..."
+)
+```
+
+The subagent runs independently, returns its result, and is cleaned up. This approach is useful when a task is large enough to warrant its own reasoning loop, or when you want results from multiple agents to compare.
+
+In practice, I've found that most `btw` workflows can be handled with skills and tools alone. Subagents shine when you're running systematic analyses (audits, cross-file reviews, parallel processing) that would otherwise clutter your main chat session.

@@ -632,10 +632,13 @@ The new `bslib` argument in our updated `moves_ui()` function toggles between th
 #'
 #' Wrapper function for `shinyApp()`
 #'
-#' @param app which app to run. Options are: 
-#'  * `NULL` = the default app (`"movies"`)  
-#'  * `"bslib"` = Alternative `bslib` layout 
+#' @param app which app to run. Options are:
+#'  * `NULL` = the default app (`"movies"`)
+#'  * `"bslib"` = Alternative `bslib` layout
 #' @param options arguments to pass to `options()`
+#' @param mode launch mode. Choices are:
+#'  * `run` = blocking, uses [display_type()] for window placement (default)
+#'  * `start` = non-blocking, launches in a background process
 #' @param run where to launch app:
 #'  * `p` = launch in viewer pane
 #'  * `b` = launch in external browser
@@ -651,17 +654,13 @@ The new `bslib` argument in our updated `moves_ui()` function toggles between th
 #' 
 #' @import shiny
 #' 
-launch_app <- function(app = NULL, options = list(), run = "p", ...) {
-  
-  if (interactive()) {
-    display_type(run = run)
-  }
-  
+launch_app <- function(app = NULL, options = list(), mode = "run", run = "p", ...) {
+
   if (is.null(app)) {
     app <- "movies"
   }
-  
-  if (app == "bslib") {
+
+  app_obj <- if (app == "bslib") {
     shinyApp(
       ui = movies_ui(bslib = TRUE),
       server = movies_server,
@@ -673,6 +672,15 @@ launch_app <- function(app = NULL, options = list(), run = "p", ...) {
       server = movies_server,
       options = options
     )
+  }
+
+  if (mode == "start") {
+    shiny::startApp(appDir = app_obj, port = 3838)
+  } else {
+    if (interactive()) {
+      display_type(run = run)
+    }
+    shiny::runApp(appDir = app_obj)
   }
 }
 ```
@@ -692,6 +700,8 @@ hot_key("all")
 #| code-fold: false
 launch_app(app = 'bslib')
 ```
+
+The `mode` parameter controls how the app launches: `mode = "run"` (default) uses blocking mode, which is appropriate for development and deployment contexts. For rapid iteration during development, `mode = "start"` launches the app non-blocking so your console remains available (see the [Launch chapter](launch.qmd) for details).
 
 This alternate version of `launch_app()` uses the same modules and utility functions as the previous versions but when `app = "bslib"`, the app displays the alternate UI layout:
 
@@ -890,15 +900,18 @@ Finally, we'll launch the `tidy_movies` data app with the `app` argument in our 
 #' scatter plot interface for analyzing movie data.
 #' 
 #' @param app which app to run. Options are:
-#'  * `NULL` = the default app (`"movies"`)  
-#'  * `"bslib"` = Alternative `bslib` layout 
+#'  * `NULL` = the default app (`"movies"`)
+#'  * `"bslib"` = Alternative `bslib` layout
 #'  * `"ggp2"` = `ggplot2movies` (tidy) data app.
 #' @param options arguments to pass to `options()`
+#' @param mode launch mode. Choices are:
+#'  * `run` = blocking, uses [display_type()] for window placement (default)
+#'  * `start` = non-blocking, launches in a background process
 #' @param run where to launch app:
 #'  * `p` = launch in viewer pane
 #'  * `b` = launch in external browser
 #'  * `w` = launch in window
-#' @param ... arguments passed to UI 
+#' @param ... arguments passed to UI
 #'
 #' @return A **Shiny application** object.
 #'
@@ -926,17 +939,13 @@ Finally, we'll launch the `tidy_movies` data app with the `app` argument in our 
 #' 
 #' @import shiny
 #' 
-launch_app <- function(app = NULL, options = list(), run = "p", ...) {
-  
-  if (interactive()) {
-    display_type(run = run)
-  }
-  
+launch_app <- function(app = NULL, options = list(), mode = "run", run = "p", ...) {
+
   if (is.null(app)) {
     app <- "movies"
   }
-  
-  if (app == "bslib") {
+
+  app_obj <- if (app == "bslib") {
     shinyApp(
       ui = movies_ui(bslib = TRUE),
       server = movies_server,
@@ -955,6 +964,15 @@ launch_app <- function(app = NULL, options = list(), run = "p", ...) {
       server = movies_server,
       options = options
     )
+  }
+
+  if (mode == "start") {
+    shiny::startApp(appDir = app_obj, port = 3838)
+  } else {
+    if (interactive()) {
+      display_type(run = run)
+    }
+    shiny::runApp(appDir = app_obj)
   }
 }
 ```
@@ -1109,11 +1127,14 @@ To launch our Quarto application from `inst/quarto`, we'll change the `app` argu
 #' scatter plot interface for analyzing movie data.
 #' 
 #' @param app which app to run. Options are:
-#'  * `NULL` = the default app (`"movies"`)  
-#'  * `"bslib"` = Alternative `bslib` layout 
+#'  * `NULL` = the default app (`"movies"`)
+#'  * `"bslib"` = Alternative `bslib` layout
 #'  * `"ggp2"` = `ggplot2movies` (tidy) data app.
 #'  * `"quarto"` = Quarto movies app.
 #' @param options arguments to pass to `options()`
+#' @param mode launch mode. Choices are:
+#'  * `run` = blocking, uses [display_type()] for window placement (default)
+#'  * `start` = non-blocking, launches in a background process
 #' @param run where to launch app:
 #'  * `p` = launch in viewer pane
 #'  * `b` = launch in external browser
@@ -1146,17 +1167,22 @@ To launch our Quarto application from `inst/quarto`, we'll change the `app` argu
 #' 
 #' @import shiny
 #' 
-launch_app <- function(app, options = list(), run = "p", ...) {
-  
-  if (interactive()) {
-    display_type(run = run)
-  }
-  
+launch_app <- function(app, options = list(), mode = "run", run = "p", ...) {
+
   if (is.null(app)) {
     app <- "movies"
   }
-  
-  if (app == "bslib") {
+
+  if (app == "quarto") {
+    return(
+      quarto::quarto_preview(
+        system.file("quarto", "index.qmd",
+            package = "sap" ),
+        render = "all")
+    )
+  }
+
+  app_obj <- if (app == "bslib") {
     shinyApp(
       ui = movies_ui(bslib = TRUE),
       server = movies_server,
@@ -1169,17 +1195,21 @@ launch_app <- function(app, options = list(), run = "p", ...) {
       ),
       options = options
       )
-  } else if (app == "quarto") {
-      quarto::quarto_preview(
-        system.file("quarto", "index.qmd",
-            package = "sap" ), 
-        render = "all")
   } else {
     shinyApp(
       ui = movies_ui(...),
       server = movies_server,
       options = options
     )
+  }
+
+  if (mode == "start") {
+    shiny::startApp(appDir = app_obj, port = 3838)
+  } else {
+    if (interactive()) {
+      display_type(run = run)
+    }
+    shiny::runApp(appDir = app_obj)
   }
 }
 ```

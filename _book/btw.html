@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-06-01">
+<meta name="dcterms.date" content="2026-08-25">
 <meta name="description" content="Getting your app into an R package">
 
 <title>30&nbsp; 🏗 btw – Shiny App-Packages</title>
@@ -576,6 +576,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul class="collapse">
   <li><a href="#what-are-skills" id="toc-what-are-skills" class="nav-link" data-scroll-target="#what-are-skills"><em>What are skills?</em></a></li>
   <li><a href="#how-are-skills-different-than-tools-and-subagents" id="toc-how-are-skills-different-than-tools-and-subagents" class="nav-link" data-scroll-target="#how-are-skills-different-than-tools-and-subagents"><em>How are skills different than tools and subagents?</em></a></li>
+  <li><a href="#creating-skills" id="toc-creating-skills" class="nav-link" data-scroll-target="#creating-skills"><em>Creating skills</em></a></li>
+  <li><a href="#registering-tools" id="toc-registering-tools" class="nav-link" data-scroll-target="#registering-tools"><em>Registering tools</em></a></li>
+  <li><a href="#spawning-subagents" id="toc-spawning-subagents" class="nav-link" data-scroll-target="#spawning-subagents"><em>Spawning subagents</em></a></li>
   </ul></li>
   </ul></li>
   </ul>
@@ -597,7 +600,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">2026-06-01</p>
+      <p class="date">2026-08-25</p>
     </div>
   </div>
   
@@ -1989,10 +1992,148 @@ flowchart TD
 </section>
 <section id="how-are-skills-different-than-tools-and-subagents" class="level4 unnumbered">
 <h4 class="unnumbered anchored" data-anchor-id="how-are-skills-different-than-tools-and-subagents"><em>How are skills different than tools and subagents?</em></h4>
-<p>I’ve found a good way to think about the differences between tools and skills is,</p>
+<p>I’ve found a good way to think about the differences between tools and skills in <code>btw</code> is,</p>
 <blockquote class="blockquote">
 <p>“<em>Tools pay rent, skills pay only when you visit.</em>”</p>
 </blockquote>
+<p>In the <code>btw</code> ecosystem, this distinction matters because tools and skills are registered with your <code>btw_client()</code> in different ways. <strong>Tools</strong> are capabilities that <code>btw</code> loads by default—they’re integrated into your chat session and available whenever you invoke <code>btw_client()</code>. Examples include file operations, shell commands, and environment inspection. <strong>Skills</strong>, by contrast, are bundled markdown instructions that load on demand. You invoke a skill by name (<code>/skill-name</code>), and the model reads those instructions only when needed, without consuming context the rest of the time.</p>
+<p>Here’s how they compare:</p>
+<div class="cell" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'monospace', "darkMode":true}}}}%%
+
+flowchart TB
+    subgraph Skills["&lt;strong&gt;Skills&lt;/strong&gt;"]
+        S1["Invoked by&lt;br&gt;name"]
+        S2["Domain-specific&lt;br&gt;guidance"]
+        S3["Markdown&lt;br&gt;instructions"]
+        S4["Loaded on&lt;br&gt;demand"]
+        S5["Low context&lt;br&gt;cost"]
+    end
+    subgraph Tools["&lt;strong&gt;Tools&lt;/strong&gt;"]
+        T1["Always&lt;br&gt;registered"]
+        T2["Executable&lt;br&gt;operations"]
+        T3["Read/Write/Compute"]
+        T4["Ready&lt;br&gt;immediately"]
+        T5["Medium context&lt;br&gt;cost"]
+    end
+    subgraph Subagents["&lt;strong&gt;Subagents&lt;/strong&gt;"]
+        A1["Spawned&lt;br&gt;explicitly"]
+        A2["Independent&lt;br&gt;context"]
+        A3["Solve scoped&lt;br&gt;problems"]
+        A4["Fresh agent&lt;br&gt;each time"]
+        A5["High resource&lt;br&gt;cost"]
+    end
+
+    style Skills fill:#E8F5E9,color:#1B5E20,stroke:#4CAF50,stroke-width:2px
+    style Tools fill:#E3F2FD,color:#1565C0,stroke:#2196F3,stroke-width:2px
+    style Subagents fill:#F3E5F5,color:#6A1B9A,stroke:#9C27B0,stroke-width:2px
+    style S1 fill:#FFFFFF,color:#000000,stroke:#CCCCCC,stroke-width:1px
+    style S2 fill:#FFFFFF,color:#000000,stroke:#CCCCCC,stroke-width:1px
+    style S3 fill:#FFFFFF,color:#000000,stroke:#CCCCCC,stroke-width:1px
+    style S4 fill:#FFFFFF,color:#000000,stroke:#CCCCCC,stroke-width:1px
+    style S5 fill:#FFFFFF,color:#000000,stroke:#CCCCCC,stroke-width:1px
+    style T1 fill:#FFFFFF,color:#000000,stroke:#CCCCCC,stroke-width:1px
+    style T2 fill:#FFFFFF,color:#000000,stroke:#CCCCCC,stroke-width:1px
+    style T3 fill:#FFFFFF,color:#000000,stroke:#CCCCCC,stroke-width:1px
+    style T4 fill:#FFFFFF,color:#000000,stroke:#CCCCCC,stroke-width:1px
+    style T5 fill:#FFFFFF,color:#000000,stroke:#CCCCCC,stroke-width:1px
+    style A1 fill:#FFFFFF,color:#000000,stroke:#CCCCCC,stroke-width:1px
+    style A2 fill:#FFFFFF,color:#000000,stroke:#CCCCCC,stroke-width:1px
+    style A3 fill:#FFFFFF,color:#000000,stroke:#CCCCCC,stroke-width:1px
+    style A4 fill:#FFFFFF,color:#000000,stroke:#CCCCCC,stroke-width:1px
+    style A5 fill:#FFFFFF,color:#000000,stroke:#CCCCCC,stroke-width:1px
+
+</pre>
+</div>
+<p></p><figcaption> Skills vs.&nbsp;Tools vs.&nbsp;Subagents in btw</figcaption> </figure><p></p>
+</div>
+</div>
+</div>
+<p>In <code>btw</code>, <strong>tools</strong> are what you see listed when you examine the <code>chat</code> object (like environment inspection, file reading, and git operations). They’re baked into the client and ready whenever you need them. The model can call them directly during conversation.</p>
+<p><strong>Skills</strong> are lighter. They’re markdown files with instructions for how to approach specific tasks. When you invoke a skill with <code>/skill-name</code>, <code>btw</code> loads that instruction file and shows it to the model only for that conversation turn. This is efficient—you can have many skills without bloating your context.</p>
+<p><strong>Subagents</strong> exist outside the <code>btw</code> client. They’re separate agent instances spawned when you need isolated reasoning or parallel work. Unlike tools and skills, which live within your chat session, subagents are external workers. Use them when you need to farm out a scoped task to a fresh agent.</p>
+<p>I recommend this ordering when designing your <code>btw</code> workflow: start with skills (invoke them by name as needed), then add tools (register them in your <code>btw_client()</code> configuration), then consider subagents only when you need parallelism or complete isolation. This keeps your chat session focused and your token usage efficient.</p>
+</section>
+<section id="creating-skills" class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="creating-skills"><em>Creating skills</em></h4>
+<p>A skill is just a markdown file with instructions. The structure is simple: a filename (like <code>documentation-review.md</code>) and prose that teaches the model how to approach the task. I’ve found the best skills combine three elements: the task context (what are we doing?), the step-by-step approach (how do we do it?), and the success criteria (how do we know it worked?).</p>
+<p>Here’s a minimal skill for our <code>sap</code> app—a guide for reviewing app documentation:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb42"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="fu"># Documentation Review Skill</span></span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a><span class="fu">## Task</span></span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>Review the README, vignette, or user guide for clarity, completeness, and accuracy.</span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a><span class="fu">## Approach</span></span>
+<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-9"><a href="#cb42-9" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**Read the document** - Understand the audience and purpose</span>
+<span id="cb42-10"><a href="#cb42-10" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**Check for gaps** - Are all features explained? Are examples provided?</span>
+<span id="cb42-11"><a href="#cb42-11" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**Verify accuracy** - Does the documentation match the current code?</span>
+<span id="cb42-12"><a href="#cb42-12" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>**Assess clarity** - Would someone unfamiliar with the code understand this?</span>
+<span id="cb42-13"><a href="#cb42-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-14"><a href="#cb42-14" aria-hidden="true" tabindex="-1"></a><span class="fu">## Success looks like</span></span>
+<span id="cb42-15"><a href="#cb42-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-16"><a href="#cb42-16" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Reader can follow the guide start-to-finish without confusion</span>
+<span id="cb42-17"><a href="#cb42-17" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>All major features are documented with examples</span>
+<span id="cb42-18"><a href="#cb42-18" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>No contradictions between docs and code</span>
+<span id="cb42-19"><a href="#cb42-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-20"><a href="#cb42-20" aria-hidden="true" tabindex="-1"></a><span class="fu">## Output</span></span>
+<span id="cb42-21"><a href="#cb42-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-22"><a href="#cb42-22" aria-hidden="true" tabindex="-1"></a>Provide your feedback as: (1) overall assessment, (2) specific gaps or errors, (3) priority fixes</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Once you’ve written your skill markdown, register it with <code>btw_client()</code> by passing a <code>skills</code> argument:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>chat <span class="ot">&lt;-</span> <span class="fu">btw_client</span>(</span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">skills =</span> <span class="fu">list</span>(</span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"documentation-review"</span> <span class="ot">=</span> <span class="st">"path/to/documentation-review.md"</span></span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The model can then load it with <code>/documentation-review</code> during your chat session. You can register multiple skills at once, and they’ll all be available without loading into context until you need them.</p>
+</section>
+<section id="registering-tools" class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="registering-tools"><em>Registering tools</em></h4>
+<p>Tools are different from skills because they’re always registered and ready to execute. If you recall the <code>.Rprofile</code> configuration we set up, the <code>btw_client()</code> already comes with a default set of tools: environment inspection, file reading, git operations, and R code execution.</p>
+<p>To add custom tools or replace the default set, pass a <code>tools</code> argument. I recommend starting with <code>btw</code>’s defaults and adding only what you need for your specific workflow. Here’s an example that keeps the defaults and adds a custom R function for generating summary statistics:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(</span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">btw.client =</span> ellmer<span class="sc">::</span><span class="fu">chat_anthropic</span>(</span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">system_prompt =</span> <span class="st">"You are an expert R programmer..."</span>,</span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">model =</span> <span class="st">"claude-sonnet-4-5-20250929"</span>,</span>
+<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">tools =</span> <span class="fu">list</span>(</span>
+<span id="cb44-6"><a href="#cb44-6" aria-hidden="true" tabindex="-1"></a>      <span class="co"># btw's default tools (environment, files, git, code execution)</span></span>
+<span id="cb44-7"><a href="#cb44-7" aria-hidden="true" tabindex="-1"></a>      btw<span class="sc">::</span><span class="fu">btw_default_tools</span>(),</span>
+<span id="cb44-8"><a href="#cb44-8" aria-hidden="true" tabindex="-1"></a>      <span class="co"># Custom tool: summary statistics helper</span></span>
+<span id="cb44-9"><a href="#cb44-9" aria-hidden="true" tabindex="-1"></a>      btw<span class="sc">::</span><span class="fu">btw_tool_function</span>(</span>
+<span id="cb44-10"><a href="#cb44-10" aria-hidden="true" tabindex="-1"></a>        <span class="at">name =</span> <span class="st">"generate_summary"</span>,</span>
+<span id="cb44-11"><a href="#cb44-11" aria-hidden="true" tabindex="-1"></a>        <span class="at">description =</span> <span class="st">"Generate summary statistics for numeric columns"</span>,</span>
+<span id="cb44-12"><a href="#cb44-12" aria-hidden="true" tabindex="-1"></a>        <span class="at">fn =</span> <span class="cf">function</span>(data, <span class="at">columns =</span> <span class="cn">NULL</span>) {</span>
+<span id="cb44-13"><a href="#cb44-13" aria-hidden="true" tabindex="-1"></a>          <span class="co"># Custom function logic</span></span>
+<span id="cb44-14"><a href="#cb44-14" aria-hidden="true" tabindex="-1"></a>          <span class="fu">summary</span>(data[, columns, <span class="at">drop =</span> <span class="cn">FALSE</span>])</span>
+<span id="cb44-15"><a href="#cb44-15" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb44-16"><a href="#cb44-16" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb44-17"><a href="#cb44-17" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb44-18"><a href="#cb44-18" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb44-19"><a href="#cb44-19" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Tools are heavier than skills because they’re always available and consume context. Use them for operations you’ll call frequently, not for one-off tasks. For occasional tasks, a skill is more efficient.</p>
+</section>
+<section id="spawning-subagents" class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="spawning-subagents"><em>Spawning subagents</em></h4>
+<p>Subagents are spawned explicitly when you need them, outside of your main <code>btw</code> chat session. Unlike tools and skills, which live within one conversation, subagents are independent workers. Use them when you need to parallelize work (e.g., “analyze these 10 files in parallel”) or isolate a task completely from your chat history.</p>
+<p>To spawn a subagent, use the <code>Agent</code> tool in Claude Code (or equivalent in your environment):</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Spawn a subagent to review a specific file in parallel</span></span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a><span class="fu">Agent</span>(</span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">description =</span> <span class="st">"Review sap app documentation for security issues"</span>,</span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">prompt =</span> <span class="st">"Read this file and check for security vulnerabilities..."</span></span>
+<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The subagent runs independently, returns its result, and is cleaned up. This approach is useful when a task is large enough to warrant its own reasoning loop, or when you want results from multiple agents to compare.</p>
+<p>In practice, I’ve found that most <code>btw</code> workflows can be handled with skills and tools alone. Subagents shine when you’re running systematic analyses (audits, cross-file reviews, parallel processing) that would otherwise clutter your main chat session.</p>
 
 
 </section>

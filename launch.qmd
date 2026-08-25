@@ -13,21 +13,25 @@ source("_common.R")
 #| results: asis
 #| eval: true
 co_box(
-  color = "b", 
+  color = "b",
   look = "default", hsize = "1.05", size = "0.95",
   header = "TLDR: Launch your app", fold = TRUE,
   contents = "
-**Launching Apps:** 
-  
+**Launching Apps:**
+
 - **`shinyApp()`**: can be bundled in a standalone app function to store an app-package\n
     - Also useful for quick prototyping or if an app is in a single `.R` script\n
     - Returns a shiny app object (helpful with testing)\n
-  
-- **`runApp()`**: versatile function that can launch apps in multiple formats/locations\n
-    - A directory with a `server.R` and `ui.R`, or a single `app.R` file`\n
+
+- **`runApp()`**: versatile function that can launch apps in multiple formats/locations (blocking)\n
+    - A directory with a `server.R` and `ui.R`, or a single `app.R` file\n
     - An app object created by `shinyApp()`\n
-  
-- **`shinyAppDir()`**: useful if you need launch a Shiny app programmatically from a directory.\n
+
+- **`startApp()`**: launches app in background process, returns console control immediately (non-blocking)\n
+    - Best for interactive development and rapid iteration\n
+    - Requires specifying a port\n
+
+- **`shinyAppDir()`**: launches a Shiny app programmatically from a directory.\n
 "
 )
 ```
@@ -447,15 +451,103 @@ runApp(
 
 ::::
 
+### [`startApp()`]{style="font-size: 0.95em; font-weight: bold;"} {#sec-launch-start-app}
+
+Shiny recently introduced `startApp()`, which changes how we think about launching apps interactively. While `runApp()` blocks the R session (you cannot type in the console while the app is running), `startApp()` launches the app in the background and returns control to the console immediately.
+
+I've found this matters most when you're exploring your app interactively. Instead of restarting R each time you want to test a change, you can modify your code and re-run it while the app is still running in another process. The app stays live and you keep your REPL.
+
+Below are some practical examples for using `startApp()`:
+
+:::{layout="[45,55]" layout-valign="center"}
+
+Launch and stop a shiny `app` object:
+
+``` r
+app <- startApp(
+  appDir = shinyApp(
+    ui = movies_ui(),
+    server = movies_server),
+  port = 3838
+)
+app$stop()
+```
+
+:::
+
+:::{layout="[45,55]" layout-valign="center"}
+
+Launch with test mode enabled:
+
+``` r
+app <- startApp(
+  appDir = shinyApp(
+    ui = movies_ui(),
+    server = movies_server,
+    options = list(test.mode = TRUE)
+  ),
+  port = 3838,
+  test.mode = TRUE
+)
+```
+
+:::
+
+:::{layout="[45,55]" layout-valign="center"}
+
+Check app status and URL:
+
+``` r
+app <- startApp(
+  appDir = shinyApp(
+    ui = movies_ui(),
+    server = movies_server
+  ),
+  port = 3838
+)
+app$status()
+app$url()
+```
+
+:::
+
+After the app launches, you keep your console and can continue working: run tests, modify code, re-source functions, or launch additional apps on different ports. Call `handle$stop()` to stop the background app when you're done.
+
+The key difference is simple: `runApp()` is blocking and single-process. `startApp()` is non-blocking and spawns a background process. When to use `startApp()` vs. `runApp()`: I recommend `startApp()` for interactive development (you need console access), and `runApp()` for traditional deployment (the blocking behavior is fine). In production or when you're ready to fully focus on the running app, `runApp()` is still the right choice. But for rapid iteration in development, `startApp()` unlocks a faster workflow.
+
+See the [Shiny documentation](https://shiny.posit.co/r/reference/shiny/latest/startapp.html) for full details on `startApp()` arguments and capabilities.
+
+:::: {.callout-note collapse="true" appearance="default" title="startApp()"}
+
+::: {style='font-size: 1.05em; color: #696969;'}
+
+:::{layout="[45,55]" layout-valign="center"}
+
+[`startApp()`]{style="font-size: 0.95em"}: Launches your app in a background process and returns console control immediately (non-blocking).
+
+``` r
+startApp(
+  appDir = shinyApp(...),
+  port = 3838)
+```
+
+:::
+
+:::
+
+::::
+
 #### Recap {.unnumbered}
 
 1. `shinyApp()` is typically used to create apps within an interactive R session
 
-2. `shinyAppDir()` runs a Shiny app stored in a directory (containing an `app.R` file (or `ui.R` and `server.R` files) 
+2. `shinyAppDir()` runs a Shiny app stored in a directory (containing an `app.R` file (or `ui.R` and `server.R` files)
 
 3. `runApp()` also launches apps in a directory, but it's versatility makes it suitable for running apps in various formats, either defined inline or in separate directories.[^shiny-app-launchers]
 
-[^shiny-app-launchers]: It's worthwhile to read the documentation on  [`shinyApp()`, `shinyAppDir()`](https://shiny.posit.co/r/reference/shiny/0.14/shinyapp), and [`runApp()`](https://shiny.posit.co/r/reference/shiny/1.7.4/runapp).
+4. `startApp()` launches an app in a background process and returns console control immediately, making it ideal for interactive development and rapid iteration.
+
+[^shiny-app-launchers]: It's worthwhile to read the documentation on  [`shinyApp()`, `shinyAppDir()`](https://shiny.posit.co/r/reference/shiny/0.14/shinyapp), [`runApp()`](https://shiny.posit.co/r/reference/shiny/1.7.4/runapp), and [`startApp()`](https://shiny.posit.co/r/reference/shiny/latest/startapp.html).
 
 ## Standalone function 
 
@@ -484,7 +576,7 @@ The `test.mode` option lets us [export values from our application]((https://shi
 We'll make `options` an argument that defaults to an empty `list()` in `launch_app()`:
 
 ```{r}
-#| eval: false 
+#| eval: false
 #| code-fold: false
 launch_app <- function(options = list()) {
     shinyApp(
@@ -494,9 +586,34 @@ launch_app <- function(options = list()) {
       )
 }
 ```
-1. Build the shiny app object with `movies_ui` and `movies_server`   
-2. Include `options` list   
+1. Build the shiny app object with `movies_ui` and `movies_server`
+2. Include `options` list
 
+With the introduction of `startApp()`, we can add a `mode` argument to choose between blocking (`"run"`) and non-blocking (`"start"`) execution:
+
+```{r}
+#| eval: false
+#| code-fold: false
+launch_app <- function(options = list(), mode = "run", run = "p") {
+  app <- shinyApp( # <1>
+    ui = movies_ui(),
+    server = movies_server,
+    options = options
+  )
+
+  if (mode == "start") { # <2>
+    shiny::startApp(appDir = app, port = 3838)
+  } else if (mode == "run") { # <3>
+    display_type(run = run)
+    shiny::runApp(appDir = app)
+  }
+}
+```
+1. Create the shiny app object
+2. Non-blocking mode—launches in background process
+3. Blocking mode (default)—uses display_type() for window placement
+
+Now you can call `launch_app(mode = "start")` for rapid iteration or `launch_app(mode = "run")` for traditional blocking execution.
 
 ### Where to launch? {#sec-launch-display-type}
 
@@ -575,23 +692,29 @@ The `cli` package is imported as part the `devtools`/`usethis` workflow but we w
 
 ### An updated [`launch_app()`]{style="font-size: 0.90em"} {#sec-launch-standalone-app-function}
 
-The `display_type()` and `options` list have been added to `launch_app()`:
+The `display_type()`, `options` list, and `mode` argument have been added to `launch_app()`:
 
 ```{r}
-#| eval: false 
+#| eval: false
 #| code-fold: false
-launch_app <- function(options = list(), run = "p") {
-    display_type(run = run) # <1>
-    shinyApp( 
+launch_app <- function(options = list(), mode = "run", run = "p") {
+    app <- shinyApp( # <1>
       ui = movies_ui(),
       server = movies_server,
-      options = options # <2>
-    ) # <3>
+      options = options
+    )
+
+    if (mode == "start") { # <2>
+      shiny::startApp(appDir = app, port = 3838)
+    } else if (mode == "run") { # <3>
+      display_type(run = run)
+      shiny::runApp(appDir = app)
+    }
 }
 ```
-1. Set `shinyViewerType` option with `display_type()`  
-2. Pass options  
-3. Launch app     
+1. Create the shiny app object
+2. Non-blocking mode—launches app in background, returns console control
+3. Blocking mode (default)—uses display_type() for window placement, blocks console
 
 After loading, documenting, and installing our package, we can see the documentation for our updated `launch_app()` function in RStudio ![](images/rstudio-icon.png){height=20} and Positron ![](images/positron.png){height=20}: 
 
@@ -724,7 +847,7 @@ if (!interactive()) {
   pkgload::load_all()
 }
   sap::launch_app(
-    options = list(test.mode = TRUE), run = 'p')
+    options = list(test.mode = TRUE), mode = "run", run = 'p')
 ```
 
 `pkgload::load_all()` is the function that's called when we run `devtools::load_all()` (or use [<kbd>Ctrl/Cmd</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd>]{style="font-weight: bold; font-size: 0.75em"}), and this is somewhat analogous to running `library(sap)`
@@ -777,7 +900,7 @@ withr::with_options(new = list(shiny.autoload.r = FALSE), code = { # <1>
     pkgload::load_all()
   } # <3>
     sap::launch_app( # <4>
-      options = list(test.mode = TRUE), run = 'p') # <4>
+      options = list(test.mode = TRUE), mode = "run", run = 'p') # <4>
 }) 
 
 ```
@@ -864,30 +987,41 @@ co_box(
   fold = FALSE,
   contents = "
 
-**`shinyApp()`**: 
+**`shinyApp()`**:
 
 -   `shinyApp()` doesn't care about file structure, so it's useful for quick prototyping or if the app is in a single `.R` script. It's also more portable because you can share your app with a single `.R` script.
 
     -   It's possible to bundle `shinyApp()` in a wrapper function to integrate within an R package (like we've done with `launch_app()`).
 
     -    `shinyApp()` returns a shiny app object, which can be useful if you want to explore the app structure programmatically (i.e., testing).
-  
-**`shinyAppDir()`**: 
-  
+
+**`shinyAppDir()`**:
+
 -   `shinyAppDir()` launches an app from a directory, and is useful if an app is spread across multiple files and folders.
 
-**`runApp()`**
+**`runApp()`** (blocking):
 
--   `runApp()` a more generalized way to launch an app. It works with:
-  
-    -   apps contained in a directory (i.e., `runApp('path/to/app')`
-  
+-   `runApp()` is a more generalized way to launch an app. It works with:
+
+    -   apps contained in a directory (i.e., `runApp('path/to/app')`)
+
     -   apps in separate `ui.R` and `server.R` files (or a single `app.R` file)
-  
+
     -   a shiny app object (passed to the `appDir` argument).
-  
--   Clicking on **Run App** will run the application with `runApp()` if is detects a file (or files) that creates a shiny object.
-  
+
+-   Clicking on **Run App** will run the application with `runApp()` if it detects a file (or files) that creates a shiny object.
+
+-   Blocks the console during execution (you cannot type while the app runs).
+
+**`startApp()`** (non-blocking):
+
+-   `startApp()` launches your app in a background process and returns console control immediately.
+
+-   Best for interactive development and rapid iteration—modify code and re-run without restarting R.
+
+-   Requires specifying a port for the background app process.
+
+-   Not recommended for production deployments where `runApp()` is the standard approach.
   "
 )
 ```
