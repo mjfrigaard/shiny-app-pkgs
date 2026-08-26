@@ -313,9 +313,10 @@ hot_key(fun = "L")
 And launch the app using:
 
 ```{r}
+#| label: launch_ggp2_test_mode
 #| eval: false 
 #| code-fold: false
-launch_app(app = "ggp2")
+launch_app("ggp2", options = list(test.mode = TRUE))
 ```
 
 ```{r}
@@ -407,21 +408,16 @@ The `dev_mod_scatter.R` file in the **Editor** highlights the `browser()` functi
 
 #### Console {.unnumbered}
 
-The **Console** tells us `browser()` was '`Called from: observe()`' and displays the interactive debugger prompt: 
+The **Console** tells us where the application is `Listening` and displays the interactive debugger prompt: 
 
 ![Debugger in file **Editor** (click to enlarge)](images/debugger_positron_initial_console.png){width='75%' fig-align='center'}
 
 `observe()` does not inherently pause or interrupt other reactive processes—it just triggers when changes occur within its scope. So when we're using `observe()` for debugging, we need to define the context (or scope) for its behavior. 
 
-The output in the **Console** tells us the `tidy_movies.fst` data are downloaded, but our placement suspends the execution of the application *before* these data are loaded and the graph is rendered in the UI.
-
-::: {layout-ncol=2 layout-valign="top"}
-
-![Debugger in **Console** (click to enlarge)](images/debugger_positron_console.png){width='100%'}
+The output in the **Console** tells us the placement of the `observe()` call has suspended the execution of the application *before* the `tidy_movies.fst` data are loaded and the graph is rendered in the UI.
 
 ![Suspended `ggplot2movies` data app (click to enlarge)](images/debug_browser_suspend_app.png){width='100%'}
 
-:::
 
 The interactive debugger can only access variables and values inside the `observe()` scope, but this process can be incredibly useful for addressing bugs (and for exploring how an application works). In the next sections, we'll 'step through' the module function to explore how the missing values are removed from the graph. 
 
@@ -435,7 +431,7 @@ Step through/execute each line of code by entering **`n`** in the **Console**.
 
 :::{style="font-weight: bold;"}
 
-```
+```r
 Browse[1]> n
 ```
 
@@ -443,13 +439,9 @@ Browse[1]> n
 
 :::
 
-As we 'step through' the function, Positron's ![](images/positron.png){height=20} **Console** displays the `debug at` location, followed by the code line number: 
+As we 'step through' the function, the **Editor** in Positron ![](images/positron.png){height=20} highlights the line [in yellow]{style="background-color: #FAFFC1; font-weight: bold;"}:
 
-![Full path and line number to the file containing our call to `browser()` (click to enlarge)](images/debug_positron_step.png){fig-align='center'}
-
-In the **Editor**, the same line of code is highlighted [in yellow]{style="background-color: #FAFFC1; font-weight: bold;"}:
-
-![Corresponding line number in **Editor** (click to enlarge)](images/debug_positron_highlight_next_exec.png){fig-align='center'}
+![Line number in **Editor** (click to enlarge)](images/debug_positron_highlight_next_exec.png){fig-align='center'}
 
 The line creating `graph_data` gives us a hint for how the missing data are removed (i.e., with `bindEvent()`), but we'll explore this more in [Print debugging](debug_print.qmd).
 
@@ -472,7 +464,7 @@ We can use the **Console** to evaluate code while the interactive debugger is ru
 Browse[1]> str(all_data)
 ```
 
-```sh
+```bash
 'data.frame':	58788 obs. of  10 variables:
 $ title      : chr  "$" "$1000 a Touchdown" ...
 $ year       : int  1971 1939 1941 1996 1975 ...
@@ -500,7 +492,7 @@ The reactive values and inputs can also be viewed in the **Console**, and we can
 Browse[1]> input$missing
 ```
 
-```sh
+```bash
 [1] TRUE
 ```
 
@@ -518,7 +510,7 @@ Browse[1]> identical(
             )
 ```
 
-```sh
+```bash
 [1] TRUE
 ```
 
@@ -526,6 +518,60 @@ Browse[1]> identical(
 
 
 Using `browser()` to 'step through' an application gives us a better understanding of the 'order of execution', and it lets us see how `input$missing` and `bindEvent()` work together to remove the missing values with the checkbox. 
+
+If we view the next calls just outside the `observe()` scope, we see it's using the application inputs (i.e., `var_inputs()`). This is available both as the reactive and the actual values:
+
+Reactive: 
+
+::: {layout="[35, 65]" layout-valign="top"}
+
+```r
+Browse[1]> var_inputs
+```
+
+```bash
+reactive({
+    list(y = input$y, 
+         x = input$x, 
+         z = input$z, 
+         alpha = input$alpha, 
+         size = input$size, 
+         plot_title = input$plot_title
+         )
+}) 
+```
+
+:::
+
+Values: 
+
+::: {layout="[35, 65]" layout-valign="top"}
+
+```r
+Browse[1]> var_inputs()
+```
+
+```bash
+$y
+[1] "budget"
+
+$x
+[1] "year"
+
+$z
+[1] "mpaa"
+
+$alpha
+[1] 0.4
+
+$size
+[1] 2.5
+
+$plot_title
+[1] ""
+```
+
+:::
 
 ## Recap {.unnumbered}
 
