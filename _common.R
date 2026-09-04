@@ -10,7 +10,7 @@ shinypak_apps <- function(regex, branch = "02.1_shiny-app") {
     "\n\n",
     "## [Access the applications in this chapter]{style='font-weight: bold; font-size: 1.15em;'}",
     "\n\n",
-    ":::{style='font-size: 0.95em; color: #282b2d;'}",
+    ":::{style='font-size: 0.95em;'}",
     "\n\n",
     "I've created the [`shinypak` R package](https://mjfrigaard.github.io/shinypak/) in an effort to make each section accessible and easy to follow. Install `shinypak` using `pak` (or `remotes`):",
     "\n\n",
@@ -88,7 +88,7 @@ co_box <- function(
       "\n\n",
       ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "' icon=false}", "\n\n",
       "## [", header, "]{style='font-weight: bold; font-size: ", hsize, "em;'}\n\n",
-      "::: {style='font-size: ", size, "em; color: #282b2d;'}\n\n",
+      "::: {style='font-size: ", size, "em;'}\n\n",
       "\n", glue::glue_collapse(contents), "\n\n",
       "::: \n\n",
       "::::", "\n"
@@ -97,7 +97,7 @@ co_box <- function(
       "\n\n",
       ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "' icon=false}", "\n\n",
       "## [", header, "]{style='font-weight: bold; font-size: ", hsize, "em;'}\n\n",
-      "::: {style='font-size: ", size, "em; color: #282b2d;'}\n\n",
+      "::: {style='font-size: ", size, "em;'}\n\n",
       "\n", glue::glue_collapse(contents), "\n\n",
       "::: \n\n",
       "::::", "\n"
@@ -106,7 +106,7 @@ co_box <- function(
       "\n\n",
       ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "' icon=false}", "\n\n",
       "## [", header, "]{style='font-weight: bold; font-size: ", hsize, "em;'}\n\n",
-      "::: {style='font-size: ", size, "em; color: #282b2d;'}\n\n",
+      "::: {style='font-size: ", size, "em;'}\n\n",
       "\n", glue::glue_collapse(contents), "\n\n",
       "::: \n\n",
       "::::", "\n"
@@ -115,7 +115,7 @@ co_box <- function(
       "\n\n",
       ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "' icon=false}", "\n\n",
       "## [", header, "]{style='font-weight: bold; font-size: ", hsize, "em;'}\n\n",
-      "::: {style='font-size: ", size, "em; color: #282b2d;'}\n\n",
+      "::: {style='font-size: ", size, "em;'}\n\n",
       "\n", glue::glue_collapse(contents), "\n\n",
       "::: \n\n",
       "::::", "\n"
@@ -124,7 +124,7 @@ co_box <- function(
       "\n\n",
       ":::: {.callout-", class, " collapse='", fold, "'", " appearance='", look, "' icon=false}", "\n\n",
       "## [", header, "]{style='font-weight: bold; font-size: ", hsize, "em;'}\n\n",
-      "::: {style='font-size: ", size, "em; color: #282b2d;'}\n\n",
+      "::: {style='font-size: ", size, "em;'}\n\n",
       "\n", glue::glue_collapse(contents), "\n\n",
       "::: \n\n",
       "::::", "\n"
@@ -153,7 +153,7 @@ git_contrib_box <- function(
         "\n\n",
         ":::: {.callout-note", " collapse='", fold, "'", " appearance='default' icon=false}", "\n\n",
         "## [", header, "]{style='font-weight: bold; font-size: ", hsize, "em;'}\n\n",
-        "::: {style='font-size: ", size, "em; color: #282b2d;'}\n\n",
+        "::: {style='font-size: ", size, "em;'}\n\n",
         "\n", 
         glue::glue_collapse(contents), 
         gh_repo_link,
