@@ -239,26 +239,7 @@ Our goal is to limit the dependencies to only those critical to the functioning 
 
 [^depends-pkg-ns]: I've made this process somewhat easier by explicitly namespacing all of the add-on package functions in `sap` (i.e., with `pkg::fun()`).
 
-A great place to start is our `app.R` file: 
-
-```{r}
-#| eval: false
-#| code-fold: false
-# pkgs <- c("shiny", "shinythemes", "stringr", "ggplot2", "rlang")
-# install.packages(pkgs, quiet = TRUE)
-
-# packages ------------------------------------
-library(shiny)
-library(shinythemes)
-library(stringr)
-library(ggplot2)
-library(rlang)
-
-# launch_app ------------------------------------
-launch_app()
-```
-
-Ideally, we'll want to replace these calls to `libary()`, but first we have to make sure the functions we're using in these packages will be available in `sap`.
+A great place to start is our `app.R` file. See the [current app.R](https://github.com/mjfrigaard/sap/blob/06.1_pkg-exports/app.R) for reference. Ideally, we'll want to replace library() calls once we ensure the required functions are available in `sap` with proper namespace declarations.
 
 When we run the contents of `app.R`, we see the following:
 
@@ -570,21 +551,7 @@ ggplot(data = mtcars,
 #  could not find function "ggplot"
 ```
 
-We can use the add-on/third-party package functions `sap` relies on, but we need to explicitly namespace these functions from their original package namespaces (i.e., using  `pkg::fun()`): 
-
-:::{layout="[40,60]" layout-valign="top"}
-
-``` r
-ggplot2::ggplot(data = mtcars, 
-  ggplot2::aes(x = disp, y = mpg)) + 
-  ggplot2::geom_point()
-```
-
-![](images/dep_using_addon_funs.png){width=100%}
-
-:::
-
-We can use `ggplot2` if we explicitly namespace it's functions
+We can use the add-on/third-party package functions `sap` relies on by explicitly namespacing them (i.e., `pkg::fun()`). See [GitHub](https://github.com/mjfrigaard/sap/blob/06.1_pkg-exports/R/scatter_plot.R) for examples of namespaced function calls in `scatter_plot()`.
 
 ```{r}
 #| label: co_box_accessing_exports
@@ -623,54 +590,21 @@ The message at the top of the **Help** pane is informative because it tells us t
 Let's add the `@export` tag to `R/scatter_plot.R` so it's exported from `sap`.
 
 ```{r}
-#| eval: false 
+#| eval: false
 #| code-fold: false
-#' Create scatter plot 
+#' Create Scatter Plot with ggplot2
 #'
-#' Custom [`ggplot2`](https://ggplot2.tidyverse.org/) function for building 
-#' scatter plots in `sap`.
-#' 
-#' 
-#' @param df `data.frame` or `tibble`
-#' @param x_var string variable mapped to `x` axis
-#' @param y_var string variable mapped to `y` axis
-#' Generate a Scatter Plot
+#' @param df data.frame with variables to plot
+#' @param x_var character variable for x-axis
+#' @param y_var character variable for y-axis
+#' @param col_var character variable for color aesthetic
+#' @param alpha_var numeric transparency (0-1)
+#' @param size_var numeric point size
 #'
-#' Creates a scatter plot using `ggplot2` with the specified data and 
-#' aesthetics.
-#'
-#' @param df *(data.frame)* The dataset containing the variables to plot.
-#' @param x_var *(character)* Name of the variable for the x-axis.
-#' @param y_var *(character)* Name of the variable for the y-axis.
-#' @param col_var *(character)* Name of the variable for the color aesthetic.
-#' @param alpha_var *(numeric)* Transparency level of points (0 to 1).
-#' @param size_var *(numeric)* Size of points.
-#'
-#' @return A `ggplot` object representing the scatter plot.
-#'
-#' @section Details:
-#' `scatter_plot()` is designed for use in Shiny applications but can also be 
-#'  used independently.
-#' It supports customization of transparency, size, and color aesthetics.
-#'
-#' @seealso
-#' - [`mod_scatter_display_server()`] for integrating this function into the
-#'   scatter plot module.
-#' - [`ggplot2::ggplot()`](https://ggplot2.tidyverse.org/) for details on 
-#'   `ggplot2` usage.
-#'
-#' @family **Utility Functions**
-#'
+#' @return A ggplot object
 #' @examples
-#' scatter_plot(
-#'   df = mtcars,
-#'   x_var = "mpg",
-#'   y_var = "hp",
-#'   col_var = "cyl",
-#'   alpha_var = 0.7,
-#'   size_var = 3
-#' )
-#'
+#' scatter_plot(df = mtcars, x_var = "mpg", y_var = "hp",
+#'   col_var = "cyl", alpha_var = 0.7, size_var = 3)
 #' @export
 ```
 
@@ -722,38 +656,7 @@ c("package:ggplot2") %in% search()
 [1]  FALSE
 ```
 
-However, we can access the functions we used the `pkg::fun()` syntax with because those functions are included in the loaded namespaces (which we can view with `loadedNamespaces()`)
-
-```{r}
-#| eval: false 
-#| code-fold: false
-c("ggplot2") %in% loadedNamespaces()
-```
-
-```{verbatim}
-#| eval: false 
-#| code-fold: false
-[1] TRUE
-```
-
-
-```{r}
-#| label: co_box_accessing_non_exported_funs
-#| echo: false
-#| results: asis
-#| eval: true
-co_box(
-  color = "g", 
-  look = "default", hsize = "1.05", size = "0.95", 
-  fold = TRUE,
-  header = "Accessing non-exported functions", 
-  contents = "
-***What about functions that _aren't_ exported from `sap`?***
-  
-Functions that are not exported (i.e., do not include the `@export` tag) are still accessible after installing and loading a package using the `pkg:::fun()`
-"
-)
-```
+Functions included via `pkg::fun()` are loaded in the namespace. Non-exported functions remain accessible via `pkg:::fun()`. See [R Packages, 2ed](https://r-pkgs.org/dependencies-in-practice.html#what-to-export) for guidance.
 
 ### What to [`@export`]{style="font-size: 1.00em"} {.unnumbered}
 
