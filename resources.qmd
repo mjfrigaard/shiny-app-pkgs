@@ -71,21 +71,7 @@ Shiny's internal functions previously automatically handled serving the contents
 
 ## Package files {.unnumbered}
 
-While developing, we get used to accessing and interacting with our package files from the **Files** pane or **Explorer** window:
-
-:::{.panel-tabset}
-
-### RStudio ![](images/rstudio-icon.png){height=20}
-
-!['Source' files for `sap` in **Files** pane](images/external_files_pane.png){width='80%'}
-
-### Positron ![](images/positron.png){height=20}
-
-!['Source' files for `sap` in **Explorer** window](images/external_positron_explorer_pane.png){width='80%'}
-
-:::
-
-However, as noted in the [data](data.qmd) chapter, the aren't the files in our *installed* package. We can use  `system.file()` and `fs::dir_tree()` to print a folder tree of our *installed* package files:
+While developing, we access files from the IDE's file explorer. However, as noted in the [data](data.qmd) chapter, these aren't the files in our *installed* package. We can use  `system.file()` and `fs::dir_tree()` to print a folder tree of our *installed* package files:
 
 ::: {layout="[50, 50]"}
 
@@ -330,62 +316,9 @@ inst/
 
 :::
 
-In `R/movies_ui.R`, we’ll include the `addResourcePath()` at the top of the `tagList()` and reference the image in `img()` using only the subfolder in the path:
+To use `www/` from `inst/`, call `addResourcePath()` in your UI function with `system.file("www", package = "sap")`, then reference files as `src = "www/filename.png"`. See [addResourcePath() documentation](https://shiny.posit.co/r/reference/shiny/latest/addResourcePath.html) for full details.
 
-```{r}
-#| eval: false 
-#| code-fold: show 
-#| code-summary: 'show/hide movies_ui()'
-movies_ui <- function() {
-  addResourcePath(
-    prefix = "www", # <1>
-    directoryPath = system.file("www", package = "sap") # <2>
-  )
-  tagList(
-    bslib::page_fillable(
-      h1("Movie Reviews"),
-      bslib::layout_sidebar(
-        sidebar =
-          bslib::sidebar(
-            title = tags$h4("Sidebar inputs"),
-            img(
-              src = "www/shiny.png", # <3>
-              height = 60,
-              width = 55,
-              style = "margin:10px 10px"
-            ),
-            mod_var_input_ui("vars")
-          ),
-        bslib::card(
-          full_screen = TRUE,
-          bslib::card_header(
-            tags$h4("Scatter Plot")
-          ),
-          mod_scatter_display_ui("plot"),
-          bslib::card_footer(
-            tags$blockquote(
-              tags$em(
-                tags$p(
-                  "The data for this application comes from the ",
-                  tags$a("Building web applications with Shiny",
-                    href = "https://rstudio-education.github.io/shiny-course/"
-                  ),
-                  "tutorial"
-                )
-              )
-            )
-          )
-        )
-      )
-    )
-  )
-}
-```
-1. Prefix (or folder name) of installed location  
-2. Path to installed package files  
-3. Reference to installed package image file   
-
-The application includes the image file after loading, documenting, and installing our package:
+After loading, documenting, and installing the package:
 
 ```{r}
 #| label: hot_key_load_all_00
