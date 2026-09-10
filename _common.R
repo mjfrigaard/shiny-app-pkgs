@@ -464,3 +464,138 @@ dev_box <- function(text, italic = TRUE, bold = FALSE) {
     ))
   }
 }
+
+dev_env <- function() {
+  os <- Sys.info()[["sysname"]]
+
+  # helper: run a command and capture first line of output, NA on failure
+  run_version <- function(cmd, args = "--version") {
+    out <- tryCatch(
+      suppressWarnings(system2(cmd, args, stdout = TRUE, stderr = TRUE)),
+      error = function(e) character(0)
+    )
+    if (length(out) == 0) return(NA_character_)
+    trimws(out[1])
+  }
+
+  # helper: read version from an Electron/VS Code style package.json or Info.plist
+  read_app_version <- function(paths) {
+    for (p in paths) {
+      if (!file.exists(p)) next
+      txt <- tryCatch(readLines(p, warn = FALSE), error = function(e) character(0))
+      # package.json / product.json: "version": "x.y.z"
+      m <- regmatches(txt, regexpr('"version"\\s*:\\s*"[^"]+"', txt))
+      if (length(m)) return(sub('.*"([^"]+)"$', "\\1", m[1]))
+      # Info.plist: CFBundleShortVersionString followed by <string>x.y.z</string>
+      i <- grep("CFBundleShortVersionString", txt)
+      if (length(i) && length(txt) > i[1]) {
+        return(gsub("<[^>]+>|\\s", "", txt[i[1] + 1]))
+      }
+      # RStudio VERSION file: plain text
+      if (length(txt) == 1 && nzchar(txt[1])) return(trimws(txt[1]))
+    }
+    NA_character_
+  }
+
+  ## R version ---------------------------------------------------------
+  r_info <- list(installed = TRUE, version = as.character(getRversion()),
+                 string = R.version.string)
+
+  ## rstudio version --------------------------------------------------
+  rstudio <- list(installed = FALSE, version = NA_character_, running = FALSE)
+  if (nzchar(Sys.getenv("RSTUDIO")) && exists("RStudio.Version")) {
+    rstudio$installed <- TRUE
+    rstudio$running   <- TRUE
+    rstudio$version   <- as.character(get("RStudio.Version")()$version)
+  } else {
+    candidates <- switch(os,
+      Windows = c(
+        file.path(Sys.getenv("ProgramFiles"), "RStudio", "resources", "app", "VERSION"),
+        file.path(Sys.getenv("ProgramFiles"), "RStudio", "VERSION"),
+        file.path(Sys.getenv("LOCALAPPDATA"), "Programs", "RStudio", "resources", "app", "VERSION")
+      ),
+      Darwin = c(
+        "/Applications/RStudio.app/Contents/Info.plist",
+        "~/Applications/RStudio.app/Contents/Info.plist"
+      ),
+      c("/usr/lib/rstudio/VERSION", "/usr/lib/rstudio/resources/app/VERSION",
+        "/opt/rstudio/VERSION", "/usr/lib/rstudio-server/VERSION")
+    )
+    candidates <- path.expand(candidates)
+    v <- read_app_version(candidates)
+    if (!is.na(v)) {
+      rstudio$installed <- TRUE
+      rstudio$version   <- v
+    } else if (nzchar(Sys.which("rstudio"))) {
+      rstudio$installed <- TRUE
+      rstudio$version   <- run_version("rstudio")
+    }
+  }
+
+  ## positron version --------------------------------------------------
+  positron <- list(installed = FALSE, version = NA_character_, running = FALSE)
+  if (nzchar(Sys.getenv("POSITRON"))) {
+    positron$installed <- TRUE
+    positron$running   <- TRUE
+    positron$version   <- Sys.getenv("POSITRON_VERSION", NA_character_)
+  }
+  if (is.na(positron$version)) {
+    candidates <- switch(os,
+      Windows = c(
+        file.path(Sys.getenv("LOCALAPPDATA"), "Programs", "Positron", "resources", "app", "product.json"),
+        file.path(Sys.getenv("ProgramFiles"), "Positron", "resources", "app", "product.json")
+      ),
+      Darwin = c(
+        "/Applications/Positron.app/Contents/Resources/app/product.json",
+        "~/Applications/Positron.app/Contents/Resources/app/product.json",
+        "/Applications/Positron.app/Contents/Info.plist"
+      ),
+      c("/usr/share/positron/resources/app/product.json",
+        "/opt/positron/resources/app/product.json")
+    )
+    candidates <- path.expand(candidates)
+    v <- read_app_version(candidates)
+    if (!is.na(v)) {
+      positron$installed <- TRUE
+      positron$version   <- v
+    } else if (nzchar(Sys.which("positron"))) {
+      positron$installed <- TRUE
+      positron$version   <- run_version("positron")
+    }
+  }
+
+  ## python version -----------------------------------------------------
+  python <- list(installed = FALSE, version = NA_character_, path = NA_character_)
+  for (exe in c("python3", "python", "py")) {
+    p <- Sys.which(exe)
+    if (nzchar(p)) {
+      v <- run_version(p)
+      if (!is.na(v) && grepl("^Python", v)) {
+        python$installed <- TRUE
+        python$path      <- unname(p)
+        python$version   <- sub("^Python\\s+", "", v)
+        break
+      }
+    }
+  }
+
+  res <- list(os = os, R = r_info, RStudio = rstudio, Positron = positron, Python = python)
+  class(res) <- "dev_env"
+  res
+}
+
+print.dev_env <- function(x, ...) {
+  fmt <- function(name, info) {
+    status <- if (isTRUE(info$installed)) {
+      paste0("installed (", ifelse(is.na(info$version), "version unknown", info$version), ")")
+    } else "not found"
+    if (isTRUE(info$running)) status <- paste(status, "[current session]")
+    cat(sprintf("%-9s %s\n", paste0(name, ":"), status))
+  }
+  cat("OS:       ", x$os, "\n", sep = "")
+  fmt("R", x$R)
+  fmt("RStudio", x$RStudio)
+  fmt("Positron", x$Positron)
+  fmt("Python", x$Python)
+  invisible(x)
+}

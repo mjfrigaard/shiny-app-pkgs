@@ -711,12 +711,18 @@ With Markdown, you can use backticks for inline code, bulleted lists, and links 
 
 The `@family` tag works the same way, but can be used to group functions by type. Markdown gives us the ability to use bold or italic text for emphasis.
 
-For the variable input module:
+For the variable input/display modules:
 
 ```{r}
 #| eval: false
 #| code-fold: false
-#’ @family **Variable Input Module**
+#' @family **Input Module**
+```
+
+```{r}
+#| eval: false
+#| code-fold: false
+#' @family **Display Module**
 ```
 
 For utility functions:
@@ -737,17 +743,17 @@ flowchart TD
         launch_app("Standalone Function:<br>launch_app()")
     end
     
-    subgraph Graph["<strong>Display Modules</strong>"]
+    subgraph Graph["<strong>Display Module</strong>"]
         mod_scatter_display_ui("UI Module:<br>mod_scatter_display_ui()")
         mod_scatter_display_server("Server Module:<br>mod_scatter_display_server()")
     end
     
-    subgraph Vars["<strong>Input Modules</strong>"]
+    subgraph Vars["<strong>Input Module</strong>"]
         mod_var_input_ui("UI Module:<br>mod_var_input_ui()")
         mod_var_input_server("Server Module:<br>mod_var_input_server()")
     end
 
-    subgraph Utils["<strong>Utility Functions</strong>"]
+    subgraph Utils["<strong>Utility Function</strong>"]
         scatter_plot("Utility Function:<br>scatter_plot()")
     end
 
@@ -769,15 +775,71 @@ flowchart TD
 
 Markdown doesn’t drastically change `@family`, but it improves the consistency of formatting across related functions.
 
-#### Variable input
+#### Input module
 
-Below are roxygen2 documentation examples for the variable input module. See the [full documented module](https://github.com/mjfrigaard/sap/blob/05_roxygen2/R/mod_var_input.R) on GitHub for complete implementation with `@examples`.
+Below are `roxygen2` documentation examples for the variable input module. See the [full documented module on GitHub](https://github.com/mjfrigaard/sap/blob/05_roxygen2/R/mod_var_input.R) for complete implementation with `@examples`.
 
 **`mod_var_input_ui()`**:
 
 Creates a UI for selecting variables and attributes for a scatter plot. Namespace all input IDs with `shiny::NS()` and return a `shiny::tagList()` with UI elements (dropdowns for x/y/color, sliders for alpha/size, text input for title).
 
+```{r}
+#| eval: false 
+#| code-fold: true
+#| code-summary: 'show/hide mod_var_input_ui documentation'
+#' Variable Input Module - UI
+#'
+#' Creates a UI for selecting variables and attributes for a scatter plot.
+#'
+#' @param id *(character)* Namespace ID for the module.
+#'
+#' @return A `shiny::tagList()` containing UI elements for variable 
+#' selection.
+#'
+#' @section Details: 
+#' `mod_var_input_ui()` provides UI controls for customizing scatter plots. 
+#'  It includes:  
+#' - **Dropdowns**: 
+#'   - X-axis variable
+#'   - Y-axis variable
+#'   - Color aesthetic variable
+#' - **Sliders**:
+#'   - Transparency (`alpha`) ranging from 0 to 1.
+#'   - Point size ranging from 0 to 5.
+#' - **Text Input**:
+#'   - Plot title.
+#'
+#' The function uses `shiny::NS()` to namespace all input IDs.
+#'
+#' @seealso
+#' - [`mod_var_input_server()`]  for server-side logic.
+#' - [`shiny::tagList()`](https://shiny.posit.co/r/reference/shiny/latest/tagList.html)
+#'   for containing UI elements.
+#' - [`shiny::NS()`](https://shiny.posit.co/r/reference/shiny/latest/NS.html)
+#'   for namespacing.
+#'
+#' @family **Input Module**
+#'
+#' @examples
+#'
+#' if (interactive()) {
+#'   shiny::shinyApp(
+#'     ui = shiny::fluidPage(mod_var_input_ui("vars")),
+#'     server = function(input, output, session) {
+#'       selected_vars <- mod_var_input_server("vars")
+#'       shiny::observe(
+#'           print(selected_vars())
+#'        )
+#'     }
+#'   )
+#' }
+#' 
+```
+
+
 **`mod_var_input_server()`**:
+
+The server-side documentation describes 1) the reactive expression the UI returns, 2) the connection to the `mod_scatter_display_server()` via `@seealso`.
 
 ```{r}
 #| eval: false 
@@ -808,13 +870,17 @@ Creates a UI for selecting variables and attributes for a scatter plot. Namespac
 #' - [`mod_var_input_ui()`] for the UI counterpart of this module.
 #' - [`mod_scatter_display_server()`] for displaying the scatter plot.
 #'
-#' @family **Variable Input Module**
+#' @family **Input Module**
 #'
 ```
 
-#### Graph display
+#### Display module
+
+Below are `roxygen2` documentation examples for the graph display module. See the [full documented module on GitHub](https://github.com/mjfrigaard/sap/blob/05_roxygen2/R/mod_scatter_display.R) for complete implementation with `@examples`.
 
 **`mod_scatter_display_ui`**:
+
+Creates a UI for displaying the scatter plot and metadata. All input IDs are namespaced with `shiny::NS()`. References the utility function (`scatter_plot()`) with `@seealso`:
 
 ```{r}
 #| eval: false 
@@ -838,12 +904,14 @@ Creates a UI for selecting variables and attributes for a scatter plot. Namespac
 #'   module.
 #' - [`scatter_plot()`]  for the utility function generating the plot.
 #'
-#' @family **Plot Display Module**
+#' @family **Display Module**
 #'
 #'
 ```
 
 **`mod_scatter_display_server`**:
+
+The display server module includes `@section`s describing the reactive expression (`var_inputs`) and lists all the reactive inputs. Also includes references to the input module  (`mod_var_input_server()`) and utility function (`scatter_plot()`).
 
 ```{r}
 #| eval: false 
@@ -879,14 +947,18 @@ Creates a UI for selecting variables and attributes for a scatter plot. Namespac
 #' - [`mod_var_input_server()`] for variable selection.
 #' - [`scatter_plot()`] for generating the scatter plot.
 #'
-#' @family **Plot Display Module**
+#' @family **Display Module**
 #'
 #'
 ```
 
 #### Utility function
 
-`scatter_plot()`:
+Our [`scatter_plot()`](https://github.com/mjfrigaard/sap/blob/05_roxygen2/R/scatter_plot.R) utility function includes descriptions of the inputs (with `@param`) and a `@section` describing how it's used. It also includes a hyperlink to the `ggplot2` documentation. 
+
+**`scatter_plot()`**:
+
+References the module server function it's used in (`mod_scatter_display_server()`)
 
 ```{r}
 #| eval: false 
@@ -944,8 +1016,9 @@ Splitting the standalone app function in `app.R` into separate UI and server fun
 
 I’ve split the UI and server from `launch_app()` into separate `movies_ui()` and `movies_server()` below.
 
-The `movies_ui()` doesn't have any arguments--it contains the theme, image, and application title:
+The [`movies_ui()`](https://github.com/mjfrigaard/sap/blob/05_roxygen2/R/movies_ui.R) doesn't have any arguments--it contains the theme, image, and application title:
 
+**`movies_ui`**:
 
 ```{r}
 #| eval: false 
@@ -999,7 +1072,10 @@ movies_ui <- function() {
 }
 ```
 
-`movies_server()` is written to be passed to the `server` argument in `shinyApp()`:
+
+**`movies_server`**:
+
+[`movies_server()`](https://github.com/mjfrigaard/sap/blob/05_roxygen2/R/movies_server.R) is written to be passed to the `server` argument in `shinyApp()`:
 
 ```{r}
 #| eval: false 
@@ -1066,33 +1142,32 @@ This will change the grouping in our `@family` tags to the following:
 %%| fig-align: center
 %%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"18px"}}}%%
 
-flowchart LR
+flowchart TD
     subgraph AppCom["<strong>App Components</strong>"]
         launch_app("Standalone Function:<br><code>launch_app()</code>")
         UI("UI:<br><code>movies_ui()</code>")
         Server("Server:<br><code>movies_server()</code>")
     end
     
-    subgraph Graph["<strong>Display Modules</strong>"]
-        mod_scatter_display_ui["UI Module:<br><code>mod_scatter_display_ui()</code>"]
-        mod_scatter_display_server["Server Module:<br><code>mod_scatter_display_server()</code>"]
+    subgraph Vars["<strong>Input Module</strong>"]
+        mod_var_input["Module:<br><code>mod_var_input.R</code>"]
     end
     
-    subgraph Vars["<strong>Input Modules</strong>"]
-        mod_var_input_ui["UI Module:<br><code>mod_var_input_ui()</code>"]
-        mod_var_input_server["Server Module:<br><code>mod_var_input_server()</code>"]
+    subgraph Graph["<strong>Display Module</strong>"]
+        mod_scatter_display["Module:<br><code>mod_scatter_display.R</code>"]
     end
 
-    subgraph Utils["<strong>Utility Functions</strong>"]
+    subgraph Utils["<strong>Utility Function</strong>"]
         scatter_plot("Utility Function:<br><code>scatter_plot()</code>")
     end
 
     launch_app --> UI
     launch_app --> Server
-    UI --> mod_var_input_ui
-    UI --> mod_scatter_display_ui
-    Server --> mod_var_input_server
-    Server --> mod_scatter_display_server --> scatter_plot
+    UI --"call UI module function"--> mod_var_input
+    UI --"call UI module function"--> mod_scatter_display
+    Server --"calls server module function"--> mod_var_input
+    Server --"calls server module function"--> mod_scatter_display
+    mod_scatter_display --"calls"--> scatter_plot
 
     style AppCom fill:#e8f4f1,stroke:#4CBB9D,stroke-width:2px
     style Vars fill:#e8f4f1,stroke:#4CBB9D,stroke-width:2px
@@ -1101,10 +1176,8 @@ flowchart LR
     style launch_app fill:#4CBB9D,color:#fff,stroke:#2d8a7a,stroke-width:1px
     style UI fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
     style Server fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
-    style mod_var_input_ui fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
-    style mod_var_input_server fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
-    style mod_scatter_display_ui fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
-    style mod_scatter_display_server fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
+    style mod_var_input fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
+    style mod_scatter_display fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
     style scatter_plot fill:#333,color:#fff,stroke:#000,stroke-width:1px
     
 ```
