@@ -1,0 +1,299 @@
+# Posit Connect Cloud {#sec-posit-connect-cloud}
+
+```{r}
+#| eval: true
+#| echo: false
+#| include: false
+source("_common.R")
+```
+
+```{r}
+#| label: co_box_tldr
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b",
+  look = "default", hsize = "1.05", size = "0.95",
+  header = "TLDR: Deploying to Connect Cloud", fold = TRUE,
+  contents = "
+[Posit Connect Cloud](https://posit.cloud/) is a managed hosting platform for deploying Shiny applications, Quarto documents, and other R/Python content. Deploy your app-package using `rsconnect::deployApp()` with your Connect Cloud account credentials. The deployment process is identical to shinyapps.io but gives you a centralized platform integrated with your Posit Team workspace.
+
+  1. Create a [Posit Connect Cloud](https://posit.cloud/) account and note your server URL\n
+
+  2. Install and configure `rsconnect` with your account credentials\n
+
+  3. Deploy using `rsconnect::deployApp()` from RStudio or Positron\n
+
+  4. Monitor your application through the Connect Cloud dashboard\n
+
+  "
+)
+```
+
+This chapter covers deploying your app-package to [Posit Connect Cloud](https://posit.cloud/), a managed hosting platform for Shiny applications and other content. Unlike shinyapps.io, Connect Cloud integrates directly with your Posit Team workspace, giving you a centralized place to manage all your deployed applications alongside your collaborators' work. We deployed the production version of our application in @sec-resources-prod-deploy, but here I'll walk through the Connect Cloud deployment workflow and show you what to expect during and after deployment.
+
+```{r}
+#| label: shinypak_apps
+#| echo: false
+#| results: asis
+#| eval: true
+shinypak_apps(regex = "^19", branch = "19_connect-cloud")
+```
+
+## Deployment workflow {#sec-connect-cloud-workflow}
+
+The diagram below shows the complete deployment flow from your local development environment to a running application in Connect Cloud:
+
+```{mermaid}
+%%| eval: true
+%%| fig-align: 'center'
+%%| fig-caption: 'Posit Connect Cloud deployment workflow'
+%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"14px", "darkMode":true}}}}%%
+
+flowchart TD
+    subgraph Local["<strong>Local Development</strong>"]
+        code["App-package code<br/>(R/, inst/, app.R)"]
+        test["Test locally with<br/>launch_app()"]
+    end
+
+    subgraph Config["<strong>Configuration</strong>"]
+        creds["rsconnect credentials<br/>(API key, server URL)"]
+    end
+
+    subgraph Deploy["<strong>Deployment</strong>"]
+        bundle["Bundle files &<br/>capture dependencies"]
+        upload["Upload to<br/>Connect Cloud"]
+    end
+
+    subgraph Cloud["<strong>Connect Cloud</strong>"]
+        build["Build container image<br/>(install packages)"]
+        start["Start application<br/>instance"]
+    end
+
+    subgraph Monitor["<strong>Production</strong>"]
+        running["App running &<br/>accessible"]
+        dashboard["Monitor via<br/>dashboard"]
+    end
+
+    code --> test
+    test --> check{"Ready to<br/>deploy?"}
+    check -->|"Yes"| creds
+    check -->|"No"| code
+    creds --> bundle
+    bundle --> upload
+    upload --> build
+    build --> success{"Build<br/>successful?"}
+    success -->|"No"| logs["View build logs<br/>& troubleshoot"]
+    logs --> code
+    success -->|"Yes"| start
+    start --> running
+    running --> dashboard
+
+    style code fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px,rx:5,ry:5
+    style test fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px,rx:5,ry:5
+    style creds fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px,rx:5,ry:5
+    style bundle fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px,rx:5,ry:5
+    style upload fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px,rx:5,ry:5
+    style build fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px,rx:5,ry:5
+    style start fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px,rx:5,ry:5
+    style running fill:#90EE90,color:#000,stroke:#4CBB9D,stroke-width:2px,rx:5,ry:5
+    style dashboard fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px,rx:5,ry:5
+    style check fill:#fff,color:#000,stroke:#333,stroke-width:1px
+    style success fill:#fff,color:#000,stroke:#333,stroke-width:1px
+    style logs fill:#FFB6C6,color:#000,stroke:#CC0000,stroke-width:1px,rx:5,ry:5
+```
+
+## Configuring `rsconnect` {#sec-connect-cloud-rsconnect}
+
+To deploy to Posit Connect Cloud, you'll need the [`rsconnect` package](https://rstudio.github.io/rsconnect/). Install and load it:
+
+```{r}
+#| eval: false
+#| code-fold: false
+install.packages("rsconnect")
+library(rsconnect)
+```
+
+Connect Cloud uses API authentication, which means you'll configure `rsconnect` with your server URL and API key (not a username and password). You can generate an API key from your Connect Cloud account settings.
+
+Set your Connect Cloud credentials using `rsconnect::connectUser()`:
+
+```{r}
+#| eval: false
+#| code-fold: false
+rsconnect::connectUser(
+  account = "https://connect.posit.cloud",
+  token = "your_api_key",
+  server = "posit-connect-cloud"
+)
+```
+
+Once configured, `rsconnect` will remember your credentials for future deployments.
+
+### Deploying from RStudio ![](images/rstudio-icon.png){height=20}
+
+RStudio connects to Connect Cloud through the **Publish** button. After configuring your account, load and document your app-package, then launch `app.R`:
+
+```{r}
+#| eval: false
+#| code-fold: false
+devtools::load_all()
+devtools::document()
+source("app.R")
+```
+
+Click the **Publish** icon in the **Viewer** pane, select your deployment account, choose which files to include, and enter an app name. RStudio will bundle your files and send them to Connect Cloud.
+
+### Deploying from Positron ![](images/positron.png){height=20}
+
+You can also deploy from Positron ![](images/positron.png){height=20} using the `rsconnect::deployApp()` function. This approach gives you full control over deployment parameters:
+
+```{r}
+#| eval: false
+#| code-fold: false
+rsconnect::deployApp(
+  appDir = getwd(),
+  appName = "movie-reviews",
+  server = "posit-connect-cloud",
+  account = "your_account")
+```
+
+The deployment output is printed directly to the **Console**, and the process works identically to RStudio's **Publish** button—both use `rsconnect` under the hood.
+
+## Deployment logs {#sec-connect-cloud-deploy-logs}
+
+When you deploy to Connect Cloud, you'll see output showing each step of the process: bundling files, capturing dependencies, uploading the bundle, and building the container environment. Here's what a successful deployment looks like:
+
+```{verbatim}
+#| eval: false
+#| code-fold: show
+#| code-summary: 'show/hide deployment log'
+── Preparing for deployment ────────────────────────────────────────────────────
+ℹ Deploying to Posit Connect Cloud
+ℹ Creating application on server...
+ℹ Created deployment with id 98765432
+ℹ Bundling 68 files: .Rbuildignore, app.R, DESCRIPTION,
+NAMESPACE, README.md, renv.lock, inst/extdata/movies.fst,
+inst/prod/app/app.R, R/launch_app.R, R/mod_var_input.R,
+R/mod_scatter_display.R, R/scatter_plot.R, data/movies.rda,
+man/*.Rd, tests/testthat/*.R, and others...
+ℹ Capturing R dependencies
+ℹ Found 87 dependencies
+ℹ Created 2,941,205b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle
+── Deploying to server ─────────────────────────────────────────────────────────
+ℹ Waiting for deployment to start...
+ℹ Building image...
+ℹ Installing system dependencies...
+ℹ Installing R packages...
+ℹ Starting deployment...
+✔ Deployment succeeded!
+ℹ Your application is available at:
+   https://your-workspace.connect.posit.cloud/content/abc123/
+```
+
+The bundling step captures all your R dependencies through `renv.lock` (if you're using `renv`) or by scanning your code for package imports. Connect Cloud then builds a container image with those dependencies installed, ensuring your app runs the same way regardless of updates to external packages.
+
+You can monitor your application's status and view more detailed logs through the Connect Cloud dashboard.
+
+## Monitoring and managing your application {#sec-connect-cloud-management}
+
+After your application is deployed, visit the Connect Cloud dashboard to monitor its status. You can view:
+
+- **Application logs**: Review startup messages and runtime output to debug issues.
+- **Usage metrics**: See how many users are accessing your app and when.
+- **Resource usage**: Monitor CPU and memory consumption.
+- **Deployment history**: Track previous versions and rollback if needed.
+
+You can also update your application by redeploying from RStudio or Positron—Connect Cloud will bundle the new code and replace the running instance with the updated version.
+
+## The `rsconnect` folder {#sec-connect-cloud-rsconnect-dir}
+
+When you deploy with `rsconnect`, a `rsconnect/` folder is automatically created to store deployment metadata and configuration. This folder records which account and server each app was deployed to:
+
+```{verbatim}
+#| eval: false
+#| code-fold: false
+rsconnect/
+└── connect.posit.cloud
+    └── your_account
+        └── movie-reviews.dcf
+
+3 directories, 1 file
+```
+
+The `.dcf` file contains metadata about your deployment (app ID, account, version), but it should **not** be committed to Git. It contains machine-specific settings and can cause conflicts when multiple team members deploy the same app.
+
+Add `rsconnect/` to `.gitignore` to prevent accidental commits:
+
+```ini
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.DS_Store
+sap.Rcheck/
+sap*.tar.gz
+sap*.tgz
+rsconnect/
+
+/.quarto/
+inst/doc
+*_.new.png
+```
+
+If `rsconnect/` was already committed, remove it from Git history:
+
+```{bash}
+#| eval: false
+#| code-fold: false
+git rm -r --cached rsconnect/
+git commit -m "Remove rsconnect folder from repository"
+git push origin main
+```
+
+This will remove it from the Git history while keeping it locally. If we need to share deployment details with our team, we can document the deployment process in the `README.Rmd` or create a `deploy.Rmd` vignette.
+
+ 
+
+## Recap {.unnumbered}
+
+Deploying your app-package to Posit Connect Cloud is straightforward: configure `rsconnect` with your account credentials, then push your app from RStudio or Positron. Connect Cloud handles dependency management and container setup automatically.
+
+```{r}
+#| label: co_box_recap
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "g",
+  fold = FALSE,
+  look = "default",
+  hsize = "1.05",
+  size = "0.95",
+  header = "Recap: Posit Connect Cloud",
+  contents = "
+
+1. Create a [Posit Connect Cloud](https://posit.cloud/) account and generate an API key from your account settings.
+
+2. Install `rsconnect` and configure it with your Connect Cloud URL and API key using `rsconnect::connectUser()`.
+
+3. Verify your app runs locally using `launch_app()` before deploying.
+
+4. Deploy from RStudio using the **Publish** button or from any IDE using `rsconnect::deployApp()`.
+
+5. Add `rsconnect/` to `.gitignore` to prevent deployment metadata from being committed:
+   \`\`\`ini
+   rsconnect/
+   \`\`\`
+   If already committed:
+   \`\`\`sh
+   git rm -r --cached rsconnect/
+   git commit -m 'Remove rsconnect folder from repository'
+   \`\`\`
+
+6. Monitor your application through the Connect Cloud dashboard to view logs, usage, and manage versions.
+  ")
+```
