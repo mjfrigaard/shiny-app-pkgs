@@ -1,8 +1,8 @@
-# shinyapps.io {#sec-shinyappsio}
+# Posit Connect Cloud {#sec-posit-connect-cloud}
 
 ```{r}
-#| eval: true 
-#| echo: false 
+#| eval: true
+#| echo: false
 #| include: false
 source("_common.R")
 ```
@@ -13,16 +13,25 @@ source("_common.R")
 #| results: asis
 #| eval: true
 co_box(
-  color = "b", 
+  color = "b",
   look = "default", hsize = "1.05", size = "0.95",
-  header = "TLDR: Deploying your app", fold = TRUE,
+  header = "TLDR: Deploying to Connect Cloud", fold = TRUE,
   contents = "
+[Posit Connect Cloud](https://posit.cloud/) is a managed hosting platform for deploying Shiny applications, Quarto documents, and other R/Python content. Deploy your app-package using `rsconnect::deployApp()` with your Connect Cloud account credentials. The deployment process is identical to shinyapps.io but gives you a centralized platform integrated with your Posit Team workspace.
 
-"
+  1. Create a [Posit Connect Cloud](https://posit.cloud/) account and note your server URL\n
+
+  2. Install and configure `rsconnect` with your account credentials\n
+
+  3. Deploy using `rsconnect::deployApp()` from RStudio or Positron\n
+
+  4. Monitor your application through the Connect Cloud dashboard\n
+
+  "
 )
 ```
 
-This chapter covers deploying your app-package to [shinyapps.io](https://www.shinyapps.io/),  a cloud-based hosting service provided by Posit (formerly RStudio) for deploying and managing Shiny applications, Quarto/RMarkdown reports, APIs, and other content. We deployed the production version of our application in the previous @sec-resources-prod-deploy, but we will go into more depth below.
+This chapter covers deploying your app-package to [Posit Connect Cloud](https://posit.cloud/), a managed hosting platform for Shiny applications and other content. Unlike shinyapps.io, Connect Cloud integrates directly with your Posit Team workspace, giving you a centralized place to manage all your deployed applications alongside your collaborators' work. We deployed the production version of our application in @sec-resources-prod-deploy, but here I'll walk through the Connect Cloud deployment workflow and show you what to expect during and after deployment.
 
 ```{r}
 #| label: shinypak_apps
@@ -32,160 +41,192 @@ This chapter covers deploying your app-package to [shinyapps.io](https://www.shi
 shinypak_apps(regex = "^19", branch = "19_shinyappsio")
 ```
 
-## Publishing with [`rsconnect`]{style="font-size: 1.10em; font-weight: bold;"} {#sec-shinyappsio-publish}
+## Deployment workflow {#sec-connect-cloud-workflow}
 
-Below we'll cover deploying your Shiny app-package in RStudio ![](images/rstudio-icon.png){height=20} and Positron ![](images/positron.png){height=20}. The Positron ![](images/positron.png){height=20} IDE was still in the early stages of development when this section was written, so some of these steps may change in future versions. 
+The diagram below shows the complete deployment flow from your local development environment to a running application in Connect Cloud:
 
-Make sure the [`rsconnect` package](https://rstudio.github.io/rsconnect/) is installed and loaded:
+```{mermaid}
+%%| eval: true
+%%| fig-align: 'center'
+%%| fig-caption: 'Posit Connect Cloud deployment workflow'
+%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"14px", "darkMode":true}}}}%%
+
+flowchart TD
+    subgraph Local["<strong>Local Development</strong>"]
+        code["App-package code<br/>(R/, inst/, app.R)"]
+        test["Test locally with<br/>launch_app()"]
+    end
+
+    subgraph Config["<strong>Configuration</strong>"]
+        creds["rsconnect credentials<br/>(API key, server URL)"]
+    end
+
+    subgraph Deploy["<strong>Deployment</strong>"]
+        bundle["Bundle files &<br/>capture dependencies"]
+        upload["Upload to<br/>Connect Cloud"]
+    end
+
+    subgraph Cloud["<strong>Connect Cloud</strong>"]
+        build["Build container image<br/>(install packages)"]
+        start["Start application<br/>instance"]
+    end
+
+    subgraph Monitor["<strong>Production</strong>"]
+        running["App running &<br/>accessible"]
+        dashboard["Monitor via<br/>dashboard"]
+    end
+
+    code --> test
+    test --> check{"Ready to<br/>deploy?"}
+    check -->|"Yes"| creds
+    check -->|"No"| code
+    creds --> bundle
+    bundle --> upload
+    upload --> build
+    build --> success{"Build<br/>successful?"}
+    success -->|"No"| logs["View build logs<br/>& troubleshoot"]
+    logs --> code
+    success -->|"Yes"| start
+    start --> running
+    running --> dashboard
+
+    style code fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px,rx:5,ry:5
+    style test fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px,rx:5,ry:5
+    style creds fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px,rx:5,ry:5
+    style bundle fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px,rx:5,ry:5
+    style upload fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px,rx:5,ry:5
+    style build fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px,rx:5,ry:5
+    style start fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px,rx:5,ry:5
+    style running fill:#90EE90,color:#000,stroke:#4CBB9D,stroke-width:2px,rx:5,ry:5
+    style dashboard fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px,rx:5,ry:5
+    style check fill:#fff,color:#000,stroke:#333,stroke-width:1px
+    style success fill:#fff,color:#000,stroke:#333,stroke-width:1px
+    style logs fill:#FFB6C6,color:#000,stroke:#CC0000,stroke-width:1px,rx:5,ry:5
+```
+
+## Configuring `rsconnect` {#sec-connect-cloud-rsconnect}
+
+To deploy to Posit Connect Cloud, you'll need the [`rsconnect` package](https://rstudio.github.io/rsconnect/). Install and load it:
 
 ```{r}
-#| eval: false 
-#| code-fold: false 
+#| eval: false
+#| code-fold: false
 install.packages("rsconnect")
 library(rsconnect)
 ```
 
+Connect Cloud uses API authentication, which means you'll configure `rsconnect` with your server URL and API key (not a username and password). You can generate an API key from your Connect Cloud account settings.
 
-### In RStudio ![](images/rstudio-icon.png){height=20}
-
-RStudio ![](images/rstudio-icon.png){height=20} can be configured to work with your [shinyapps.io](https://www.shinyapps.io/) account by clicking on **Tools** > **Global options** > **Publishing** and following the [documentation.](https://docs.posit.co/shinyapps.io/guide/getting_started/) 
-
-![shinyapps.io account added to RStudio](images/deploy_shinyappsio_pub_accounts.png){width=100% fig-align='center'}
-
-You can also manually set the [shinyapps.io](https://www.shinyapps.io/) account info using `rsconnect::setAccountInfo()`:
+Set your Connect Cloud credentials using `rsconnect::connectUser()`:
 
 ```{r}
-#| eval: false 
+#| eval: false
 #| code-fold: false
-rsconnect::setAccountInfo(
-  name = 'your_username',
-  token = 'your_token',
-  secret = 'your_secret')
+rsconnect::connectUser(
+  account = "https://connect.posit.cloud",
+  token = "your_api_key",
+  server = "posit-connect-cloud"
+)
 ```
 
-After configuring our [shinyapps.io](https://www.shinyapps.io/) account and loading, documenting, and installing the `sap` package, we can launch the application and click on the **Publish** icon: 
+Once configured, `rsconnect` will remember your credentials for future deployments.
 
-![Send app.R to **Console** and click **Publish**](images/shinyappsio_deploy_app_dot_r.png){width=100% fig-align='center'}
+### Deploying from RStudio ![](images/rstudio-icon.png){height=20}
 
-Make sure all the files in the package are selected, enter an app title, then click **Publish**:
-
-![Publishing apps to `shinyapps.io`](images/shinyappsio_publish_window.png){width=100% fig-align='center'}
-
-
-The **Deploy** pane will open and you'll see a deployment log as your application is sent to the server: 
-
-```{verbatim}
-#| eval: false 
-#| code-fold: show 
-#| code-summary: 'show/hide deployment log'
-── Preparing for deployment ────────────────────────────────────────────────────
-✔ Deploying "movie-reviews" using "server: shinyapps.io / username: paradigmdata"
-ℹ Creating application on server...
-✔ Created application with id 14030745
-ℹ Bundling 72 files: .Rbuildignore, .Rprofile, .vscode/tasks.json, app.R, 
-data/movies.rda, data/movies.RData, data-raw/tidy_movies.R, DESCRIPTION, 
-NAMESPACE, README.md, vignettes/specs.Rmd, inst/extdata/movies.fst, 
-inst/prod/app/.DS_Store, inst/prod/app/app.R, inst/quarto/_quarto.yml, 
-inst/quarto/.gitignore, inst/quarto/index.html, inst/quarto/index.qmd, …, 
-tests/testthat/test-text_logo.R, and tests/testthat.R
-ℹ Capturing R dependencies
-✔ Found 103 dependencies
-✔ Created 3,283,848b bundle
-ℹ Uploading bundle...
-✔ Uploaded bundle with id 9818877
-── Deploying to server ─────────────────────────────────────────────────────────
-Waiting for task: 1510689240
-  building: Parsing manifest
-  building: Building image: 12075212
-  building: Installing system dependencies
-  building: Fetching packages
-  building: Installing packages
-building: Installing files
-  building: Pushing image: 12075212
-  deploying: Starting instances
-  rollforward: Activating new instances
-  success: Stopping old instances
-── Deployment complete ─────────────────────────────────────────────────────────
-✔ Successfully deployed to <https://yourusername.shinyapps.io/app-name/>
-Deployment completed: https://yourusername.shinyapps.io/app-name//
-```
-
-### In Positron ![](images/positron.png){height=20}
-
-After authenticating [shinyapps.io](https://www.shinyapps.io/), loading, documenting, and installing our app-package, we can deploy it in Positron ![](images/positron.png){height=20} using the `rsconnect::deployApp()` function.  
+RStudio connects to Connect Cloud through the **Publish** button. After configuring your account, load and document your app-package, then launch `app.R`:
 
 ```{r}
-#| eval: false 
+#| eval: false
+#| code-fold: false
+devtools::load_all()
+devtools::document()
+source("app.R")
+```
+
+Click the **Publish** icon in the **Viewer** pane, select your deployment account, choose which files to include, and enter an app name. RStudio will bundle your files and send them to Connect Cloud.
+
+### Deploying from Positron ![](images/positron.png){height=20}
+
+You can also deploy from Positron ![](images/positron.png){height=20} using the `rsconnect::deployApp()` function. This approach gives you full control over deployment parameters:
+
+```{r}
+#| eval: false
 #| code-fold: false
 rsconnect::deployApp(
   appDir = getwd(),
-  appName = "movie-reviews")
+  appName = "movie-reviews",
+  server = "posit-connect-cloud",
+  account = "your_account")
 ```
 
-![Deploying Shiny app from Positron's **Console**](images/launch_positron_deployApp.png){width=100%}
+The deployment output is printed directly to the **Console**, and the process works identically to RStudio's **Publish** button—both use `rsconnect` under the hood.
 
-As we can see, Positron doesn't open a **Deploy** window or separate Terminal task for launching the application (it's printed directly to the **Console**). 
+## Deployment logs {#sec-connect-cloud-deploy-logs}
 
-## Deploy logs {#sec-shinyappsio-deploy-log}
-
-On [shinyapps.io](https://www.shinyapps.io/), the deployment log shows the `loadSupport()` warning persists (but the application still [deploys](https://paradigmdata.shinyapps.io/movie-reviews/)). The server-side warning is a known issue.[^launch-loadsupport-warning]
-
-[^launch-loadsupport-warning]: You can learn more about this warning by reading these posts on StackOverflow: [How can I deploy my shiny app as a package?](https://stackoverflow.com/questions/64774355/how-can-i-deploy-my-shiny-app-as-a-package); [Problem with directory when deploying app on shinyapps](https://stackoverflow.com/questions/67511409/problem-with-directory-when-deploying-app-on-shinyapps), and this post on Posit Community: [Errors when deploying app on shinyapps.io](https://community.rstudio.com/t/errors-when-deploying-app-on-shinyapps-io/104550).
+When you deploy to Connect Cloud, you'll see output showing each step of the process: bundling files, capturing dependencies, uploading the bundle, and building the container environment. Here's what a successful deployment looks like:
 
 ```{verbatim}
-#| eval: false 
-#| code-fold: false
-shinyapps[12692760]: Running as user: uid=10001(shiny) gid=10001(shiny) groups=10001(shiny)
-shinyapps[12692760]: Connect version: 2024.05.0
-shinyapps[12692760]: LANG: C.UTF-8
-shinyapps[12692760]: Working directory: /srv/connect/apps/movie-reviews
-shinyapps[12692760]: Using R 4.4.0
-shinyapps[12692760]: R.home(): /opt/R/4.4.0/lib/R
-shinyapps[12692760]: Content will use current R environment
-shinyapps[12692760]: R_LIBS: (unset)
-shinyapps[12692760]: .libPaths(): /usr/lib/R, /opt/R/4.4.0/lib/R/library
-shinyapps[12692760]: shiny version: 1.9.1
-shinyapps[12692760]: httpuv version: 1.6.15
-shinyapps[12692760]: rmarkdown version: (none)
-shinyapps[12692760]: knitr version: (none)
-shinyapps[12692760]: jsonlite version: 1.8.8
-shinyapps[12692760]: RJSONIO version: (none)
-shinyapps[12692760]: htmltools version: 0.5.8.1
-shinyapps[12692760]: reticulate version: (none)
-shinyapps[12692760]: Using pandoc: /opt/connect/ext/pandoc/2.16
-shinyapps[12692760]: 
-shinyapps[12692760]: Starting R with process ID: '31'
-shinyapps[12692760]: Shiny application starting ...
-shinyapps[12692760]: Warning in warn_if_app_dir_is_package(appDir) : # <1>
-shinyapps[12692760]:   Loading R/ subdirectory for Shiny application, 
-  but this directory appears to contain an R package. Sourcing files 
-  in R/ may cause unexpected behavior. See `?loadSupport` for more details. # <1>
-shinyapps[12692760]: ℹ Loading sap
-shinyapps[12692760]: 
-shinyapps[12692760]: Listening on http://127.0.0.1:123456
+#| eval: false
+#| code-fold: show
+#| code-summary: 'show/hide deployment log'
+── Preparing for deployment ────────────────────────────────────────────────────
+ℹ Deploying to Posit Connect Cloud
+ℹ Creating application on server...
+ℹ Created deployment with id 98765432
+ℹ Bundling 68 files: .Rbuildignore, app.R, DESCRIPTION,
+NAMESPACE, README.md, renv.lock, inst/extdata/movies.fst,
+inst/prod/app/app.R, R/launch_app.R, R/mod_var_input.R,
+R/mod_scatter_display.R, R/scatter_plot.R, data/movies.rda,
+man/*.Rd, tests/testthat/*.R, and others...
+ℹ Capturing R dependencies
+ℹ Found 87 dependencies
+ℹ Created 2,941,205b bundle
+ℹ Uploading bundle...
+✔ Uploaded bundle
+── Deploying to server ─────────────────────────────────────────────────────────
+ℹ Waiting for deployment to start...
+ℹ Building image...
+ℹ Installing system dependencies...
+ℹ Installing R packages...
+ℹ Starting deployment...
+✔ Deployment succeeded!
+ℹ Your application is available at:
+   https://your-workspace.connect.posit.cloud/content/abc123/
 ```
-1. `loadSupport()` warning
 
-## The [`rsconnect`]{style="font-size: 1.10em; font-weight: bold;"} folder {#sec-shinyappsio-rsconnect-dir}
+The bundling step captures all your R dependencies through `renv.lock` (if you're using `renv`) or by scanning your code for package imports. Connect Cloud then builds a container image with those dependencies installed, ensuring your app runs the same way regardless of updates to external packages.
 
-When deploying a Shiny app, the `rsconnect/` folder is automatically created to store configuration settings and deployment metadata for the app. 
+You can monitor your application's status and view more detailed logs through the Connect Cloud dashboard.
+
+## Monitoring and managing your application {#sec-connect-cloud-management}
+
+After your application is deployed, visit the Connect Cloud dashboard to monitor its status. You can view:
+
+- **Application logs**: Review startup messages and runtime output to debug issues.
+- **Usage metrics**: See how many users are accessing your app and when.
+- **Resource usage**: Monitor CPU and memory consumption.
+- **Deployment history**: Track previous versions and rollback if needed.
+
+You can also update your application by redeploying from RStudio or Positron—Connect Cloud will bundle the new code and replace the running instance with the updated version.
+
+## The `rsconnect` folder {#sec-connect-cloud-rsconnect-dir}
+
+When you deploy with `rsconnect`, a `rsconnect/` folder is automatically created to store deployment metadata and configuration. This folder records which account and server each app was deployed to:
 
 ```{verbatim}
-#| eval: false 
+#| eval: false
 #| code-fold: false
 rsconnect/
-└── shinyapps.io
-    └── paradigmdata
+└── connect.posit.cloud
+    └── your_account
         └── movie-reviews.dcf
 
 3 directories, 1 file
 ```
 
-`rsconnect/` contains deployment-related metadata, including information about our [shinyapps.io](https://www.shinyapps.io/) account, and app-specific deployment history and settings.
+The `.dcf` file contains metadata about your deployment (app ID, account, version), but it should **not** be committed to Git. It contains machine-specific settings and can cause conflicts when multiple team members deploy the same app.
 
-The `rsconnect/` folder **should not** be included in your Git repository because it contains machine-specific settings and is not required for running the app locally. This folder can also lead to conflicts when multiple users work on the same repo.
-
-To ensure the `rsconnect` folder is not included in your Git repository, add `rsconnect/` to `.gitignore`:
+Add `rsconnect/` to `.gitignore` to prevent accidental commits:
 
 ```ini
 .Rproj.user
@@ -200,16 +241,13 @@ rsconnect/
 
 /.quarto/
 inst/doc
-# {shinytest2}: Ignore new debug snapshots for `$expect_values()`
 *_.new.png
-
 ```
 
-
-If you need to remove `rsconnect/` from Git because it's already been committed, remove it with the following commands:
+If `rsconnect/` was already committed, remove it from Git history:
 
 ```{bash}
-#| eval: false 
+#| eval: false
 #| code-fold: false
 git rm -r --cached rsconnect/
 git commit -m "Remove rsconnect folder from repository"
@@ -218,159 +256,11 @@ git push origin main
 
 This will remove it from the Git history while keeping it locally. If we need to share deployment details with our team, we can document the deployment process in the `README.Rmd` or create a `deploy.Rmd` vignette.
 
-## App logs {#sec-shinyappsio-app-logs}
-
-We've covered the deployment logs that are generated when we publish our app to [shinyapps.io](https://www.shinyapps.io/), but what about the logs we're using to track our application's behavior (we covered this in @sec-logging-logger)? In this branch, I've added the `store_log` argument to `logr_msg()` that toggles a 'save log to external log file' functionality: 
-
-```{r}
-#| eval: false
-#| code-fold: show 
-#| code-summary: 'show/hide logr_msg()'
-logr_msg <- function(message, level = "INFO", log_file = "app_log.txt", json = FALSE, store_log = TRUE) {
-  
-  # Console logging 
-  logger::log_formatter(formatter = logger::formatter_glue)
-  logger::log_layout(layout = logger::layout_glue_generator())
-  
-  if (store_log) { #<1>
-    log_dir <- dirname(log_file)
-    if (!dir.exists(log_dir)) {
-      dir.create(log_dir, recursive = TRUE)
-    }
-    if (!file.exists(log_file)) {
-      file.create(log_file)
-    } # <1>
-    
-    if (json) { # <2>
-      logger::log_appender(appender = logger::appender_tee(log_file))
-      logger::log_layout(layout = logger::layout_json())
-    } else {
-      logger::log_appender(appender = logger::appender_tee(log_file))
-      logger::log_layout(layout = logger::layout_glue_generator())
-    } # <2>
-  } else { # <3>
-    logger::log_appender(appender = logger::appender_console)
-  } # <3>
-  
-  # levels
-  switch(
-    level,
-    "FATAL" = logger::log_fatal("{message}"),
-    "ERROR" = logger::log_error("{message}"),
-    "WARN" = logger::log_warn("{message}"),
-    "SUCCESS" = logger::log_success("{message}"),
-    "INFO" = logger::log_info("{message}"),
-    "DEBUG" = logger::log_debug("{message}"),
-    "TRACE" = logger::log_trace("{message}"),
-    logger::log_info("{message}") # default to INFO if level is invalid
-  )
-}
-
-```
-1. Configure file logging
-2. Log as JSON file 
-3. Prevent file logging
-
-I've set the default value of `store_log` to `FALSE`, but we can change this `TRUE` and `logr_msg()` will automatically save the logs (after loading, documenting, and installing the package).
-
-To ensure the logs are stored when the application is deployed, we need to add a `logger::log_threshold()` argument in `inst/prod/app/app.R`:
-
-```{r}
-#| eval: false 
-#| code-fold: false
-library(sap)
-logger::log_threshold('TRACE')
-launch_app(app = "bslib")
-```
-
-After loading, documenting and installing `sap`, we can re-deploy with `rsconnect::deployApp()` (with the `forceUpdate = TRUE` argument, because we're updating an existing application).
-
-```{r}
-#| eval: false 
-#| code-fold: false
-rsconnect::deployApp(
-  appDir = getwd(), 
-  appName = "movie-reviews", 
-  forceUpdate = TRUE)
-```
-
-After the application re-deploys, we can view and/or download the **Logs** in the [shinyapps.io](https://www.shinyapps.io/) interface: 
-
-![logs in the shinyapps.io interface](images/deploy_shinyappsio_logs.png){width='100%' fig-align='center'}
-
-It's also possible to get the application logs remotely using [`rsconnect::showLogs()`](https://rstudio.github.io/rsconnect/reference/showLogs.html). We can also download the code image from the **Overview** tab.
-
-![Download image from shinyapps.io interface](images/deploy_shinyappsio_download_log.png){width='100%' fig-align='center'}
-
-The downloaded image will contain the files we've published. A downloaded image is stored in the `inst/image` folder of this branch:
-
-```{verbatim}
-#| code-fold: false 
-inst/image/e47f9753baa54a599719c0b68c05521f/
-├── DESCRIPTION
-├── NAMESPACE
-├── R
-│   ├── data.R
-│   ├── display_type.R
-│   ├── launch_app.R
-│   ├── log_message.R
-│   ├── logr_msg.R
-│   ├── mod_aes_input.R
-│   ├── mod_scatter_display.R
-│   ├── mod_var_input.R
-│   ├── movies_server.R
-│   ├── movies_ui.R
-│   ├── scatter_plot.R
-│   ├── testthat.R
-│   ├── text_logo.R
-│   └── zzz.R
-├── README.md
-├── app.R
-├── data
-│   ├── movies.RData
-│   └── movies.rda
-├── data-raw
-│   └── tidy_movies.R
-├── inst
-│   ├── extdata
-│   ├── prod
-│   ├── quarto
-│   ├── tidy-movies
-│   └── www
-├── man
-│   ├── display_type.Rd
-│   ├── launch_app.Rd
-│   ├── log_message.Rd
-│   ├── logr_msg.Rd
-│   ├── mod_aes_input_server.Rd
-│   ├── mod_aes_input_ui.Rd
-│   ├── mod_scatter_display_server.Rd
-│   ├── mod_scatter_display_ui.Rd
-│   ├── mod_var_input_server.Rd
-│   ├── mod_var_input_ui.Rd
-│   ├── movies.Rd
-│   ├── movies_server.Rd
-│   ├── movies_ui.Rd
-│   ├── scatter_plot.Rd
-│   ├── test_logger.Rd
-│   └── text_logo.Rd
-├── manifest.json # <1>
-├── tests
-│   ├── testthat
-│   └── testthat.R
-└── vignettes
-    └── specs.Rmd
-
-14 directories, 40 files
-```
-1. manifest of application dependencies 
-
-The `manifest.json` contains the application dependencies (similar to the lock file created by [`renv`](https://rstudio.github.io/renv/articles/lockfile.html)). 
+ 
 
 ## Recap {.unnumbered}
 
-
-Deploying a Shiny app-package to [shinyapps.io](https://www.shinyapps.io/) requires keeping a clutter-free package structure, authenticating with `rsconnect`, and managing dependencies for a smooth workflow.
+Deploying your app-package to Posit Connect Cloud is straightforward: configure `rsconnect` with your account credentials, then push your app from RStudio or Positron. Connect Cloud handles dependency management and container setup automatically.
 
 ```{r}
 #| label: co_box_recap
@@ -378,31 +268,32 @@ Deploying a Shiny app-package to [shinyapps.io](https://www.shinyapps.io/) requi
 #| results: asis
 #| eval: true
 co_box(
-  color = "g", 
+  color = "g",
   fold = FALSE,
-  look = "default", 
-  hsize = "1.05", 
-  size = "0.95", 
-  header = "Recap: shinyapps.io",
+  look = "default",
+  hsize = "1.05",
+  size = "0.95",
+  header = "Recap: Posit Connect Cloud",
   contents = "
-  
-1. Store the app in the package so it can be accessed using `system.file()` (i.e., `inst/`) in an `app.R` file. 
 
-2. Be able to run the app locally (i.e., using `devtools::install()` and `sap::launch_app()`)
+1. Create a [Posit Connect Cloud](https://posit.cloud/) account and generate an API key from your account settings.
 
-3. Install `rsconnect` and authenticate with [shinyapps.io](https://www.shinyapps.io/) using `setAccountInfo()` or by accessing **Tools > Global Options > Publishing** in RStudio.
+2. Install `rsconnect` and configure it with your Connect Cloud URL and API key using `rsconnect::connectUser()`.
 
-4. Deplo the app by clicking on the **Publish** icon or by using `rsconnect::deployApp()`. 
+3. Verify your app runs locally using `launch_app()` before deploying.
 
-5. Add `rsconnect/` to the `.gitignore` file to keep deployment metadata out of Git.   
-    - If already committed, remove it:  
-  
-    \`\`\`sh
-    git rm -r --cached rsconnect/
-    git commit -m 'Removed rsconnect folder'
-    git push origin main
-    \`\`\`
-  
-6. Check logs if issues arise by downloading log file from shinyapps.io interface or using `rsconnect::showLogs()`.
+4. Deploy from RStudio using the **Publish** button or from any IDE using `rsconnect::deployApp()`.
+
+5. Add `rsconnect/` to `.gitignore` to prevent deployment metadata from being committed:
+   \`\`\`ini
+   rsconnect/
+   \`\`\`
+   If already committed:
+   \`\`\`sh
+   git rm -r --cached rsconnect/
+   git commit -m 'Remove rsconnect folder from repository'
+   \`\`\`
+
+6. Monitor your application through the Connect Cloud dashboard to view logs, usage, and manage versions.
   ")
 ```
