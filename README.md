@@ -163,6 +163,10 @@ This project is licensed under the **MIT license**.
 
 See [LICENSE](LICENSE) for more information.
 
+## CI/CD
+
+Published with GitHub pages. 
+
 <!--
 
 ## Acknowledgements {#acknowledgements}
