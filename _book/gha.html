@@ -1,0 +1,2578 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.26">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-10-15">
+<meta name="description" content="Getting your app into an R package">
+
+<title>21&nbsp; GitHub Actions – Shiny App-Packages</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./pkgdown.html" rel="next">
+<link href="./docker.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-b758ccaa5987ceb1b75504551e579abf.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-426e2339148cbe32831e4b11c516344c.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-5bd5989f67e3009731a4677cdfb23e8c.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-426e2339148cbe32831e4b11c516344c.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<meta name="mermaid-theme" content="default">
+<script src="site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+
+</head>
+
+<body class="nav-sidebar floating slimcontent quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./deploy.html">Deploy</a></li><li class="breadcrumb-item"><a href="./gha.html"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">GitHub Actions</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Shiny App-Packages</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <a href="https://github.com/mjfrigaard/shiny-app-pkgs" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Welcome!</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="./intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Introduction</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./whole_game.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Whole app game</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./shiny.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Shiny</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./packages.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Packages</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./development.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Development</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="./app_packages.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">App-packages</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./document.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Documentation</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./dependencies.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Dependencies</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./launch.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Launch</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./resources.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Resources</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="./debug.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Debug</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./debugger.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Debuggers</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./debug_print.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Print debugging</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./debug_apps.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Debugging apps</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./logging.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Logging</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="./tests.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Tests</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./test_suite.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Test suite</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./test_specs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Specifications</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./test_tools.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">Test tools</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./test_modules.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Testing modules</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./test_system.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">System tests</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="./deploy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Deploy</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./connect_cloud.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Posit Connect Cloud</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./docker.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Docker</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./gha.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">GitHub Actions</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./pkgdown.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">pkgdown</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="./frameworks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Frameworks</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./golem.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">golem</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./leprechaun.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">leprechaun</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./rhino.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">rhino</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="./tools.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Shiny LLM Tools</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./shiny_assist.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Shiny Assistant</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./ellmer.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">ellmer</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./chores.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">chores</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./gander.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">gander</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./btw.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">🏗 btw</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="./special_topics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Special topics</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./shiny_ui_edit.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">🏗️ Shiny UI Editor</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./code.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Code style</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./app_data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">🏗️ App data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./r6.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">R6</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./stack_traces.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Stack traces</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./entanglement.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">🏗️ Dependency hell</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./glossary.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">Glossary of terms</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./create.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Packages FAQ</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./github.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">GitHub</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./bdd.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">D</span>&nbsp; <span class="chapter-title">BDD (code snippet)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./graph_tests.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">E</span>&nbsp; <span class="chapter-title">Tests (graph outputs)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./test_mocks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">F</span>&nbsp; <span class="chapter-title">Tests (mocking)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./rhino_append.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">G</span>&nbsp; <span class="chapter-title">rhino (CI/CD)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./comparisons.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">H</span>&nbsp; <span class="chapter-title">Comparisons</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active" data-toc-expanded="99">
+    <h2 id="toc-title">Contents</h2>
+   
+  <ul>
+  <li><a href="#github-actions" id="toc-github-actions" class="nav-link active" data-scroll-target="#github-actions">GitHub Actions</a>
+  <ul>
+  <li><a href="#workflows" id="toc-workflows" class="nav-link" data-scroll-target="#workflows">Workflows</a></li>
+  <li><a href="#permissions" id="toc-permissions" class="nav-link" data-scroll-target="#permissions">Permissions</a></li>
+  </ul></li>
+  <li><a href="#sec-gha-style" id="toc-sec-gha-style" class="nav-link" data-scroll-target="#sec-gha-style"><span class="header-section-number">21.1</span> Code styling and linting</a></li>
+  <li><a href="#sec-gha-shiny" id="toc-sec-gha-shiny" class="nav-link" data-scroll-target="#sec-gha-shiny"><span class="header-section-number">21.2</span> Shiny app deployment</a>
+  <ul>
+  <li><a href="#creating-repository-secrets" id="toc-creating-repository-secrets" class="nav-link" data-scroll-target="#creating-repository-secrets"><span class="header-section-number">21.2.1</span> Creating repository secrets</a></li>
+  <li><a href="#enable-private-repositories" id="toc-enable-private-repositories" class="nav-link" data-scroll-target="#enable-private-repositories"><span class="header-section-number">21.2.2</span> Enable private repositories</a></li>
+  <li><a href="#capture-dependencies" id="toc-capture-dependencies" class="nav-link" data-scroll-target="#capture-dependencies"><span class="header-section-number">21.2.3</span> Capture dependencies</a></li>
+  <li><a href="#shiny-deploy.yaml" id="toc-shiny-deploy.yaml" class="nav-link" data-scroll-target="#shiny-deploy.yaml"><span class="header-section-number">21.2.4</span> <span style="font-size: 1.10em; font-weight: bold;"><code>shiny-deploy.yaml</code></span></a>
+  <ul class="collapse">
+  <li><a href="#test-run" id="toc-test-run" class="nav-link" data-scroll-target="#test-run"><span class="header-section-number">21.2.4.1</span> Test run</a></li>
+  <li><a href="#event" id="toc-event" class="nav-link" data-scroll-target="#event"><span class="header-section-number">21.2.4.2</span> Event</a></li>
+  <li><a href="#jobs" id="toc-jobs" class="nav-link" data-scroll-target="#jobs"><span class="header-section-number">21.2.4.3</span> Jobs</a></li>
+  <li><a href="#steps" id="toc-steps" class="nav-link" data-scroll-target="#steps"><span class="header-section-number">21.2.4.4</span> Steps</a></li>
+  </ul></li>
+  </ul></li>
+  <li><a href="#sec-gha-shiny-docker" id="toc-sec-gha-shiny-docker" class="nav-link" data-scroll-target="#sec-gha-shiny-docker"><span class="header-section-number">21.3</span> Actions, Shiny &amp; Docker</a>
+  <ul>
+  <li><a href="#secrets-and-tokens" id="toc-secrets-and-tokens" class="nav-link" data-scroll-target="#secrets-and-tokens"><span class="header-section-number">21.3.1</span> Secrets and tokens</a></li>
+  <li><a href="#deploy.r" id="toc-deploy.r" class="nav-link" data-scroll-target="#deploy.r"><span class="header-section-number">21.3.2</span> <span style="font-size: 0.95em; font-weight: bold;"><code>deploy.R</code></span></a></li>
+  <li><a href="#dockerfile" id="toc-dockerfile" class="nav-link" data-scroll-target="#dockerfile"><span class="header-section-number">21.3.3</span> <span style="font-size: 0.95em; font-weight: bold;"><code>Dockerfile</code></span></a></li>
+  <li><a href="#shiny-docker.yml" id="toc-shiny-docker.yml" class="nav-link" data-scroll-target="#shiny-docker.yml"><span class="header-section-number">21.3.4</span> <span style="font-size: 0.95em; font-weight: bold;"><code>shiny-docker.yml</code></span></a></li>
+  <li><a href="#app-dependencies" id="toc-app-dependencies" class="nav-link" data-scroll-target="#app-dependencies"><span class="header-section-number">21.3.5</span> App dependencies</a></li>
+  <li><a href="#docker-build" id="toc-docker-build" class="nav-link" data-scroll-target="#docker-build"><span class="header-section-number">21.3.6</span> Docker build</a></li>
+  </ul></li>
+  <li><a href="#recap" id="toc-recap" class="nav-link" data-scroll-target="#recap">Recap</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/mjfrigaard/shiny-app-pkgs/edit/main/gha.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/mjfrigaard/shiny-app-pkgs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content page-columns page-full" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./deploy.html">Deploy</a></li><li class="breadcrumb-item"><a href="./gha.html"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">GitHub Actions</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-gha-cicd" class="quarto-section-identifier"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">GitHub Actions</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">2026-10-15</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div class="callout callout-style-default callout-note no-icon callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-1-contents" aria-controls="callout-1" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span><span style="font-weight: bold; font-size: 1.05em;">TLDR   <img src="images/gha.png" class="img-fluid" width="45"></span>
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-1" class="callout-1-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<div style="font-size: 0.95em;">
+<ul>
+<li><p>GitHub Actions automate testing and deployment for R packages.</p></li>
+<li><p>Workflows are defined in YAML files under <code>.github/workflows/</code>.</p></li>
+<li><p>Common tasks include styling/linting, running tests, and deploying apps.</p></li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<p>Continuous Integration (CI) and Continuous Deployment (CD) help automate software development tasks, especially testing and deployment. In the context of a Shiny app-package, CI/CD usually refers to GitHub Actions or Travis CI.</p>
+<p>This chapter will only cover CI/CD with GitHub Actions. Travis-CI has been around longer than GitHub Actions, and if you’d like to compare the two, I recommend <a href="https://talent500.co/blog/github-actions-vs-travis-ci-weighing-pros-cons-and-selecting-the-ideal-platform/">this article.</a></p>
+<div class="callout callout-style-default callout-tip no-icon callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span><span style="font-weight: bold; font-size: 1.15em;">Access the applications in this chapter</span>
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-2" class="callout-2-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<div style="font-size: 0.95em;">
+<p>I’ve created the <a href="https://mjfrigaard.github.io/shinypak/"><code>shinypak</code> R package</a> in an effort to make each section accessible and easy to follow. Install <code>shinypak</code> using <code>pak</code> (or <code>remotes</code>):</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">'pak'</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>pak<span class="sc">::</span><span class="fu">pak</span>(<span class="st">'mjfrigaard/shinypak'</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(shinypak)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>List the apps in this chapter:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">list_apps</span>(<span class="at">regex =</span> <span class="st">'^21'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Launch apps with <code>launch()</code></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">launch</span>(<span class="at">app =</span> <span class="st">'21.1_gha-style'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Download apps with <code>get_app()</code></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">get_app</span>(<span class="at">app =</span> <span class="st">'21.1_gha-style'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+</div>
+<section id="github-actions" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="github-actions">GitHub Actions</h2>
+<div class="callout callout-style-default callout-note no-icon callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-3-contents" aria-controls="callout-3" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span><span style="font-weight: bold; font-size: 1.05em;">Continuous Integration &amp; Deployment (CI/CD)</span>
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-3" class="callout-3-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<div style="font-size: 0.95em;">
+<p><strong>Continuous Integration (CI)</strong> can automate testing with <code>testthat</code> and <code>shinytest2</code>, ensuring any new features or bug fixes don’t introduce errors. It can verify that our app-package installs correctly and prevents any breaking changes. When integrated with version control systems like Git, CI tracks modifications and enforces code reviews before merging updates.</p>
+<p><strong>Continuous Deployment (CD)</strong> can be used to automate app-package releases by deploying tested code to an internal package management system, ensuring users always have the latest version without manual updates. This accelerates feature delivery, reduces downtime, and streamlines development, allowing us to focus more on writing code than testing and deployments.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="quarto-layout-panel" data-layout="[80, 20]">
+<div class="quarto-layout-row">
+<div class="quarto-layout-cell" style="flex-basis: 80.0%;justify-content: flex-start;">
+<p><a href="https://github.com/features/actions">GitHub Actions</a> (or Actions, for short) is a feature provided by GitHub that enables automation of various development workflows. These workflows are defined in YAML files and can automate some of the repetitive tasks in the development lifecycle, right within a GitHub repository.</p>
+</div>
+<div class="quarto-layout-cell" style="flex-basis: 20.0%;justify-content: flex-start;">
+<div class="quarto-figure quarto-figure-left">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-left">
+<figure class="figure">
+<p><a href="images/gha.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="GitHub Actions"><img src="images/gha.png" class="img-fluid quarto-figure quarto-figure-left figure-img" style="width:50.0%" alt="GitHub Actions"></a></p>
+</figure>
+</div>
+<figcaption>GitHub Actions</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<p>We can use Actions to create custom workflows for building, testing, and deploying our app-package.</p>
+<section id="workflows" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="workflows">Workflows</h3>
+<p>A workflow is a YAML file placed in a repository to automate processes and executes jobs. <strong>Workflows</strong> can be triggered manually or set to run on a schedule based on repository <strong>events</strong>.</p>
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+</style>
+<div class="cell" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
+
+flowchart TD
+  workflow(["Workflow"]) --&gt;|"&lt;em&gt;Triggered by&lt;em&gt;"| event("&lt;strong&gt;Event&lt;/strong&gt;: push, pull request, etc.")
+
+  style workflow fill:#4CBB9D,color:#fff,stroke:#2d8a7a,stroke-width:2px
+  style event fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
+
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<p><span style="font-size: 1.45em; font-weight: bold; font-style: italic;"><code>on</code></span></p>
+<p><strong><code>on</code></strong> defines the <a href="https://docs.github.com/en/actions/learn-github-actions/understanding-github-actions#events">event(s)</a> that trigger the <strong>workflow</strong>.</p>
+<div class="quarto-layout-panel" data-layout="[50,50]">
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">on</span><span class="kw">:</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">push</span><span class="kw">:</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">branches</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at"> main </span><span class="kw">]</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">pull_request</span><span class="kw">:</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">branches</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at"> main </span><span class="kw">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<p><span style="font-size: 0.95rem;">An event is any activity that triggers a workflow, such as a pull request, a new issue or pushed commits.</span><a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a></p>
+</div>
+</div>
+</div>
+<p><span style="font-size: 1.45em; font-weight: bold; font-style: italic;"><code>name</code></span></p>
+<p><code>name</code> is an optional field to identify a workflow in the Actions tab of the GitHub repository.</p>
+<div class="quarto-layout-panel" data-layout="[50,50]">
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">name</span><span class="kw">:</span><span class="at"> shiny</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<p><span style="font-size: 0.95rem;">If <code>name</code> is not provided, GitHub will use the file path.</span></p>
+</div>
+</div>
+</div>
+<p><span style="font-size: 1.45em; font-weight: bold; font-style: italic;"><code>jobs</code></span></p>
+<p>A <a href="https://docs.github.com/en/actions/about-github-actions/understanding-github-actions#jobs"><strong>job</strong></a> consists of a sequence of <strong>steps</strong> defined in the <strong>workflow</strong> file.</p>
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+</style>
+<div class="cell" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
+flowchart
+  workflow(["Workflow"]) --&gt;|"&lt;em&gt;Triggered by&lt;em&gt;"| event("&lt;strong&gt;Event&lt;/strong&gt;: push, pull request, etc.")
+
+  event --&gt; |"&lt;em&gt;Executes&lt;/em&gt;"| Jobs{"&lt;strong&gt;Jobs&lt;/strong&gt;"}
+
+  style workflow fill:#4CBB9D,color:#fff,stroke:#2d8a7a,stroke-width:2px
+  style event fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
+  style Jobs fill:#4CBB9D,color:#fff,stroke:#2d8a7a,stroke-width:2px
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<div class="quarto-layout-panel" data-layout="[50,50]">
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">jobs</span><span class="kw">:</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">check</span><span class="kw">:</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<p><span style="font-size: 0.95rem;">The <a href="https://docs.github.com/en/actions/using-jobs/using-jobs-in-a-workflow#setting-an-id-for-a-job">identifier</a> (<code>check</code> in this case) is used to reference the runner, in this example it’s <code>ubuntu-latest</code>.</span></p>
+</div>
+</div>
+</div>
+<p>A <a href="https://docs.github.com/en/actions/about-github-actions/understanding-github-actions#runners"><strong>runner</strong></a> is a server (running Ubuntu Linux, Microsoft Windows, or macOS) that operates within a freshly provisioned virtual machine to execute the triggered <strong>workflow</strong>.</p>
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+</style>
+<div class="cell" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
+
+flowchart
+  workflow(["Workflow"]) --&gt;|"&lt;em&gt;Triggered by&lt;em&gt;"| event("&lt;strong&gt;Event&lt;/strong&gt;: push, pull request, etc.")
+
+  subgraph VM["Virtual Machine"]
+    subgraph runner02["&lt;strong&gt;Runner&lt;/strong&gt; 2"]
+    end
+    subgraph runner01["&lt;strong&gt;Runner&lt;/strong&gt; 1"]
+    end
+  end
+
+  event --&gt; |"&lt;em&gt;Executes&lt;/em&gt;"| Jobs{"&lt;strong&gt;Jobs&lt;/strong&gt;"}
+  Jobs --&gt; |"&lt;em&gt;Launches&lt;/em&gt;"|runner01 &amp; runner02
+
+  style workflow fill:#4CBB9D,color:#fff,stroke:#2d8a7a,stroke-width:2px
+  style event fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
+  style Jobs fill:#4CBB9D,color:#fff,stroke:#2d8a7a,stroke-width:2px
+  style VM fill:#e8f4f1,stroke:#4CBB9D,stroke-width:2px
+  style runner01 fill:#e8f4f1,stroke:#4CBB9D,stroke-width:2px
+  style runner02 fill:#e8f4f1,stroke:#4CBB9D,stroke-width:2px
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<p>Each <strong>runner</strong> can run a single <strong>job</strong> at a time.</p>
+<div class="quarto-layout-panel" data-layout="[50,50]">
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">jobs</span><span class="kw">:</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">check</span><span class="kw">:</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ${{ matrix.config.os }}</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<p><span style="font-size: 0.95rem;"><a href="https://docs.github.com/en/actions/using-jobs/using-a-matrix-for-your-jobs#using-a-matrix-strategy"><strong><code>matrix</code></strong></a> runs jobs across different operating systems, programming language versions, etc.</span></p>
+</div>
+</div>
+</div>
+<div class="quarto-layout-panel" data-layout="[50,50]">
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> ${{ matrix.config.os }} (${{ matrix.config.r }})</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="at">    </span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+<div class="quarto-layout-panel" data-layout="[50,50]">
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">strategy</span><span class="kw">:</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">fail-fast</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">matrix</span><span class="kw">:</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">config</span><span class="kw">:</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">os</span><span class="kw">:</span><span class="at"> macos-latest</span><span class="kw">,</span><span class="at">   </span><span class="fu">r</span><span class="kw">:</span><span class="at"> </span><span class="st">'release'</span><span class="kw">}</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">os</span><span class="kw">:</span><span class="at"> windows-latest</span><span class="kw">,</span><span class="at"> </span><span class="fu">r</span><span class="kw">:</span><span class="at"> </span><span class="st">'release'</span><span class="kw">}</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">os</span><span class="kw">:</span><span class="at"> ubuntu-latest</span><span class="kw">,</span><span class="at">   </span><span class="fu">r</span><span class="kw">:</span><span class="at"> </span><span class="st">'release'</span><span class="kw">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<p><span style="font-size: 0.95rem;"><strong><code>fail-fast: false</code></strong> means the workflow will continue running even if one of the <code>matrix</code> jobs fails.</span></p>
+</div>
+</div>
+</div>
+<p><span style="font-size: 1.45em; font-weight: bold; font-style: italic;"><code>steps</code></span></p>
+<p>Each <strong>step</strong> can be a shell script or an <a href="https://docs.github.com/en/actions/about-github-actions/understanding-github-actions#actions"><strong>action</strong></a>, and they are executed in the order they are written. For example, checking out code from a repository, setting up R, installing a package, and launching an app.</p>
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+</style>
+<div class="cell" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
+
+flowchart
+  workflow(["Workflow"]) --&gt;|"&lt;em&gt;Triggered by&lt;em&gt;"| event("&lt;strong&gt;Event&lt;/strong&gt;: push, pull request, etc.")
+
+  subgraph VM["Virtual Machine"]
+    subgraph runner02["&lt;strong&gt;Runner&lt;/strong&gt; 2"]
+        action02a("&lt;strong&gt;Action&lt;/strong&gt;: checkout code")
+        action02b("&lt;strong&gt;Action&lt;/strong&gt;: set up R")
+        step02a("&lt;strong&gt;Script&lt;/strong&gt;: launch app")
+    end
+    subgraph runner01["&lt;strong&gt;Runner&lt;/strong&gt; 1"]
+        action01a("&lt;strong&gt;Action&lt;/strong&gt;: checkout code")
+        action01b("&lt;strong&gt;Action&lt;/strong&gt;: set up R")
+        step01a("&lt;strong&gt;Script&lt;/strong&gt;: install package")
+    end
+  end
+
+  event --&gt; |"&lt;em&gt;Executes&lt;/em&gt;"| Jobs{"&lt;strong&gt;Jobs&lt;/strong&gt;"}
+  Jobs --&gt; |"&lt;em&gt;Launches&lt;/em&gt;"|runner01 &amp; runner02
+
+  style workflow fill:#4CBB9D,color:#fff,stroke:#2d8a7a,stroke-width:2px
+  style event fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
+  style Jobs fill:#4CBB9D,color:#fff,stroke:#2d8a7a,stroke-width:2px
+  style VM fill:#e8f4f1,stroke:#4CBB9D,stroke-width:2px
+  style runner01 fill:#e8f4f1,stroke:#4CBB9D,stroke-width:2px
+  style runner02 fill:#e8f4f1,stroke:#4CBB9D,stroke-width:2px
+  style action01a fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
+  style action01b fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
+  style action02a fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
+  style action02b fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
+  style step01a fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
+  style step02a fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<div class="quarto-layout-panel" data-layout="[50,50]">
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v2</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Set up R</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> r-lib/actions/setup-r@v2</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Install package</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="fu">      run</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>        install.packages('remotes')</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>        remotes::install_local('.')</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">shell</span><span class="kw">:</span><span class="at"> Rscript {0}</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<p><span style="font-size: 0.95rem;"><code>steps</code> define a series of <a href="https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idsteps">tasks or actions</a> that the <code>job</code> will execute. These <code>steps</code> check out the code, set up the R environment, and install a local R package.</span></p>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-tip no-icon callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-4-contents" aria-controls="callout-4" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span><span style="font-weight: bold; font-size: 1.05em;">What is <strong><code>shell: Rscript {0}</code></strong>?</span>
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-4" class="callout-4-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<div style="font-size: 0.95em;">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Install packages</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">  run</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    pkgs &lt;- c('glue', 'cli')</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    install.packages(pkgs)</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">shell</span><span class="kw">:</span><span class="at"> Rscript {0}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The command <code>install.packages(pkgs)</code> is run as an R script:</p>
+<ul>
+<li><p><code>shell</code> specifies which command-line interpreter (<code>bash</code>, <code>pwsh</code>, <code>python</code>, or <code>Rscript</code>) to use for the <code>run</code> commands</p></li>
+<li><p><code>Rscript</code> is the command-line tool provided by R to execute R scripts and commands in a non-interactive environment.</p></li>
+<li><p><code>{0}</code> is a placeholder for the R commands written in the <code>run</code> section.</p></li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<p>Finally, lines beginning with <code>#</code> will not be executed. It’s common to provide 1) a reference to the workflow source (<a href="https://github.com/r-lib/actions/"><code>r-lib/actions</code></a> in this case) and 2) a link for help with debugging build failures.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Workflow derived from https://github.com/r-lib/actions/tree/v2/examples</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="permissions" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="permissions">Permissions</h3>
+<p>In order for workflows to run, we’ll need to make sure Actions have read and write permissions. We can do this by clicking on the repository’s <strong>Settings</strong> tab, then expand the <strong>Actions</strong> menu and select <strong>General</strong>:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/gh_action_settings.png" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="Repository Action settings"><img src="images/gh_action_settings.png" class="img-fluid figure-img" style="width:100.0%" alt="Repository Action settings"></a></p>
+<figcaption>Repository Action settings</figcaption>
+</figure>
+</div>
+<p>In the <strong>General</strong> settings, we want to confirm the workflow has <strong>Read and write permissions</strong> permissions (if this needs to be been changed, be sure to click <strong>Save</strong>).</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/gh_action_permissions.png" class="lightbox" data-gallery="quarto-lightbox-gallery-3" title="Workflow permissions"><img src="images/gh_action_permissions.png" class="img-fluid figure-img" style="width:100.0%" alt="Workflow permissions"></a></p>
+<figcaption>Workflow permissions</figcaption>
+</figure>
+</div>
+<p>Now our workflows can commit and push changes to the repository.</p>
+</section>
+</section>
+<section id="sec-gha-style" class="level2 page-columns page-full" data-number="21.1">
+<h2 data-number="21.1" class="anchored" data-anchor-id="sec-gha-style"><span class="header-section-number">21.1</span> Code styling and linting</h2>
+<p>In R packages, we can set up the GitHub Action infrastructure with <code>usethis::use_github_action()</code>. The <code>name</code> can be any of the workflow files available at <a href="https://github.com/r-lib/actions/?tab=readme-ov-file#list-of-actions">r-lib/actions</a>. The first workflow we’ll be demonstrating can be used to automate the <a href="https://github.com/r-lib/actions/tree/v2/examples#style-package">code style in an app-package</a>.</p>
+
+<div class="no-row-height column-margin column-container"><div class="">
+<p>Launch app with the <a href="https://mjfrigaard.github.io/shinypak/articles/getting-started.html"><code>shinypak</code> package</a>:</p>
+<div style="font-size: 0.65rem;">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">launch</span>(<span class="st">'21.1_gha-style'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div></div><div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_github_action</span>(<span class="st">"style"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">✔</span> Setting active project to <span class="st">'/projects/apps/sap'</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="ex">✔</span> Creating <span class="st">'.github/'</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="ex">✔</span> Adding <span class="st">'*.html'</span> to <span class="st">'.github/.gitignore'</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="ex">✔</span> Creating <span class="st">'.github/workflows/'</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="ex">✔</span> Saving <span class="st">'r-lib/actions/examples/style.yaml@v2'</span> to <span class="st">'.github/workflows/style.yaml'</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The output tells us a local <code>.github/workflows/style.yaml</code> file has been copied from the <a href="https://github.com/r-lib/actions/blob/v2/examples/style.yml"><code>r-lib/actions/examples/style.yaml@v2</code></a> into the <code>.github/workflows</code> folder:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">.github/</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="ex">└──</span> workflows</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>    <span class="ex">└──</span> style.yaml</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="ex">2</span> directories, 1 file</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The documentation for the <code>style.yaml@v2</code> file tells us this workflow,</p>
+<blockquote class="blockquote">
+<p>“<em>styles the R code in a package, then commits and pushes the changes to the same branch.”</em></p>
+</blockquote>
+<p>The code styling in this workflow is handled by the <a href="https://styler.r-lib.org/"><code>styler</code> package</a>, which “<em>formats your code according to the tidyverse style guide.</em>”</p>
+<p>We’ll make one small change to <code>style.yaml</code> before pushing it to GitHub. <strong>Instead of having the workflow automatically commit and push the styled code changes to the same branch, we’ll limit the code styling to the <code>21.1_gha-style</code> branch:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">on</span><span class="kw">:</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">push</span><span class="kw">:</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">branches</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">21.1_gha-style</span><span class="kw">]</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">paths</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">"**.[rR]"</span><span class="kw">,</span><span class="at"> </span><span class="st">"**.[qrR]md"</span><span class="kw">,</span><span class="at"> </span><span class="st">"**.[rR]markdown"</span><span class="kw">,</span><span class="at"> </span><span class="st">"**.[rR]nw"</span><span class="kw">,</span><span class="at"> </span><span class="st">"**.[rR]profile"</span><span class="kw">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This change ensures our <code>style</code> workflow will be triggered only for pushes to the specified <code>branches</code> (and when changes are made to files with the specified extensions in <code>path</code>).</p>
+<p>After saving these changes to <a href="https://github.com/mjfrigaard/sap/blob/21.1_gha-style/.github/workflows/style.yaml"><code>.github/workflows/style.yaml</code></a>, we’ll add, commit, and push the changes to GitHub,</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> add .</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"updates to style workflow"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ex">[21.1_gha-style</span> 899bd38] updates to style workflow</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a> <span class="ex">4</span> files changed, 43 insertions<span class="er">(</span><span class="ex">+</span><span class="kw">)</span><span class="ex">,</span> 45 deletions<span class="er">(</span><span class="ex">-</span><span class="kw">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> push</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="ex">Enumerating</span> objects: 17, done.</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="ex">Counting</span> objects: 100% <span class="er">(</span><span class="ex">17/17</span><span class="kw">)</span><span class="ex">,</span> done.</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="ex">Delta</span> compression using up to 12 threads</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="ex">Compressing</span> objects: 100% <span class="er">(</span><span class="ex">8/8</span><span class="kw">)</span><span class="ex">,</span> done.</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="ex">Writing</span> objects: 100% <span class="er">(</span><span class="ex">9/9</span><span class="kw">)</span><span class="ex">,</span> 950 bytes <span class="kw">|</span> <span class="ex">25.00</span> KiB/s, done.</span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a><span class="ex">Total</span> 9 <span class="er">(</span><span class="ex">delta</span> 6<span class="kw">)</span><span class="ex">,</span> reused 0 <span class="er">(</span><span class="ex">delta</span> 0<span class="kw">)</span><span class="ex">,</span> pack-reused 0</span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a><span class="ex">remote:</span> Resolving deltas: 100% <span class="er">(</span><span class="ex">6/6</span><span class="kw">)</span><span class="ex">,</span> completed with 6 local objects.</span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a><span class="ex">To</span> https://github.com/mjfrigaard/sap.git</span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>   <span class="ex">d366e0f..899bd38</span>  21.1_gha-style <span class="at">-</span><span class="op">&gt;</span> 21.1_gha-style</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>If we view the <strong>Actions</strong> tab, we’ll see the workflow listed with the name of our commit message:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/gh_action_tab.png" class="lightbox" data-gallery="quarto-lightbox-gallery-4" title="Currently running workflows"><img src="images/gh_action_tab.png" class="img-fluid figure-img" style="width:100.0%" alt="Currently running workflows"></a></p>
+<figcaption>Currently running workflows</figcaption>
+</figure>
+</div>
+<p>Clicking on the workflow reveals the following:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/gh_action_details.png" class="lightbox" data-gallery="quarto-lightbox-gallery-5" title="name of running workflow"><img src="images/gh_action_details.png" class="img-fluid figure-img" style="width:100.0%" alt="name of running workflow"></a></p>
+<figcaption>name of running workflow</figcaption>
+</figure>
+</div>
+<p>The <strong>style</strong> widget contains each step in the workflow file. If we click on it we can see each step executed in real-time. Below we can see the dependencies installed from the <code>pak</code> lockfile:</p>
+<div class="quarto-layout-panel" data-layout="[50,50]">
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/gha_style_widget.png" class="lightbox" data-gallery="quarto-lightbox-gallery-6" title="Click on the style widget"><img src="images/gha_style_widget.png" class="img-fluid figure-img" style="width:100.0%" alt="Click on the style widget"></a></p>
+<figcaption>Click on the <strong>style</strong> widget</figcaption>
+</figure>
+</div>
+</div>
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/gha_install_dependencies.png" class="lightbox" data-gallery="quarto-lightbox-gallery-7" title="View the Install styler and roxygen2 workflow step running"><img src="images/gha_install_dependencies.png" class="img-fluid figure-img" style="width:100.0%" alt="View the Install styler and roxygen2 workflow step running"></a></p>
+<figcaption>View the <strong>Install styler and roxygen2</strong> workflow step running</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<p>The actual styling comes is in the <strong>Style</strong> step:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/gh_action_style_output.png" class="lightbox" data-gallery="quarto-lightbox-gallery-8" title="Style workflow step running"><img src="images/gh_action_style_output.png" class="img-fluid figure-img" style="width:100.0%" alt="Style workflow step running"></a></p>
+<figcaption><strong>Style</strong> workflow step running</figcaption>
+</figure>
+</div>
+<p>When the workflow has finished, we can pull the style changes to our local branch and view the styled files:<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> pull</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="ex">remote:</span> Enumerating objects: 67, done.</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="ex">remote:</span> Counting objects: 100% <span class="er">(</span><span class="ex">67/67</span><span class="kw">)</span><span class="ex">,</span> done.</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="ex">remote:</span> Compressing objects: 100% <span class="er">(</span><span class="ex">7/7</span><span class="kw">)</span><span class="ex">,</span> done.</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a><span class="ex">remote:</span> Total 34 <span class="er">(</span><span class="ex">delta</span> 28<span class="kw">)</span><span class="ex">,</span> reused 33 <span class="er">(</span><span class="ex">delta</span> 27<span class="kw">)</span><span class="ex">,</span> pack-reused 0 <span class="er">(</span><span class="ex">from</span> 0<span class="kw">)</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a><span class="ex">Unpacking</span> objects: 100% <span class="er">(</span><span class="ex">34/34</span><span class="kw">)</span><span class="ex">,</span> 5.60 KiB <span class="kw">|</span> <span class="ex">86.00</span> KiB/s, done.</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a><span class="ex">From</span> https://github.com/mjfrigaard/sap</span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>   <span class="ex">5ccdc21..6296140</span>  21.1_gha-style <span class="at">-</span><span class="op">&gt;</span> origin/21.1_gha-style</span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a><span class="ex">Updating</span> 5ccdc21..6296140</span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a><span class="ex">Fast-forward</span></span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a> <span class="ex">R/data.R</span>                                         <span class="kw">|</span>  <span class="ex">10</span> +++++-----</span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a> <span class="ex">R/display_type.R</span>                                 <span class="kw">|</span>  <span class="ex">16</span> ++++++++-------</span>
+<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a> <span class="ex">R/launch_app.R</span>                                   <span class="kw">|</span>  <span class="ex">88</span> +++++++++++++++++++++++++++++++++++++++++------------------------------------------</span>
+<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a> <span class="ex">R/log_message.R</span>                                  <span class="kw">|</span>  <span class="ex">10</span> +++++-----</span>
+<span id="cb24-14"><a href="#cb24-14" aria-hidden="true" tabindex="-1"></a> <span class="ex">R/logr_msg.R</span>                                     <span class="kw">|</span>  <span class="ex">28</span> +++++++++++++--------------</span>
+<span id="cb24-15"><a href="#cb24-15" aria-hidden="true" tabindex="-1"></a> <span class="ex">R/mod_aes_input.R</span>                                <span class="kw">|</span>  <span class="ex">54</span> ++++++++++++++++++++++++++++-----------------------</span>
+<span id="cb24-16"><a href="#cb24-16" aria-hidden="true" tabindex="-1"></a> <span class="ex">R/mod_scatter_display.R</span>                          <span class="kw">|</span> <span class="ex">121</span> ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++------------------------------------------------------</span>
+<span id="cb24-17"><a href="#cb24-17" aria-hidden="true" tabindex="-1"></a> <span class="ex">R/mod_var_input.R</span>                                <span class="kw">|</span>  <span class="ex">67</span> ++++++++++++++++++++++++++++++++++-----------------------------</span>
+<span id="cb24-18"><a href="#cb24-18" aria-hidden="true" tabindex="-1"></a> <span class="ex">R/movies_server.R</span>                                <span class="kw">|</span>  <span class="ex">69</span> ++++++++++++++++++++++++++++++++++++-----------------------------</span>
+<span id="cb24-19"><a href="#cb24-19" aria-hidden="true" tabindex="-1"></a> <span class="ex">R/movies_ui.R</span>                                    <span class="kw">|</span> <span class="ex">108</span> ++++++++++++++++++++++++++++++++++++++++++++++++++++-------------------------------------------------</span>
+<span id="cb24-20"><a href="#cb24-20" aria-hidden="true" tabindex="-1"></a> <span class="ex">R/scatter_plot.R</span>                                 <span class="kw">|</span>  <span class="ex">34</span> +++++++++++++++++---------------</span>
+<span id="cb24-21"><a href="#cb24-21" aria-hidden="true" tabindex="-1"></a> <span class="ex">R/testthat.R</span>                                     <span class="kw">|</span>  <span class="ex">16</span> +++++++--------</span>
+<span id="cb24-22"><a href="#cb24-22" aria-hidden="true" tabindex="-1"></a> <span class="ex">R/text_logo.R</span>                                    <span class="kw">|</span>  <span class="ex">23</span> +++++++++++-----------</span>
+<span id="cb24-23"><a href="#cb24-23" aria-hidden="true" tabindex="-1"></a> <span class="ex">R/zzz.R</span>                                          <span class="kw">|</span>  <span class="ex">58</span> +++++++++++++++++++++++++++----------------------------</span>
+<span id="cb24-24"><a href="#cb24-24" aria-hidden="true" tabindex="-1"></a> <span class="ex">inst/quarto/index.qmd</span>                            <span class="kw">|</span>  <span class="ex">32</span> ++++++++++++++++--------------</span>
+<span id="cb24-25"><a href="#cb24-25" aria-hidden="true" tabindex="-1"></a> <span class="ex">tests/testthat/fixtures/make-tidy_ggp2_movies.R</span>  <span class="kw">|</span>   <span class="ex">6</span> ++++--</span>
+<span id="cb24-26"><a href="#cb24-26" aria-hidden="true" tabindex="-1"></a> <span class="ex">tests/testthat/helper.R</span>                          <span class="kw">|</span>   <span class="ex">7</span> +++----</span>
+<span id="cb24-27"><a href="#cb24-27" aria-hidden="true" tabindex="-1"></a> <span class="ex">tests/testthat/test-mod_scatter_display_server.R</span> <span class="kw">|</span>  <span class="ex">88</span> +++++++++++++++++++++++++++++++++++++++++++++--------------------------------------</span>
+<span id="cb24-28"><a href="#cb24-28" aria-hidden="true" tabindex="-1"></a> <span class="ex">tests/testthat/test-mod_var_input_server.R</span>       <span class="kw">|</span>  <span class="ex">25</span> ++++++++++++------------</span>
+<span id="cb24-29"><a href="#cb24-29" aria-hidden="true" tabindex="-1"></a> <span class="ex">tests/testthat/test-scatter_plot.R</span>               <span class="kw">|</span>  <span class="ex">62</span> +++++++++++++++++++++++++++++-----------------------------</span>
+<span id="cb24-30"><a href="#cb24-30" aria-hidden="true" tabindex="-1"></a> <span class="ex">tests/testthat/test-shinytest2-export.R</span>          <span class="kw">|</span>  <span class="ex">31</span> ++++++++++++++---------------</span>
+<span id="cb24-31"><a href="#cb24-31" aria-hidden="true" tabindex="-1"></a> <span class="ex">tests/testthat/test-shinytest2-prod.R</span>            <span class="kw">|</span>  <span class="ex">43</span> ++++++++++++++++++++++-------------------</span>
+<span id="cb24-32"><a href="#cb24-32" aria-hidden="true" tabindex="-1"></a> <span class="ex">tests/testthat/test-shinytest2.R</span>                 <span class="kw">|</span>  <span class="ex">45</span> +++++++++++++++++++++++--------------------</span>
+<span id="cb24-33"><a href="#cb24-33" aria-hidden="true" tabindex="-1"></a> <span class="ex">tests/testthat/test-text_logo.R</span>                  <span class="kw">|</span>  <span class="ex">45</span> ++++++++++++++++++++++---------------------</span>
+<span id="cb24-34"><a href="#cb24-34" aria-hidden="true" tabindex="-1"></a> <span class="ex">vignettes/specs.Rmd</span>                              <span class="kw">|</span>   <span class="ex">2</span> +-</span>
+<span id="cb24-35"><a href="#cb24-35" aria-hidden="true" tabindex="-1"></a> <span class="ex">25</span> files changed, 570 insertions<span class="er">(</span><span class="ex">+</span><span class="kw">)</span><span class="ex">,</span> 518 deletions<span class="er">(</span><span class="ex">-</span><span class="kw">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="sec-gha-shiny" class="level2 page-columns page-full" data-number="21.2">
+<h2 data-number="21.2" class="anchored" data-anchor-id="sec-gha-shiny"><span class="header-section-number">21.2</span> Shiny app deployment</h2>
+<p>In this section we’ll be adapting the GitHub Action workflow file provided for <a href="https://github.com/r-lib/actions/blob/v2/examples/shiny-deploy.yaml">deploying a Shiny applications</a>. Before we get to the workflow file, we need to address a few settings and configurations that need to take place <em>outside</em> of the workflow file.</p>
+
+<div class="no-row-height column-margin column-container"><div class="">
+<p>Launch app with the <a href="https://mjfrigaard.github.io/shinypak/articles/getting-started.html"><code>shinypak</code> package</a>:</p>
+<div style="font-size: 0.65rem;">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">launch</span>(<span class="st">'21.2_gha-shiny-deploy'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div></div><section id="creating-repository-secrets" class="level3" data-number="21.2.1">
+<h3 data-number="21.2.1" class="anchored" data-anchor-id="creating-repository-secrets"><span class="header-section-number">21.2.1</span> Creating repository secrets</h3>
+<p>We need to make sure our <code>rsconnect</code> secrets are stored with the GitHub repository (so we can access them from within the workflow file). To do this, we’re going to return to the <strong>Settings</strong> tab on the <code>sap</code> repository, expand <strong>Secrets and variables</strong> under <strong>Security</strong>, and select <strong>Actions</strong>:<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a></p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/gh_action_secrets_repo.png" class="lightbox" data-gallery="quarto-lightbox-gallery-9" title="Secrets and variables for sap repository"><img src="images/gh_action_secrets_repo.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%" alt="Secrets and variables for sap repository"></a></p>
+</figure>
+</div>
+<figcaption><strong>Secrets and variables</strong> for <code>sap</code> repository</figcaption>
+</figure>
+</div>
+<p>Use <strong>New repository secret</strong> to create three new secrets: <strong>RSCONNECT_USER</strong>, <strong>RSCONNECT_TOKEN</strong>, and <strong>RSCONNECT_SECRET</strong>. You can access these in your shinyapps.io account by clicking on the <strong>Tokens</strong> tab, then <strong>Show</strong> and <strong>Show secret</strong>:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/gh_action_shinyapps_tokens.png" class="lightbox" data-gallery="quarto-lightbox-gallery-10" title="Token from shinyapps.io"><img src="images/gh_action_shinyapps_tokens.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Token from shinyapps.io"></a></p>
+</figure>
+</div>
+<figcaption><strong>Token</strong> from shinyapps.io</figcaption>
+</figure>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/gh_action_shinyapps_secrets_token.png" class="lightbox" data-gallery="quarto-lightbox-gallery-11" title="User and Secret from shinyapps.io"><img src="images/gh_action_shinyapps_secrets_token.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="User and Secret from shinyapps.io"></a></p>
+</figure>
+</div>
+<figcaption><strong>User</strong> and <strong>Secret</strong> from shinyapps.io</figcaption>
+</figure>
+</div>
+<p>When you’re finished, should see the following three <strong>Repository secrets</strong>:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/gh_action_all_repo_secrets.png" class="lightbox" data-gallery="quarto-lightbox-gallery-12" title="Repository secrets in sap"><img src="images/gh_action_all_repo_secrets.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:95.0%" alt="Repository secrets in sap"></a></p>
+</figure>
+</div>
+<figcaption><strong>Repository secrets</strong> in <code>sap</code></figcaption>
+</figure>
+</div>
+</section>
+<section id="enable-private-repositories" class="level3" data-number="21.2.2">
+<h3 data-number="21.2.2" class="anchored" data-anchor-id="enable-private-repositories"><span class="header-section-number">21.2.2</span> Enable private repositories</h3>
+<p>We also need to make sure our shinyapps.io account allows us to install from private GitHub repositories during a workflow deployment. We can do this in the <strong>Profile</strong> menu item in our dashboard:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/gh_action_shinyapps_auth.png" class="lightbox" data-gallery="quarto-lightbox-gallery-13" title="Update Authentication in shinyapps.io profile"><img src="images/gh_action_shinyapps_auth.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:85.0%" alt="Update Authentication in shinyapps.io profile"></a></p>
+</figure>
+</div>
+<figcaption><strong>Update Authentication</strong> in shinyapps.io profile</figcaption>
+</figure>
+</div>
+<p>Clicking <strong>Update Authentication</strong> will open your Posit profile settings, where you can enable private repositories.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/gh_action_shinyapps_private_repos.png" class="lightbox" data-gallery="quarto-lightbox-gallery-14" title="Private repo access also enabled"><img src="images/gh_action_shinyapps_private_repos.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:95.0%" alt="Private repo access also enabled"></a></p>
+</figure>
+</div>
+<figcaption><strong>Private repo access also enabled</strong></figcaption>
+</figure>
+</div>
+</section>
+<section id="capture-dependencies" class="level3" data-number="21.2.3">
+<h3 data-number="21.2.3" class="anchored" data-anchor-id="capture-dependencies"><span class="header-section-number">21.2.3</span> Capture dependencies</h3>
+<p>The documentation for ‘Shiny App Deployment’ indicates we need to create a <code>renv</code> lockfile in the <code>21.2_gha-shiny-deploy</code> branch.<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a></p>
+<p>We can create the lockfile with the code below:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">'renv'</span>)</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>renv<span class="sc">::</span><span class="fu">init</span>(<span class="at">force =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div style="font-style: italic;">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="ex">This</span> project contains a DESCRIPTION file.</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="ex">Which</span> files should renv use for dependency discovery in this project<span class="pp">?</span> </span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="ex">1:</span> Use only the DESCRIPTION file. <span class="er">(</span><span class="ex">explicit</span> mode<span class="kw">)</span></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="ex">2:</span> Use all files in this project. <span class="er">(</span><span class="ex">implicit</span> mode<span class="kw">)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>We’re going to use the <code>explicit mode</code>, because the dependencies in the <code>DESCRIPTION</code> should be all that’s needed to run and deploy the application.</p>
+<div style="font-style: italic;">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="ex">Selection:</span> 1</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>This will update the <code>renv.lock</code> file with the packages, their dependencies, and the R version:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="ex">-</span> Linking packages into the project library ... Done!</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="ex">The</span> following package<span class="er">(</span><span class="ex">s</span><span class="kw">)</span> <span class="ex">will</span> be updated in the lockfile:</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb31"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="ex">The</span> version of R recorded in the lockfile will be updated:</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="ex">-</span> Lockfile written to <span class="st">"~/projects/apps/R/sap/renv.lock"</span>.</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a><span class="ex">-</span> renv activated <span class="at">--</span> please restart the R session.</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>We will restart the session to finish creating the new project library.</p>
+<p>After <code>renv</code> has discovered and installed the dependencies, the R session will restart and we’ll see the following new folder/files:</p>
+<div style="font-style: italic;">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="annotated-cell-53"><pre class="sourceCode bash code-annotation-code code-with-copy"><code class="sourceCode bash"><span id="annotated-cell-53-1"><a href="#annotated-cell-53-1" aria-hidden="true" tabindex="-1"></a><span class="ex">├──</span> .Rprofile</span>
+<span id="annotated-cell-53-2"><a href="#annotated-cell-53-2" aria-hidden="true" tabindex="-1"></a><span class="ex">├──</span> renv/</span>
+<span id="annotated-cell-53-3"><a href="#annotated-cell-53-3" aria-hidden="true" tabindex="-1"></a><span class="ex">│</span>   ├── activate.R</span>
+<span id="annotated-cell-53-4"><a href="#annotated-cell-53-4" aria-hidden="true" tabindex="-1"></a><span class="ex">│</span>   └── settings.json</span>
+<span id="annotated-cell-53-5"><a href="#annotated-cell-53-5" aria-hidden="true" tabindex="-1"></a><span class="ex">└──</span> renv.lock</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<ol type="1">
+<li><code>.Rprofile</code> contains a call to <code>source("renv/activate.R")</code>, which manages the project-level dependencies<br>
+</li>
+<li><code>renv</code> settings<br>
+</li>
+<li><code>renv</code> lockfile</li>
+</ol>
+<p>When using <code>renv</code> in package development, we want to be sure to run <code>renv::install()</code> and <code>renv::update()</code>:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>renv<span class="sc">::</span><span class="fu">install</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb34"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="ex">-</span> There are no packages to install.</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>renv<span class="sc">::</span><span class="fu">update</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb36"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="ex">-</span> Checking for updated packages ... Done!</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a><span class="ex">-</span> All packages appear to be up-to-date.</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Now that we’ve handled our secrets and tokens and have all of our dependencies captured, we can write our workflow file.</p>
+</section>
+<section id="shiny-deploy.yaml" class="level3" data-number="21.2.4">
+<h3 data-number="21.2.4" class="anchored" data-anchor-id="shiny-deploy.yaml"><span class="header-section-number">21.2.4</span> <span style="font-size: 1.10em; font-weight: bold;"><code>shiny-deploy.yaml</code></span></h3>
+<p>We can include the ‘Shiny App Deployment’ workflow file in <code>sap</code> with <code>usethis::use_github_action("shiny-deploy")</code>:<a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a></p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_github_action</span>(<span class="st">"shiny-deploy"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><em></em></p><em>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb38"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="ex">✔</span> Creating .github/.</span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a><span class="ex">✔</span> Adding <span class="st">"*.html"</span> to .github/.gitignore.</span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a><span class="ex">✔</span> Creating .github/workflows/.</span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a><span class="ex">✔</span> Saving <span class="st">"r-lib/actions/examples/shiny-deploy.yaml@v2"</span> to .github/workflows/shiny-deploy.yaml.</span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a><span class="ex">☐</span> Learn more at <span class="op">&lt;</span>https://github.com/r-lib/actions/blob/v2/examples/README.md<span class="op">&gt;</span>.</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</em><p><em></em></p>
+<p>This example workflow file is designed to deploy a Shiny application to a server. We’re going to make a few changes to <code>shiny-deploy.yaml</code> so it will deploy our application to shinyapps.io when we push to the <a href="https://github.com/mjfrigaard/sap/tree/21.2_gha-shiny-deploy"><code>21.2_gha-shiny-deploy</code></a> branch.</p>
+<section id="test-run" class="level4" data-number="21.2.4.1">
+<h4 data-number="21.2.4.1" class="anchored" data-anchor-id="test-run"><span class="header-section-number">21.2.4.1</span> Test run</h4>
+<p>The example shiny workflow includes calls to <code>rsconnect::setAccountInfo()</code> and <code>rsconnect::deployApp()</code>. We’ll perform a test run with these functions to confirm we can deploy the application using the information we’ve collected:</p>
+<ol type="1">
+<li>Start by entering your rsconnect info:</li>
+</ol>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">'rsconnect'</span>)</span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>rsconnect<span class="sc">::</span><span class="fu">setAccountInfo</span>(</span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">name =</span> <span class="st">"mjfrigaard"</span>,</span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">token =</span> <span class="st">"YOUR TOKEN"</span>, </span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">secret =</span> <span class="st">"YOUR SECRET"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<ol start="2" type="1">
+<li>Then try to deploy the application using <code>rsconnect::deployApp()</code>:</li>
+</ol>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sap)</span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>rsconnect<span class="sc">::</span><span class="fu">deployApp</span>(</span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">appName =</span> <span class="st">"shinyAppPkgsCICD"</span>,</span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">account =</span> <span class="st">"mjfrigaard"</span>,</span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">server =</span> <span class="st">"shinyapps.io"</span>,</span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">forceUpdate =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Reading the deployment log will tells us if the secret, token, configuration, and lockfile are all working:</p>
+<p><em></em></p><em>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb41"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="ex">──</span> Preparing for deployment ──────────────────────────────────────────────────</span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a><span class="ex">✔</span> Deploying <span class="st">"shinyAppPkgsCICD"</span> using <span class="st">"server: shinyapps.io / username: mjfrigaard"</span></span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a><span class="ex">ℹ</span> Bundling 50 files: .github/workflows/shiny-deploy.yaml, .Rbuildignore, ..., </span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a><span class="ex">tests/testthat.R,</span> and vignettes/test-specs.Rmd</span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a><span class="ex">ℹ</span> Capturing R dependencies with renv</span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a><span class="ex">✔</span> Found 99 dependencies</span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a><span class="ex">✔</span> Created 2,431,325b bundle</span>
+<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a><span class="ex">ℹ</span> Uploading bundle...</span>
+<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a><span class="ex">✔</span> Uploaded bundle with id 8130675</span>
+<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a><span class="ex">──</span> Deploying to server ─────────────────────────────────────────────────────────</span>
+<span id="cb41-11"><a href="#cb41-11" aria-hidden="true" tabindex="-1"></a><span class="ex">Waiting</span> for task: 1372980209</span>
+<span id="cb41-12"><a href="#cb41-12" aria-hidden="true" tabindex="-1"></a>  <span class="ex">building:</span> Processing bundle: 8130675</span>
+<span id="cb41-13"><a href="#cb41-13" aria-hidden="true" tabindex="-1"></a>  <span class="ex">building:</span> Building image: 9770352</span>
+<span id="cb41-14"><a href="#cb41-14" aria-hidden="true" tabindex="-1"></a>  <span class="ex">building:</span> Fetching packages</span>
+<span id="cb41-15"><a href="#cb41-15" aria-hidden="true" tabindex="-1"></a>  <span class="ex">building:</span> Installing packages</span>
+<span id="cb41-16"><a href="#cb41-16" aria-hidden="true" tabindex="-1"></a>  <span class="ex">building:</span> Installing files</span>
+<span id="cb41-17"><a href="#cb41-17" aria-hidden="true" tabindex="-1"></a>  <span class="ex">building:</span> Pushing image: 9770352</span>
+<span id="cb41-18"><a href="#cb41-18" aria-hidden="true" tabindex="-1"></a>  <span class="ex">deploying:</span> Starting instances</span>
+<span id="cb41-19"><a href="#cb41-19" aria-hidden="true" tabindex="-1"></a>  <span class="ex">unstaging:</span> Stopping old instances</span>
+<span id="cb41-20"><a href="#cb41-20" aria-hidden="true" tabindex="-1"></a><span class="ex">──</span> Deployment complete ─────────────────────────────────────────────────────────</span>
+<span id="cb41-21"><a href="#cb41-21" aria-hidden="true" tabindex="-1"></a><span class="ex">✔</span> Successfully deployed to <span class="op">&lt;</span>https://mjfrigaard.shinyapps.io/shinyAppPkgsCICD/<span class="op">&gt;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</em><p><em></em></p>
+<p>Making sure an application will deploy locally with the code we plan on putting into the workflow file builds confidence it run when it’s triggered. Now we’re ready to adapt the <code>.github/workflows/shiny-deploy.yaml</code> file.</p>
+</section>
+<section id="event" class="level4" data-number="21.2.4.2">
+<h4 data-number="21.2.4.2" class="anchored" data-anchor-id="event"><span class="header-section-number">21.2.4.2</span> Event</h4>
+<p>The event we want to trigger this deployment is a push the <code>21.2_gha-shiny-deploy</code> branch. We’ll also change of the name of this workflow to <code>shiny</code>.</p>
+<div class="quarto-layout-panel" data-layout="[50,50]">
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb42"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="fu">on</span><span class="kw">:</span></span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">push</span><span class="kw">:</span></span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">branches</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">21.2_gha-shiny-deploy</span><span class="kw">]</span></span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span></span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a><span class="fu">name</span><span class="kw">:</span><span class="at"> shiny</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<ul>
+<li><p><span style="font-size: 0.90rem;">Triggered event <strong><code>on</code></strong> a <code>push</code> to the <code>21.2_gha-shiny-deploy</code> branch</span></p></li>
+<li><p><span style="font-size: 0.90rem;">Change <strong><code>name</code></strong> to <code>shiny</code></span></p></li>
+</ul>
+</div>
+</div>
+</div>
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+</style>
+<div class="cell" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
+flowchart TD
+  Push(["Push to branch"])
+  Push --&gt;|"&lt;em&gt;Triggers&lt;/em&gt;"| Shiny{"&lt;strong&gt;Job&lt;/strong&gt;: &lt;code&gt;shiny&lt;/code&gt;"}
+
+  style Push fill:#4CBB9D,color:#fff,stroke:#2d8a7a,stroke-width:2px
+  style Shiny fill:#4CBB9D,color:#fff,stroke:#2d8a7a,stroke-width:2px
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+</section>
+<section id="jobs" class="level4" data-number="21.2.4.3">
+<h4 data-number="21.2.4.3" class="anchored" data-anchor-id="jobs"><span class="header-section-number">21.2.4.3</span> Jobs</h4>
+<p>The <strong>job</strong> will set up the runner and pass our stored <code>GITHUB_TOKEN</code>. <code>runs-on</code> launches a runner with the latest Ubuntu operating system and <code>env</code> <a href="https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#env">maps</a> the <code>GITHUB_TOKEN</code> environment variable (we can access those secrets with <code>secrets.&lt;SECRET_NAME&gt;</code>).</p>
+<div class="quarto-layout-panel" data-layout="[50,50]">
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb43"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="fu">jobs</span><span class="kw">:</span></span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">shiny</span><span class="kw">:</span></span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">env</span><span class="kw">:</span></span>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">GITHUB_PAT</span><span class="kw">:</span><span class="at"> ${{ secrets.GITHUB_TOKEN }}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<p><span style="font-size: 0.90rem;"><strong><code>jobs</code></strong> remains unchanged, but the identifier should match the <strong><code>name</code></strong>.</span></p>
+</div>
+</div>
+</div>
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+</style>
+<div class="cell" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
+flowchart TD
+  Push(["Push to branch"])
+  Push --&gt;|"&lt;em&gt;Triggers&lt;/em&gt;"| Shiny{"&lt;strong&gt;Job&lt;/strong&gt;: &lt;code&gt;shiny&lt;/code&gt;"}
+    subgraph ubuntu["&lt;strong&gt;Runner&lt;/strong&gt;"]
+      Env("&lt;strong&gt;Env&lt;/strong&gt;: &lt;code&gt;GITHUB&lt;/code&gt;")
+    end
+  Shiny --&gt;|"&lt;em&gt;Runs on: Ubuntu Latest&lt;/em&gt;"| ubuntu
+
+  style Push fill:#4CBB9D,color:#fff,stroke:#2d8a7a,stroke-width:2px
+  style Shiny fill:#4CBB9D,color:#fff,stroke:#2d8a7a,stroke-width:2px
+  style ubuntu fill:#e8f4f1,stroke:#4CBB9D,stroke-width:2px
+  style Env fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+</section>
+<section id="steps" class="level4" data-number="21.2.4.4">
+<h4 data-number="21.2.4.4" class="anchored" data-anchor-id="steps"><span class="header-section-number">21.2.4.4</span> Steps</h4>
+<p>The first four <strong>steps</strong> are <strong>actions</strong> that clone our repo and set up the environment for performing the tasks in the <strong>workflow</strong>. The path to the action is passed to <code>uses:</code>, so <code>actions/checkout@v4</code> uses the YAML file from the <a href="https://github.com/actions/checkout">actions/checkout repo</a>.</p>
+<div class="quarto-layout-panel" data-layout="[50,50]">
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb44"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v4</span></span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> r-lib/actions/setup-pandoc@v2</span></span>
+<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-6"><a href="#cb44-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> r-lib/actions/setup-r@v2</span></span>
+<span id="cb44-7"><a href="#cb44-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb44-8"><a href="#cb44-8" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">use-public-rspm</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb44-9"><a href="#cb44-9" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">r-version</span><span class="kw">:</span><span class="at"> renv</span></span>
+<span id="cb44-10"><a href="#cb44-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-11"><a href="#cb44-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> r-lib/actions/setup-renv@v2</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<ul>
+<li><p><span style="font-size: 0.90rem;">Check out the repository code</span></p></li>
+<li><p><span style="font-size: 0.90rem;">Set up Pandoc (document conversions)</span></p></li>
+<li><p><span style="font-size: 0.90rem;">Set up R environment.</span><a href="#fn6" class="footnote-ref" id="fnref6" role="doc-noteref"><sup>6</sup></a></p></li>
+<li><p><span style="font-size: 0.90rem;">Set up <code>renv</code> to manage the project-specific dependencies captured in <code>renv.lock</code></span></p></li>
+</ul>
+</div>
+</div>
+</div>
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+</style>
+<div class="cell" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
+flowchart TD
+  Push(["Push to branch"])
+  Push --&gt;|"&lt;em&gt;Triggers&lt;/em&gt;"| Shiny{"&lt;strong&gt;Job&lt;/strong&gt;: &lt;code&gt;shiny&lt;/code&gt;"}
+    subgraph ubuntu["&lt;strong&gt;Runner&lt;/strong&gt;"]
+        PAT("&lt;strong&gt;Env&lt;/strong&gt;: &lt;code&gt;GITHUB&lt;/code&gt;")
+        Checkout("&lt;strong&gt;Action&lt;/strong&gt;: Checkout")
+        SetupPandoc("&lt;strong&gt;Action&lt;/strong&gt;: Pandoc")
+        SetupR("&lt;strong&gt;Action&lt;/strong&gt;: R env")
+        SetupRenv("&lt;strong&gt;Action&lt;/strong&gt;: &lt;code&gt;renv&lt;/code&gt;")
+    end
+  Shiny --&gt;|"&lt;em&gt;Runs on: Ubuntu Latest&lt;/em&gt;"| ubuntu
+  PAT --&gt; Checkout --&gt; SetupPandoc --&gt; SetupR
+  SetupR --&gt; SetupRenv
+
+  style Push fill:#4CBB9D,color:#fff,stroke:#2d8a7a,stroke-width:2px
+  style Shiny fill:#4CBB9D,color:#fff,stroke:#2d8a7a,stroke-width:2px
+  style ubuntu fill:#e8f4f1,stroke:#4CBB9D,stroke-width:2px
+  style PAT fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
+  style Checkout fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
+  style SetupPandoc fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
+  style SetupR fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
+  style SetupRenv fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<p>The following <strong>step</strong> is a script (i.e., <code>run:</code>) and it installs the <code>rsconnect</code> package:</p>
+<div class="quarto-layout-panel" data-layout="[50,50]">
+<div class="quarto-layout-row quarto-layout-valign-center">
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb45"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Install rsconnect</span></span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">run</span><span class="kw">:</span><span class="at"> install.packages("rsconnect")</span></span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">shell</span><span class="kw">:</span><span class="at"> Rscript {0}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<p><span style="font-size: 0.90rem;"><code>Install rsconnect</code> uses R to install the <code>rsconnect</code></span></p>
+</div>
+</div>
+</div>
+<p>Next we use <code>env</code> again to <a href="https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#env">map</a> our account username (<code>mjfrigaard</code>) and app name (<code>shinyDeployApp</code>):</p>
+<div class="quarto-layout-panel" data-layout="[50,50]">
+<div class="quarto-layout-row quarto-layout-valign-center">
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb46"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Authorize and deploy app</span></span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">env</span><span class="kw">:</span><span class="at"> </span></span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">APPNAME</span><span class="kw">:</span><span class="at"> shinyDeployApp</span></span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">ACCOUNT</span><span class="kw">:</span><span class="at"> mjfrigaard</span></span>
+<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">SERVER</span><span class="kw">:</span><span class="at"> shinyapps.io </span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<p><span style="font-size: 0.90rem;">Sets up the environment variables <code>APPNAME</code>, <code>ACCOUNT</code>, and <code>SERVER</code> for authorization</span></p>
+</div>
+</div>
+</div>
+<p>The final <code>run</code> <strong>step</strong> sets the account information using <code>rsconnect::setAccountInfo()</code> and deploys the app to the specified server using <code>rsconnect::deployApp()</code> (we’ll add <code>forceUpdate = TRUE</code>):</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb47"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="fu">    run</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>      rsconnect::setAccountInfo("${{ secrets.RSCONNECT_USER }}", "${{ secrets.RSCONNECT_TOKEN }}", "${{ secrets.RSCONNECT_SECRET }}")</span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a>      rsconnect::deployApp(appName = "${{ env.APPNAME }}", account = "${{ env.ACCOUNT }}", server = "${{ env.SERVER }}", forceUpdate = TRUE)</span>
+<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">shell</span><span class="kw">:</span><span class="at"> Rscript {0}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This will deploy an application at <code>https://&lt;ACCOUNT&gt;.shinyapps.io/&lt;APPNAME&gt;/</code>.</p>
+<style>
+
+.codeStyle span:not(.nodeLabel) {
+  font-family: monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #9753b8 !important;
+  background-color: #f6f6f6;
+  padding: 0.2em;
+}
+</style>
+<div class="cell" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
+flowchart TD
+  Push(["Push to branch"])
+  Push --&gt;|"&lt;em&gt;Triggers&lt;/em&gt;"| Shiny{"&lt;strong&gt;Job&lt;/strong&gt;: &lt;code&gt;shiny&lt;/code&gt;"}
+    subgraph ubuntu["&lt;strong&gt;Runner&lt;/strong&gt;"]
+        PAT("&lt;strong&gt;Env&lt;/strong&gt;: &lt;code&gt;GITHUB&lt;/code&gt;")
+        Checkout("&lt;strong&gt;Action&lt;/strong&gt;: Checkout")
+        SetupPandoc("&lt;strong&gt;Action&lt;/strong&gt;: Pandoc")
+        SetupR("&lt;strong&gt;Action&lt;/strong&gt;: R env")
+        SetupRenv("&lt;strong&gt;Action&lt;/strong&gt;: &lt;code&gt;renv&lt;/code&gt;")
+        InstallRsconnect("&lt;strong&gt;Script&lt;/strong&gt;: &lt;code&gt;rsconnect&lt;/code&gt;")
+        Auth("&lt;strong&gt;Env&lt;/strong&gt;: &lt;code&gt;RSCONNECT&lt;/code&gt;")
+        Deploy("&lt;strong&gt;Script&lt;/strong&gt;: Deploy")
+    end
+  Shiny --&gt;|"&lt;em&gt;Runs on: Ubuntu Latest&lt;/em&gt;"| ubuntu
+  PAT --&gt; Checkout --&gt; SetupPandoc --&gt; SetupR
+  SetupR --&gt; SetupRenv --&gt; InstallRsconnect
+  InstallRsconnect --&gt; Auth --&gt; Deploy
+
+  style Push fill:#4CBB9D,color:#fff,stroke:#2d8a7a,stroke-width:2px
+  style Shiny fill:#4CBB9D,color:#fff,stroke:#2d8a7a,stroke-width:2px
+  style ubuntu fill:#e8f4f1,stroke:#4CBB9D,stroke-width:2px
+  style PAT fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
+  style Checkout fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
+  style SetupPandoc fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
+  style SetupR fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
+  style SetupRenv fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
+  style InstallRsconnect fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
+  style Auth fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
+  style Deploy fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<p>When we add, commit, and push the changes to the repo, we see the following deployment log:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb48"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> add .</span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"shiny deploy workflow"</span></span>
+<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> push</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb49"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="ex">[21.2_gha-shiny</span> 7953a5c] shiny deploy workflow</span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a> <span class="ex">10</span> files changed, 2130 insertions<span class="er">(</span><span class="ex">+</span><span class="kw">)</span></span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a> <span class="ex">create</span> mode 100644 .Rprofile</span>
+<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a> <span class="ex">create</span> mode 100644 .github/.gitignore</span>
+<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a> <span class="ex">create</span> mode 100644 .github/workflows/shiny-deploy.yaml</span>
+<span id="cb49-6"><a href="#cb49-6" aria-hidden="true" tabindex="-1"></a> <span class="ex">create</span> mode 100644 renv.lock</span>
+<span id="cb49-7"><a href="#cb49-7" aria-hidden="true" tabindex="-1"></a> <span class="ex">create</span> mode 100644 renv/.gitignore</span>
+<span id="cb49-8"><a href="#cb49-8" aria-hidden="true" tabindex="-1"></a> <span class="ex">create</span> mode 100644 renv/activate.R</span>
+<span id="cb49-9"><a href="#cb49-9" aria-hidden="true" tabindex="-1"></a> <span class="ex">create</span> mode 100644 renv/settings.json</span>
+<span id="cb49-10"><a href="#cb49-10" aria-hidden="true" tabindex="-1"></a> <span class="ex">create</span> mode 100644 rsconnect/shinyapps.io/mjfrigaard/shinyDeployApp.dcf</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>On GitHub, we can see the workflow running on the <strong>Actions</strong> tab of the <code>sap</code> repository:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/gh_action_shiny_tab.png" class="lightbox" data-gallery="quarto-lightbox-gallery-15" title="shiny deploy workflow running"><img src="images/gh_action_shiny_tab.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="shiny deploy workflow running"></a></p>
+</figure>
+</div>
+<figcaption>shiny deploy workflow running</figcaption>
+</figure>
+</div>
+<p>When it’s finished, we can see the deployment log from the workflow looks similar to the log we saw locally:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/gh_action_shiny_deploy.png" class="lightbox" data-gallery="quarto-lightbox-gallery-16" title="deploy log from workflow"><img src="images/gh_action_shiny_deploy.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="deploy log from workflow"></a></p>
+</figure>
+</div>
+<figcaption>deploy log from workflow</figcaption>
+</figure>
+</div>
+<p>You can view the deployed application here: <a href="https://mjfrigaard.shinyapps.io/shinyDeployApp/" class="uri">https://mjfrigaard.shinyapps.io/shinyDeployApp/</a></p>
+</section>
+</section>
+</section>
+<section id="sec-gha-shiny-docker" class="level2 page-columns page-full" data-number="21.3">
+<h2 data-number="21.3" class="anchored" data-anchor-id="sec-gha-shiny-docker"><span class="header-section-number">21.3</span> Actions, Shiny &amp; Docker</h2>
+<p>We covered Docker in the previous chapter, which builds and application in an image and containerizes it’s deployment. In this section we’ll combine Docker and GitHub Actions to automate deployment of our app. Automating app deployments will minimize the risk of environmental discrepancies (avoiding the “<em>it works on my machine</em>” problem) and manual deployment processes. Plus, if something goes wrong after a workflow run, rolling back to a previous version in Git is straightforward.</p>
+
+<div class="no-row-height column-margin column-container"><div class="">
+<p>Launch app with the <a href="https://mjfrigaard.github.io/shinypak/articles/getting-started.html"><code>shinypak</code> package</a>:</p>
+<div style="font-size: 0.65rem;">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="fu">launch</span>(<span class="st">'21.3_gha-shiny-docker'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div></div><section id="secrets-and-tokens" class="level3" data-number="21.3.1">
+<h3 data-number="21.3.1" class="anchored" data-anchor-id="secrets-and-tokens"><span class="header-section-number">21.3.1</span> Secrets and tokens</h3>
+<p>Most of the steps below are covered in the excellent blog post by <a href="https://nrennie.rbind.io/">Nicola Rennie</a><a href="#fn7" class="footnote-ref" id="fnref7" role="doc-noteref"><sup>7</sup></a> I’ve updated the contents to work with a Shiny app-package.</p>
+<p>To make sure our Connect username, token, and secret travels with our <code>Dockerfile</code>, we will need to store them as environmental variables.</p>
+<p>Environmental variables can be set/unset with <code>Sys.setenv()</code>/<code>Sys.unsetenv()</code>:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="fu">Sys.setenv</span>(<span class="at">RSCONNECT_USER =</span> <span class="st">'&lt;username&gt;'</span>, </span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">RSCONNECT_TOKEN =</span> <span class="st">'&lt;token&gt;'</span>, </span>
+<span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">RSCONNECT_SECRET =</span> <span class="st">'&lt;secret&gt;'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>These environmental variables are be passed to <code>rsconnect::setAccountInfo()</code> with a <code>deploy.R</code> file.</p>
+</section>
+<section id="deploy.r" class="level3" data-number="21.3.2">
+<h3 data-number="21.3.2" class="anchored" data-anchor-id="deploy.r"><span class="header-section-number">21.3.2</span> <span style="font-size: 0.95em; font-weight: bold;"><code>deploy.R</code></span></h3>
+<p><code>deploy.R</code> contains the calls to <code>rsconnect::setAccountInfo()</code> and <code>rsconnect::deployApp()</code> we had in our previous workflow file. <code>Sys.getenv()</code> will retrieve the username, token, and secret stored with <code>Sys.setenv()</code>:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a>rsconnect<span class="sc">::</span><span class="fu">setAccountInfo</span>(<span class="at">name =</span> <span class="fu">Sys.getenv</span>(<span class="st">"RSCONNECT_USER"</span>),</span>
+<span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a>               <span class="at">token =</span> <span class="fu">Sys.getenv</span>(<span class="st">"RSCONNECT_TOKEN"</span>),</span>
+<span id="cb52-3"><a href="#cb52-3" aria-hidden="true" tabindex="-1"></a>               <span class="at">secret =</span> <span class="fu">Sys.getenv</span>(<span class="st">"RSCONNECT_SECRET"</span>))</span>
+<span id="cb52-4"><a href="#cb52-4" aria-hidden="true" tabindex="-1"></a>rsconnect<span class="sc">::</span><span class="fu">deployApp</span>(<span class="at">appDir =</span> <span class="st">"."</span>, </span>
+<span id="cb52-5"><a href="#cb52-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">appName =</span> <span class="st">"shinyAppPkgsDockerCiCd"</span>, </span>
+<span id="cb52-6"><a href="#cb52-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">account =</span> <span class="st">"mjfrigaard"</span>, </span>
+<span id="cb52-7"><a href="#cb52-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">server =</span> <span class="st">"shinyapps.io"</span>, </span>
+<span id="cb52-8"><a href="#cb52-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">forceUpdate =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The <code>deploy.R</code> script should be placed in the root folder of <code>sap</code>. By default, this will deploy the application launched with <code>app.R</code>. We’ll change this to the application launched with <code>launch_app('ggp2')</code> by changing the contents of <code>app.R</code> to the following:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>show/hide updated app.R</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a>withr<span class="sc">::</span><span class="fu">with_options</span>(<span class="at">new =</span> <span class="fu">list</span>(<span class="at">shiny.autoload.r =</span> <span class="cn">FALSE</span>), <span class="at">code =</span> {</span>
+<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">interactive</span>()) {</span>
+<span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sink</span>(<span class="fu">stderr</span>(), <span class="at">type =</span> <span class="st">"output"</span>)</span>
+<span id="cb53-4"><a href="#cb53-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tryCatch</span>(</span>
+<span id="cb53-5"><a href="#cb53-5" aria-hidden="true" tabindex="-1"></a>      <span class="at">expr =</span> {</span>
+<span id="cb53-6"><a href="#cb53-6" aria-hidden="true" tabindex="-1"></a>        <span class="fu">library</span>(sap)</span>
+<span id="cb53-7"><a href="#cb53-7" aria-hidden="true" tabindex="-1"></a>      },</span>
+<span id="cb53-8"><a href="#cb53-8" aria-hidden="true" tabindex="-1"></a>      <span class="at">error =</span> <span class="cf">function</span>(e) {</span>
+<span id="cb53-9"><a href="#cb53-9" aria-hidden="true" tabindex="-1"></a>        pkgload<span class="sc">::</span><span class="fu">load_all</span>()</span>
+<span id="cb53-10"><a href="#cb53-10" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb53-11"><a href="#cb53-11" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb53-12"><a href="#cb53-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">shinyAppDir</span>(<span class="at">appDir =</span> <span class="fu">system.file</span>(<span class="st">"prod/app"</span>, <span class="at">package =</span> <span class="st">"sap"</span>))</span>
+<span id="cb53-13"><a href="#cb53-13" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb53-14"><a href="#cb53-14" aria-hidden="true" tabindex="-1"></a>    pkgload<span class="sc">::</span><span class="fu">load_all</span>()</span>
+<span id="cb53-15"><a href="#cb53-15" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb53-16"><a href="#cb53-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">launch_app</span>(</span>
+<span id="cb53-17"><a href="#cb53-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">app =</span> <span class="st">'ggp2'</span>,</span>
+<span id="cb53-18"><a href="#cb53-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">mode =</span> <span class="st">"run"</span>,</span>
+<span id="cb53-19"><a href="#cb53-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">options =</span> <span class="fu">list</span>(<span class="at">test.mode =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb53-20"><a href="#cb53-20" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb53-21"><a href="#cb53-21" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<p>In this <code>app.R</code>, the <code>launch_app()</code> call specifies <code>app = 'ggp2'</code> to select which application to launch, and <code>mode = "run"</code> to use blocking mode—appropriate for GitHub Actions since the deployment environment is non-interactive. The <code>test.mode = FALSE</code> option disables test mode in the deployed environment.</p>
+</section>
+<section id="dockerfile" class="level3" data-number="21.3.3">
+<h3 data-number="21.3.3" class="anchored" data-anchor-id="dockerfile"><span class="header-section-number">21.3.3</span> <span style="font-size: 0.95em; font-weight: bold;"><code>Dockerfile</code></span></h3>
+<p>The <code>Dockerfile</code> will look similar to the example in the <a href="./docker.html">Docker</a> chapter, but with a few important changes:</p>
+<ol type="1">
+<li><p>When we make the path <code>/home/shinyAppPkgsDockerCiCd</code> with <code>mkdir</code>, this is not only the image location we’ll be launching the application from, but it’s also the URL for the deployed app:</p>
+<ul>
+<li><code>https://</code> <strong><code>username</code></strong> <code>.shinyapps.io/shinyAppPkgsDockerCiCd/</code></li>
+</ul></li>
+<li><p>We’ll include the packages in the <code>DESCRIPTION</code> in our list of dependencies to install, <em>and</em> the <code>remotes</code> and <code>rsconnect</code> packages.</p></li>
+<li><p>The final <code>Rscript</code> command will run the application using our <code>deploy.R</code> file.</p></li>
+</ol>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb54"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="ex">FROM</span> rocker/shiny</span>
+<span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a><span class="ex">RUN</span> mkdir /home/shinyAppPkgsDockerCiCd</span>
+<span id="cb54-3"><a href="#cb54-3" aria-hidden="true" tabindex="-1"></a><span class="ex">ADD</span> . /home/shinyAppPkgsDockerCiCd</span>
+<span id="cb54-4"><a href="#cb54-4" aria-hidden="true" tabindex="-1"></a><span class="ex">WORKDIR</span> /home/shinyAppPkgsDockerCiCd</span>
+<span id="cb54-5"><a href="#cb54-5" aria-hidden="true" tabindex="-1"></a><span class="ex">RUN</span> R <span class="at">-e</span> <span class="st">'install.packages(c("bslib", "cli", "fst", "ggplot2", "ggplot2movies", "logger", "pkgload", "quarto", "ragg", "remotes", "rlang", "rsconnect", "sass", "shiny", "shinytest2", "shinythemes", "stringr", "thematic", "tidyr", "testthat", "tools", "waldo", "withr"))'</span></span>
+<span id="cb54-6"><a href="#cb54-6" aria-hidden="true" tabindex="-1"></a><span class="ex">RUN</span> R <span class="at">-e</span> <span class="st">'remotes::install_local(upgrade="never")'</span></span>
+<span id="cb54-7"><a href="#cb54-7" aria-hidden="true" tabindex="-1"></a><span class="ex">EXPOSE</span> 8180</span>
+<span id="cb54-8"><a href="#cb54-8" aria-hidden="true" tabindex="-1"></a><span class="ex">CMD</span> Rscript deploy.R</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="shiny-docker.yml" class="level3" data-number="21.3.4">
+<h3 data-number="21.3.4" class="anchored" data-anchor-id="shiny-docker.yml"><span class="header-section-number">21.3.4</span> <span style="font-size: 0.95em; font-weight: bold;"><code>shiny-docker.yml</code></span></h3>
+<p>In the <code>.github/workflows</code> folder, we’ll create a <code>shiny-docker.yml</code> file with the following contents:</p>
+<div class="quarto-layout-panel" data-layout="[50,50]">
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb55"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="fu">name</span><span class="kw">:</span><span class="at"> docker-shiny, sap</span></span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a><span class="fu">on</span><span class="kw">:</span></span>
+<span id="cb55-4"><a href="#cb55-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">push</span><span class="kw">:</span></span>
+<span id="cb55-5"><a href="#cb55-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">branches</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at"> 21.3_gha-shiny-docker </span><span class="kw">]</span></span>
+<span id="cb55-6"><a href="#cb55-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-7"><a href="#cb55-7" aria-hidden="true" tabindex="-1"></a><span class="fu">jobs</span><span class="kw">:</span></span>
+<span id="cb55-8"><a href="#cb55-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">docker</span><span class="kw">:</span></span>
+<span id="cb55-9"><a href="#cb55-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
+<span id="cb55-10"><a href="#cb55-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span></span>
+<span id="cb55-11"><a href="#cb55-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb55-12"><a href="#cb55-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v4</span></span>
+<span id="cb55-13"><a href="#cb55-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-14"><a href="#cb55-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Build image</span></span>
+<span id="cb55-15"><a href="#cb55-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">run</span><span class="kw">:</span><span class="at"> docker build -t sap . </span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<ul>
+<li><p><span style="font-size: 0.90rem;">Add a <code>name</code> for the Docker/Shiny workflow</span></p></li>
+<li><p><span style="font-size: 0.90rem;">Specify the triggering event the workflow will run <strong><code>on</code></strong></span></p></li>
+<li><p><span style="font-size: 0.90rem;">The <strong><code>job</code></strong> will run on <code>ubuntu-latest</code> (with <strong><code>docker</code></strong> id)</span></p></li>
+<li><p><span style="font-size: 0.90rem;">Checkout the code</span></p></li>
+<li><p><span style="font-size: 0.90rem;">Build the docker image with <code>docker build</code></span></p></li>
+</ul>
+</div>
+</div>
+</div>
+<p>The final <code>execute</code> <strong>step</strong> is <code>docker run</code> and it passes our environment variables to the secrets we have stored in GitHub (i.e., with <code>secrets.&lt;SECRET_NAME&gt;</code>):</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb56"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> execute</span></span>
+<span id="cb56-2"><a href="#cb56-2" aria-hidden="true" tabindex="-1"></a><span class="fu">        run</span><span class="kw">: </span><span class="ch">&gt;</span></span>
+<span id="cb56-3"><a href="#cb56-3" aria-hidden="true" tabindex="-1"></a>          docker run -e RSCONNECT_USER=${{ secrets.RSCONNECT_USER }} -e RSCONNECT_TOKEN=${{ secrets.RSCONNECT_TOKEN }}  -e RSCONNECT_SECRET=${{ secrets.RSCONNECT_SECRET }} sap  </span>
+<span id="cb56-4"><a href="#cb56-4" aria-hidden="true" tabindex="-1"></a><span class="at">       </span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="app-dependencies" class="level3" data-number="21.3.5">
+<h3 data-number="21.3.5" class="anchored" data-anchor-id="app-dependencies"><span class="header-section-number">21.3.5</span> App dependencies</h3>
+<p><code>rsconnect</code> has a handy <code>appDependencies()</code> function that returns a <code>data.frame</code> of packages, versions, and repositories for your application:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(rsconnect<span class="sc">:::</span><span class="fu">appDependencies</span>(<span class="at">appDir =</span> <span class="st">"."</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a><span class="co">#        Package Version Source               Repository</span></span>
+<span id="cb58-2"><a href="#cb58-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 1         MASS  7.3-65   CRAN https://cran.rstudio.com</span></span>
+<span id="cb58-3"><a href="#cb58-3" aria-hidden="true" tabindex="-1"></a><span class="co"># 2       Matrix   1.7-2   CRAN https://cran.rstudio.com</span></span>
+<span id="cb58-4"><a href="#cb58-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 3           R6   2.6.1   CRAN https://cran.rstudio.com</span></span>
+<span id="cb58-5"><a href="#cb58-5" aria-hidden="true" tabindex="-1"></a><span class="co"># 4 RColorBrewer   1.1-3   CRAN https://cran.rstudio.com</span></span>
+<span id="cb58-6"><a href="#cb58-6" aria-hidden="true" tabindex="-1"></a><span class="co"># 5         Rcpp  1.0.14   CRAN https://cran.rstudio.com</span></span>
+<span id="cb58-7"><a href="#cb58-7" aria-hidden="true" tabindex="-1"></a><span class="co"># 6    base64enc   0.1-3   CRAN https://cran.rstudio.com</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Passing <code>appDependencies()</code> in your app-package’s root directory will tell you if any packages have missing <code>Source</code> or <code>Repository</code> values (this can cause the deployment to fail).</p>
+<p>I also recommend running <code>attachment::att_amend_desc()</code> to capture all the dependencies in the <code>DESCRIPTION</code>. For example, <code>att_amend_desc()</code> added the following packages to the <code>Suggests</code> field in the <code>DESCRIPTION</code>:<a href="#fn8" class="footnote-ref" id="fnref8" role="doc-noteref"><sup>8</sup></a></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb59"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a><span class="ex">[+]</span> 2 package<span class="er">(</span><span class="ex">s</span><span class="kw">)</span> <span class="ex">added:</span> shinytest2, testthat.</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="docker-build" class="level3" data-number="21.3.6">
+<h3 data-number="21.3.6" class="anchored" data-anchor-id="docker-build"><span class="header-section-number">21.3.6</span> Docker build</h3>
+<p>In the <code>docker</code> workflow log, we can see the commands from our <code>Dockerfile</code> executed to install the necessary packages:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/gha_docker_build_image.png" class="lightbox" data-gallery="quarto-lightbox-gallery-17" title="Installing R packages from Dockerfile"><img src="images/gha_docker_build_image.png" class="img-fluid figure-img" style="width:100.0%" alt="Installing R packages from Dockerfile"></a></p>
+<figcaption>Installing R packages from <code>Dockerfile</code></figcaption>
+</figure>
+</div>
+<p>After installing the dependencies, the <code>sap.tar.gz</code> is installed from <code>*source*</code>:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/gha_docker_shiny_build.png" class="lightbox" data-gallery="quarto-lightbox-gallery-18" title="Building our app-package from *source*"><img src="images/gha_docker_shiny_build.png" class="img-fluid figure-img" style="width:100.0%" alt="Building our app-package from *source*"></a></p>
+<figcaption>Building our app-package from <code>*source*</code></figcaption>
+</figure>
+</div>
+<p>The output above should look familiar–it’s very similar to what we see when we run <code>devtools::load_all()</code>.</p>
+<p>After installing the dependencies, we can see the Shiny deployment log execute in the workflow:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/gh_docker_deploy.png" class="lightbox" data-gallery="quarto-lightbox-gallery-19" title="Docker deploy log"><img src="images/gh_docker_deploy.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Docker deploy log"></a></p>
+</figure>
+</div>
+<figcaption>Docker deploy log</figcaption>
+</figure>
+</div>
+<p>View the deployed application <a href="https://mjfrigaard.shinyapps.io/shinyAppPkgsDockerCiCd/">here</a>.</p>
+<div class="callout callout-style-default callout-important no-icon callout-titled">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-5-contents" aria-controls="callout-5" aria-expanded="true" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span><span style="font-weight: bold; font-size: 1.05em;">Capturing and recording dependencies with <code>renv</code></span>
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-5" class="callout-5-contents callout-collapse collapse show">
+<div class="callout-body-container callout-body">
+<div style="font-size: 0.95em;">
+<p>In the Shiny workflow example above, we captured the application dependencies with <code>renv</code>. However, in this Docker <em>and</em> Shiny workflow, we didn’t create a <code>renv.lock</code> file or a <code>renv/</code> folder.</p>
+<p>We get away with this because when the workflow runs, <code>renv</code> is used to capture the dependencies (line 9-12 in the output below). We see a message about the packages listed in the <code>Suggests</code> field or our <code>DESCRIPTION</code>:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/gh_docker_dependencies.png" class="lightbox" data-gallery="quarto-lightbox-gallery-20" title="Docker dependencies"><img src="images/gh_docker_dependencies.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Docker dependencies"></a></p>
+</figure>
+</div>
+<figcaption>Docker dependencies</figcaption>
+</figure>
+</div>
+<p>Not having <code>shinytest2</code> and <code>testthat</code> packages installed won’t interfere with our application deploying because these packages are listed in the <code>Suggests</code> field in the <code>DESCRIPTION</code> file and are used in<code>tests/</code>.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="recap" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="recap">Recap</h2>
+<p>GitHub Actions can be used to set up the necessary R environment and dependencies required to deploy the application from your app-package, while allowing secure account credentials stored in GitHub secrets.</p>
+<div class="callout callout-style-default callout-tip no-icon callout-titled">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-6-contents" aria-controls="callout-6" aria-expanded="true" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span><span style="font-weight: bold; font-size: 1.05em;">Recap: GitHub Actions</span>
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-6" class="callout-6-contents callout-collapse collapse show">
+<div class="callout-body-container callout-body">
+<div style="font-size: 0.95em;">
+<p><br></p>
+<p>We’ve covered the GitHub Action examples for styling the code in our package, deploying our app, and running a docker container.</p>
+<ul>
+<li><p>GitHub Actions can streamline a secure deployment process, which allows you to focus more on developing your application.</p></li>
+<li><p>Read about GitHub Actions in the <a href="./rhino.html"><code>rhino</code> framework section</a>.</p></li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-note no-icon callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-7-contents" aria-controls="callout-7" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span><span style="font-weight: bold; font-size: 1.05em;">See a typo, error, or something missing?</span>
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-7" class="callout-7-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<div style="font-size: 0.95em;">
+<p>Please open an issue on <a href="https://github.com/mjfrigaard/shiny-app-pkgs/issues/new">GitHub</a></p>
+</div>
+</div>
+</div>
+</div>
+<!-- https://github.com/pharmaverse/admiralci/blob/main/.github/workflows/code-coverage.yml -->
+
+
+</section>
+<section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn1"><p>Triggers can also be configured to run at scheduled times.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p>You can find more examples of common GitHub Actions for R packages in <a href="https://github.com/r-lib/actions/tree/v2/examples#readme">r-lib/actions/examples</a>.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3"><p>GitHub secrets should be specified by the user following the instructions in the <a href="https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions#creating-secrets-for-a-repository">Creating secrets for a repository</a> article.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4"><p>“<em>This action assumes you have an <code>renv</code> lockfile in your repository that describes the R packages and versions required for your Shiny application.</em>” - <a href="https://github.com/r-lib/actions/tree/v2/examples#shiny-app-deployment">Shiny App Deployment</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn5"><p>Instructions for the GitHub Action Shiny deployment can be found <a href="https://github.com/r-lib/actions/tree/v2/examples#shiny-app-deployment">here</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn6"><p><code>use-public-rspm</code> is the public RStudio package manager and <code>r-version: renv</code> indicates the R version is captured with <code>renv</code>.<a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn7"><p><a href="https://nrennie.rbind.io/blog/2022-10-05-automatically-deploying-a-shiny-app-for-browsing-rstats-tweets-with-github-actions/">Automatically deploying a Shiny app for browsing #RStats tweets with GitHub Actions.</a> Nicola Rennie. October 3, 2022.<a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn8"><p><code>att_amend_desc()</code> adds a <code>dev</code> folder with a YAML config file, but you can remove this before building/deploying.<a href="#fnref8" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/mjfrigaard\.github\.io\/shiny-app-pkgs\/");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        const annoteTargets = window.document.querySelectorAll('.code-annotation-anchor');
+        for (let i=0; i<annoteTargets.length; i++) {
+          const annoteTarget = annoteTargets[i];
+          const targetCell = annoteTarget.getAttribute("data-target-cell");
+          const targetAnnotation = annoteTarget.getAttribute("data-target-annotation");
+          const contentFn = () => {
+            const content = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+            if (content) {
+              const tipContent = content.cloneNode(true);
+              tipContent.classList.add("code-annotation-tip-content");
+              return tipContent.outerHTML;
+            }
+          }
+          const config = {
+            allowHTML: true,
+            content: contentFn,
+            onShow: (instance) => {
+              selectCodeLines(instance.reference);
+              instance.reference.classList.add('code-annotation-active');
+              window.tippy.hideAll();
+            },
+            onHide: (instance) => {
+              unselectCodeLines();
+              instance.reference.classList.remove('code-annotation-active');
+            },
+            maxWidth: 300,
+            delay: [50, 0],
+            duration: [200, 0],
+            offset: [5, 10],
+            arrow: true,
+            appendTo: function(el) {
+              return el.parentElement.parentElement.parentElement;
+            },
+            interactive: true,
+            interactiveBorder: 10,
+            theme: 'quarto',
+            placement: 'right',
+            popperOptions: {
+              modifiers: [
+              {
+                name: 'flip',
+                options: {
+                  flipVariations: false, // true by default
+                  allowedAutoPlacements: ['right'],
+                  fallbackPlacements: ['right', 'top', 'top-start', 'top-end', 'bottom', 'bottom-start', 'bottom-end', 'left'],
+                },
+              },
+              {
+                name: 'preventOverflow',
+                options: {
+                  mainAxis: false,
+                  altAxis: false
+                }
+              }
+              ]        
+            }      
+          };
+          window.tippy(annoteTarget, config); 
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./docker.html" class="pagination-link" aria-label="Docker">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Docker</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./pkgdown.html" class="pagination-link" aria-label="pkgdown">
+        <span class="nav-page-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">pkgdown</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/mjfrigaard/shiny-app-pkgs/edit/main/gha.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/mjfrigaard/shiny-app-pkgs/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer><script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+</body></html>
