@@ -148,10 +148,8 @@ git_margin_box(
 
 
 <em>
-```{bash}
-#| eval: false 
-#| code-fold: true
-#| code-summary: 'view app-package folder tree'
+
+```bash
 ├── DESCRIPTION
 ├── Dockerfile
 ├── NAMESPACE
@@ -242,6 +240,7 @@ git_margin_box(
 
 19 directories, 69 files
 ```
+
 </em>
 
 
@@ -253,9 +252,7 @@ When our application is ready to deploy, we'll create a `Dockerfile`, which is a
 
 Below are two lines from the `Dockerfile` found in the excellent post titled, [R Shiny Docker: How To Run Shiny Apps in a Docker Container](https://appsilon.com/r-shiny-docker-getting-started/). This is a great place to familiarize yourself with deploying a non-package Shiny application with Docker.[^appsilon-docker-intro]
 
-```{bash}
-#| eval: false 
-#| code-fold: false
+```bash
 # build image 
 FROM rocker/shiny
 
@@ -275,9 +272,7 @@ Docker files start by building an image. In our case, we want an image configure
 
 The Shiny `rocker` image is for Shiny apps: 
 
-```{bash}
-#| eval: false 
-#| code-fold: false
+```bash
 FROM rocker/shiny
 ```
 
@@ -285,10 +280,7 @@ FROM rocker/shiny
 
 Use `RUN` and `R -e` to install dependencies for our app in the container from CRAN.[^remotes-install-local]
 
-```{bash}
-#| eval: false 
-#| code-fold: false
-#| code-overflow: scroll
+```bash
 RUN R -e 'install.packages(c("rlang", "stringr", "shiny", "ggplot2", "remotes"))'
 ```
 
@@ -302,9 +294,7 @@ RUN R -e 'install.packages(c("rlang", "stringr", "shiny", "ggplot2", "remotes"))
 
 3. `WORKDIR /deploy` sets the `/deploy` directory as the working directory for any subsequent instructions.
 
-```{bash}
-#| eval: false 
-#| code-fold: false
+```bash
 RUN mkdir /deploy
 ADD . /deploy
 WORKDIR /deploy
@@ -314,9 +304,7 @@ WORKDIR /deploy
 
 `remotes::install_local()` will the R package specified in the local directory (where our Shiny app-package lives), without upgrading dependencies.
 
-```{bash}
-#| eval: false 
-#| code-fold: false
+```bash
 RUN R -e 'remotes::install_local(upgrade="never")'
 ```
 
@@ -324,9 +312,7 @@ RUN R -e 'remotes::install_local(upgrade="never")'
 
 `RUN rm -rf /deploy` cleans up and reduces the size of the container.
 
-```{bash}
-#| eval: false 
-#| code-fold: false
+```bash
 RUN rm -rf /deploy
 ```
 
@@ -334,9 +320,7 @@ RUN rm -rf /deploy
 
 Make our Shiny app available on `EXPOSE 8180`.
 
-```{bash}
-#| eval: false 
-#| code-fold: false
+```bash
 EXPOSE 8180
 ```
 
@@ -344,10 +328,7 @@ EXPOSE 8180
 
 When the container starts, set Shiny to listen on port `8180`, then launch the Shiny app from our `sap` package. The port we exposed in the `Dockerfile` should match the `shiny.port` option.
 
-```{bash}
-#| eval: false 
-#| code-fold: false
-#| code-overflow: scroll
+```bash
 CMD R -e "options('shiny.port'=8180,shiny.host='0.0.0.0');library(sap);sap::launch_app()"
 ```
 
@@ -355,10 +336,7 @@ CMD R -e "options('shiny.port'=8180,shiny.host='0.0.0.0');library(sap);sap::laun
 
 The final `Dockerfile` we'll use to launch our application is below: 
 
-```{bash}
-#| eval: false 
-#| code-fold: false
-#| code-overflow: scroll
+```bash
 FROM rocker/shiny
 RUN R -e 'install.packages(c("rlang", "stringr", "shiny", "ggplot2", "remotes"))'
 RUN mkdir /deploy
@@ -372,9 +350,7 @@ CMD R -e "options('shiny.port'=8180,shiny.host='0.0.0.0');library(sap);sap::laun
 
 To build the Docker image and create a new container, run the `docker build` command in the Terminal with a tag (`-t`), a name for the image (`movies-app-docker-demo`), and the location (`.`): 
 
-```{bash}
-#| eval: false 
-#| code-fold: false
+```bash
 docker build -t movies-app-docker-demo .
 ```
 
@@ -397,10 +373,7 @@ These layers give us some insight into what the image contains. We can see the R
 
 After building the image, we can run the new container using `docker run`
 
-```{bash}
-#| label: docker_run
-#| eval: false 
-#| code-fold: false
+```bash
 docker run -p 8180:8180 movies-app-docker-demo
 ```
 
@@ -438,9 +411,7 @@ New Docker containers are named using a random combination of adjectives and fam
 
 You can change the name of a Docker image by stopping the container and passing `docker rename <old_name> <new_name>` to the Terminal:
 
-```{bash}
-#| eval: false 
-#| code-fold: false
+```bash
 docker rename unruffled_bhabha launch_app
 ```
 
@@ -454,7 +425,7 @@ The `golem` package has [multiple functions](https://thinkr-open.github.io/golem
 
 -   `golem`'s Docker functions can produce multiple Docker files (`golem::add_dockerfile_with_renv()` creates a `tmp/deploy` folder and adds the following files)
 
-    <em>```{bash}
+    <em>```bash
     #| eval: false
     #| code-fold: show
     #| code-summary: 'View deploy/ folder'
@@ -464,11 +435,9 @@ The `golem` package has [multiple functions](https://thinkr-open.github.io/golem
       ├── README
       ├── gap_0.0.0.9000.tar.gz
       └── renv.lock.prod
-    ```</em>
+    ```-   `golem`'s Docker files typically use the R build from `rocker` (and include a version):
 
--   `golem`'s Docker files typically use the R build from `rocker` (and include a version):
-
-    ```{bash}
+    ```bash
     #| eval: false 
     #| code-fold: show
     #| code-summary: 'View R version build'
@@ -477,7 +446,7 @@ The `golem` package has [multiple functions](https://thinkr-open.github.io/golem
 
 -   `golem` Docker files might also include additional commands for installing/updating command-line (linux) tools for downloading/exchanging data: 
 
-    ```{bash}
+    ```bash
     #| eval: false 
     #| code-fold: show
     #| code-summary: 'View apt-get commands'
@@ -487,7 +456,7 @@ The `golem` package has [multiple functions](https://thinkr-open.github.io/golem
 
 -   They also usually the `remotes` package to specify the `version` of each package and whether to `upgrade` (or not):
 
-    ```{bash}
+    ```bash
     #| eval: false 
     #| code-fold: show
     #| code-summary: 'View remotes::install_version()'
@@ -531,9 +500,7 @@ There are additional differences, but these are important if you want to include
 
 You can include a `Dockerfile` in an app-package by adding it to the `.Rbuildignore` file.[^rbuildignore]
 
-```{bash}
-#| eval: false 
-#| code-fold: false
+```bash
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^sap\.Rcheck$
@@ -544,9 +511,7 @@ You can include a `Dockerfile` in an app-package by adding it to the `.Rbuildign
 
 This will ensure it won't interfere with your app-package builds. Docker also has it's own ignore file (`.dockerignore`), which can include similar contents to the `.gitignore`: 
 
-```{bash}
-#| eval: false 
-#| code-fold: false
+```bash
 .RData
 .Rhistory
 .git
@@ -558,9 +523,7 @@ rsconnect/
 
 Note that if you include a `.dockerignore` file, you should *also* include this pattern in the `.Rbuildignore`: 
 
-```{bash}
-#| eval: false 
-#| code-fold: false
+```bash
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^sap\.Rcheck$
