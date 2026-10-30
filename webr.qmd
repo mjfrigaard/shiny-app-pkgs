@@ -31,17 +31,17 @@ co_box(
   header = "TLDR",
   fold = TRUE,
   contents = "
-  - webR is R compiled to WebAssembly, so it runs inside a web browser.
+  - `webR` is R compiled to `WebAssembly`, so it runs inside a web browser.
 
-  - shinylive bundles a Shiny app and webR into static files that any web host can serve.
+  - `shinylive` bundles a Shiny app and `webR` into static files that any web host can serve.
 
-  - Every package the app uses needs a WebAssembly binary, including the app-package itself.
+  - Every package the app uses needs a `WebAssembly` binary, including the app-package itself.
 
-  - R-universe builds a WebAssembly binary of our app-package each time we push to GitHub."
+  - [R-universe](https://r-universe.dev/search) builds a `WebAssembly` binary of our app-package each time we push to GitHub."
 )
 ```
 
-Every deployment we've covered so far needs a server running R. Posit Connect Cloud runs R for us (@sec-posit-connect-cloud). Docker packages R into a container (@sec-docker), and GitHub Actions builds and ships it (@sec-gha-cicd). In this chapter we'll remove the server entirely. We'll use webR and shinylive to run our app-package in the user's browser.
+Every deployment we've covered so far needs a server running R. Posit Connect Cloud runs R for us (@sec-posit-connect-cloud). Docker packages R into a container (@sec-docker), and GitHub Actions builds and ships it (@sec-gha-cicd). In this chapter we'll remove the server entirely and use `webR` and `shinylive` to run our app-package in the user's browser.
 
 ```{r}
 #| label: shinypak_apps
@@ -51,13 +51,13 @@ Every deployment we've covered so far needs a server running R. Posit Connect Cl
 shinypak_apps(regex = "^22", branch = "22_webr")
 ```
 
-## What is webR? {#sec-webr-what-is-webr}
+## What is `webR`? {#sec-webr-what-is-webr}
 
-[webR](https://docs.r-wasm.org/webr/latest/) is a version of R that runs in a web browser. It's compiled to [WebAssembly](https://webassembly.org/), a binary format that modern browsers run at near native speed. When a browser loads webR, the R session lives on the user's machine, not on a server.
+[webR](https://docs.r-wasm.org/webr/latest/) is a version of R that runs in a web browser. It's compiled to [WebAssembly](https://webassembly.org/), a binary format that modern browsers run at near native speed. When a browser loads `webR`, the R session lives on the user's machine, not on a server.
 
-[shinylive](https://posit-dev.github.io/r-shinylive/) builds on webR. It packages a Shiny app, webR, and the app's R packages into a folder of static files. A static file host is just a web server that hands out files without running any code (GitHub Pages and Netlify are common examples).
+[shinylive](https://posit-dev.github.io/r-shinylive/) builds on `webR`. It packages a Shiny app, `webR`, and the app's R packages into a folder of static files. A static file host is just a web server that hands out files without running any code ([GitHub Pages](https://docs.github.com/en/pages) and [Netlify](https://www.netlify.com/) are common examples).
 
-The diagram below compares a server-based deployment with a shinylive deployment:
+The diagram below compares a server-based deployment with a `shinylive` deployment:
 
 ```{mermaid}
 %%| fig-align: center
@@ -79,25 +79,25 @@ flowchart TD
     style W1 fill:#4CBB9D,color:#FFFFFF,rx:5,ry:5
 ```
 
-In a server-based deployment, every click travels to the server and every plot travels back. In a shinylive deployment, the host only delivers the files. After the first download, the app runs without contacting a server at all.
+In a server-based deployment, every click travels to the server and every plot travels back. In a `shinylive` deployment, the host only delivers the files. After the first download, the app runs without contacting a server at all.
 
 ### Trade-offs
 
-shinylive removes the server, but the browser takes on the server's job. I've found these trade-offs matter most for app-packages:
+`shinylive` removes the server, but the browser takes on the server's job. I've found these trade-offs matter most for app-packages:
 
-* First load: the browser downloads webR and every package before the app appears, so the first visit takes longer than a server-based app.
+* **First load**: the browser downloads `webR` and every package before the app appears, so the first visit takes longer than a server-based app.
 
-* Visible code: all the app's code and data are sent to the browser. Never put credentials, API keys, or private data in a shinylive app.
+* **Visible code**: all the app's code and data are sent to the browser. Never put credentials, API keys, or private data in a `shinylive` app.
 
-* No system tools: webR can't call programs installed on a computer. Features that rely on the Quarto CLI or `system()` calls won't work.
+* **No system tools**: `webR` can't call programs installed on a computer. Features that rely on the Quarto CLI or `system()` calls won't work.
 
-* Temporary files: webR writes files to a virtual file system in browser memory. Log files written with `logger` disappear when the user closes the tab.
+* **Temporary files**: `webR` writes files to a virtual file system in browser memory. Log files written with `logger` disappear when the user closes the tab.
 
-## Which packages run in webR? {#sec-webr-packages}
+## Which packages run in `webR`? {#sec-webr-packages}
 
-webR can't install packages from source. Every package an app uses needs a precompiled WebAssembly binary. The webR project hosts thousands of these binaries in a CRAN-like repository at <https://repo.r-wasm.org>.
+`webR` can't install packages from source. Every package an app uses needs a precompiled `WebAssembly` binary. The `webR` project hosts thousands of these binaries in a CRAN-like repository at <https://repo.r-wasm.org>.
 
-Before we export anything, we should confirm that each package in our `Imports` field has a binary. The code below reads the `DESCRIPTION` file and compares it to the packages in the webR repository:
+Before we export anything, we should confirm that each package in our `Imports` field has a binary. The code below reads the `DESCRIPTION` file and compares it to the packages in the `webR` repository:
 
 ```{r}
 #| eval: false
@@ -112,7 +112,7 @@ imports <- imports[imports != ""]
 setdiff(imports, c(rownames(wasm_pkgs), base_pkgs))
 ```
 
-Base packages (like `tools`) ship with webR, so we remove them before we compare. An empty result means every dependency has a binary:
+Base packages (like `tools`) ship with `webR`, so we remove them before we compare. An empty result means every dependency has a binary:
 
 ::: {style="font-style: italic;"}
 
@@ -122,15 +122,15 @@ character(0)
 
 :::
 
-The `4.5` in the URL refers to the version of R that webR is built on. Check the [webR documentation](https://docs.r-wasm.org/webr/latest/packages.html) for the current version if this URL stops working.
+The `4.5` in the URL refers to the version of R that `webR` is built on. Check the [webR documentation](https://docs.r-wasm.org/webr/latest/packages.html) for the current version if this URL stops working.
 
-## A WebAssembly binary for `sap` {#sec-webr-r-universe}
+## A `WebAssembly` binary for `sap` {#sec-webr-r-universe}
 
-Our dependencies are covered, but `sap` itself isn't on CRAN, so it has no binary in the webR repository. We need a service that builds one for us. [R-universe](https://r-universe.dev/) is a free service from rOpenSci that builds R packages from GitHub. It builds a WebAssembly binary of every package it hosts.
+Our dependencies are covered, but `sap` itself isn't on CRAN, so it has no binary in the webR repository. We need a service that builds one for us. [R-universe](https://r-universe.dev/) is a free service from [rOpenSci](https://ropensci.org/) that builds R packages from GitHub. It builds a `WebAssembly` binary of every package it hosts.
 
 To set up a personal universe:
 
-1. Create a GitHub repository named `<username>.r-universe.dev` (for this book, `mjfrigaard.r-universe.dev`).
+1. Create a GitHub repository named `<username>.r-universe.dev` (for this book, I used `mjfrigaard.r-universe.dev`).
 
 2. Add a `packages.json` file that lists each package and the repository it comes from.
 
@@ -148,6 +148,47 @@ The `packages.json` file below adds `sap` to the universe. The `branch` field te
 ]
 ```
 
+### Installing the R-universe GitHub app
+
+The `packages.json` file only lists our packages. Nothing builds until we install the R-universe GitHub app, which tells R-universe to create the universe and watch the repositories in it.
+
+1. Go to <https://github.com/apps/r-universe/installations/new>.
+
+2. Choose the personal account (or organization) that owns the `<username>.r-universe.dev` repository.
+
+3. Under "for these repositories," choose **All repositories** or **Only select repositories**. If you pick select repositories, include the `<username>.r-universe.dev` repository.
+
+4. Review the permissions (read access to metadata, and read and write access to commit statuses), then click **Install**.
+
+![Installing the R-universe GitHub app](images/webr_r_universe_install.png){width='70%' fig-align='center'}
+
+The app needs read access to the package repositories as well. Public repositories like `sap` are readable either way, but R-universe only posts build status checks to repositories the app is installed on. Add the package repository to the selection if you want those checks on your commits.
+
+![Installed R-universe GitHub app](images/webr_r_universe_landing.png){width='70%' fig-align='center'}
+
+After the app is installed, R-universe creates a build repository at `github.com/r-universe/<username>`. The first build usually finishes within an hour. We can follow its progress in the Actions tab of that repository (for this book, <https://github.com/r-universe/mjfrigaard/actions>). When the build succeeds, the package appears at `https://<username>.r-universe.dev`.
+
+On the first run, the Actions tab lists three workflows. **Update universe** and **Cleanup package server** set up the universe and sync it with `packages.json`, and **Build package** builds `sap` (including the `WebAssembly` binary):
+
+![R-universe workflows building `sap`](images/webr_r_universe_actions.png){width='100%' fig-align='center'}
+
+```{r}
+#| label: co_box_r_universe_app
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "r",
+  look = "default", hsize = "1.05", size = "0.95",
+  header = "Don't see the app?",
+  fold = TRUE,
+  contents = "
+The **Installed GitHub Apps** page in a repository's settings only lists apps that are already installed on that repository. If R-universe isn't listed there, the app hasn't been installed yet: use the installation link above (not the repository settings) to install it."
+)
+```
+
+### Installing `sap` from R-universe
+
 R-universe rebuilds the package (and its WebAssembly binary) each time we push to that branch. When the build finishes, we install `sap` from the universe instead of from our local source files:
 
 ```{r}
@@ -161,11 +202,11 @@ install.packages(
 
 ### Why install from R-universe?
 
-Installing from R-universe matters because shinylive bundles the packages installed on our machine. The installed package records where it came from, and shinylive uses that record to download the matching WebAssembly binary.
+Installing from R-universe matters because `shinylive` bundles the packages installed on our machine. The installed package records where it came from, and `shinylive` uses that record to download the matching `WebAssembly` binary.
 
-## The shinylive launcher {#sec-webr-launcher}
+## The `shinylive` launcher {#sec-webr-launcher}
 
-shinylive exports an app directory (a folder with an `app.R` file), not a package. We'll add a small launcher app in `inst/webr/` that loads `sap` and returns the application:
+`shinylive` exports an app directory (a folder with an `app.R` file), not a package. We'll add a small launcher app in `inst/webr/` that loads `sap` and returns the application:
 
 ```{r}
 #| label: git_box_22_webr
@@ -191,9 +232,9 @@ shinyApp(
 )
 ```
 
-This file calls `movies_ui()` and `movies_server()` directly instead of `launch_app()`. `launch_app()` calls `shiny::runApp()`, which starts a server and blocks the R session. shinylive expects `app.R` to return a Shiny app object and handles the rest itself.
+This file calls `movies_ui()` and `movies_server()` directly instead of `launch_app()`. `launch_app()` calls `shiny::runApp()`, which starts a server and blocks the R session. `shinylive` expects `app.R` to return a Shiny app object and handles the rest itself.
 
-The `library(sap)` call also does a second job. shinylive scans `app.R` for `library()` calls to decide which packages to bundle. It finds `sap`, then bundles the binaries for `sap` and each of its dependencies.
+The `library(sap)` call also does a second job. `shinylive` scans `app.R` for `library()` calls to decide which packages to bundle. It finds `sap`, then bundles the binaries for `sap` and each of its dependencies.
 
 ## Exporting the app {#sec-webr-export}
 
@@ -205,9 +246,9 @@ We'll store the export code in `dev/webr.R`. The `dev/` folder is already listed
 shinylive::export(appdir = "inst/webr", destdir = "_site")
 ```
 
-The export downloads the shinylive assets the first time it runs, so the first export takes a few minutes. Later exports reuse the cached assets.
+The export downloads the `shinylive` assets the first time it runs, so the first export takes a few minutes. Later exports reuse the cached assets.
 
-We can preview the site with `httpuv::runStaticServer()`. Opening `_site/index.html` directly in a browser won't work, because webR needs the files served over HTTP:
+We can preview the site with `httpuv::runStaticServer()`. Opening `_site/index.html` directly in a browser won't work, because `webR` needs the files served over HTTP:
 
 ```{r}
 #| eval: false
@@ -215,13 +256,13 @@ We can preview the site with `httpuv::runStaticServer()`. Opening `_site/index.h
 httpuv::runStaticServer("_site")
 ```
 
-The app should look the same as the version we launch with `launch_app(app = "bslib")`. We can confirm that R is running in the browser by opening the browser's developer tools. The Network tab lists the webR and package files as they download.
+The app should look the same as the version we launch with `launch_app(app = "bslib")`. We can confirm that R is running in the browser by opening the browser's developer tools. The Network tab lists the `webR` and package files as they download.
 
 We've also added `_site/` to `.gitignore`. The exported site is a build artifact, so we rebuild it from source rather than tracking it in Git.
 
 ### Publishing the site
 
-Any static file host can serve the `_site/` folder. GitHub Pages is a common choice. We can build and deploy the site with a workflow like the ones in @sec-gha-cicd. A repository has only one GitHub Pages site, and we'll use the `sap` site for the package website in @sec-pkgdown. If you want both, deploy the shinylive app from a separate repository.
+Any static file host can serve the `_site/` folder. GitHub Pages is a common choice. We can build and deploy the site with a workflow like the ones in @sec-gha-cicd. A repository has only one GitHub Pages site, and we'll use the `sap` site for the package website in @sec-pkgdown. If you want both, deploy the `shinylive` app from a separate repository.
 
 ```{r}
 #| label: co_box_quarto_live
@@ -240,7 +281,7 @@ The [`quarto-shinylive` extension](https://github.com/quarto-ext/shinylive) embe
 
 ## Recap {.unnumbered}
 
-webR and shinylive move our app-package from a server into the user's browser. The trade-off is a slower first load and code that's visible to every user.
+`webR` and `shinylive` move our app-package from a server into the user's browser. The trade-off is a slower first load and code that's visible to every user.
 
 ```{r}
 #| label: co_box_recap
@@ -254,16 +295,16 @@ co_box(
   header = "Recap",
   contents = "
 \n
-1. Check that each package in `Imports` has a WebAssembly binary at repo.r-wasm.org.
+1. Check that each package in `Imports` has a `WebAssembly` binary at `repo.r-wasm.org`.
 
-2. Publish the app-package to R-universe so it gets a WebAssembly binary, then install it from there.
+2. Publish the app-package to [R-universe](https://r-universe.dev/search) so it gets a `WebAssembly` binary, then install it from there.
 
 3. Add a launcher `app.R` that returns a Shiny app object instead of calling `runApp()`.
 
 4. Export the launcher with `shinylive::export()` and serve the static files from any web host.")
 ```
 
-In the next chapter we'll package the same app as a desktop application with `shinyelectron`, which can also use shinylive to run without R installed.
+In the next chapter we'll package the same app as a desktop application with `shinyelectron`, which can also use `shinylive` to run without R installed.
 
 ```{r}
 #| label: git_contrib_box
