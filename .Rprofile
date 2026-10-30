@@ -1,6 +1,15 @@
 # renv ----
 source("renv/activate.R")
 Sys.setenv(RENV.CONFIG.PAK.ENABLED = TRUE)
+# macOS fix: fstcore.so needs libomp's symbols in the flat namespace ----
+local({
+  if (Sys.info()[["sysname"]] == "Darwin") {
+    libomp <- file.path(R.home("lib"), "libomp.dylib")
+    if (file.exists(libomp) && !"libomp.dylib" %in% names(getLoadedDLLs())) {
+      try(dyn.load(libomp, local = FALSE), silent = TRUE)
+    }
+  }
+})
 # OPTIONS ----
 options(
   ## btw config ----
