@@ -41,7 +41,7 @@ co_box(
 )
 ```
 
-In the previous chapter we moved our app-package into the browser with webR and shinylive (@sec-webr). Some users need the app as a desktop program instead. They might work offline, or their organization might block unknown websites. In this chapter we'll use the `shinyelectron` package to turn `sap` into an installer that users download and open like any other program.
+In the previous chapter we moved our app-package into the browser with `webR` and `shinylive` (@sec-webr). Some users need the app as a desktop program instead. They might work offline, or their organization might block unknown websites. In this chapter we'll use the `shinyelectron` package to turn `sap` into an installer that users download and open like any other program.
 
 ```{r}
 #| label: shinypak_apps
@@ -55,7 +55,7 @@ shinypak_apps(regex = "^23", branch = "23_shinyelectron")
 
 [Electron](https://www.electronjs.org/) is a framework for building desktop programs with web technologies. An Electron app is just a web browser with a single page, packaged as a program. Visual Studio Code and Slack are both built this way.
 
-[`shinyelectron`](https://r-pkg.thecoatlessprofessor.com/shinyelectron/) wraps a Shiny app in Electron. It starts R (or webR), runs the app, and shows it in a desktop window. The user never sees a browser or a URL.
+[`shinyelectron`](https://r-pkg.thecoatlessprofessor.com/shinyelectron/) wraps a Shiny app in Electron. It starts R (or `webR`), runs the app, and shows it in a desktop window. The user never sees a browser or a URL.
 
 ### Choosing a runtime strategy
 
@@ -63,7 +63,7 @@ The app still needs R, and `shinyelectron` offers five ways to provide it. Each 
 
 | Strategy | The installer ships | The user needs |
 |:---|:---|:---|
-| `shinylive` | Electron and a webR bundle | nothing |
+| `shinylive` | Electron and a `webR` bundle | nothing |
 | `bundled` | Electron and a portable copy of R | nothing |
 | `auto-download` | Electron and a downloader | internet on first launch |
 | `system` | Electron only | R installed |
@@ -94,7 +94,7 @@ flowchart TD
     style BUN fill:#4CBB9D,color:#FFFFFF,rx:5,ry:5
 ```
 
-We confirmed in @sec-webr-packages that every `sap` dependency runs in webR, so `shinylive` is an option. It also needs the R-universe binary from @sec-webr-r-universe. We'll use the `bundled` strategy in this chapter instead. It installs `sap` from our local source files, so it works without R-universe and runs the full version of R.
+We confirmed in @sec-webr-packages that every `sap` dependency runs in `webR`, so `shinylive` is an option. It also needs the R-universe binary from @sec-webr-r-universe. We'll use the `bundled` strategy in this chapter instead. It installs `sap` from our local source files, so it works without R-universe and runs the full version of R.
 
 The `bundled` strategy has two limits. Portable R only exists for macOS and Windows, so it can't build Linux installers. It also can't cross-build, so macOS installers must be built on a Mac and Windows installers on Windows.
 
@@ -102,12 +102,12 @@ The `bundled` strategy has two limits. Portable R only exists for macOS and Wind
 
 You don't have to know JavaScript to use `shinyelectron`, but the computer that builds the installer needs a few tools. `shinyelectron` requires R (>= 4.5.0), Node.js (>= 22.0.0), npm (>= 11.5.0), and each platform's build tools (Xcode Command Line Tools on macOS or Visual Studio Build Tools on Windows).
 
-We'll install `shinyelectron` from CRAN and check the build machine with `sitrep_shinyelectron()`:
+We'll install the development version of `shinyelectron` from GitHub and check the build machine with `sitrep_shinyelectron()`. The CRAN release (0.2.1) doesn't support the `local_packages` field we'll use to install `sap`, so this chapter needs the development version:
 
 ```{r}
 #| eval: false
 #| code-fold: false
-install.packages("shinyelectron")
+pak::pak("coatless-rpkg/shinyelectron")
 library(shinyelectron)
 sitrep_shinyelectron()
 ```
@@ -120,7 +120,7 @@ If Node.js is missing or too old, `install_nodejs()` installs it without adminis
 install_nodejs()
 ```
 
-These tools only matter on the build machine. The people who install our app don't need R, Node.js, or npm.
+These tools only matter on the build machine. The people who install our app don't need R, Node.js, or `npm`.
 
 ## The `electron/` folder {#sec-shinyelectron-folder}
 
@@ -152,7 +152,7 @@ electron/
 
 ### The launcher app
 
-The launcher in `electron/app/app.R` looks just like the shinylive launcher from @sec-webr-launcher:
+The launcher in `electron/app/app.R` looks just like the `shinylive` launcher from @sec-webr-launcher:
 
 ```{r}
 #| eval: false
@@ -176,7 +176,7 @@ We return a Shiny app object for the same reason as before. `shinyelectron` mana
 app:
   name: "Movie Reviews" # <1>
   slug: "sap"
-  version: "0.0.0.9200" # <2>
+  version: "0.0.0-9200" # <2>
 build:
   type: "r-shiny"
   runtime_strategy: "bundled" # <3>
@@ -196,7 +196,7 @@ window:
   height: 800
 ```
 1. The name in the window title and the installed program.
-2. Matches the `Version` field in `DESCRIPTION`. Bump the package version, not this file.
+2. The semantic version form of the `Version` field in `DESCRIPTION` (`0.0.0.9200`). Electron requires three-part versions, so the development number goes after a hyphen.
 3. Ships a portable copy of R with the app.
 4. Scans `app.R` for `library()` calls to find dependencies.
 5. Installs `sap` from the package root (relative to this file), with its dependencies from `repos`.
@@ -236,19 +236,39 @@ sitrep_shinyelectron()
 
 app_check("electron/app")
 
+platform <- switch(Sys.info()[["sysname"]], Darwin = "mac", Windows = "win")
+
 export(
-  appdir = "electron/app",
-  destdir = "electron/dist",
+  appdir = file.path(getwd(), "electron/app"),
+  destdir = file.path(getwd(), "electron/dist"),
+  platform = platform,
   overwrite = TRUE,
   run_after = interactive()
 )
 ```
 
-`app_check()` catches configuration problems before the build starts. `export()` installs portable R, installs `sap` and its dependencies, and builds the installer. `run_after = interactive()` opens the finished app when we run the script by hand, but not when it runs on a CI server.
+`app_check()` catches configuration problems before the build starts. We pass absolute paths to `export()`, because the bundled R installs packages from a different working directory and can't resolve a relative library path. We also set `platform` to the current operating system. The configuration file lists both `mac` and `win`, but a `bundled` build can only target the machine it runs on.
 
-The installers are written to `electron/dist/electron-app/dist/`. That folder is the only one we share with users. We can confirm the build worked by installing the app from that folder and opening it like any other program.
+`export()` installs portable R, installs `sap` and its dependencies, and builds the installer. `run_after = interactive()` opens the finished app when we run the script by hand, but not when it runs on a CI server.
+
+The installers are written to `electron/dist/electron-app/dist/`. On an Intel Mac, the build produces `sap-0.0.0-9200-x64.dmg` (about 256 MB, most of it portable R). That folder is the only one we share with users. We can confirm the build worked by installing the app from that folder and opening it like any other program.
 
 If the packaged app misbehaves, launch it with the `SHINYELECTRON_DEBUG` environment variable set to `1`. The debug output shows how the app found R, which packages it installed, and whether the Shiny server started.
+
+```{r}
+#| label: co_box_rprofile
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "r",
+  look = "default", hsize = "1.05", size = "0.95",
+  header = "Your `.Rprofile` comes along",
+  fold = TRUE,
+  contents = "
+The bundled R reads the user's `~/.Rprofile` when the app starts. If that file calls a package the app doesn't include (for example, `ellmer::chat_anthropic()` in `options()`), R stops before the Shiny server starts and the debug output shows `there is no package called 'ellmer'`. To test the app without your own profile, launch it with `R_PROFILE_USER` pointing to an empty file."
+)
+```
 
 ## Building installers with GitHub Actions {#sec-shinyelectron-gha}
 
