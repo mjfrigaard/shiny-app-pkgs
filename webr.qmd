@@ -91,6 +91,8 @@ In a server-based deployment, every click travels to the server and every plot t
 
 * **No system tools**: `webR` can't call programs installed on a computer. Features that rely on the Quarto CLI or `system()` calls won't work.
 
+* **No downloads from R**: `webR` can't download files from inside R. `sass::font_google()` downloads font files by default, so a `bslib` theme that uses it fails with an error about the `curl` package. Use `sass::font_google("Ubuntu", local = FALSE)` so the browser loads the font instead.
+
 * **Temporary files**: `webR` writes files to a virtual file system in browser memory. Log files written with `logger` disappear when the user closes the tab.
 
 ## Which packages run in `webR`? {#sec-webr-packages}
@@ -103,7 +105,7 @@ Before we export anything, we should confirm that each package in our `Imports` 
 #| eval: false
 #| code-fold: false
 wasm_pkgs <- available.packages(
-  contriburl = "https://repo.r-wasm.org/bin/emscripten/contrib/4.5"
+  contriburl = "https://repo.r-wasm.org/bin/emscripten/contrib/4.6"
 )
 base_pkgs <- rownames(installed.packages(priority = "base"))
 imports <- read.dcf("DESCRIPTION", fields = "Imports")
@@ -122,7 +124,7 @@ character(0)
 
 :::
 
-The `4.5` in the URL refers to the version of R that `webR` is built on. Check the [webR documentation](https://docs.r-wasm.org/webr/latest/packages.html) for the current version if this URL stops working.
+The `4.6` in the URL refers to the version of R that `webR` is built on. Check the [webR documentation](https://docs.r-wasm.org/webr/latest/packages.html) for the current version if this URL stops working.
 
 ## A `WebAssembly` binary for `sap` {#sec-webr-r-universe}
 
@@ -164,9 +166,9 @@ The `packages.json` file only lists our packages. Nothing builds until we instal
 
 The app needs read access to the package repositories as well. Public repositories like `sap` are readable either way, but R-universe only posts build status checks to repositories the app is installed on. Add the package repository to the selection if you want those checks on your commits.
 
-![Installed R-universe GitHub app](images/webr_r_universe_landing.png){width='70%' fig-align='center'}
+![Installed R-universe GitHub app](images/webr_r_universe_landing.png){width='100%' fig-align='center'}
 
-After the app is installed, R-universe creates a build repository at `github.com/r-universe/<username>`. The first build usually finishes within an hour. We can follow its progress in the Actions tab of that repository (for this book, <https://github.com/r-universe/mjfrigaard/actions>). When the build succeeds, the package appears at `https://<username>.r-universe.dev`.
+After the app is installed, R-universe creates a build repository at `github.com/r-universe/<username>` (for this book, <https://github.com/r-universe/mjfrigaard>). The first build usually finishes within an hour. We can follow its progress in the Actions tab of that repository (<https://github.com/r-universe/mjfrigaard/actions>). When the build succeeds, the package appears at `https://<username>.r-universe.dev`.
 
 On the first run, the Actions tab lists three workflows. **Update universe** and **Cleanup package server** set up the universe and sync it with `packages.json`, and **Build package** builds `sap` (including the `WebAssembly` binary):
 
