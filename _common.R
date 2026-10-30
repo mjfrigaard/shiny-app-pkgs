@@ -346,7 +346,7 @@ glue::glue("\n:::: {{layout='[ 30, 50, 20 ]'}}
   }
 }
 
-pkg_info <- function(pkgs, gt = FALSE) {
+pkg_info <- function(pkgs) {
   # Ensure pkgs is a character vector
   if (!is.character(pkgs)) {
     stop("`pkgs` must be a character vector.")
@@ -401,24 +401,11 @@ pkg_info <- function(pkgs, gt = FALSE) {
   # Process multiple packages
   pkg_info_df <- purrr::map_dfr(pkgs, get_pkg_details)
   
-  # Return gt table if gt = TRUE
-  if (gt) {
-    gt::gt(data = pkg_info_df) |>
-      gt::tab_style(
-        style = "vertical-align:top",
-        locations = gt::cells_body(columns = everything())
-      ) |>
-      gt::cols_align(
-        align = "left",
-        columns = everything()
-      )
-  } else {
-    pkg_info_df
-  }
+  pkg_info_df
 }
 
 # Example usage
-# pkg_info(c("golem", "leprechaun", "rhino", "randomNonexistentPackage"), gt = TRUE)
+# pkg_info(c("golem", "leprechaun", "rhino", "randomNonexistentPackage"))
 
 dev_box <- function(text, italic = TRUE, bold = FALSE) {
   tday <- Sys.Date()
