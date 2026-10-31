@@ -37,7 +37,9 @@ co_box(
 
   - App-packages need a small launcher app in `electron/app/` that loads the package and returns a Shiny app object.
 
-  - A GitHub Actions matrix builds installers for each operating system."
+  - A GitHub Actions matrix builds installers for each operating system.
+
+  - On Linux, the `shinylive` strategy builds an `.AppImage`, and electron-builder turns the same project into a `.deb`."
 )
 ```
 
@@ -96,7 +98,7 @@ flowchart TD
 
 We confirmed in @sec-webr-packages that every `sap` dependency runs in `webR`, so `shinylive` is an option. It also needs the R-universe binary from @sec-webr-r-universe. We'll use the `bundled` strategy in this chapter instead. It installs `sap` from our local source files, so it works without R-universe and runs the full version of R.
 
-The `bundled` strategy has two limits. Portable R only exists for macOS and Windows, so it can't build Linux installers. It also can't cross-build, so macOS installers must be built on a Mac and Windows installers on Windows.
+The `bundled` strategy has two limits. Portable R only exists for macOS and Windows, so it can't build Linux installers. It also can't cross-build, so macOS installers must be built on a Mac and Windows installers on Windows. We'll use the `shinylive` strategy for Linux in @sec-shinyelectron-deb.
 
 ## Preparing the build machine {#sec-shinyelectron-preflight}
 
@@ -225,6 +227,20 @@ electron/dist/
 
 ## Building the desktop app {#sec-shinyelectron-build}
 
+We'll build the macOS installer (`.dmg`) on a Mac. The `23.1_shinyelectron-dmg` branch narrows the configuration file to a single platform (`platforms: mac`):
+
+```{r}
+#| label: git_box_23.1_shinyelectron-dmg
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  fig_pw = '75%',
+  branch = "23.1_shinyelectron-dmg",
+  repo = 'sap')
+```
+
 The build script in `electron/build.R` checks the system, validates the app, and exports it. We run it from the package root:
 
 ```{r}
@@ -234,9 +250,9 @@ library(shinyelectron)
 
 sitrep_shinyelectron()
 
-app_check("electron/app")
+platform <- "mac"
 
-platform <- switch(Sys.info()[["sysname"]], Darwin = "mac", Windows = "win")
+app_check("electron/app", platform = platform)
 
 export(
   appdir = file.path(getwd(), "electron/app"),
@@ -247,11 +263,13 @@ export(
 )
 ```
 
-`app_check()` catches configuration problems before the build starts. We pass absolute paths to `export()`, because the bundled R installs packages from a different working directory and can't resolve a relative library path. We also set `platform` to the current operating system. The configuration file lists both `mac` and `win`, but a `bundled` build can only target the machine it runs on.
+We pass `platform` to both `app_check()` and `export()`. A `bundled` build can only target the machine it runs on, so each build gets one platform. Without `platform`, `app_check()` reads every platform in the configuration file and reports an error when it finds more than one. `app_check()` catches configuration problems before the build starts. We pass absolute paths to `export()`, because the bundled R installs packages from a different working directory and can't resolve a relative library path.
 
 `export()` installs portable R, installs `sap` and its dependencies, and builds the installer. `run_after = interactive()` opens the finished app when we run the script by hand, but not when it runs on a CI server.
 
 The installers are written to `electron/dist/electron-app/dist/`. On an Intel Mac, the build produces `sap-0.0.0-9200-x64.dmg` (about 256 MB, most of it portable R). That folder is the only one we share with users. We can confirm the build worked by installing the app from that folder and opening it like any other program.
+
+### Debugging the packaged app
 
 If the packaged app misbehaves, launch it with the `SHINYELECTRON_DEBUG` environment variable set to `1`. The debug output shows how the app found R, which packages it installed, and whether the Shiny server started.
 
@@ -272,7 +290,7 @@ The bundled R reads the user's `~/.Rprofile` when the app starts. If that file c
 
 ## Building installers with GitHub Actions {#sec-shinyelectron-gha}
 
-Because `bundled` can't cross-build, a single computer can't build installers for every platform. A GitHub Actions matrix solves this by running the same job on a macOS runner and a Windows runner. We'll add the workflow in `.github/workflows/build-installers.yml`:
+Because `bundled` can't cross-build, a single computer can't build installers for every platform. A GitHub Actions matrix solves this by running the same job on a macOS runner and a Windows runner. The workflow is in `.github/workflows/build-installers.yml` on the `23_shinyelectron` branch:
 
 ```yaml
 name: build-installers, sap
@@ -328,6 +346,425 @@ macOS and Windows warn users before they open an unsigned app, and macOS may ref
 )
 ```
 
+## Building a Linux installer (`.deb`) {#sec-shinyelectron-deb}
+
+Linux users expect a `.deb` file,  the package format for Debian, Ubuntu, and Pop!_OS (which I'm currently using). `shinyelectron` doesn't build a `.deb` installer, because Linux only builds an `.AppImage` (a single file that runs without being installed). I've found we can still get a `.deb` by building the `.AppImage` first, then *rebuilding* the same Electron project with one extra target.
+
+```{r}
+#| label: git_box_23.2_shinyelectron-deb
+#| echo: false
+#| results: asis
+#| eval: true
+git_margin_box(
+  contents = "launch",
+  fig_pw = '75%',
+  branch = "23.2_shinyelectron-deb",
+  repo = 'sap')
+```
+
+The `bundled` strategy won't work with Pop!_OS, because portable R doesn't exist for Linux. But we can switch to the `shinylive` strategy, which runs `sap` with `webR` *inside* the Electron window. The diagram below shows the full build:
+
+```{mermaid}
+%%| fig-align: center
+%%| fig-cap: 'Building a .deb with shinyelectron and electron-builder'
+%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px", "darkMode":false}}}%%
+
+flowchart TD
+    Start(["<code>electron/build.R</code>"]) -->|"i. export()"| Export("shinyelectron converts the app<br>to shinylive and builds Electron")
+    Export --> AppImage[/".AppImage"/]
+    Export --> Project[("<code>electron-app/</code><br>Electron project")]
+    Project -->|"ii. edit package.json"| Edit("add the <code>deb</code> target,<br>homepage, and maintainer")
+    Edit -->|"iii. npx electron-builder"| Builder("electron-builder<br>packages the project")
+    Builder --> Deb[/".deb"/]
+
+    style Export fill:#4CBB9D,color:#FFFFFF,rx:5,ry:5
+    style Edit fill:#4CBB9D,color:#FFFFFF,rx:5,ry:5
+    style Builder fill:#4CBB9D,color:#FFFFFF,rx:5,ry:5
+```
+
+### Preparing the Linux build machine
+
+The Linux build machine needs the same tools as before. The default Node.js on Ubuntu 24.04 (and Pop!_OS) is version 18, which is too old for `shinyelectron`. 
+```{r}
+#| eval: false
+#| code-fold: false
+library(shinyelectron)
+```
+
+`install_nodejs()` installs a newer version without administrator rights:
+
+```{r}
+#| eval: false 
+#| code-fold: false
+install_nodejs()
+```
+
+::: {style="font-style: italic;"}
+
+```{verbatim}
+ℹ Detecting latest Node.js LTS version...
+✔ Latest LTS: v26.13.0
+
+── Installing Node.js v26.13.0 ─────────────────────────────────────────────
+ℹ Platform: linux
+ℹ Architecture: x64
+ℹ Fetching checksums...
+ℹ Downloading from <https://nodejs.org/dist/v26.13.0/node-v26.13.0-linux-x64.tar.gz>
+trying URL 'https://nodejs.org/dist/v26.13.0/node-v26.13.0-linux-x64.tar.gz'
+Content type 'application/gzip' length 62893692 bytes (60.0 MB)
+==================================================
+downloaded 60.0 MB
+
+ℹ Verifying checksum...
+✔ Checksum verified
+ℹ Extracting archive...
+✔ Node.js v26.13.0 installed successfully
+ℹ Location: /home/mjfrigaard/.cache/shinyelectron/assets/nodejs/v26.13.0/linux-x64
+ℹ shinyelectron will automatically use this installation
+```
+
+:::
+
+The `shinylive` strategy needs two things from @sec-webr. The first is the `shinylive` R package, which converts the app before Electron packages it. `sitrep_shinyelectron()` lists `shinylive` as optional, but this strategy can't build without it:
+
+```{r}
+#| eval: false
+#| code-fold: false
+install.packages("shinylive")
+```
+
+The second is the `WebAssembly` binary of `sap` from @sec-webr-r-universe. We install `sap` from R-universe before we build:
+
+```{r}
+#| eval: false
+#| code-fold: false
+install.packages(
+  "sap",
+  repos = c("https://mjfrigaard.r-universe.dev", getOption("repos"))
+)
+```
+
+We can confirm the build machine is ready with `sitrep_shinyelectron()`.
+
+```{r}
+#| eval: false 
+#| code-fold: false
+sitrep_shinyelectron()
+```
+
+ The `Optional Packages` section should now list `shinylive` with a version number:
+
+::: {style="font-style: italic;"}
+
+```{verbatim}
+── Complete shinyelectron Diagnostic Report ────────────────────────────────
+────────────────────────────────────────────────────────────────────────────
+
+── System Requirements Report ──────────────────────────────────────────────
+✔ Platform: linux
+✔ Architecture: x64
+✔ Local Node.js (shinyelectron): v26.13.0
+✔ Active Node.js: v26.13.0 (local)
+✔ npm: v11.20.0
+✔ R: v4.6.1
+
+── Python ──
+
+✔ Python 3.12.3
+ℹ Python shinylive: not usable
+ℹ   Install with: `pip install shinylive`
+ℹ Python shiny: not usable
+ℹ   Install with: `pip install shiny`
+
+── Container Engine ──
+
+✔ Container engine: docker
+
+── Cached Runtimes ──
+
+ℹ No cached runtimes found
+✔ All system requirements satisfied
+────────────────────────────────────────────────────────────────────────────
+
+── Dependencies Report ─────────────────────────────────────────────────────
+
+── Required Packages ──
+
+✔ cli: v3.6.6
+✔ fs: v2.1.0
+✔ jsonlite: v2.0.0
+✔ rappdirs: v0.3.4
+✔ rlang: v1.3.0
+✔ whisker: v0.4.1
+✔ processx: v3.9.0
+✔ yaml: v2.3.12
+✔ utils: v4.6.1
+✔ tools: v4.6.1
+
+── Optional Packages ──
+
+✔ shinylive: v0.5.0
+✔ DT: v0.34.0
+✔ ggplot2: v4.0.3
+✔ All required dependencies satisfied
+────────────────────────────────────────────────────────────────────────────
+```
+
+:::
+
+
+The `Project Report` flags a missing `package.json` and `main.js` because `sitrep_shinyelectron()` checks the current directory for an Electron project. `export()` creates that project in `electron/dist/electron-app/` during the build, so these issues are expected before the first build.
+
+
+::: {style="font-style: italic;"}
+
+```{verbatim}
+── Build Tools Report ──────────────────────────────────────────────────────
+ℹ Checking build tools for platform: linux
+✔ Build tools (gcc, make): Found
+✔ Build tools ready
+────────────────────────────────────────────────────────────────────────────
+
+── Project Report ──────────────────────────────────────────────────────────
+ℹ Checking directory: /home/mjfrigaard/projects/apps/R/sap
+✖ package.json: Not found
+! main.js: Not found
+✖ App files: Not found in src/app or app/
+ℹ node_modules: Not found (run 'npm install')
+ℹ This does not appear to be an Electron project
+! Found 3 issues
+
+── Recommendations ──
+
+ℹ Run 'npm install' to install dependencies
+────────────────────────────────────────────────────────────────────────────
+
+── Overall Summary ─────────────────────────────────────────────────────────
+! Found 3 total issues that may prevent successful builds
+
+── Priority Actions ──
+
+ℹ 1. Run 'npm install' to install dependencies
+```
+
+:::
+
+
+
+```{r}
+#| label: co_box_npm_install
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "r",
+  look = "default", hsize = "1.05", size = "0.95",
+  header = "Don't run `npm install` in the package root",
+  contents = "
+Don't run `npm install` in the package root; it would add `package.json` and `node_modules/` to the R package."
+)
+```
+
+### The Linux configuration file
+
+The launcher in `electron/app/app.R` doesn't change. The configuration file switches the strategy and the platform:
+
+```yaml
+app:
+  name: "Movie Reviews"
+  slug: "sap"
+  version: "0.0.0-9200"
+build:
+  type: "r-shiny"
+  runtime_strategy: "shinylive" # <1>
+  platforms:
+    - linux # <2>
+window:
+  width: 1200
+  height: 800
+```
+1. Runs `sap` with `webR`, so the installer doesn't need portable R.
+2. Builds for Linux only.
+
+We've dropped the `dependencies` block. The `shinylive` strategy bundles the `WebAssembly` binaries of the installed packages, so it doesn't install anything from `local_packages`.
+
+### The Linux build script
+
+The build script in `electron/build.R` runs in two stages. `export()` builds the `.AppImage`, then the script edits the Electron project and calls `electron-builder` to build the `.deb`:
+
+```{r}
+#| eval: false
+#| code-fold: false
+library(shinyelectron)
+
+sitrep_shinyelectron()
+
+app_check("electron/app", platform = "linux")
+
+export( # <1>
+  appdir = file.path(getwd(), "electron/app"),
+  destdir = file.path(getwd(), "electron/dist"),
+  platform = "linux",
+  overwrite = TRUE
+)
+
+electron_app <- file.path(getwd(), "electron/dist/electron-app")
+
+pkg_json <- file.path(electron_app, "package.json")
+
+pkg <- jsonlite::read_json(pkg_json)
+
+pkg$homepage <- "https://github.com/mjfrigaard/sap" # <2>
+
+pkg$build$linux$target <- list("AppImage", "deb") # <3>
+
+pkg$build$linux$maintainer <- "Martin Frigaard <mjfrigaard@pm.me>" # <4>
+
+jsonlite::write_json(pkg, pkg_json, auto_unbox = TRUE, pretty = TRUE)
+
+node_bin <- utils::tail(Sys.glob(file.path( # <5>
+  rappdirs::user_cache_dir("shinyelectron"), "assets/nodejs/*/linux-x64/bin"
+)), 1) # <5>
+
+withr::with_path(node_bin, withr::with_dir( # <6>
+  electron_app,
+  system2("npx", c("electron-builder", "--linux", "deb", "--publish", "never"))
+)) # <6>
+```
+1. Converts the app to `shinylive`, writes the Electron project to `electron/dist/electron-app/`, and builds the `.AppImage`.
+2. The project's web page, required for a `.deb`.
+3. Adds `deb` to the Linux targets (`shinyelectron` only sets `AppImage`).
+4. The package maintainer, also required for a `.deb`.
+5. Finds the Node.js that `install_nodejs()` installed in the `shinyelectron` cache.
+6. Puts that Node.js first on the `PATH`, then runs `electron-builder` from inside the Electron project. Without it, `npx` uses the system Node.js (version 18 on Ubuntu 24.04).
+
+We can't skip the first build with `export(build = FALSE)`. That option stops after the `shinylive` conversion, before `shinyelectron` writes the Electron project, so there's no `package.json` to edit.
+
+The homepage and maintainer fields matter because `electron-builder` refuses to build a `.deb` without them:
+
+::: {style="font-style: italic;"}
+
+```{verbatim}
+Error: Please specify project homepage
+Please specify author 'email' in the application package.json
+It is required to set Linux .deb package maintainer.
+```
+
+:::
+
+```{r}
+#| label: co_box_version_mismatch
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b",
+  look = "default", hsize = "1.05", size = "0.95",
+  header = "Package version warnings",
+  fold = TRUE,
+  contents = "
+`export()` may warn that an installed package (for example, `knitr` or `xfun`) is a version behind its `WebAssembly` build. The `shinylive` conversion uses the `WebAssembly` version, so the app still works. Update the local package to silence the warning."
+)
+```
+
+### Checking the `.deb`
+
+The installers are written to `electron/dist/electron-app/dist/`:
+
+::: {style="font-style: italic;"}
+
+```{verbatim}
+sap-0.0.0-9200-amd64.deb          183 MB
+sap-0.0.0-9200-x86_64.AppImage    211 MB
+```
+
+:::
+
+We can confirm the package details before we install it with `dpkg-deb`:
+
+```{bash}
+#| eval: false
+#| code-fold: false
+#| echo: true
+dpkg-deb -f electron/dist/electron-app/dist/sap-0.0.0-9200-amd64.deb \
+  Package Version Architecture Maintainer Homepage
+```
+
+::: {style="font-style: italic;"}
+
+```{verbatim}
+Package: sap
+Version: 0.0.0~9200
+Architecture: amd64
+Maintainer: Martin Frigaard <mjfrigaard@pm.me>
+Homepage: https://github.com/mjfrigaard/sap
+```
+
+:::
+
+`electron-builder` converts the hyphen in our version to a tilde (`0.0.0~9200`), which Debian reads as a pre-release version.
+
+### Installing the `.deb`
+
+We install the package with `dpkg`, which needs administrator rights. Run this from the package root:
+
+```{bash}
+#| eval: false
+#| code-fold: false
+#| echo: true
+sudo dpkg -i electron/dist/electron-app/dist/sap-0.0.0-9200-amd64.deb
+```
+
+::: {style="font-style: italic;"}
+
+```{verbatim}
+Selecting previously unselected package sap.
+(Reading database… 479036 files and directories currently installed.)
+Preparing to unpack …/dist/sap-0.0.0-9200-amd64.deb…
+Unpacking sap (0.0.0~9200)…
+Setting up sap (0.0.0~9200)…
+update-alternatives: using /opt/Movie Reviews/sap to provide /usr/bin/sap (sap) in auto mode
+Processing triggers for desktop-file-utils (0.27-2build1)…
+Processing triggers for gnome-menus (3.36.0-1.1ubuntu3)…
+Processing triggers for hicolor-icon-theme (0.17-2)…
+```
+
+:::
+
+The app installs to `/opt/Movie Reviews/` and adds **Movie Reviews** to the Applications launcher:
+
+![Movie Reviews in the Applications launcher (Pop!_OS)](images/shinyelectron_deb_launcher.png){width='80%' fig-align='center'}
+
+The `update-alternatives` line in the output also adds a `sap` command, so we can start the app from a terminal by typing `sap`.
+
+The first launch takes a few seconds while `webR` loads `sap` and its dependencies. We can confirm it worked when the scatter plot appears in the window.
+
+We remove the app with the package name from the `Package` field. The `-P` (purge) option removes the app and `dpkg`'s record of it in one step:
+
+```{bash}
+#| eval: false
+#| code-fold: false
+#| echo: true
+sudo dpkg -P sap
+```
+
+::: {style="font-style: italic;"}
+
+```{verbatim}
+(Reading database… 479120 files and directories currently installed.)
+Removing sap (0.0.0~9200)…
+update-alternatives: warning: alternative /opt/Movie Reviews/sap (part of link group sap) doesn't exist; removing from list of alternatives
+update-alternatives: warning: /etc/alternatives/sap is dangling; it will be updated with best choice
+Purging configuration files for sap (0.0.0~9200)…
+Processing triggers for hicolor-icon-theme (0.17-2)…
+Processing triggers for desktop-file-utils (0.27-2build1)…
+Processing triggers for gnome-menus (3.36.0-1.1ubuntu3)…
+```
+
+:::
+
+The two `update-alternatives` warnings are expected. The package's removal script cleans up the `sap` command after `dpkg` has already deleted the app's files, so it warns about the missing files and then removes the link anyway.
+
 ## Recap {.unnumbered}
 
 `shinyelectron` turns our app-package into a desktop program without changing the package itself. All the desktop code lives in the `electron/` folder.
@@ -350,7 +787,9 @@ co_box(
 
 3. Use `local_packages` to install an app-package that isn't on CRAN.
 
-4. Build each platform's installer on that platform, either locally or with a GitHub Actions matrix.")
+4. Build each platform's installer on that platform, either locally or with a GitHub Actions matrix.
+
+5. On Linux, use the `shinylive` strategy, then add the `deb` target to `package.json` and rebuild with electron-builder.")
 ```
 
 In the next chapter we'll build a package website for `sap` with `pkgdown` (@sec-pkgdown).
