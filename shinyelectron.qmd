@@ -50,10 +50,10 @@ In the previous chapter we moved our app-package into the browser with `webR` an
 #| echo: false
 #| results: asis
 #| eval: true
-shinypak_apps(regex = "^23", branch = "23_shinyelectron")
+shinypak_apps(regex = "^23", branch = "23.1_shinyelectron")
 ```
 
-## What is shinyelectron? {#sec-shinyelectron-what-is}
+## What is `shinyelectron`? {#sec-shinyelectron-what-is}
 
 [Electron](https://www.electronjs.org/) is a framework for building desktop programs with web technologies. An Electron app is just a web browser with a single page, packaged as a program. Visual Studio Code and Slack are both built this way.
 
@@ -102,19 +102,142 @@ The `bundled` strategy has two limits. Portable R only exists for macOS and Wind
 
 ## Preparing the build machine {#sec-shinyelectron-preflight}
 
-You don't have to know JavaScript to use `shinyelectron`, but the computer that builds the installer needs a few tools. `shinyelectron` requires R (>= 4.5.0), Node.js (>= 22.0.0), npm (>= 11.5.0), and each platform's build tools (Xcode Command Line Tools on macOS or Visual Studio Build Tools on Windows).
+You don't have to know JavaScript to use `shinyelectron`, but the computer that builds the installer needs a few tools. `shinyelectron` requires R (>= 4.5.0), [Node.js](https://nodejs.org/en) (>= 22.0.0), [npm](https://www.npmjs.com/) (>= 11.5.0), and each platform's build tools (Xcode Command Line Tools on macOS or Visual Studio Build Tools on Windows).
 
-We'll install the development version of `shinyelectron` from GitHub and check the build machine with `sitrep_shinyelectron()`. The CRAN release (0.2.1) doesn't support the `local_packages` field we'll use to install `sap`, so this chapter needs the development version:
+We'll install the development version of `shinyelectron` from GitHub and check the build machine with `sitrep_shinyelectron()`. 
+
+The CRAN release (0.2.1) doesn't support the `local_packages` field we'll use to install `sap`, so we'll install teh development version for this chapter:
 
 ```{r}
 #| eval: false
 #| code-fold: false
 pak::pak("coatless-rpkg/shinyelectron")
 library(shinyelectron)
+```
+
+```{r}
+#| eval: false
+#| code-fold: false
 sitrep_shinyelectron()
 ```
 
-If Node.js is missing or too old, `install_nodejs()` installs it without administrator rights:
+::: {style="font-style: italic;"}
+
+```{verbatim}
+sitrep_shinyelectron()
+
+── Complete shinyelectron Diagnostic Report ──────────────────────────────────
+──────────────────────────────────────────────────────────────────────────────
+
+── System Requirements Report ────────────────────────────────────────────────
+✔ Platform: mac
+✔ Architecture: x64
+ℹ Local Node.js (shinyelectron): Not installed
+ℹ   Install with: `shinyelectron::install_nodejs()`
+✔ Active Node.js: v22.14.0 (system)
+✔ npm: v11.18.0
+✔ R: v4.6.1
+
+── Python ──
+
+✔ Python 3.15.2
+ℹ Python shinylive: not usable
+ℹ   Install with: `pip install shinylive`
+ℹ Python shiny: not usable
+ℹ   Install with: `pip install shiny`
+
+── Container Engine ──
+
+✔ Container engine: docker
+
+── Cached Runtimes ──
+
+✔ Cached R runtimes: 4.6.1
+✔ All system requirements satisfied
+```
+
+:::
+
+The `System Requirements Report` confirms R, Node.js, and `npm` meet the minimum versions. The `Python` section only applies to Shiny for Python apps, and the `Container Engine` section only applies to the `container` strategy, so we can ignore both. `Cached Runtimes` lists the portable R versions `shinyelectron` has downloaded for the `bundled` strategy. This list is empty until the first `bundled` build downloads portable R.
+
+::: {style="font-style: italic;"}
+
+```{verbatim}
+── Dependencies Report ───────────────────────────────────────────────────────
+
+── Required Packages ──
+
+✔ cli: v3.6.6
+✔ fs: v2.1.0
+✔ jsonlite: v2.0.0
+✔ rappdirs: v0.3.4
+✔ rlang: v1.3.0
+✔ whisker: v0.4.1
+✔ processx: v3.9.0
+✔ yaml: v2.3.12
+✔ utils: v4.6.1
+✔ tools: v4.6.1
+
+── Optional Packages ──
+
+✔ shinylive: v0.5.0
+ℹ DT: Not installed (optional)
+✔ ggplot2: v4.0.3
+✔ All required dependencies satisfied
+
+── Recommendations ──
+
+ℹ For full functionality, install optional packages with: install.packages(c("DT"))
+```
+
+:::
+
+The `Dependencies Report` recommends installing `DT`, but `sap` doesn't use it, so we won't bother. 
+
+::: {style="font-style: italic;"}
+
+```{verbatim}
+── Build Tools Report ────────────────────────────────────────────────────────
+ℹ Checking build tools for platform: mac
+✔ Xcode Command Line Tools: Found
+✔ Build tools ready
+```
+
+:::
+
+The `Build Tools Report` finds the Xcode Command Line Tools, the build tools `shinyelectron` requires on macOS. On Windows, this report checks for Visual Studio Build Tools instead.
+
+::: {style="font-style: italic;"}
+
+```{verbatim}
+── Project Report ────────────────────────────────────────────────────────────
+ℹ Checking directory: /Users/mjfrigaard/projects/apps/R/sap
+✖ package.json: Not found
+! main.js: Not found
+✖ App files: Not found in src/app or app/
+ℹ node_modules: Not found (run 'npm install')
+ℹ This does not appear to be an Electron project
+! Found 3 issues
+
+── Recommendations ──
+
+ℹ Run 'npm install' to install dependencies
+──────────────────────────────────────────────────────────────────────────────
+
+── Overall Summary ───────────────────────────────────────────────────────────
+! Found 3 total issues that may prevent successful builds
+
+── Priority Actions ──
+
+ℹ 1. For full functionality, install optional packages with: install.packages(c("DT"))
+ℹ 2. Run 'npm install' to install dependencies
+```
+
+:::
+
+The `Project Report` flags a missing `package.json`, `main.js`, and app files because `sitrep_shinyelectron()` checks the current directory for an Electron project. `export()` creates that project in `electron/dist/electron-app/` during the build, so these issues (and the `npm install` recommendation) are expected before the first build. The `Overall Summary` counts these issues, but none of them will stop our build.
+
+This machine already has Node.js v22.14.0 installed (`Active Node.js: v22.14.0 (system)`), so `shinyelectron` doesn't need its own copy. If Node.js is missing or too old, `install_nodejs()` installs it without administrator rights:
 
 ```{r}
 #| eval: false
@@ -129,14 +252,14 @@ These tools only matter on the build machine. The people who install our app don
 `shinyelectron` exports an app directory, not a package. We'll keep our package untouched and add an `electron/` folder with a launcher app and a build script:
 
 ```{r}
-#| label: git_box_23_shinyelectron
+#| label: git_box_23.1_shinyelectron
 #| echo: false
 #| results: asis
 #| eval: true
 git_margin_box(
   contents = "launch",
   fig_pw = '75%',
-  branch = "23_shinyelectron",
+  branch = "23.1_shinyelectron",
   repo = 'sap')
 ```
 
@@ -225,19 +348,19 @@ electron/dist/
 
 :::
 
-## Building the desktop app {#sec-shinyelectron-build}
+## Building the desktop app (`.dmg`) {#sec-shinyelectron-build}
 
-We'll build the macOS installer (`.dmg`) on a Mac. The `23.1_shinyelectron-dmg` branch narrows the configuration file to a single platform (`platforms: mac`):
+We'll build the macOS installer (`.dmg`) on a Mac. The `23.2_shinyelectron-dmg` branch narrows the configuration file to a single platform (`platforms: mac`):
 
 ```{r}
-#| label: git_box_23.1_shinyelectron-dmg
+#| label: git_box_23.2_shinyelectron-dmg
 #| echo: false
 #| results: asis
 #| eval: true
 git_margin_box(
   contents = "launch",
   fig_pw = '75%',
-  branch = "23.1_shinyelectron-dmg",
+  branch = "23.2_shinyelectron-dmg",
   repo = 'sap')
 ```
 
@@ -267,7 +390,135 @@ We pass `platform` to both `app_check()` and `export()`. A `bundled` build can o
 
 `export()` installs portable R, installs `sap` and its dependencies, and builds the installer. `run_after = interactive()` opens the finished app when we run the script by hand, but not when it runs on a CI server.
 
-The installers are written to `electron/dist/electron-app/dist/`. On an Intel Mac, the build produces `sap-0.0.0-9200-x64.dmg` (about 256 MB, most of it portable R). That folder is the only one we share with users. We can confirm the build worked by installing the app from that folder and opening it like any other program.
+The build prints a lot of output, so we'll walk through it in three stages. First, `export()` embeds portable R and installs the dependencies of `sap` into the bundled library:
+
+::: {style="font-style: italic;"}
+
+```{verbatim}
+ℹ Embedding R runtime for bundled strategy...
+ℹ Platform: mac, Architecture: x64
+✔ R 4.6.1 already installed at /Users/mjfrigaard/Library/Caches/shinyelectron/assets/r/mac/x64/4.6.1
+ℹ Installing packages with bundled R...
+ℹ Installing 62 packages into bundled library
+Portable R: patched 29 shared libraries
+Warning message:
+packages ‘methods’, ‘grDevices’, ‘tools’, ‘utils’, ‘graphics’, ‘stats’, ‘grid’ are base packages, and should not be updated
+```
+
+:::
+
+* The warning about base packages is harmless. 
+
+* `methods`, `utils`, and the other base packages ship with portable R, so the bundled R skips them.
+
+Next, `export()` builds a source tarball of `sap` from the package root (the `local_packages` field) and installs it:
+
+::: {style="font-style: italic;"}
+
+```{verbatim}
+ℹ Installing 1 local R package with bundled R: sap
+ℹ Building a source tarball of sap...
+WARNING: ignoring environment value of R_HOME
+* checking for file ‘/Users/mjfrigaard/projects/apps/R/sap/DESCRIPTION’ ... OK
+* preparing ‘sap’:
+* checking DESCRIPTION meta-information ... OK
+* checking for LF line-endings in source and make files and shell scripts
+* checking for empty or unneeded directories
+  NB: this package now depends on R (>= 3.5.0)
+  WARNING: Added dependency on R >= 3.5.0 because serialized objects in
+  serialize/load version 3 cannot be read in older versions of R.
+  File(s) containing such objects:
+    ‘sap/data/movies.RData’
+    ‘sap/tests/testthat/fixtures/tidy_ggp2_movies.rds’
+  NB: this package now depends on R (>= 4.1.0)
+  WARNING: Added dependency on R >= 4.1.0 because package code uses the
+  pipe |> or function shorthand \(...) syntax added in R 4.1.0.
+  File(s) using such syntax:
+    ‘display_type.R’ ‘mod_aes_input.R’ ‘mod_var_input.R’
+* building ‘sap_0.0.0.9200.tar.gz’
+
+ℹ Installing sap from source...
+* installing *source* package ‘sap’ ...
+...
+* DONE (sap)
+✔ Installed sap
+ℹ Removed 1012 test and documentation files (32.2 MB) from the bundled R runtime
+✔ Embedded R runtime
+```
+
+:::
+
+* The `R_HOME` warning means the bundled R is using its own installation instead of ours, which is what we want.  
+* The two `NB` warnings are worth fixing: 
+  * The `DESCRIPTION` file of `sap` says `Depends: R (>= 2.10)`, but the package uses the native pipe (`|>`) and data saved in serialization version 3
+  * `R CMD build` raises the requirement to R (>= 4.1.0) in the tarball, and we can silence the warning by changing `Depends` to match
+
+Finally, `export()` installs the Electron dependencies with `npm`, builds the installer, and (because we ran the script interactively) opens the app:
+
+::: {style="font-style: italic;"}
+
+```{verbatim}
+ℹ Installing npm dependencies...
+npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. ...
+...
+16 vulnerabilities (15 moderate, 1 high)
+...
+npm warn allow-scripts 2 packages have install scripts not yet covered by allowScripts:
+npm warn allow-scripts   electron@41.10.7 (postinstall: node install.js)
+npm warn allow-scripts   electron-winstaller@5.4.0 (install: node ./script/select-7z-arch.js)
+✔ Installed npm dependencies
+ℹ Building for platforms: mac
+ℹ Building for mac-x64...
+✔ Built for mac-x64
+✔ Successfully built Electron app: /Users/mjfrigaard/projects/apps/R/sap/electron/dist/electron-app
+✔ Successfully exported Shiny application to Electron!
+ℹ Output directory: /Users/mjfrigaard/projects/apps/R/sap/electron/dist
+ℹ Electron app: /Users/mjfrigaard/projects/apps/R/sap/electron/dist/electron-app
+ℹ Distributables: /Users/mjfrigaard/projects/apps/R/sap/electron/dist/electron-app/dist
+ℹ Starting application in development mode...
+...
+[lifecycle] finding_runtime: Looking for R...
+[lifecycle] runtime_found: Found bundled R
+[lifecycle] starting_server: Starting R Shiny server...
+[lifecycle] starting_server: Loading package: shiny
+[lifecycle] starting_server: R server listening, loading app...
+[lifecycle] server_ready: R Shiny server ready
+Server ready on port 3838
+```
+
+:::
+
+* The `npm` warnings come from the build tools (`electron-builder` and its dependencies), not from our app, and they only affect the build machine.  
+* The `[lifecycle]` messages show the app finding the bundled R and starting the Shiny server. In development mode, Electron also prints a Content Security Policy warning and a few `GPU` errors.  
+* The security warning says it won't appear once the app is packaged, and the `GPU` errors are Chromium log messages that don't affect the app. 
+
+The installers are written to `electron/dist/electron-app/dist/`:
+
+::: {style="font-style: italic;"}
+
+```{verbatim}
+electron/dist/electron-app/dist/
+├── builder-debug.yml
+├── mac/
+│   └── Movie Reviews.app
+├── sap-0.0.0-9200-x64.dmg
+└── sap-0.0.0-9200-x64.dmg.blockmap
+```
+
+:::
+
+On an Intel Mac, the build produces `sap-0.0.0-9200-x64.dmg` (about 256 MB, most of it portable R). The `.dmg` is the only file we share with users. 
+
+* `mac/Movie Reviews.app` is the unpacked app that goes inside the `.dmg`, the `.blockmap` file is used for automatic updates, and `builder-debug.yml` records the `electron-builder` settings for troubleshooting.  
+* The window that opens at the end of the build runs in development mode, from the Electron project in `electron/dist/electron-app/` (*it shows the app works, but not that the installer does*). 
+
+To check the installer, we open the `.dmg`, drag **Movie Reviews** into `Applications`, and open it like any other program:
+
+![Movie Reviews running as a macOS desktop app](images/shinyelectron-dmg.png){width='100%' fig-align='center'}
+
+We haven't configured an icon, so the installed app uses the default Electron icon (`app_check()` reports `Icon: not configured`):
+
+![The default Electron icon](images/shinyelectron-dmg-icon.png){width='10%' fig-align='center'}
 
 ### Debugging the packaged app
 
@@ -284,13 +535,13 @@ co_box(
   header = "Your `.Rprofile` comes along",
   fold = TRUE,
   contents = "
-The bundled R reads the user's `~/.Rprofile` when the app starts. If that file calls a package the app doesn't include (for example, `ellmer::chat_anthropic()` in `options()`), R stops before the Shiny server starts and the debug output shows `there is no package called 'ellmer'`. To test the app without your own profile, launch it with `R_PROFILE_USER` pointing to an empty file."
+The bundled R reads `~/.Rprofile` twice: when `export()` installs packages, and when the app starts. If that file calls a package the app doesn't include (for example, `ellmer::chat_anthropic()` in `options()`), R stops with `there is no package called 'ellmer'`. During the build, `export()` fails while installing packages. In the packaged app, R stops before the Shiny server starts. To test the app without your own profile, launch it with `R_PROFILE_USER` pointing to an empty file. To fix it everywhere, wrap the call in `if (requireNamespace('ellmer', quietly = TRUE))` in your `~/.Rprofile`."
 )
 ```
 
 ## Building installers with GitHub Actions {#sec-shinyelectron-gha}
 
-Because `bundled` can't cross-build, a single computer can't build installers for every platform. A GitHub Actions matrix solves this by running the same job on a macOS runner and a Windows runner. The workflow is in `.github/workflows/build-installers.yml` on the `23_shinyelectron` branch:
+Because `bundled` can't cross-build, a single computer can't build installers for every platform. A GitHub Actions matrix solves this by running the same job on a macOS runner and a Windows runner. The workflow is in `.github/workflows/build-installers.yml` on the `23.1_shinyelectron` branch:
 
 ```yaml
 name: build-installers, sap
@@ -351,14 +602,14 @@ macOS and Windows warn users before they open an unsigned app, and macOS may ref
 Linux users expect a `.deb` file,  the package format for Debian, Ubuntu, and Pop!_OS (which I'm currently using). `shinyelectron` doesn't build a `.deb` installer, because Linux only builds an `.AppImage` (a single file that runs without being installed). I've found we can still get a `.deb` by building the `.AppImage` first, then *rebuilding* the same Electron project with one extra target.
 
 ```{r}
-#| label: git_box_23.2_shinyelectron-deb
+#| label: git_box_23.3_shinyelectron-deb
 #| echo: false
 #| results: asis
 #| eval: true
 git_margin_box(
   contents = "launch",
   fig_pw = '75%',
-  branch = "23.2_shinyelectron-deb",
+  branch = "23.3_shinyelectron-deb",
   repo = 'sap')
 ```
 
@@ -452,7 +703,9 @@ We can confirm the build machine is ready with `sitrep_shinyelectron()`.
 sitrep_shinyelectron()
 ```
 
- The `Optional Packages` section should now list `shinylive` with a version number:
+The `System Requirements Report` shows `shinyelectron` is using the local copy of Node.js we installed with `install_nodejs()` (`Active Node.js: v26.13.0 (local)`). `Cached Runtimes` reports no cached runtimes, which is expected because the `shinylive` strategy runs `sap` with `webR` and never downloads portable R.
+
+The `Dependencies Report` confirms the required packages are installed. The `Optional Packages` section should now list `shinylive` with a version number:
 
 ::: {style="font-style: italic;"}
 
@@ -513,7 +766,7 @@ sitrep_shinyelectron()
 :::
 
 
-The `Project Report` flags a missing `package.json` and `main.js` because `sitrep_shinyelectron()` checks the current directory for an Electron project. `export()` creates that project in `electron/dist/electron-app/` during the build, so these issues are expected before the first build.
+The `Build Tools Report` finds `gcc` and `make`, and the `Project Report` flags the same missing Electron project files we saw in @sec-shinyelectron-preflight:
 
 
 ::: {style="font-style: italic;"}
