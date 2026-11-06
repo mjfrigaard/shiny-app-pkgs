@@ -53,11 +53,53 @@ shinypak_apps(regex = "^22", branch = "22_webr")
 
 ## What is `webR`? {#sec-webr-what-is-webr}
 
-[webR](https://docs.r-wasm.org/webr/latest/) is a version of R that runs in a web browser. It's compiled to [WebAssembly](https://webassembly.org/), a binary format that modern browsers run at near native speed. When a browser loads `webR`, the R session lives on the user's machine, not on a server.
+The [webR](https://docs.r-wasm.org/webr/latest/) developers build it with  [Emscripten](https://emscripten.org/), a compiler toolchain that turns C and C++ code into [WebAssembly](https://webassembly.org/). R itself is written mostly in C, R, and Fortran, so `webR` also uses a Fortran compiler (LLVM `flang`) to handle the Fortran parts.
 
-[shinylive](https://posit-dev.github.io/r-shinylive/) builds on `webR`. It packages a Shiny app, `webR`, and the app's R packages into a folder of static files. A static file host is just a web server that hands out files without running any code ([GitHub Pages](https://docs.github.com/en/pages) and [Netlify](https://www.netlify.com/) are common examples).
+```{mermaid}
+%%| fig-align: center
+%%| fig-cap: 'webR is R compiled to WebAssembly'
+%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px", "darkMode":false}}}%%
 
-The diagram below compares a server-based deployment with a `shinylive` deployment:
+flowchart TD
+    subgraph Build["<strong>Compile once</strong>"]
+        SRC("R source code") -->|"compiled with<br>Emscripten"| WR[["<code>webR</code><br><code>.wasm</code> binary"]]
+    end
+    subgraph Machine["<strong>User's machine</strong>"]
+        B1(["Browser"]) -->|"i. loads"| WA("WebAssembly<br>runtime")
+        WA -->|"ii. starts"| RS("R session<br>(no server)")
+    end
+    WR -->|"downloaded<br>by the browser"| B1
+
+    style Build fill:#FFFFFF,color:#000000,stroke:#333,stroke-width:1px,rx:10,ry:10
+    style Machine fill:#FFFFFF,color:#000000,stroke:#333,stroke-width:1px,rx:10,ry:10
+    style WR fill:#4CBB9D,color:#FFFFFF,rx:5,ry:5
+    style RS fill:#4CBB9D,color:#FFFFFF,rx:5,ry:5
+```
+
+[shinylive](https://posit-dev.github.io/r-shinylive/) builds on `webR`. It packages a Shiny app, `webR`, and the app's R packages into a folder of static files (including HTML, JavaScript, and `.wasm` files). A static file host is just a web server that hands out these files without running any code ([GitHub Pages](https://docs.github.com/en/pages) and [Netlify](https://www.netlify.com/) are common examples).
+
+```{mermaid}
+%%| fig-align: center
+%%| fig-cap: 'shinylive bundles an app into static files'
+%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px", "darkMode":false}}}%%
+
+flowchart TD
+    subgraph Inputs["<strong>Inputs</strong>"]
+        APP("Shiny<br>app-package")
+        WR[["<code>webR</code>"]]
+        PKG[("WebAssembly binaries<br>of R packages")]
+    end
+    APP --> EXP("<code>shinylive::export()</code>")
+    WR --> EXP
+    PKG --> EXP
+    EXP --> OUT[/"Folder of<br>static files"/]
+    OUT --> H["Static file host<br>serves files,<br>runs no code"]
+
+    style Inputs fill:#FFFFFF,color:#000000,stroke:#333,stroke-width:1px,rx:10,ry:10
+    style EXP fill:#4CBB9D,color:#FFFFFF,rx:5,ry:5
+```
+
+The diagram below compares a server-based deployment with a `shinylive` deployment, and shows where `WebAssembly` fits in:
 
 ```{mermaid}
 %%| fig-align: center
@@ -66,34 +108,47 @@ The diagram below compares a server-based deployment with a `shinylive` deployme
 
 flowchart TD
     subgraph Server["<strong>Server-based Shiny</strong>"]
-        B1(["Browser"]) <-->|"inputs and outputs"| R1("R process on a server<br>runs <code>launch_app()</code>")
+        B1(["Browser<br>(UI only)"])
+        subgraph Host1["<strong>Server running R</strong>"]
+            P1[("Installed R packages<br>and app-package")] --> R1("R process<br>runs <code>launch_app()</code>")
+        end
+        B1 -->|"i. every input<br>change crosses<br>the network"| R1
+        R1 -->|"ii. rendered outputs<br>sent back"| B1
     end
-    subgraph Live["<strong>shinylive</strong>"]
-        H1["Static file host"] -->|"i. download app files"| B2(["Browser"])
-        B2 -->|"ii. start"| W1("webR inside the browser<br>runs the app")
+
+    subgraph Live["<strong><code>shinylive</code></strong>"]
+        H2["Static file host"] -->|"i. download app files,<br><code>webR</code>, and packages"| B2(["Browser"])
+        subgraph Inside["<strong>Inside the browser</strong>"]
+            WA("WebAssembly runtime") -->|"ii. start"| W1("<code>webR</code> session<br>runs the app")
+            VFS[("Virtual file system<br>(in memory)")] <-.-> W1
+            W1 <-->|"iii. inputs and outputs<br>(no network)"| UI("App UI")
+        end
+        B2 --> WA
     end
 
     style Server fill:#FFFFFF,color:#000000,stroke:#333,stroke-width:1px,rx:10,ry:10
     style Live fill:#FFFFFF,color:#000000,stroke:#333,stroke-width:1px,rx:10,ry:10
+    style Host1 fill:#F5F5F5,color:#000000,stroke:#999,stroke-width:1px,rx:10,ry:10
+    style Inside fill:#F5F5F5,color:#000000,stroke:#999,stroke-width:1px,rx:10,ry:10
     style R1 fill:#4CBB9D,color:#FFFFFF,rx:5,ry:5
     style W1 fill:#4CBB9D,color:#FFFFFF,rx:5,ry:5
 ```
 
-In a server-based deployment, every click travels to the server and every plot travels back. In a `shinylive` deployment, the host only delivers the files. After the first download, the app runs without contacting a server at all.
+In server-based deployments, every click travels to the server and the outputs (calculations, tables, plots, etc.) travel back. In a `shinylive` deployment, the host only delivers the files. After the first download, the app runs without contacting a server at all.
 
 ### Trade-offs
 
-`shinylive` removes the server, but the browser takes on the server's job. I've found these trade-offs matter most for app-packages:
+`shinylive` removes the server, but the browser takes on the server's job. I've found the trade-offs below tend to matter most for app-packages:
 
-* **First load**: the browser downloads `webR` and every package before the app appears, so the first visit takes longer than a server-based app.
+* **First load**: the browser downloads `webR` and every package *before* the app appears, so the first visit takes longer than a server-based app.
 
-* **Visible code**: all the app's code and data are sent to the browser. Never put credentials, API keys, or private data in a `shinylive` app.
+* **Visible code**: all the app's code and data are sent to the browser. So we should never put any credentials, API keys, or private data in a `shinylive` app.
 
-* **No system tools**: `webR` can't call programs installed on a computer. Features that rely on the Quarto CLI or `system()` calls won't work.
+* **No system tools**: `webR` can't call programs installed on your computer, which means any features that rely on the Quarto CLI or `system()` calls won't work.
 
 * **No downloads from R**: `webR` can't download files from inside R. `sass::font_google()` downloads font files by default, so a `bslib` theme that uses it fails with an error about the `curl` package. Use `sass::font_google("Ubuntu", local = FALSE)` so the browser loads the font instead.
 
-* **Temporary files**: `webR` writes files to a virtual file system in browser memory. Log files written with `logger` disappear when the user closes the tab.
+* **Temporary files**: `webR` writes files to a virtual file system in browser memory, so any log files produced by the app (i.e., logs written with `logger`) disappear when the user closes the tab.
 
 ## Which packages run in `webR`? {#sec-webr-packages}
 
