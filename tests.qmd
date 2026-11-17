@@ -83,7 +83,53 @@ In the [Logging](logging.qmd) chapter we covered:
 
 # Testing your app
 
-We're now ready to test the code and features in our app-package. The next section covers the following topics:
+We're now ready to test the code and features in our app-package.
+
+## New topics {#sec-tests-new-topics}
+
+I've updated this section for version 4.0.0 of `covr` and version 0.6.0 of `shinytest2`. Both releases change how we run and measure tests in an app-package, so I've added the topics below:
+
+*   @sec-tests-system-coverage: `covr::package_coverage()` now counts the app code our `shinytest2` tests run. In `sap`, the system tests raise test coverage from 25% to almost 80%.
+
+*   @sec-test-branch-coverage: `covr` can now report which branches of an `if` statement our tests take, not just which lines they run.
+
+*   @sec-tests-system-shinytest2-bdd: our system tests now pass the `launch_app` function to `AppDriver$new()`. This lets the tests run against the installed package, which is how `R CMD check` and `covr` run them.
+
+*   @sec-tests-system-shinytest2: `use_shinytest2()` no longer creates a `setup-shinytest2.R` file, because `load_app_env()` has been superseded.
+
+Before `covr` 4.0.0, only our unit and module tests counted toward test coverage. The diagram below shows how the system tests now reach the code the other tests can't:
+
+```{mermaid}
+%%| fig-align: center
+%%| fig-cap: 'Tests that count toward coverage with covr 4.0.0'
+%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px", "darkMode":false}}}%%
+
+flowchart TD
+    subgraph Tests["<strong>tests/testthat/</strong>"]
+        U("Unit tests<br><code>test_that()</code>")
+        M("Module tests<br><code>testServer()</code>")
+        S("System tests<br><code>AppDriver</code>")
+    end
+    subgraph Code["<strong>R/</strong>"]
+        F("Utility functions")
+        MS("Module server functions")
+        APP("<code>launch_app()</code>,<br>UI, and server")
+    end
+    U --> F
+    M --> MS
+    S --> MS
+    S -->|"new in covr 4.0.0"| APP
+    F --> COV[/"<code>covr::package_coverage()</code>"/]
+    MS --> COV
+    APP --> COV
+
+    style Tests fill:#FFFFFF,color:#000000,stroke:#333,stroke-width:1px,rx:10,ry:10
+    style Code fill:#FFFFFF,color:#000000,stroke:#333,stroke-width:1px,rx:10,ry:10
+    style S fill:#4CBB9D,color:#FFFFFF,rx:5,ry:5
+    style APP fill:#4CBB9D,color:#FFFFFF,rx:5,ry:5
+```
+
+The chapters in this section cover the following topics:
 
 ## Test suite 
 
@@ -122,6 +168,7 @@ This chapter also gives examples of behavior-driven development tests features a
 -  @sec-test-logger
     -  @sec-test-helpers
     -   @sec-test-coverage-active-file  
+    -   @sec-test-branch-coverage  
 -  @sec-test-snapshots    
     -   @sec-test-snaps-review
 
@@ -145,6 +192,7 @@ The [final chapter](test_system.qmd) in this section covers setting up and runni
 -   @sec-tests-system-recording-tests   
 -   @sec-tests-system-shinytest2-bdd    
 -   @sec-tests-system-test-mode   
+-   @sec-tests-system-coverage   
 
 ```{r}
 #| label: git_contrib_box
