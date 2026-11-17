@@ -270,7 +270,7 @@ In R packages, test fixtures are stored in the `tests/testthat/fixtures/` folder
 
 [^tests-fixtures-folder-name]: The name '`fixtures`' isn't required (you can name this folder anything).
 
-<em>
+::: {style="font-style: italic;"}
 
 ```bash
 tests/
@@ -279,7 +279,7 @@ tests/
 └── testthat.R
 ```
 
-</em>
+:::
 
 ## Test data {#sec-test-data}
 
@@ -301,7 +301,7 @@ git_margin_box(
 
 For example, I've stored the code used to create a ['tidy' version](https://github.com/mjfrigaard/sap/blob/12a_tests-fixtures/tests/testthat/fixtures/make-tidy_ggp2_movies.R) of the `ggplot2movies::movies` data along with the output dataset in `tests/testthat/fixtures/`:
 
-<em>
+::: {style="font-style: italic;"}
 
 ```bash
 tests
@@ -315,7 +315,7 @@ tests
 3 directories, 4 files
 ```
 
-</em>
+:::
 
 1.  The code used to create the test data (`make-make_tidy_ggp2_movies.R`)
 2.  The test data file (i.e., `tidy_ggp2_movies.rds`):
@@ -558,7 +558,7 @@ There's nothing prohibiting placing `test_logger()` in a testing utility file ([
 
 Test helpers reduce repeated/duplicated test code. In general, objects or values that aren't large enough to justify storing as static test fixtures can be created with helper functions. Helper functions are stored in `tests/testthat/helper.R`, which is automatically loaded with `devtools::load_all()`:
 
-<em>
+::: {style="font-style: italic;"}
 
 ```bash
 tests/
@@ -571,10 +571,10 @@ tests/
   └── testthat.R
 ```
 
-</em>
 1.  Test fixture scripts and `.rds` files\
 2.  Helper functions\
 3.  Test file
+:::
 
 Test helpers should only be created if they make testing easier **when the tests fail.** The article, ['Why Good Developers Write Bad Unit Tests'](https://mtlynch.io/good-developers-bad-tests/), provides great advice on complexity vs. clarity when writing unit tests,
 
@@ -734,6 +734,59 @@ devtools:::test_coverage()
 ```
 
 ![Test coverage on `sap` package](images/tests_coverage_logger_sap.png){width="100%" fig-align="center"}
+
+<!-- TODO: retake tests_coverage_scatter_plot.png and tests_coverage_logger_sap.png with covr 4.0.0 (report() was redesigned) -->
+
+### Branch coverage {#sec-test-branch-coverage}
+
+Line coverage tells us whether each line of code was run, but a line with an `if` statement can be 'covered' even if only one of its branches was taken. Version 4.0.0 of `covr` added experimental branch coverage, which we can turn on with an option:
+
+```{r}
+#| eval: false
+#| code-fold: false
+options(covr.branch_coverage = TRUE)
+cov <- covr::package_coverage()
+cov
+```
+
+::: {style="font-style: italic;"}
+```bash
+sap Coverage: 9.94% (branches 10.91%)
+R/display_type.R: 0.00%
+R/launch_app.R: 0.00%
+R/log_message.R: 0.00%
+R/logr_msg.R: 0.00%
+R/mod_aes_input.R: 0.00%
+R/mod_scatter_display.R: 0.00%
+R/mod_var_input.R: 0.00%
+R/movies_server.R: 0.00%
+R/movies_ui.R: 0.00%
+R/testthat.R: 53.85%
+R/zzz.R: 84.62%
+R/scatter_plot.R: 100.00%
+```
+:::
+
+`tally_coverage()` with `by = "branch"` shows how many times each branch was taken:
+
+```{r}
+#| eval: false
+#| code-fold: false
+tb <- covr::tally_coverage(cov, by = "branch")
+tb[tb$filename == "R/zzz.R", ]
+```
+
+::: {style="font-style: italic;"}
+```bash
+   filename functions line column branch label value
+52  R/zzz.R .onAttach   43     13      1  TRUE     0
+53  R/zzz.R .onAttach   43     13      2 FALSE     2
+54  R/zzz.R .onAttach   62      5      1  TRUE     0
+55  R/zzz.R .onAttach   62      5      2 FALSE     6
+```
+:::
+
+Line 62 of `R/zzz.R` is `if (is.null(dep_string)) return("None")`. Line coverage counts this line as covered, but the branch coverage shows the `TRUE` branch (returning `"None"`) was never taken in our tests. `covr::report()` also marks lines like this as partly covered.
 
 
 ## Test snapshots {#sec-test-snapshots}

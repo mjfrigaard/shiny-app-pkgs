@@ -694,7 +694,7 @@ We can include the 'Shiny App Deployment' workflow file in `sap` with `usethis::
 usethis::use_github_action("shiny-deploy")
 ```
 
-<em>
+::: {style="font-style: italic;"}
 
 ```bash
 ✔ Creating .github/.
@@ -704,7 +704,7 @@ usethis::use_github_action("shiny-deploy")
 ☐ Learn more at <https://github.com/r-lib/actions/blob/v2/examples/README.md>.
 ```
 
-</em>
+:::
 
 This example workflow file is designed to deploy a Shiny application to a server. We're going to make a few changes to `shiny-deploy.yaml` so it will deploy our application to shinyapps.io when we push to the [`21.2_gha-shiny-deploy`](https://github.com/mjfrigaard/sap/tree/21.2_gha-shiny-deploy) branch.
 
@@ -739,7 +739,7 @@ rsconnect::deployApp(
 
 Reading the deployment log will tells us if the secret, token, configuration, and lockfile are all working:
 
-<em>
+::: {style="font-style: italic;"}
 
 ```bash
 ── Preparing for deployment ──────────────────────────────────────────────────
@@ -765,7 +765,7 @@ Waiting for task: 1372980209
 ✔ Successfully deployed to <https://mjfrigaard.shinyapps.io/shinyAppPkgsCICD/>
 ```
 
-</em>
+:::
 
 Making sure an application will deploy locally with the code we plan on putting into the workflow file builds confidence it run when it's triggered. Now we're ready to adapt the `.github/workflows/shiny-deploy.yaml` file.
 
@@ -1291,6 +1291,61 @@ We get away with this because when the workflow runs, `renv` is used to capture 
 Not having `shinytest2` and `testthat` packages installed won't interfere with our application deploying because these packages are listed in the `Suggests` field in the `DESCRIPTION` file and are used in`tests/`.
   
   ")
+```
+
+## Test coverage {#sec-gha-test-coverage}
+
+Version 4.0.0 of `covr` added two functions that are helpful in GitHub Actions: `coverage_to_markdown()` creates a table we can add to the workflow's job summary, and `badge()` creates a coverage badge for our `README` without a coverage service (like Codecov).
+
+`covr` comes with a workflow file that measures test coverage and publishes the badge to a `badges` branch in our repo. We can copy it into `.github/workflows/`:
+
+```{r}
+#| eval: false
+#| code-fold: false
+file.copy(
+  from = system.file("workflows", "test-coverage-badge.yaml", package = "covr"),
+  to = ".github/workflows/test-coverage-badge.yaml"
+)
+```
+
+I've made two changes to the `Test coverage` step in this workflow. First, I set `NOT_CRAN` to `true` so the `shinytest2` tests aren't skipped (and count toward our coverage, see @sec-tests-system-coverage). Second, I write the coverage table to the job summary with `coverage_to_markdown()`:
+
+```yaml
+      - name: Test coverage
+        env:
+          NOT_CRAN: true
+        run: |
+          cov <- covr::package_coverage(quiet = FALSE)
+          print(cov)
+          covr::badge(cov, "coverage.svg")
+          md <- covr::coverage_to_markdown(cov)
+          cat(md, file = Sys.getenv("GITHUB_STEP_SUMMARY"),
+              sep = "\n", append = TRUE)
+        shell: Rscript {0}
+```
+
+After the workflow runs, the job summary contains a table with the coverage for each file:
+
+| File | Coverage |
+| :--- | ---: |
+| Total | 79.74% |
+| R/display_type.R | 0.00% |
+| R/launch_app.R | 64.29% |
+| R/log_message.R | 0.00% |
+| R/logr_msg.R | 65.00% |
+| R/mod_aes_input.R | 89.19% |
+| R/mod_scatter_display.R | 100.00% |
+| R/mod_var_input.R | 100.00% |
+| R/movies_server.R | 68.42% |
+| R/movies_ui.R | 96.77% |
+| R/scatter_plot.R | 100.00% |
+| R/testthat.R | 53.85% |
+| R/text_logo.R | 100.00% |
+
+To display the badge, we link to the `coverage.svg` file on the `badges` branch in our `README.md`:
+
+```markdown
+![Test coverage](https://raw.githubusercontent.com/<owner>/<repo>/badges/coverage.svg)
 ```
 
 ## Recap {.unnumbered}

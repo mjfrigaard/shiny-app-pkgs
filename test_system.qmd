@@ -158,15 +158,24 @@ Nice code.
 [^shinytest2-start]: A great place to start is the [Getting Started](https://rstudio.github.io/shinytest2/articles/shinytest2.html) vignette. 
 
 
-The `shinytest2::use_shinytest2()` performs the following setup steps: 
-
--   ✔ Adding `shinytest2::load_app_env()` to `tests/testthat/setup-shinytest2.R`
+`shinytest2` (version 0.6.0 and later) requires R 4.1 or higher. When we run `shinytest2::use_shinytest2()` in an app-package, it detects the package and performs the following setup steps: 
 
 -   ✔ Adding `*_.new.png` to `.gitignore`
 
 -   ✔ Adding `_\\.new\\.png$` to `.Rbuildignore`
 
 -   ✔ Adding `shinytest2` to `Suggests` field in `DESCRIPTION`
+
+Earlier versions of `shinytest2` also created a `tests/testthat/setup-shinytest2.R` file with a call to `load_app_env()`. This function has been superseded, and `use_shinytest2()` no longer creates the setup file. Instead, we're told to load app support files inside our tests:
+
+::: {style="font-style: italic;"}
+```bash
+ℹ To load app support files, use `shinytest2::with_app_support()` or
+  `shinytest2::local_app_support()` within your tests.
+```
+:::
+
+Our app-package doesn't need either function, because we'll pass the `launch_app()` function directly to our tests (see @sec-tests-system-shinytest2-bdd).
 
 We also get some advice on using `shinytest2` functions in our code: 
 
@@ -235,7 +244,7 @@ co_box(
   fold = TRUE, 
   header = "loadSupport warning with shinytest2",
   contents = "
-After setting up `shinytest2`, the `tests/testthat/setup-shinytest2.R` file contains a call to `shinytest2::load_app_env()`. This runs automatically with `shinytest2` tests and produces a familiar warning: 
+If your app-package was set up with an earlier version of `shinytest2`, the `tests/testthat/setup-shinytest2.R` file contains a call to `shinytest2::load_app_env()`. This runs automatically with `shinytest2` tests and produces a familiar warning: 
   
 \`\`\`bash
 Warning message:
@@ -244,7 +253,7 @@ In shiny::loadSupport(app_dir, renv = renv, globalrenv = globalrenv) :
   to contain an R package. Sourcing files in R/ may cause unexpected behavior.
 \`\`\`
   
-We covered this warning message in the [Launch](launch.qmd) chapter, and it's being addressed in a future release of [`shinytest2`](https://github.com/rstudio/shinytest2/issues/308)
+We covered this warning message in the [Launch](launch.qmd) chapter. `load_app_env()` has been superseded, so I recommend deleting `setup-shinytest2.R` and passing the `launch_app()` function to `AppDriver$new()` (see @sec-tests-system-shinytest2-bdd).
   
   "
 )
@@ -278,6 +287,8 @@ test_that("{shinytest2} recording: sap-feature-01", {
 
 We'll use this initial test as a template for writing the steps in our test `Scenario`s. 
 
+The recorded test calls `AppDriver$new()` without an application, so `shinytest2` looks for an `app.R` file in the package root. This works when we run tests with `devtools::test()`, but the tests in an installed package (like the ones run by `R CMD check` and `covr`) don't have access to `app.R`. In the tests below, I pass the `launch_app` function (without parentheses) as the first argument to `AppDriver$new()`. `shinytest2` recognizes `launch_app` is a function from our package, so it calls `pkgload::load_all()` in the background R process when we're developing, and uses the installed package when the tests run with `R CMD check` or `covr`.
+
 ## [`shinytest2`]{style="font-size: 1.10em;"} and BDD {#sec-tests-system-shinytest2-bdd}
 
 There are multiple ways to approach your test layout with `testthat`'s `describe()`, `it()` and/or `test_that()` functions. Below is an example with dedicated `Feature` and `Scenario` descriptions, and a reference to the feature number in an `it()` call: 
@@ -307,7 +318,7 @@ describe("Scenario: Change dropdown values for plotting
             And the title of the plot should be '[ ]'", {
               
               it("Feature 01", {
-                    app <- AppDriver$new(name = "feature-01", 
+                    app <- AppDriver$new(launch_app, name = "feature-01", 
                                        height = 800, width = 1173)
                   app$set_inputs(`vars-y` = "imdb_num_votes")
                   app$set_inputs(`vars-x` = "critics_score")
@@ -342,7 +353,7 @@ describe("Feature 1: Scatter plot data visualization dropdowns
         it("Then the scatter plot should show [ ] on the x-axis
              And the scatter plot should show [ ] on the y-axis
              And the points on the scatter plot should be colored by [ ]", {
-              app <- AppDriver$new(name = "feature-01-scenario-a",
+              app <- AppDriver$new(launch_app, name = "feature-01-scenario-a",
                                      height = 800, width = 1173)
                 app$set_inputs(`vars-y` = "imdb_num_votes")
                 app$set_inputs(`vars-x` = "critics_score")
@@ -360,7 +371,7 @@ describe("Feature 1: Scatter plot data visualization dropdowns
          it("Then the size of the points on the scatter plot should be [ ]
               And the opacity of the points on the scatter plot should be [ ]
               And the title of the plot should be '[ ]'", {
-              app <- AppDriver$new(name = "feature-01-scenario-b",
+              app <- AppDriver$new(launch_app, name = "feature-01-scenario-b",
                                      height = 800, width = 1173)
                 app$set_inputs(`aes-alpha` = 0.7)
                 app$set_inputs(`aes-size` = 3)
@@ -427,6 +438,8 @@ describe(
 2. Adjust the `wait` and `timeout` so the test will run  
 
 
+As of version 0.6.0, `AppDriver$new()` only calls `pkgload::load_all()` for packages in development. When we run `devtools::test()`, `sap` is in development, so `system.file()` points to the `inst/` folder in our source code. When the tests run against the installed package (i.e., with `R CMD check` or `covr`), the app runs from the installed copy of `sap`.
+
 Note that I've changed the `wait` and `timeout` arguments in `AppDriver$new()` because this tests takes over 10 seconds to complete (which I can see with my `test_logger()` output). When I confirm this in the output `png` file, I can see the x, y, and color values have been changed (and the missing values have been removed).
 
 ![File saved in `tests/testthat/_snaps/prod-feat-01-001_.png'`](images/prod-feat-01-001_.png){width='100%' align='center'}
@@ -482,7 +495,7 @@ In our test, we can create the `AppDriver$new()` object, extract the values with
 ```{r}
 #| eval: false 
 #| code-fold: false
-app <- AppDriver$new(name = "test-values",
+app <- AppDriver$new(launch_app, name = "test-values",
                      height = 800, width = 1173,
                      wait = FALSE, timeout = 300000)
 
@@ -582,7 +595,54 @@ I've removed the `tests/testthat/_snaps/` folder from the GitHub repo, so users 
 ")
 ```
 
- 
+## System test coverage {#sec-tests-system-coverage}
+
+Before version 4.0.0 of `covr`, the code exercised by our `shinytest2` tests didn't count toward our package's test coverage (the app runs in a separate R process). `covr::package_coverage()` now includes the app code run by `shinytest2` tests, so we can see how much of our application our system tests reach.
+
+`AppDriver$new()` skips tests on CRAN, and `covr` doesn't set the `NOT_CRAN` environment variable, so we need to set it before checking coverage:
+
+```{r}
+#| eval: false
+#| code-fold: false
+Sys.setenv(NOT_CRAN = "true")
+covr::package_coverage()
+```
+
+::: {style="font-style: italic;"}
+```bash
+sap Coverage: 79.74%
+R/display_type.R: 0.00%
+R/log_message.R: 0.00%
+R/testthat.R: 53.85%
+R/launch_app.R: 64.29%
+R/logr_msg.R: 65.00%
+R/movies_server.R: 68.42%
+R/mod_aes_input.R: 89.19%
+R/movies_ui.R: 96.77%
+R/mod_scatter_display.R: 100.00%
+R/mod_var_input.R: 100.00%
+R/scatter_plot.R: 100.00%
+R/text_logo.R: 100.00%
+```
+:::
+
+Without the system tests, the coverage for `sap` is 25.08%, and `launch_app.R`, `movies_ui.R`, `movies_server.R`, and `mod_aes_input.R` are all at 0%. The system tests are the only tests that run the full application, so they cover the code our unit and module tests can't reach.
+
+```{r}
+#| label: co_box_covr_shiny_app
+#| echo: false
+#| results: asis
+#| eval: true
+co_box(
+  color = "b", fold = TRUE,
+  look = "default", hsize = "1.05", size = "0.95",
+  header = "Coverage for apps outside a package",
+  contents = "
+If you have a Shiny app that isn't in a package, `covr::shiny_app_coverage()` runs its `shinytest2` tests and reports the coverage for the app's code.
+")
+```
+
+
 
 ```{r}
 #| label: git_box_12e_tests-system
@@ -622,8 +682,10 @@ co_box(
   - Scripting tests with `shinytest2` allows for detailed user interactions and testing specific functionalities in isolation or under unique conditions, offering a granular approach to system testing.
   
 - Use `exportTestValues()` in tandem with `test.mode` to expose and verify the internal state of a Shiny app during tests. 
-  - This technique is crucial for testing the logic and data behind your app's UI, ensuring that the app looks right and operates correctly under various scenarios. 
-  
+  - This technique is crucial for testing the logic and data behind your app's UI, ensuring that the app looks right and operates correctly under various scenarios.
+
+- Pass the `launch_app` function to `AppDriver$new()` so system tests run in the installed package (and count toward `covr::package_coverage()` after setting `NOT_CRAN = 'true'`).
+
 **BDD functions**
   
   - Using `testthat`'s BDD functions makes system tests easier to update if the features and scenarios change.
