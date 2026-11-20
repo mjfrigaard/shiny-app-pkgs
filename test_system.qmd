@@ -443,6 +443,27 @@ Note that I've changed the `wait` and `timeout` arguments in `AppDriver$new()` b
 
 ![File saved in `tests/testthat/_snaps/prod-feat-01-001_.png'`](images/prod-feat-01-001_.png){width='100%' align='center'}
 
+### The app process
+
+`shinytest2` 0.6.0 added `AppDriver$get_process()`, which returns the background R process running our app (a [`callr::r_process`](https://callr.r-lib.org/reference/r_process.html) object). We can use it to confirm the app is running, and that `app$stop()` shuts it down:
+
+```{r}
+#| eval: false
+#| code-fold: false
+test_that("app process starts and stops", {
+  app <- AppDriver$new(launch_app, name = "process")
+  proc <- app$get_process() # <1>
+  expect_true(proc$is_alive()) # <2>
+  app$stop()
+  expect_false(proc$is_alive()) # <3>
+})
+```
+1. Background R process that runs `launch_app()`
+2. The app is running
+3. `app$stop()` ends the process
+
+None of the apps in `sap` call `shiny::stopApp()`, but if an app exits on its own (for example, from a 'Quit' button), we can call `app$get_process()$wait()` to wait for the process to finish before calling `app$stop()`.
+
 
 ## The [`test.mode`]{style="font-size: 1.05em;"} option  {#sec-tests-system-test-mode}
 
