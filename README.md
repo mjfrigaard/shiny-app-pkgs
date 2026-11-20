@@ -87,6 +87,35 @@ The code examples can be found in the [`sap` repo](https://github.com/mjfrigaard
 git checkout <branch>
 ```
 
+## Building the book
+
+The book is a [Quarto](https://quarto.org/) book project (`_quarto.yml`) with R packages managed by [`renv`](https://rstudio.github.io/renv/). You'll need R (>= 4.6, see `renv.lock`) and Quarto (>= 1.8).
+
+Clone the repo and restore the packages:
+
+``` sh
+git clone https://github.com/mjfrigaard/shiny-app-pkgs.git
+cd shiny-app-pkgs
+Rscript -e "renv::restore()"
+```
+
+Render the full book (output goes to `_book/`):
+
+``` sh
+quarto render
+```
+
+Render a single chapter or preview with live reload:
+
+``` sh
+quarto render test_system.qmd
+quarto preview
+```
+
+`execute: freeze: auto` stores computed output in `_freeze/` (not tracked), so only changed chapters are re-run. The first full render runs every chapter. Chapters that call `shinypak::list_apps()` (`frameworks.qmd`, `deploy.qmd`) clone the `sap` repo and can take several minutes. Single chapter renders may warn about `@sec-` cross references until a full render rebuilds the index.
+
+Pushing to `main` triggers `.github/workflows/publish.yml`, which restores `renv`, runs `quarto render`, and deploys `_book/` to GitHub Pages.
+
 
 ## Issues 
 

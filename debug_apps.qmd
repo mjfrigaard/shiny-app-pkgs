@@ -52,7 +52,7 @@ In the previous chapters we demonstrated how to:
 1. Wrap the call to `browser()` in an `observe()` scope for interactive debugging   
 2. Capture and print reactive inputs in the UI with `reactiveValuesToList()`, `verbatimTextOutput()`, and `renderPrint()`
 
-This chapter covers using abstract syntax trees to help understand the structure of an application's modules, and how to use the two previously described debugging methods to understand bugs and errors.
+This chapter covers using call stacks to help understand the structure of an application's modules, and how to use the two previously described debugging methods to understand bugs and errors.
 
 ```{r}
 #| label: shinypak_apps
@@ -62,175 +62,79 @@ This chapter covers using abstract syntax trees to help understand the structure
 shinypak_apps(regex = "12", branch = "12.1_debug-mods")
 ```
 
-## Abstract syntax trees {#sec-debug-apps-abstract-syntax-trees}
+## Call stacks {#sec-debug-apps-call-stacks}
 
 Shiny app-packages can quickly become a complex and intertwined web of functions: utility functions, modules, user interface (UI) elements, server logic, etc. Before we jump into debugging modules, we'll revisit their function and purpose by considering the following description of namespaces from the [`NS()` function documentation](https://shiny.posit.co/r/reference/shiny/latest/ns.html):
 
 > "*a namespace is to an ID as a directory is to a file.*"
 
-To visualize the hierarchical relationship between the functions in our app, we'll use abstract syntax trees (`ast()`) from the `lobstr` package.[^debug-lobstr] 
+To see the hierarchical relationship between the functions in our app, we'll print the app's call stack: which functions call which. A common way to sketch this is with the `ast()` function from the `lobstr` package,[^debug-lobstr] which draws the abstract syntax tree of any expression we type. But `ast()` only knows what we tell it, so a hand-written tree can drift from the code as the app changes.
 
 [^debug-lobstr]: Create abstract syntax trees with the [`ast()` function](https://lobstr.r-lib.org/reference/ast.html) and read the *Code is a tree* section in [Advanced R, 2ed.](https://adv-r.hadley.nz/meta-big-picture.html#code-tree) 
 
-:::{layout="[50,50]" layout-valign="top"}
-
-For example, `launch_app()` wraps `shinyApp()`, which uses `movies_ui()` and `movies_server()`:
+I wrote the [`stackcallr` package](https://github.com/mjfrigaard/stackcallr) to build the tree from the source code instead. `call_tree_dir()` parses every `.R` file in a folder, finds the top-level functions, and follows the calls between them, starting from the `root` function. The output borrows the tree layout from `lobstr::ast()`.
 
 ```{r}
 #| eval: false
-#| include: false
-#| echo: false
-lobstr::ast(
-  launch_app(
-    shinyApp(
-      ui = movies_ui(),
-      server = movies_server()
-    )
-  )
-)
+#| code-fold: false
+# install.packages("pak")
+pak::pak("mjfrigaard/stackcallr")
+```
+
+In the `12.1_debug-mods` branch of `sap`, we'll root the tree at `launch_app()`:
+
+```{r}
+#| eval: false
+#| code-fold: false
+stackcallr::call_tree_dir(path = "R", root = "launch_app")
 ```
 
 ::: {style="font-style: italic;"}
 ```bash
-█─launch_app 
-└─█─shinyApp 
-  ├─ui = █─movies_ui 
-  └─server = █─movies_server
+█─launch_app
+├─█─movies_ui
+│ ├─mod_var_input_ui
+│ ├─mod_aes_input_ui
+│ └─mod_scatter_display_ui
+├─█─movies_server
+│ ├─mod_var_input_server
+│ ├─mod_aes_input_server
+│ └─█─mod_scatter_display_server
+│   └─scatter_plot
+└─display_type
 ```
 :::
 
-:::
-
-:::{layout="[50,50]" layout-valign="top"}
-
-`movies_ui()` and `movies_server()` internally call their respective UI and server module functions:
+`launch_app()` calls `movies_ui()` and `movies_server()` (through `shinyApp()`), and each of those calls its UI and server module functions. `mod_scatter_display_server()` calls the `scatter_plot()` utility function. `display_type()` sets where the app window opens, so we can drop it with `exclude` to focus on the modules:
 
 ```{r}
 #| eval: false
-#| include: false
-#| echo: false
-lobstr::ast(
-  launch_app(
-    shinyApp(
-      ui = movies_ui(
-        mod_var_input_ui(),
-        mod_scatter_display_ui()
-      ),
-      server = movies_server(
-        mod_var_input_server(),
-        mod_scatter_display_server()
-      )
-    )
-  )
-)
+#| code-fold: false
+stackcallr::call_tree_dir(path = "R", root = "launch_app", exclude = "display_type")
 ```
 
 ::: {style="font-style: italic;"}
 ```bash
-█─launch_app 
-└─█─shinyApp 
-  ├─ui = █─movies_ui 
-  │      ├─█─mod_var_input_ui 
-  │      └─█─mod_scatter_display_ui 
-  └─server = █─movies_server 
-             ├─█─mod_var_input_server 
-             └─█─mod_scatter_display_server 
+█─launch_app
+├─█─movies_ui
+│ ├─mod_var_input_ui
+│ ├─mod_aes_input_ui
+│ └─mod_scatter_display_ui
+└─█─movies_server
+  ├─mod_var_input_server
+  ├─mod_aes_input_server
+  └─█─mod_scatter_display_server
+    └─scatter_plot
 ```
 :::
 
-:::
-
-
-:::{layout="[50,50]" layout-valign="top"}
-
-And `mod_scatter_display_server()` calls the `scatter_plot()` utility function:
-
-```{r}
-#| eval: false
-#| include: false 
-#| echo: false
-lobstr::ast(
-  launch_app(
-    shinyApp(
-    ui = movies_ui(
-      mod_var_input_ui(),
-      mod_scatter_display_ui()
-    ),
-    server = movies_server(
-      mod_var_input_server(),
-      mod_scatter_display_server(
-        scatter_plot()
-          )
-        )
-      )
-    )
-  )
-```
-
-::: {style="font-style: italic;"}
-```bash
-█─launch_app 
-└─█─shinyApp 
-  ├─ui = █─movies_ui 
-  │      ├─█─mod_var_input_ui 
-  │      └─█─mod_scatter_display_ui 
-  └─server = █─movies_server 
-             ├─█─mod_var_input_server 
-             └─█─mod_scatter_display_server 
-               └─█─scatter_plot 
-```
-:::
-
-:::
-
-
-Abstract folder trees can be used to help construct a simplified call stack for applications (especially if we are using multiple utility functions or nested modules).
+`call_tree_dir()` only follows functions defined in the folder, so calls to other packages (like `shinyApp()`) don't appear in the tree. A call stack like this one is a quick map of the app (especially when we're using multiple utility functions or nested modules).
 
 ## Debugging modules {#sec-debug-apps-modules}
 
 In this branch of `sap`, the inputs has been split into two separate modules: variable inputs and aesthetic inputs. The variable input module collects and returns the selected columns from the `movies` data, and the aesthetics input module collects and returns the alpha, point size, and (optional) graph title.
 
-This updates our abstract syntax tree to the following: 
-
-```{r}
-#| eval: false
-#| include: false 
-#| echo: false
-lobstr::ast(
-  launch_app(
-    shinyApp(
-      ui = movies_ui(
-        mod_var_input_ui(),
-        mod_aes_input_ui(),
-        mod_scatter_display_ui()
-    ),
-    server = movies_server(
-        mod_var_input_server(),
-        mod_aes_input_server(),
-        mod_scatter_display_server(
-          scatter_plot()
-        )
-      )
-  )
-    )
-  )
-```
-
-::: {style="font-style: italic;"}
-```bash
-█─launch_app 
-└─█─shinyApp 
-  ├─ui = █─movies_ui 
-  │      ├─█─mod_var_input_ui 
-  │      ├─█─mod_aes_input_ui 
-  │      └─█─mod_scatter_display_ui 
-  └─server = █─movies_server 
-             ├─█─mod_var_input_server 
-             ├─█─mod_aes_input_server 
-             └─█─mod_scatter_display_server 
-               └─█─scatter_plot 
-```
-:::
+These are the `mod_var_input_*` and `mod_aes_input_*` functions in the call stack above.
 
 ### Input modules {#sec-debug-apps-input-modules}
 
@@ -1095,19 +999,22 @@ This confirms that the UI values are being collected by the aesthetic input modu
 #| eval: false
 #| include: false 
 #| echo: false
-lobstr::ast(
-  launch_app(
-    movies_ui(),
-    movies_server()
-    )
+stackcallr::call_tree_dir(
+  path = "R",
+  root = "launch_app",
+  exclude = c(
+    "mod_var_input_ui", "mod_aes_input_ui", "mod_scatter_display_ui",
+    "mod_var_input_server", "mod_aes_input_server",
+    "mod_scatter_display_server", "scatter_plot", "display_type"
   )
+)
 ```
 
 ::: {style="font-style: italic;"}
 ```bash
-█─launch_app 
-├─█─movies_ui 
-└─█─movies_server 
+█─launch_app
+├─movies_ui
+└─movies_server
 ```
 :::
 
@@ -1267,4 +1174,4 @@ git_margin_box(
 [^call-stack-shiny]: Stack traces are also covered in [Advanced R, 2ed](https://adv-r.hadley.nz/debugging.html#traceback), [Mastering Shiny](https://mastering-shiny.org/action-workflow.html#tracebacks-in-shiny), and in the [Shiny documentation](https://github.com/rstudio/shiny/wiki/Stack-traces-in-R). I've summarized some tips on reading Shiny call stacks in the [stack traces](stack_traces.qmd) section on the Appendix.
 
 
-[^debug-call-stacks]: Watch [this video](https://www.youtube.com/watch?v=g1h-YDWVRLc) to learn about call stacks and abstract folder trees with `lobstr`. 
+[^debug-call-stacks]: Watch [this video](https://www.youtube.com/watch?v=g1h-YDWVRLc) to learn about call stacks and abstract syntax trees with `lobstr`. 
