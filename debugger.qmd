@@ -91,32 +91,31 @@ Interactive debugging (e.g., using `browser()` or setting a breakpoint) allows u
 ```{mermaid}
 %%| fig-cap: 'Interactive debugger with `browser()` or breakpoint'
 %%| fig-align: center
-%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px"}}}%%
+%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"16px", "primaryColor":"#D7EBEC", "primaryTextColor":"#1B3B3F", "primaryBorderColor":"#2A6F77", "lineColor":"#5A7F83", "edgeLabelBackground":"#FFFFFF", "clusterBkg":"#F3F8F8", "clusterBorder":"#2A6F77", "darkMode":false}}}%%
 flowchart TD
-        Start(["Begin<br>Execution"])
-        Browser{{"Breakpoint<br>or <code>browser</code>?"}}
-        subgraph Debugger ["<strong>Debugger</strong>"]
-            Step("Enter<br>debugger")
-            Step --> |"Step Through<br>Code"|Debug{{"Done<br>debugging?"}}
-
-            Debug -->|"No"| Step
-            Debug -->|"Yes"| Exit("Exit<br>debugger")
-
-        end
-        Resume(["Resume<br>Execution"])
+    Start(["Begin<br>execution"])
+    Browser{"Breakpoint<br>or <code>browser()</code>?"}
+    subgraph Debugger["<strong>Debugger</strong>"]
+        Step("Enter<br>debugger")
+        Step -->|"Step through<br>code"| Debug{"Done<br>debugging?"}
+        Debug -->|"No"| Step
+        Debug -->|"Yes"| Exit("Exit<br>debugger")
+    end
+    Resume(["Resume<br>execution"])
 
     Start --> Browser
     Browser -->|"Yes"| Debugger
     Exit --> Resume
     Browser -->|"No"| Resume
 
-    style Start fill:#4CBB9D,color:#fff,stroke:#2d8a7a,stroke-width:2px
-    style Browser fill:#4CBB9D,color:#fff,stroke:#2d8a7a,stroke-width:2px
-    style Resume fill:#4CBB9D,color:#fff,stroke:#2d8a7a,stroke-width:2px
-    style Step fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
-    style Debug fill:#4CBB9D,color:#fff,stroke:#2d8a7a,stroke-width:2px
-    style Exit fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
-    style Debugger fill:#e8f4f1,stroke:#4CBB9D,stroke-width:2px
+    classDef term fill:#2A6F77,color:#FFFFFF,stroke:#1B4F55,stroke-width:1px
+    classDef step fill:#D7EBEC,color:#1B3B3F,stroke:#2A6F77,stroke-width:1px
+    classDef decision fill:#F4C26B,color:#3D2A00,stroke:#B7832B,stroke-width:1px
+    classDef io fill:#FFFFFF,color:#1B3B3F,stroke:#2A6F77,stroke-width:1px
+    class Start,Resume term
+    class Step,Exit step
+    class Browser,Debug decision
+    style Debugger fill:#F3F8F8,color:#1B3B3F,stroke:#2A6F77,stroke-width:1px,stroke-dasharray:4 3
 ```
 
 Unfortunately, using `browser()` and breakpoints are not as straightforward within reactive contexts. `browser()` interacts with the R interpreter by temporarily suspending execution and redirecting the input to evaluate R expressions in the context of the function or script that called it. 
@@ -125,26 +124,28 @@ Unfortunately, using `browser()` and breakpoints are not as straightforward with
 ```{mermaid}
 %%| fig-cap: 'How `browser()` works in regular R function'
 %%| fig-align: center
-%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"14px"}}}%%
+%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"14px", "primaryColor":"#D7EBEC", "primaryTextColor":"#1B3B3F", "primaryBorderColor":"#2A6F77", "lineColor":"#5A7F83", "edgeLabelBackground":"#FFFFFF", "clusterBkg":"#F3F8F8", "clusterBorder":"#2A6F77", "darkMode":false}}}%%
 flowchart TD
-        Running(["Being<br>execution"])
-            subgraph Browse["<strong>browser() Scope</strong>"]
-                Browser("<code>browser()</code>")
-                subgraph Debugger["<strong>Interactive Debugger</strong>"]
-                 Step[\"Inspect variables<br>and values"/]
-                end
+    Running(["Begin<br>execution"])
+    subgraph Browse["<strong><code>browser()</code> scope</strong>"]
+        Browser("<code>browser()</code>")
+        subgraph Debugger["<strong>Interactive debugger</strong>"]
+            Step[\"Inspect variables<br>and values"/]
         end
-        Resume(["Resume<br>execution"])
+    end
+    Resume(["Resume<br>execution"])
 
-Running -->|"Encounter"| Browser --> |"Enter"|Step -->|"Exit"|Resume
+    Running -->|"Encounter"| Browser -->|"Enter"| Step -->|"Exit"| Resume
 
-    style Running fill:#4CBB9D,color:#fff,stroke:#2d8a7a,stroke-width:2px
-    style Browser fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
-    style Step fill:#7fd9c7,color:#fff,stroke:#4CBB9D,stroke-width:1px
-    style Resume fill:#4CBB9D,color:#fff,stroke:#2d8a7a,stroke-width:2px
-    style Debugger fill:#e8f4f1,stroke:#4CBB9D,stroke-width:2px
-    style Browse fill:#e8f4f1,stroke:#4CBB9D,stroke-width:2px
-
+    classDef term fill:#2A6F77,color:#FFFFFF,stroke:#1B4F55,stroke-width:1px
+    classDef step fill:#D7EBEC,color:#1B3B3F,stroke:#2A6F77,stroke-width:1px
+    classDef decision fill:#F4C26B,color:#3D2A00,stroke:#B7832B,stroke-width:1px
+    classDef io fill:#FFFFFF,color:#1B3B3F,stroke:#2A6F77,stroke-width:1px
+    class Running,Resume term
+    class Browser step
+    class Step io
+    style Browse fill:#F3F8F8,color:#1B3B3F,stroke:#2A6F77,stroke-width:1px,stroke-dasharray:4 3
+    style Debugger fill:#F3F8F8,color:#1B3B3F,stroke:#2A6F77,stroke-width:1px,stroke-dasharray:4 3
 ```
 
 <br>
@@ -176,37 +177,32 @@ Fortunately, Shiny already has a function that performs this: `observe()`. Withi
 ```{mermaid}
 %%| fig-cap: 'Reactive `browser()` in an `observe()`er'
 %%| fig-align: center
-%%{init: {'theme': 'neutral', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"14px"}}}%%
+%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'monospace', "fontSize":"14px", "primaryColor":"#D7EBEC", "primaryTextColor":"#1B3B3F", "primaryBorderColor":"#2A6F77", "lineColor":"#5A7F83", "edgeLabelBackground":"#FFFFFF", "clusterBkg":"#F3F8F8", "clusterBorder":"#2A6F77", "darkMode":false}}}%%
 flowchart TD
-        Running(["Being<br>execution"]) 
-        subgraph Observe["<strong>observe() Scope</strong>"]
-                Observer("<code>observe({<br><br>})</code>")
-            subgraph Browse["<strong>browser() Scope</strong>"]
-                Browser("<code>browser()</code>")
-                subgraph Debugger["<strong>Interactive Debugger</strong>"]
-                 Step[\"Inspect variables<br>and reactives"/]
-                end
+    Running(["Begin<br>execution"])
+    subgraph Observe["<strong><code>observe()</code> scope</strong>"]
+        Observer("<code>observe({<br><br>})</code>")
+        subgraph Browse["<strong><code>browser()</code> scope</strong>"]
+            Browser("<code>browser()</code>")
+            subgraph Debugger["<strong>Interactive debugger</strong>"]
+                Step[\"Inspect variables<br>and reactives"/]
             end
         end
-        Resume(["Resume<br>execution"])
+    end
+    Resume(["Resume<br>execution"])
 
-Running -->|"Encounter"| Observer --> Browser --> |"Enter"|Step -->|"Exit"|Resume
+    Running -->|"Encounter"| Observer --> Browser -->|"Enter"| Step -->|"Exit"| Resume
 
-    %% style Server fill:#FFF,color:#000,stroke:#333,font-size:14px
-    %% style StartReact fill:#FFF,color:#000,stroke:#333,font-size:14px
-    %% style EndReact fill:#FFF,color:#000,stroke:#333,font-size:14px
-
-    %% style Observer fill:#FFF,stroke:#FEDBC1,stroke-width:3px,font-size:14px
-    %% style ObserveExecution fill:#FEDBC1,stroke:none,rx:10,ry:10,font-size:14px
-    
-    %% style Browser fill:#4CBB9D,color:#000,stroke:none,rx:20,ry:10,font-size:14px
-    %% style Browse stroke:#4CBB9D,color:#000,fill:#FFF,stroke-width:3px,rx:10,ry:10,font-size:14px
-    
-    %% style Debugger fill:#F8F8FA,stroke:#4CB7DB,stroke-width:3px,rx:10,ry:10,font-size:14px
-    %% style Step fill:#4CB7DB,stroke:none,rx:10,ry:10
-
-    %% style ExitBrowser fill:#4CBB9D,color:#000,stroke:none,rx:20,ry:10,font-size:14px
-    %% style ExitObserver fill:#FEDBC1,color:#000,stroke:none,rx:20,ry:10,font-size:14px
+    classDef term fill:#2A6F77,color:#FFFFFF,stroke:#1B4F55,stroke-width:1px
+    classDef step fill:#D7EBEC,color:#1B3B3F,stroke:#2A6F77,stroke-width:1px
+    classDef decision fill:#F4C26B,color:#3D2A00,stroke:#B7832B,stroke-width:1px
+    classDef io fill:#FFFFFF,color:#1B3B3F,stroke:#2A6F77,stroke-width:1px
+    class Running,Resume term
+    class Observer,Browser step
+    class Step io
+    style Observe fill:#F3F8F8,color:#1B3B3F,stroke:#2A6F77,stroke-width:1px,stroke-dasharray:4 3
+    style Browse fill:#F3F8F8,color:#1B3B3F,stroke:#2A6F77,stroke-width:1px,stroke-dasharray:4 3
+    style Debugger fill:#F3F8F8,color:#1B3B3F,stroke:#2A6F77,stroke-width:1px,stroke-dasharray:4 3
 ```
 
 
